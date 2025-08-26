@@ -1,0 +1,226 @@
+{
+  "events": [
+    {
+      "method": "chatMessage",
+      "object": {
+        "broadcaster": "mrslaw",
+        "message": {
+          "bgColor": null,
+          "color": "",
+          "font": "default",
+          "message": "hi",
+          "orig": null
+        },
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376889458-0"
+    },
+    {
+      "method": "privateMessage",
+      "object": {
+        "broadcaster": "mrslaw",
+        "message": {
+          "bgColor": null,
+          "color": "",
+          "font": "default",
+          "fromUser": "mountaingod2",
+          "message": "hi",
+          "orig": null,
+          "toUser": "mrslaw"
+        },
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376896985-0"
+    },
+    {
+      "method": "tip",
+      "object": {
+        "broadcaster": "mrslaw",
+        "tip": {
+          "isAnon": false,
+          "message": "| hi",
+          "tokens": 25
+        },
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376903836-0"
+    },
+    {
+      "method": "tip",
+      "object": {
+        "broadcaster": "mrslaw",
+        "tip": {
+          "isAnon": true,
+          "message": "",
+          "tokens": 25
+        },
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376908472-0"
+    },
+    {
+      "method": "tip",
+      "object": {
+        "broadcaster": "mrslaw",
+        "tip": {
+          "isAnon": true,
+          "message": "| hi",
+          "tokens": 25
+        },
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376911435-0"
+    },
+    {
+      "method": "unfollow",
+      "object": {
+        "broadcaster": "mrslaw",
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": false,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376913741-0"
+    },
+    {
+      "method": "follow",
+      "object": {
+        "broadcaster": "mrslaw",
+        "user": {
+          "colorGroup": "tr",
+          "fcAutoRenew": false,
+          "gender": "m",
+          "hasDarkmode": true,
+          "hasTokens": true,
+          "inFanclub": false,
+          "inPrivateShow": false,
+          "isBroadcasting": true,
+          "isFollower": true,
+          "isMod": false,
+          "isOwner": false,
+          "isSilenced": false,
+          "isSpying": false,
+          "language": "en",
+          "recentTips": "some",
+          "subgender": "",
+          "username": "mountaingod2"
+        }
+      },
+      "id": "1755376914913-0"
+    },
+    {
+      "method": "roomSubjectChange",
+      "object": {
+        "broadcaster": "mrslaw",
+        "subject": "Welcome"
+      },
+      "id": "1755377041589-0"
+    }
+  ],
+  "nextUrl": "https://events.testbed.cb.dev/events/mrslaw/***********/?i=1755377041589-0&timeout=89"
+}

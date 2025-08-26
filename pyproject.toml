@@ -1,0 +1,134 @@
+[project]
+name = "chaturbate-events"
+version = "0.1.0"
+description = "An asynchronous client for the Chaturbate Events API."
+authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
+requires-python = ">=3.11"
+dependencies = ["aiohttp==3.12.15", "pydantic==2.11.7"]
+dynamic = ["readme"]
+
+[build-system]
+requires = ["hatchling==1.27.0", "hatch-fancy-pypi-readme==25.1.0"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+build = ["python-semantic-release==10.3.1"]
+dev = [
+    "mypy==1.17.1",
+    "pre-commit==4.3.0",
+    "pylint==3.3.8",
+    "pyright==1.1.404",
+    "pytest-aiohttp==1.1.0",
+    "pytest-asyncio==1.1.0",
+    "pytest-cov==6.2.1",
+    "pytest-mock==3.14.1",
+    "pytest==8.4.1",
+    "python-semantic-release==10.3.1",
+    "ruff==0.12.8",
+    "ty==0.0.1a19",
+]
+examples = ["python-dotenv==1.1.1"]
+
+[tool.hatch]
+build.targets.wheel.packages = ["src/chaturbate_events"]
+metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
+metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
+metadata.hooks.fancy-pypi-readme.substitutions = [
+    { pattern = '\\[(.+?)\\]\\(((?!https?://)\\S+?)\\)', replacement = '[\\1](https://github.com/mountaingod2/chaturbate-events/tree/main\\g<2>)' },
+]
+
+[tool.semantic_release]
+build_command = """
+  uv lock --upgrade-package "chaturbate-events"
+  uv build
+"""
+commit_parser = "conventional"
+commit_parser_options.minor_tags = ["feat"]
+commit_parser_options.patch_tags = ["fix", "perf"]
+commit_parser_options.parse_squash_commits = true
+commit_parser_options.ignore_merge_commits = true
+changelog_file = "CHANGELOG.md"
+output_format = "md"
+exclude_commit_patterns = [
+    '''chore(?:\([^)]*?\))?: .+''',
+    '''ci(?:\([^)]*?\))?: .+''',
+    '''refactor(?:\([^)]*?\))?: .+''',
+    '''style(?:\([^)]*?\))?: .+''',
+    '''test(?:\([^)]*?\))?: .+''',
+    '''build\((?!deps\): .+)''',
+    '''Initial [Cc]ommit.*''',
+]
+version_toml = ["pyproject.toml:project.version"]
+
+[tool.ruff]
+indent-width = 4
+lint.ignore = ["ASYNC109", "COM812", "CPY001", "FBT001", "FBT002", "PLR0913"]
+lint.per-file-ignores."examples/*" = [
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "D100",
+    "D103",
+    "D104",
+    "PLR2004",
+    "S105",
+    "T201",
+    "TRY400",
+]
+lint.per-file-ignores."tests/*" = [
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "FBT001",
+    "PLR0913",
+    "PLR2004",
+    "S101",
+    "S105",
+    "S106",
+]
+lint.pydocstyle.convention = "google"
+lint.select = ["ALL"]
+lint.unfixable = []
+target-version = "py311"
+
+[tool.mypy]
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+strict = true
+
+[[tool.mypy.overrides]]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+module = "examples.*"
+
+[[tool.mypy.overrides]]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+module = "tests.*"
+no_implicit_optional = false
+strict_optional = false
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage]
+omit = ["**/__init__.py", "examples/*", "tests/*"]
+report.exclude_lines = [
+    "if TYPE_CHECKING:",
+    "if __name__ == '__main__':",
+    "if typing.TYPE_CHECKING:",
+]
+report.show_missing = true
+report.skip_covered = true
+run.branch = true
+source = ["src/"]
+
+[[tool.ty.overrides]]
+include = ["examples/example.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "timezone": "America/Edmonton",
+  "schedule": [
+    "before 5am"
+  ],
+  "rangeStrategy": "bump",
+  "minimumReleaseAge": "14 days",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "commitMessageLowerCase": "auto",
+  "automergeType": "branch",
+  "platformAutomerge": false,
+  "rebaseWhen": "auto",
+  "prConcurrentLimit": 5,
+  "dependencyDashboard": true,
+  "internalChecksFilter": "strict",
+  "internalChecksAsSuccess": false,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "at any time"
+    ],
+    "automerge": true
+  },
+  "enabledManagers": [
+    "github-actions",
+    "pep723",
+    "pep621",
+    "pre-commit"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "pep723": {
+    "managerFilePatterns": [
+      "/^examples/.*\\.py$/"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Do not automerge major updates",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "breaking"
+      ],
+      "automerge": false,
+      "assignees": [
+        "MountainGod2"
+      ]
+    },
+    {
+      "description": "Automerge minor, patch updates and type definitions",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "autoApprove": true
+    },
+    {
+      "description": "Do not change requires-python in pyproject.toml",
+      "matchManagers": [
+        "pep621"
+      ],
+      "ignoreDeps": [
+        "python"
+      ]
+    }
+  ]
+}
