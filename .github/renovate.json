@@ -11,7 +11,7 @@
     "before 5am"
   ],
   "rangeStrategy": "bump",
-  "minimumReleaseAge": "14 days",
+  "minimumReleaseAge": "4 days",
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "commitMessageLowerCase": "auto",
