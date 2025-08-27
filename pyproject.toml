@@ -1,6 +1,6 @@
 [project]
 name = "chaturbate-events"
-version = "1.0.0"
+version = "1.0.1"
 description = "An asynchronous client for the Chaturbate Events API."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 requires-python = ">=3.11"
