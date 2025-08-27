@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v1.0.3 (2025-08-27)
+
+### Bug Fixes
+
+- **renovate**: Format schedule and managerFilePatterns for consistency
+  ([`33568cd`](https://github.com/MountainGod2/chaturbate-events/commit/33568cdb94486ed5347b900dabde08759ab92dea))
+
+### Build System
+
+- **cd**: Ensure build job runs only on successful workflow completion
+  ([`68f5f97`](https://github.com/MountainGod2/chaturbate-events/commit/68f5f970512db0aacd1d12bdab91ffe3be8f5604))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`d9bff53`](https://github.com/MountainGod2/chaturbate-events/commit/d9bff53b27da3cf468f370274f509aab7586cee9))
+
+- **deps**: Update actions/checkout action to v5
+  ([#3](https://github.com/MountainGod2/chaturbate-events/pull/3),
+  [`2184e34`](https://github.com/MountainGod2/chaturbate-events/commit/2184e34719474b25f9f8fe2ee298c65de2850910))
+
+- **deps**: Update dependency ruff to v0.12.10
+  ([`3cbadc1`](https://github.com/MountainGod2/chaturbate-events/commit/3cbadc1e4684ec659c8ce08ef11824665cb95b28))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.12.10
+  ([`e781044`](https://github.com/MountainGod2/chaturbate-events/commit/e78104464cdc3fb8c4a3ebcae2295eb150ac3669))
+
+### Refactoring
+
+- **renovate**: Update merge schedule
+  ([`3126de1`](https://github.com/MountainGod2/chaturbate-events/commit/3126de1ec91aa87ae8653ffe0471b5e6139607b2))
+
+
 ## v1.0.2 (2025-08-27)
 
 ### Bug Fixes
