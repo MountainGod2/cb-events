@@ -1,27 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
   "extends": [
     "config:best-practices"
   ],
+
+  "automergeType": "branch",
+  "commitMessageLowerCase": "auto",
+  "dependencyDashboard": true,
+  "enabledManagers": [
+    "github-actions",
+    "pep723",
+    "pep621",
+    "pre-commit"
+  ],
+  "internalChecksAsSuccess": false,
+  "internalChecksFilter": "strict",
   "labels": [
     "dependencies"
   ],
-  "timezone": "America/Edmonton",
-  "schedule": [
-    "at any time"
-  ],
-  "rangeStrategy": "bump",
-  "minimumReleaseAge": "4 days",
-  "semanticCommits": "enabled",
-  "semanticCommitType": "chore",
-  "commitMessageLowerCase": "auto",
-  "automergeType": "branch",
-  "platformAutomerge": false,
-  "rebaseWhen": "auto",
-  "prConcurrentLimit": 5,
-  "dependencyDashboard": true,
-  "internalChecksFilter": "strict",
-  "internalChecksAsSuccess": false,
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
@@ -29,25 +26,31 @@
     ],
     "automerge": true
   },
-  "enabledManagers": [
-    "github-actions",
-    "pep723",
-    "pep621",
-    "pre-commit"
+  "minimumReleaseAge": "14 days",
+  "platformAutomerge": false,
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "bump",
+  "rebaseWhen": "auto",
+  "schedule": [
+    "at any time"
   ],
-  "pre-commit": {
-    "enabled": true
-  },
-  "pep723": {
-    "enabled": true,
-    "managerFilePatterns": [
-      "/examples/.*\\.py$/",
-      "/examples/.*\\.pyw$/"
-    ]
-  },
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "timezone": "America/Edmonton",
+
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**"
+  ],
+
   "packageRules": [
     {
-      "description": "Do not automerge major updates",
+      "description": "Do not automerge major updates; label as breaking, assign MountainGod2",
       "matchUpdateTypes": [
         "major"
       ],
@@ -61,7 +64,7 @@
       ]
     },
     {
-      "description": "Automerge minor, patch updates and type definitions",
+      "description": "Automerge and auto-approve minor and patch updates, including type definitions",
       "matchUpdateTypes": [
         "minor",
         "patch"
@@ -70,22 +73,34 @@
       "autoApprove": true
     },
     {
-      "description": "Do not change requires-python in pyproject.toml",
+      "description": "Prevent Renovate from changing requires-python in pyproject.toml",
       "matchManagers": [
         "pep621"
       ],
       "ignoreDeps": [
         "python"
       ]
+    },
+    {
+      "description": "Ignore minimum release wait time for pep723 updates to chaturbate-events",
+      "matchManagers": [
+        "pep723"
+      ],
+      "matchDepNames": [
+        "chaturbate-events"
+      ],
+      "minimumReleaseAge": "0"
     }
   ],
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/bower_components/**",
-    "**/vendor/**",
-    "**/__tests__/**",
-    "**/test/**",
-    "**/tests/**",
-    "**/__fixtures__/**"
-  ]
+
+  "pep723": {
+    "enabled": true,
+    "managerFilePatterns": [
+      "/examples/.*\\.py$/",
+      "/examples/.*\\.pyw$/"
+    ]
+  },
+  "pre-commit": {
+    "enabled": true
+  }
 }
