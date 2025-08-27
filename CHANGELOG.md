@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.2 (2025-08-27)
+
+### Bug Fixes
+
+- **example**: Add mypy override to ignore errors in example module
+  ([`c74cc44`](https://github.com/MountainGod2/chaturbate-events/commit/c74cc44b72f47aadce21f479bce4d1bf215da477))
+
+
 ## v1.0.1 (2025-08-27)
 
 ### Bug Fixes
