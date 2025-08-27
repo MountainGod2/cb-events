@@ -7,9 +7,7 @@
     "dependencies"
   ],
   "timezone": "America/Edmonton",
-  "schedule": [
-    "before 5am"
-  ],
+  "schedule": ["at any time"],
   "rangeStrategy": "bump",
   "minimumReleaseAge": "4 days",
   "semanticCommits": "enabled",
