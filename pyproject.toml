@@ -104,6 +104,10 @@ ignore_missing_imports = true
 module = "examples.*"
 
 [[tool.mypy.overrides]]
+module = "examples.example"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 disallow_untyped_calls = false
 disallow_untyped_defs = false
 module = "tests.*"

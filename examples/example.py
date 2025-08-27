@@ -8,7 +8,7 @@ import asyncio
 import contextlib
 import os
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
 from rich import print
 
 from chaturbate_events import Event, EventClient, EventRouter, EventType
