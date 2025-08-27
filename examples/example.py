@@ -1,6 +1,6 @@
 # /// script
 # dependencies = [
-#   "chaturbate-events==1.0.0",
+#   "chaturbate-events==1.0.3",
 #   "python-dotenv==1.1.1",
 #   "rich==14.1.0"
 # ]
