@@ -27,7 +27,6 @@ dev = [
     "ruff==0.12.8",
     "ty==0.0.1a19",
 ]
-examples = ["python-dotenv==1.1.1"]
 
 [tool.hatch]
 build.targets.wheel.packages = ["src/chaturbate_events"]
@@ -64,6 +63,7 @@ version_toml = ["pyproject.toml:project.version"]
 indent-width = 4
 lint.ignore = ["ASYNC109", "COM812", "CPY001", "FBT001", "FBT002", "PLR0913"]
 lint.per-file-ignores."examples/*" = [
+    "A004",
     "ANN001",
     "ANN201",
     "ANN202",
