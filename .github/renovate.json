@@ -39,8 +39,8 @@
     "enabled": true
   },
   "pep723": {
-    "fileMatch": [
-      "examples/\\.py"
+    "managerFilePatterns": [
+      "/examples/\\.py/"
     ],
     "enabled": true
   },
