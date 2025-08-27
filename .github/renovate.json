@@ -37,9 +37,7 @@
     "enabled": true
   },
   "pep723": {
-    "managerFilePatterns": [
-      "/^examples/.*\\.py$/"
-    ]
+    "managerFilePatterns": ["/^examples\/.*\\.py$/"]
   },
   "packageRules": [
     {
