@@ -32,9 +32,11 @@ dev = [
 build.targets.wheel.packages = ["src/chaturbate_events"]
 metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
 metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
-metadata.hooks.fancy-pypi-readme.substitutions = [
-    { pattern = '\\[(.+?)\\]\\(((?!https?://)\\S+?)\\)', replacement = '[\\1](https://github.com/mountaingod2/chaturbate-events/tree/main\\g<2>)' },
-]
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# Replace relative links to the GitHub repository with absolute links.
+pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
+replacement = '[\1](https://github.com/MountainGod2/chaturbate-events/tree/main/\g<3>)'
 
 [tool.semantic_release]
 build_command = """
