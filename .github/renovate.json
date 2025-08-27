@@ -39,10 +39,10 @@
     "enabled": true
   },
   "pep723": {
-    "enabled": true,
-    "managerFilePatterns": [
-      "/examples/.*\\.py$/"
-    ]
+    "fileMatch": [
+      "examples/\\.py"
+    ],
+    "enabled": true
   },
   "packageRules": [
     {
