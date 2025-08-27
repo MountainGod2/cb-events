@@ -1,8 +1,10 @@
 # /// script
-# requires-python = ">=3.12"
-# dependencies = ["chaturbate-events==1.0.0","python-dotenv==1.1.1","rich==14.1.0"]
+# dependencies = [
+#   "chaturbate-events==1.0.0",
+#   "python-dotenv==1.1.1",
+#   "rich==14.1.0"
+# ]
 # ///
-"""Simple example demonstrating the Chaturbate Events API wrapper."""
 
 import asyncio
 import contextlib
