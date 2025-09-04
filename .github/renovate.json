@@ -64,10 +64,11 @@
       ]
     },
     {
-      "description": "Automerge and auto-approve minor and patch updates, including type definitions",
+      "description": "Automerge and auto-approve minor, patch, and digest updates, including type definitions",
       "matchUpdateTypes": [
         "minor",
-        "patch"
+        "patch",
+        "digest"
       ],
       "automerge": true,
       "autoApprove": true
