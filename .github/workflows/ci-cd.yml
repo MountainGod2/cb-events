@@ -271,7 +271,7 @@ jobs:
         id: artifact-download
         with:
           name: ${{ needs.build.outputs.dist_artifacts }}
-          path: dist
+          path: .
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1
