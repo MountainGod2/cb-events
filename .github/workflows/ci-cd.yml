@@ -231,6 +231,7 @@ jobs:
     name: Deploy to PyPI
     runs-on: ubuntu-latest
     needs:
+      - build
       - release
     if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/chaturbate-events' }}
 
