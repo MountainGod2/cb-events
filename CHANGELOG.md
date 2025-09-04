@@ -2,6 +2,75 @@
 
 <!-- version list -->
 
+## v1.1.0 (2025-09-04)
+
+### Chores
+
+- **ci**: Enhance lint-and-test workflow with permissions and step clarifications
+  ([`c32be1f`](https://github.com/MountainGod2/chaturbate-events/commit/c32be1fd7a90e9c37b25098703f2963199b4f868))
+
+- **ci**: Merge CI and CD workflows into a single file
+  ([`bb9f5bf`](https://github.com/MountainGod2/chaturbate-events/commit/bb9f5bf9045719890b9573f55ba71b0620311a0f))
+
+- **ci**: Update workflow name
+  ([`1bfdfff`](https://github.com/MountainGod2/chaturbate-events/commit/1bfdfff90ad4c58c83b18890130b2ee5bf05b57b))
+
+- **deps**: Lock file maintenance
+  ([`bfbbc02`](https://github.com/MountainGod2/chaturbate-events/commit/bfbbc024de4bd4d7a3d696d9ebf69954803b7d7e))
+
+- **deps**: Lock file maintenance
+  ([`9d6b7f8`](https://github.com/MountainGod2/chaturbate-events/commit/9d6b7f86495d9938dd0a9e6d8938313bfad23b47))
+
+- **deps**: Pin codecov/codecov-action action to b9fd7d1
+  ([#5](https://github.com/MountainGod2/chaturbate-events/pull/5),
+  [`db0c723`](https://github.com/MountainGod2/chaturbate-events/commit/db0c7230c423bd56185383d5f434f59fea8e7d1e))
+
+- **deps**: Update astral-sh/setup-uv digest to 557e51d
+  ([#7](https://github.com/MountainGod2/chaturbate-events/pull/7),
+  [`e02df5d`](https://github.com/MountainGod2/chaturbate-events/commit/e02df5d09416d2afa473f2c0738c35df1bbfd686))
+
+- **deps**: Update codecov/codecov-action action to v5
+  ([#6](https://github.com/MountainGod2/chaturbate-events/pull/6),
+  [`9b93cf5`](https://github.com/MountainGod2/chaturbate-events/commit/9b93cf5831f36807274b03c1492596467e769d9a))
+
+- **deps**: Update dependency chaturbate-events to v1.0.3
+  ([`e3e5047`](https://github.com/MountainGod2/chaturbate-events/commit/e3e50478d2f46e8d0b4c9b7c9a1b60e4b5f4528e))
+
+- **examples**: Update example.py dependencies
+  ([`34eee53`](https://github.com/MountainGod2/chaturbate-events/commit/34eee53afed2a59a8fb654df732167f61620174e))
+
+- **pyproject**: Update fancy-pypi-readme substitutions to use correct pattern and replacement
+  ([`f4ad9a2`](https://github.com/MountainGod2/chaturbate-events/commit/f4ad9a25aec3f6a44eb92f324a7e68e90ec009a9))
+
+- **renovate**: Add ignorePaths for dependency management
+  ([`ae17812`](https://github.com/MountainGod2/chaturbate-events/commit/ae178128a6dae6ea86a86e76c8dc9be2878738e8))
+
+- **renovate**: Enable pep723 manager for dependency management
+  ([`06e5a6f`](https://github.com/MountainGod2/chaturbate-events/commit/06e5a6fd919cac02264367ef38ee895ece52ca55))
+
+- **renovate**: Refine configuration and update package rules
+  ([`2a7b4cb`](https://github.com/MountainGod2/chaturbate-events/commit/2a7b4cbdb2b01a39f10dcce46a3e685fcfea3019))
+
+- **renovate**: Update managerFilePatterns for pep723 to use regex format
+  ([`2fe9c26`](https://github.com/MountainGod2/chaturbate-events/commit/2fe9c26e65cd7cc7d544c6be6976d6fcd3aae79a))
+
+- **renovate**: Update pep723 configuration to use fileMatch instead of managerFilePatterns
+  ([`c445e68`](https://github.com/MountainGod2/chaturbate-events/commit/c445e680937fc930e073d2079514a40906759313))
+
+- **renovate**: Update pep723 configuration to use managerFilePatterns for Python files
+  ([`b544a90`](https://github.com/MountainGod2/chaturbate-events/commit/b544a909ec6a6a3c2f56b8edec1b19f1bdd78461))
+
+### Features
+
+- **client**: Enhance logging and token masking in EventClient
+  ([`ba225ed`](https://github.com/MountainGod2/chaturbate-events/commit/ba225ed41c5fb80617a8371d2d499c8a1a6d8d49))
+
+### Refactoring
+
+- **ci**: Update naming throughout CI/CD workflow
+  ([`d56f5af`](https://github.com/MountainGod2/chaturbate-events/commit/d56f5af20bb7c3d501d8f3120703aca9a2b3c695))
+
+
 ## v1.0.3 (2025-08-27)
 
 ### Bug Fixes
