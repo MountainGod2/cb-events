@@ -32,10 +32,6 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](/LICENSE) file for details.
-
 ## Disclaimer
 
 This project is not affiliated with, endorsed by, or sponsored by Chaturbate.
