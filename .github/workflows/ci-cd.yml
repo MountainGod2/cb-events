@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
@@ -10,8 +10,8 @@ on:
       - main
 
 jobs:
-  test:
-    name: Test
+  lint-and-test:
+    name: Lint and Test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,30 +21,30 @@ jobs:
         python-version: [3.11, 3.12, 3.13]
 
     steps:
-      - name: Checkout code
+      - name: Setup | Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
-      - name: Setup UV
-        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
+      - name: Setup | Install uv
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - name: Install dependencies
+      - name: Setup | Install Python & Project dependencies
         run: uv sync --all-groups
 
-      - name: Format and fix
+      - name: Lint | Format (ruff)
         run: |
           make format
           make fix
 
-      - name: Lint and type check
+      - name: Lint | Type check (mypy, pyright, ty)
         run: make lint
 
-      - name: Test with coverage
+      - name: Test | Run tests with coverage
         run: make test-cov
 
-      - name: Upload coverage to Codecov
+      - name: Upload | Coverage to Codecov
         uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5
         with:
           files: ./coverage.xml
@@ -53,54 +53,55 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Clean cache
+      - name: Clean | Minimize Cache
         run: uv cache prune --ci
 
   build:
-    name: Build
-    needs: test
+    name: Build Artifacts
+    needs: lint-and-test
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
-      dist_artifacts: dist
+      dist_artifacts_name: dist
+      dist_artifacts_dir: dist
       lock_file_artifact: uv.lock
 
     steps:
-      - name: Checkout code
+      - name: Setup | Checkout Repository at workflow sha
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Setup release branch
+      - name: Setup | Force correct release branch on workflow sha
         run: git checkout -B ${{ github.ref_name }}
 
-      - name: Setup UV
-        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
+      - name: Setup | Install uv
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
           enable-cache: true
 
-      - name: Install build dependencies
+      - name: Setup | Install Python & Project dependencies
         run: uv sync --group build --no-default-groups
 
-      - name: Build package
+      - name: Build | Build next version artifacts
         id: version
         env:
           GH_TOKEN: "none"
         run: uv run semantic-release -v version --no-commit --no-tag
 
-      - name: Upload package artifacts
+      - name: Upload | Distribution Artifacts
         if: ${{ steps.version.outputs.released == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.dist_artifacts }}
-          path: ${{ format('{0}/**', env.dist_artifacts) }}
+          name: ${{ env.dist_artifacts_name }}
+          path: ${{ format('{0}/**', env.dist_artifacts_dir) }}
           if-no-files-found: error
           retention-days: 2
 
-      - name: Upload lock file
+      - name: Upload | Lock File Artifact
         if: ${{ steps.version.outputs.released == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -109,90 +110,65 @@ jobs:
           if-no-files-found: error
           retention-days: 2
 
-      - name: Clean cache
+      - name: Clean | Minimize Cache
         run: uv cache prune --ci
 
     outputs:
-      released: ${{ steps.version.outputs.released }}
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
-      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
-      dist_artifacts: ${{ env.dist_artifacts }}
-      lock_file_artifact: ${{ env.lock_file_artifact }}
+      new-release-detected: ${{ steps.version.outputs.released }}
+      new-release-version: ${{ steps.version.outputs.version }}
+      new-release-tag: ${{ steps.version.outputs.tag }}
+      new-release-is-prerelease: ${{ steps.version.outputs.is_prerelease }}
+      distribution-artifacts: ${{ env.dist_artifacts_name }}
+      lock-file-artifact: ${{ env.lock_file_artifact }}
 
-  e2e:
-    name: E2E Tests
-    needs: test
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-
-      - name: Setup UV
-        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run E2E tests
-        run: uv run pytest -vv tests/e2e
-
-      - name: Clean cache
-        run: uv cache prune --ci
-
-  e2e-built:
-    name: E2E Tests (Built)
+  test-e2e:
+    name: End-to-End Tests
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true' }}
     steps:
-      - name: Checkout code
+      - name: Setup | Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
 
-      - name: Download artifacts
+      - name: Setup | Download Distribution Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        if: ${{ needs.build.outputs.new-release-detected == 'true' }}
         id: artifact-download
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
+          name: ${{ needs.build.outputs.distribution-artifacts }}
           path: ./dist
 
-      - name: Setup UV
-        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
+      - name: Setup | Install uv
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
           enable-cache: true
 
-      - name: Install dependencies
+      - name: Setup | Install Python & Project dependencies
         run: uv sync
 
-      - name: Install built package
+      - name: Setup | Install distribution artifact
+        if: ${{ steps.artifact-download.outcome == 'success' }}
         run: |
           uv pip uninstall chaturbate-events
           uv pip install dist/chaturbate_events-*.whl
 
-      - name: Run E2E tests on built package
+      - name: Test | Run pytest
         run: uv run pytest -vv tests/e2e
 
-      - name: Clean cache
+      - name: Clean | Minimize Cache
         run: uv cache prune --ci
 
   release:
-    name: Release
+    name: Release Package
     needs:
       - build
-      - e2e-built
-    if: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true' }}
+      - test-e2e
+    if: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.new-release-detected == 'true' }}
 
     concurrency:
-      group: release-${{ github.ref_name }}
+      group: ${{ github.workflow }}-release-${{ github.ref_name }}
       cancel-in-progress: false
 
     permissions:
@@ -201,39 +177,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Setup | Checkout Repository on Release Branch
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Reset to workflow SHA
+      - name: Setup | Force release branch to be at workflow sha
         run: git reset --hard ${{ github.sha }}
 
-      - name: Setup UV
-        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
+      - name: Setup | Install uv
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
           enable-cache: true
 
-      - name: Install build dependencies
+      - name: Setup | Install Python & Project dependencies
         run: uv sync --group build --no-default-groups
 
-      - name: Download artifacts
+      - name: Setup | Download Build Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         id: artifact-download
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
+          name: ${{ needs.build.outputs.distribution-artifacts }}
           path: dist
 
-      - name: Download lock file
+      - name: Setup | Download Lock File Artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: ${{ needs.build.outputs.lock_file_artifact }}
+          name: ${{ needs.build.outputs.lock-file-artifact }}
 
-      - name: Stage lock file
+      - name: Setup | Stage Lock File for Version Commit
         run: git add uv.lock
 
-      - name: Create release
+      - name: Release | Create Release
         id: release
         shell: bash
         env:
@@ -243,13 +219,13 @@ jobs:
           uv run semantic-release -v --strict version --skip-build
           uv run semantic-release publish
 
-      - name: Clean cache
+      - name: Clean | Minimize Cache
         run: uv cache prune --ci
 
     outputs:
       released: ${{ steps.release.outputs.released }}
-      version: ${{ steps.release.outputs.version }}
-      tag: ${{ steps.release.outputs.tag }}
+      new-release-version: ${{ steps.release.outputs.version }}
+      new-release-tag: ${{ steps.release.outputs.tag }}
 
   deploy:
     name: Deploy to PyPI
@@ -266,14 +242,14 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download artifacts
+      - name: Setup | Download Build Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         id: artifact-download
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
-          path: .
+          name: ${{ needs.build.outputs.distribution-artifacts }}
+          path: dist
 
-      - name: Publish to PyPI
+      - name: Deploy | Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1
         with:
           packages-dir: dist
