@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.1.4 (2025-09-04)
+
+### Bug Fixes
+
+- **lint**: Add new ignore patterns for examples and tests
+  ([`0efaa4f`](https://github.com/MountainGod2/chaturbate-events/commit/0efaa4fd5db80e758d0f626a725827cf685ed188))
+
+### Chores
+
+- **deps**: Update dependency chaturbate-events to v1.1.3
+  ([`d093519`](https://github.com/MountainGod2/chaturbate-events/commit/d093519834eab7afc8c4821eb616119bb81eaee5))
+
+### Refactoring
+
+- **ci**: Improve job naming conventions
+  ([`124fd8d`](https://github.com/MountainGod2/chaturbate-events/commit/124fd8d5d36a4f4b08474d8b8132138120cb3461))
+
+- **ci**: Update uv cache references in workflow
+  ([`14e1935`](https://github.com/MountainGod2/chaturbate-events/commit/14e19352fb8fae9639aaafa3606f7553d3485157))
+
+- **docs**: Update docstrings across modules
+  ([`339299b`](https://github.com/MountainGod2/chaturbate-events/commit/339299bc6fd2edb9c814f139f5ee5195842e6b0e))
+
+- **example**: Remove imports and use standard library tools instead
+  ([`7e28d36`](https://github.com/MountainGod2/chaturbate-events/commit/7e28d365afe254941cfadfe24c08200b5a543ef0))
+
+
 ## v1.1.3 (2025-09-04)
 
 ### Bug Fixes
