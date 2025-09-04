@@ -8,6 +8,11 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint-and-test:
@@ -29,11 +34,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
 
       - name: Setup | Install Python & Project dependencies
-        run: uv sync --all-groups
+        run: uv sync --all-groups --frozen
 
-      - name: Lint | Format (ruff)
+      - name: Lint | Format and fix (ruff)
         run: |
           make format
           make fix
@@ -81,10 +87,12 @@ jobs:
       - name: Setup | Install uv
         uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
+          python-version: "3.13"
           enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
 
       - name: Setup | Install Python & Project dependencies
-        run: uv sync --group build --no-default-groups
+        run: uv sync --group build --no-default-groups --frozen
 
       - name: Build | Build next version artifacts
         id: version
@@ -143,10 +151,12 @@ jobs:
       - name: Setup | Install uv
         uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
+          python-version: "3.13"
           enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
 
       - name: Setup | Install Python & Project dependencies
-        run: uv sync
+        run: uv sync --frozen
 
       - name: Setup | Install distribution artifact
         if: ${{ steps.artifact-download.outcome == 'success' }}
@@ -189,10 +199,12 @@ jobs:
       - name: Setup | Install uv
         uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6
         with:
+          python-version: "3.13"
           enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
 
       - name: Setup | Install Python & Project dependencies
-        run: uv sync --group build --no-default-groups
+        run: uv sync --group build --no-default-groups --frozen
 
       - name: Setup | Download Build Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
