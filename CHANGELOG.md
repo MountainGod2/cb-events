@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.1 (2025-09-04)
+
+### Bug Fixes
+
+- **ci**: Update artifact download path for PyPI publishing
+  ([`330c1ba`](https://github.com/MountainGod2/chaturbate-events/commit/330c1ba9af1f52d29c2cc16ab80b77ba8813dd4d))
+
+
 ## v1.1.0 (2025-09-04)
 
 ### Chores
