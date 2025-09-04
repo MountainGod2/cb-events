@@ -1,32 +1,15 @@
-# /// script
-# dependencies = [
-#   "chaturbate-events==1.1.3",
-#   "python-dotenv==1.1.1",
-#   "rich==14.1.0"
-# ]
-# ///
-
 import asyncio
 import contextlib
 import os
 
-from dotenv import load_dotenv  # pyright: ignore[reportMissingImports]
-from rich import print
-
 from chaturbate_events import Event, EventClient, EventRouter, EventType
-
-# Load environment variables from a .env file if present
-load_dotenv(dotenv_path=".env")
 
 
 async def main() -> None:
     """Connect to the Chaturbate Events API and process incoming events."""
     # Get credentials from environment variables
-    username = os.getenv("CB_USERNAME")
-    token = os.getenv("CB_TOKEN")
-    if not username or not token:
-        print("Please set the CB_USERNAME and CB_TOKEN environment variables.")
-        return
+    username = os.getenv("CB_USERNAME", "")
+    token = os.getenv("CB_TOKEN", "")
 
     # Create an event router for handling different event types
     router = EventRouter()
@@ -64,5 +47,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    # Run the main function, handling KeyboardInterrupt gracefully
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(main())
