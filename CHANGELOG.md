@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.2 (2025-09-04)
+
+### Bug Fixes
+
+- **ci**: Enhance CI/CD workflow structure and naming conventions
+  ([`177c65b`](https://github.com/MountainGod2/chaturbate-events/commit/177c65b35630b3ae377e9eb43dc969e56d8bb2e7))
+
+
 ## v1.1.1 (2025-09-04)
 
 ### Bug Fixes
