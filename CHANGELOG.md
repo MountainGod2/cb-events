@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.3 (2025-09-04)
+
+### Bug Fixes
+
+- **ci**: Ensure 'build' job is a dependency for 'deploy to PyPI'
+  ([`0aa98c5`](https://github.com/MountainGod2/chaturbate-events/commit/0aa98c5eba68bca31763c017f3ba6452a5db53e6))
+
+
 ## v1.1.2 (2025-09-04)
 
 ### Bug Fixes
