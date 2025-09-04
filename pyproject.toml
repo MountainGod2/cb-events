@@ -76,6 +76,7 @@ lint.per-file-ignores."examples/*" = [
     "S105",
     "T201",
     "TRY400",
+    "RUF029",
 ]
 lint.per-file-ignores."tests/*" = [
     "ANN001",
@@ -87,11 +88,15 @@ lint.per-file-ignores."tests/*" = [
     "S101",
     "S105",
     "S106",
+    "DOC201",
+    "DOC402",
 ]
 lint.pydocstyle.convention = "google"
 lint.select = ["ALL"]
 lint.unfixable = []
 target-version = "py311"
+lint.preview = true
+format.preview = true
 
 [tool.mypy]
 disallow_untyped_defs = true
