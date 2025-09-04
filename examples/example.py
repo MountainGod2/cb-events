@@ -20,7 +20,7 @@ load_dotenv(dotenv_path=".env")
 
 
 async def main() -> None:
-    """Connect to the Chaturbate Events API and handle incoming events."""
+    """Connect to the Chaturbate Events API and process incoming events."""
     # Get credentials from environment variables
     username = os.getenv("CB_USERNAME")
     token = os.getenv("CB_TOKEN")
@@ -34,7 +34,7 @@ async def main() -> None:
     # Define event handler for tip events
     @router.on(EventType.TIP)
     async def handle_tip(event: Event) -> None:
-        """Process tip events."""
+        """Handle tip events by displaying tip amount and user."""
         tip = event.tip
         user = event.user
         if tip and user:
@@ -44,7 +44,7 @@ async def main() -> None:
     @router.on(EventType.CHAT_MESSAGE)
     @router.on(EventType.PRIVATE_MESSAGE)
     async def handle_message(event: Event) -> None:
-        """Process chat messages."""
+        """Handle chat and private messages by displaying sender and content."""
         message = event.message
         user = event.user
         if message and user:
@@ -53,7 +53,7 @@ async def main() -> None:
     # Define a catch-all event handler for debugging
     @router.on_any()
     async def handle_any(event: Event) -> None:
-        """Log all events for debugging."""
+        """Log all events for debugging and monitoring purposes."""
         print(f"Event: {event.type}")
 
     # Connect and process events

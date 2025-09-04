@@ -32,7 +32,17 @@ class EventClient:
         timeout: int = DEFAULT_TIMEOUT,
         use_testbed: bool = False,
     ) -> None:
-        """Initialize the client with credentials and connection options."""
+        """Initialize the EventClient with credentials and connection settings.
+
+        Args:
+            username: Chaturbate username for authentication.
+            token: Authentication token with Events API scope.
+            timeout: Request timeout in seconds. Defaults to 10.
+            use_testbed: Whether to use the testbed API endpoint. Defaults to False.
+
+        Raises:
+            ValueError: If username or token is empty or contains only whitespace.
+        """
         if not username.strip():
             msg = "Username cannot be empty"
             raise ValueError(msg)
@@ -48,23 +58,46 @@ class EventClient:
         self._next_url: str | None = None
 
     def __repr__(self) -> str:
-        """Return a string representation with masked token."""
+        """Return string representation with masked authentication token.
+
+        Returns:
+            A string representation showing username and masked token for security.
+        """
         masked_token = self._mask_token(self.token)
         return f"EventClient(username='{self.username}', token='{masked_token}')"
 
     @staticmethod
     def _mask_token(token: str) -> str:
-        """Mask token showing only last 4 characters."""
+        """Mask authentication token showing only the last 4 characters.
+
+        Args:
+            token: The authentication token to mask.
+
+        Returns:
+            The masked token string with asterisks replacing all but the last
+            4 characters.
+        """
         if len(token) <= TOKEN_MASK_LENGTH:
             return "*" * len(token)
         return "*" * (len(token) - TOKEN_MASK_LENGTH) + token[-TOKEN_MASK_LENGTH:]
 
     def _mask_url(self, url: str) -> str:
-        """Mask token in URL for logging."""
+        """Mask authentication token in URL for secure logging.
+
+        Args:
+            url: The URL containing the authentication token.
+
+        Returns:
+            The URL with the authentication token masked for safe logging.
+        """
         return url.replace(self.token, self._mask_token(self.token))
 
     async def __aenter__(self) -> Self:
-        """Create HTTP session."""
+        """Initialize HTTP session for async context manager.
+
+        Returns:
+            The EventClient instance with an active HTTP session.
+        """
         if self.session is None or self.session.closed:
             timeout_cfg = aiohttp.ClientTimeout(total=self.timeout + 5)
             self.session = aiohttp.ClientSession(timeout=timeout_cfg)
@@ -76,11 +109,24 @@ class EventClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Clean up resources."""
+        """Clean up HTTP session and resources on context manager exit."""
         await self.close()
 
     async def poll(self) -> list[Event]:
-        """Perform a single poll and return parsed events."""
+        """Execute a single poll request and return parsed events.
+
+        Makes an HTTP request to the Events API and parses the response into
+        Event objects. Handles authentication errors, timeouts, and maintains
+        the polling state with nextUrl for subsequent requests.
+
+        Returns:
+            A list of Event objects parsed from the API response. May be empty
+            if no events are available or on timeout.
+
+        Raises:
+            AuthError: If authentication fails (401/403 status).
+            EventsError: For network errors, timeouts, or invalid JSON responses.
+        """
         if self.session is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
@@ -132,8 +178,17 @@ class EventClient:
             msg = f"Invalid JSON response: {err}"
             raise EventsError(msg) from err
 
-    def _extract_next_url(self, text: str) -> str | None:
-        """Extract nextUrl from timeout error response."""
+    @staticmethod
+    def _extract_next_url(text: str) -> str | None:
+        """Extract nextUrl from timeout error response.
+
+        Args:
+            text: The response text containing potential error data with nextUrl.
+
+        Returns:
+            The extracted nextUrl string if present in a timeout error response,
+            otherwise None.
+        """
         try:
             error_data = json.loads(text)
             if "waited too long" in error_data.get("status", "").lower():
@@ -144,18 +199,34 @@ class EventClient:
         return None
 
     async def poll_continuously(self) -> AsyncIterator[Event]:
-        """Continuously yield events from the API."""
+        """Continuously poll the API and yield events as they arrive.
+
+        Creates an infinite loop that polls the Events API and yields individual
+        events. This method maintains the polling state and handles the nextUrl
+        mechanism automatically.
+
+        Yields:
+            Event objects as they are received from the API.
+        """
         while True:
             events = await self.poll()
             for event in events:
                 yield event
 
     def __aiter__(self) -> AsyncIterator[Event]:
-        """Allow async iteration over the client."""
+        """Enable async iteration over the client for continuous event streaming.
+
+        Returns:
+            An async iterator that yields Event objects continuously from the API.
+        """
         return self.poll_continuously()
 
     async def close(self) -> None:
-        """Close the HTTP session."""
+        """Close the HTTP session and reset polling state.
+
+        Closes the aiohttp ClientSession and resets the nextUrl state.
+        Safe to call multiple times.
+        """
         if self.session:
             await self.session.close()
             self.session = None

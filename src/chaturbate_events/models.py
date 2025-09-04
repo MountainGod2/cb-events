@@ -15,10 +15,10 @@ from pydantic.config import ConfigDict
 
 
 class EventType(StrEnum):
-    """Event types supported by the Chaturbate Events API.
+    """Supported event types from the Chaturbate Events API.
 
-    These constants represent all the possible event types that can be
-    received from the Events API. Use these for type checking and routing.
+    Defines constants for all event types that can be received from the API.
+    Use these constants for type checking and event handler registration.
     """
 
     # Broadcast state events
@@ -41,7 +41,11 @@ class EventType(StrEnum):
 
 
 class User(BaseModel):
-    """User information from events."""
+    """User information from Chaturbate events.
+
+    Represents user data associated with various event types including
+    authentication status, permissions, and display preferences.
+    """
 
     username: str
     color_group: str = Field(default="", alias="colorGroup")
@@ -70,7 +74,11 @@ class User(BaseModel):
 
 
 class Message(BaseModel):
-    """Chat message content from message events."""
+    """Chat message content and metadata from message events.
+
+    Contains the message text along with formatting and routing information
+    for both public chat messages and private messages.
+    """
 
     message: str
     bg_color: str | None = Field(default=None, alias="bgColor")
@@ -90,7 +98,11 @@ class Message(BaseModel):
 
 
 class Tip(BaseModel):
-    """Tip information from tip events."""
+    """Tip transaction details from tip events.
+
+    Contains the token amount and metadata for tip transactions including
+    anonymous tip status and optional tip messages.
+    """
 
     tokens: int
     is_anon: bool = Field(default=False, alias="isAnon")
@@ -105,7 +117,11 @@ class Tip(BaseModel):
 
 
 class RoomSubject(BaseModel):
-    """Room subject information from subject change events."""
+    """Room subject information from subject change events.
+
+    Contains the updated room subject/title when a broadcaster
+    changes their room description.
+    """
 
     subject: str
 
@@ -118,7 +134,11 @@ class RoomSubject(BaseModel):
 
 
 class Event(BaseModel):
-    """Event from the Chaturbate Events API."""
+    """Event from the Chaturbate Events API.
+
+    Represents a single event with typed access to associated data through
+    properties. Event data is dynamically parsed based on the event type.
+    """
 
     type: EventType = Field(alias="method")
     id: str
@@ -133,21 +153,34 @@ class Event(BaseModel):
 
     @property
     def user(self) -> User | None:
-        """The user associated with this event."""
+        """Get user information associated with this event.
+
+        Returns:
+            User object if user data is present in the event, otherwise None.
+        """
         if user_data := self.data.get("user"):
             return User.model_validate(user_data)
         return None
 
     @property
     def tip(self) -> Tip | None:
-        """Tip information if this is a tip event."""
+        """Get tip information for tip events.
+
+        Returns:
+            Tip object if this is a tip event with tip data, otherwise None.
+        """
         if self.type == EventType.TIP and (tip_data := self.data.get("tip")):
             return Tip.model_validate(tip_data)
         return None
 
     @property
     def message(self) -> Message | None:
-        """Message information if this is a message event."""
+        """Get message information for chat and private message events.
+
+        Returns:
+            Message object if this is a message event with message data,
+            otherwise None.
+        """
         if self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE} and (
             message_data := self.data.get("message")
         ):
@@ -156,12 +189,21 @@ class Event(BaseModel):
 
     @property
     def room_subject(self) -> RoomSubject | None:
-        """Room subject information if this is a room subject change event."""
+        """Get room subject information for room subject change events.
+
+        Returns:
+            RoomSubject object if this is a room subject change event,
+            otherwise None.
+        """
         if self.type == EventType.ROOM_SUBJECT_CHANGE and "subject" in self.data:
             return RoomSubject.model_validate({"subject": self.data["subject"]})
         return None
 
     @property
     def broadcaster(self) -> str | None:
-        """The broadcaster associated with this event."""
+        """Get the broadcaster username associated with this event.
+
+        Returns:
+            The broadcaster username if present in the event data, otherwise None.
+        """
         return self.data.get("broadcaster")

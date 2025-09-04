@@ -7,7 +7,12 @@ from .models import Event, EventType
 
 
 class EventRouter:
-    """Routes events to registered async handlers based on event type."""
+    """Routes events to registered handlers based on event type.
+
+    Provides decorator-based registration of async event handlers for specific
+    event types or all events. Handlers are called in registration order when
+    events are dispatched.
+    """
 
     def __init__(self) -> None:
         """Initialize the event router with handler registries."""
@@ -24,7 +29,15 @@ class EventRouter:
         [Callable[[Event], Coroutine[object, object, None]]],
         Callable[[Event], Coroutine[object, object, None]],
     ]:
-        """Decorator to register a handler for a specific event type."""
+        """Register a handler for a specific event type.
+
+        Args:
+            event_type: The event type to handle, either an EventType enum or string.
+
+        Returns:
+            A decorator function that registers the handler for the specified
+            event type.
+        """
         type_key = (
             event_type.value if isinstance(event_type, EventType) else str(event_type)
         )
@@ -43,7 +56,11 @@ class EventRouter:
         [Callable[[Event], Coroutine[object, object, None]]],
         Callable[[Event], Coroutine[object, object, None]],
     ]:
-        """Decorator to register a handler for all events."""
+        """Register a handler for all event types.
+
+        Returns:
+            A decorator function that registers the handler for all event types.
+        """
 
         def decorator(
             func: Callable[[Event], Coroutine[object, object, None]],
@@ -54,7 +71,11 @@ class EventRouter:
         return decorator
 
     async def dispatch(self, event: Event) -> None:
-        """Invoke all matching handlers for the given event."""
+        """Dispatch an event to all matching registered handlers.
+
+        Args:
+            event: The event to dispatch to registered handlers.
+        """
         for handler in self._global_handlers:
             await handler(event)
         for handler in self._handlers.get(event.type.value, []):
