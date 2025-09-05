@@ -99,8 +99,9 @@ class EventClient:
             The EventClient instance with an active HTTP session.
         """
         if self.session is None or self.session.closed:
-            timeout_cfg = aiohttp.ClientTimeout(total=self.timeout + 5)
-            self.session = aiohttp.ClientSession(timeout=timeout_cfg)
+            self.session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self.timeout + 5)
+            )
         return self
 
     async def __aexit__(
