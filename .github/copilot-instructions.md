@@ -3,48 +3,29 @@
 # Chaturbate Events – Copilot Instructions
 
 ## Overview
-Async Python wrapper for the Chaturbate Events API, delivering real-time event notifications.
+Async Python wrapper for Chaturbate Events API. Real-time event notifications.
 
-> **Note:** This project is under active development. Breaking changes may occur at any time.
+> **Note:** Active development. Breaking changes possible.
 
-## Principles
-- Async-first (`asyncio`)
-- Strong type hints
-- Custom exceptions
-- Context manager for resources
-- Token masking (show only last 4 chars)
-- Exponential backoff (configurable)
+## Core Principles
+- Async-first, strong typing, custom exceptions
+- Context managers, token masking (last 4 chars only)
+- Environment variables for credentials (`CB_USERNAME`, `CB_TOKEN`)
 
 ## Features
-- Real-time events: messages, tips, user actions, broadcast states, fan club joins, media purchases
-- Token-based authentication (Events API scope)
-- Longpoll JSON event feed (`nextUrl` pattern)
-- Rate limit: 2000 requests/min
+- Events: messages, tips, user actions, broadcasts, fanclub, media
+- Token auth, longpoll JSON feed, 2000 req/min limit
+- EventRouter with decorator-based handlers (@router.on, @router.on_any)
+- Testbed support via `use_testbed=True`
 
-## Workflow
+## Commands
 ```bash
-uv sync --dev           # Install dependencies
-uv run ruff format      # Format code
-uv run ruff check --fix # Lint and fix
-make lint               # mypy, pylint, pyright, ty
-make test               # Run tests
-make test-cov           # Test with coverage
-```
-
-## Structure
-```
-src/chaturbate_events/
-  __init__.py        # Exports
-  client.py          # EventClient
-  exceptions.py      # Custom exceptions
-  models.py          # Pydantic models
-  py.typed           # Typing marker
-  router.py          # EventRouter
-
-tests/
-  __init__.py
-  conftest.py        # Fixtures
-  test_chaturbate_events.py
+uv sync --dev           # Dependencies
+uv run ruff format      # Format
+uv run ruff check --fix # Lint+fix
+make lint               # Type check
+make test               # Tests
+make test-cov           # With coverage
 ```
 
 ## Event Types
@@ -57,36 +38,13 @@ tests/
 - `mediaPurchase`
 - `roomSubjectChange`
 
-## API Response Example
-See `examples/event_response_example.json` for a full event response structure.
-
-> Note: In `event_response_example.json`, the asterisks (`***********`) in the `nextUrl` field represent a redacted API key/token. In real API responses, this will be a unique token string.
-
 ## Guidelines
-
-### Code Style
-- Follow Google Python Style Guide
-- Use `uv` for dependencies
-- Type hints and docstrings required
-- Use custom exceptions
-
-### Testing
-- Use pytest fixtures
-- Mock API responses
-- Test both success and error cases
-- Parametrize for event types
-
-### Extension
+- Google Python Style Guide, use `uv`, type hints required
+- Use pytest fixtures, mock API responses, parametrize tests
 - Update `__init__.__all__` for public API changes
-- Use `EventsError` for exceptions
-- Update tests/examples for new behavior
+- Use `EventsError` for custom exceptions  
+- Never log full tokens, avoid blocking calls
+- Tests pass (`make lint`), high coverage required
+- Requires Python >=3.11, core deps: aiohttp, pydantic
 
-### Security
-- Never log full tokens
-- Avoid blocking calls in polling
-
-## Pre-commit Checklist
-- [ ] Tests for new features
-- [ ] Lint passes (`make lint`)
-- [ ] Public API documented
-- [ ] High test coverage
+*API response structure: see `examples/event_response_example.json`*
