@@ -144,7 +144,11 @@ class EventClient:
                 text = await resp.text()
 
                 if resp.status in {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}:
-                    logger.warning("Authentication failed for user %s", self.username)
+                    logger.warning(
+                        "Authentication failed for user %s",
+                        self.username,
+                        extra={"status_code": resp.status},
+                    )
                     msg = f"Authentication failed for {self.username}"
                     raise AuthError(msg)
 
@@ -158,9 +162,29 @@ class EventClient:
                 if resp.status != HTTPStatus.OK:
                     logger.error("HTTP error %d: %s", resp.status, text[:200])
                     msg = f"HTTP {resp.status}: {text[:200]}"
-                    raise EventsError(msg)
+                    raise EventsError(
+                        msg,
+                        status_code=resp.status,
+                        response_text=text,
+                    )
 
-                data = await resp.json()
+                try:
+                    data = await resp.json()
+                except json.JSONDecodeError as json_err:
+                    logger.exception(
+                        "Invalid JSON response received",
+                        extra={
+                            "status_code": resp.status,
+                            "response_preview": text[:100],
+                        },
+                    )
+                    msg = f"Invalid JSON response: {json_err}"
+                    raise EventsError(
+                        msg,
+                        status_code=resp.status,
+                        response_text=text,
+                    ) from json_err
+
                 self._next_url = data["nextUrl"]
                 events = [Event.model_validate(item) for item in data.get("events", [])]
                 logger.debug("Received %d events", len(events))
@@ -171,12 +195,10 @@ class EventClient:
             msg = f"Request timeout after {self.timeout}s"
             raise EventsError(msg) from err
         except aiohttp.ClientError as err:
-            logger.exception("Network error occurred")
+            logger.exception(
+                "Network error occurred", extra={"error_type": type(err).__name__}
+            )
             msg = f"Network error: {err}"
-            raise EventsError(msg) from err
-        except json.JSONDecodeError as err:
-            logger.exception("Invalid JSON response received")
-            msg = f"Invalid JSON response: {err}"
             raise EventsError(msg) from err
 
     @staticmethod
