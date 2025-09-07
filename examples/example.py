@@ -11,6 +11,11 @@ async def main() -> None:
     username = os.getenv("CB_USERNAME", "")
     token = os.getenv("CB_TOKEN", "")
 
+    # Validate credentials
+    if not username or not token:
+        print("Missing Chaturbate credentials")
+        return
+
     # Create an event router for handling different event types
     router = EventRouter()
 
