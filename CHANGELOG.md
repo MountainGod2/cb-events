@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v1.2.0 (2025-09-07)
+
+### Bug Fixes
+
+- **example**: Add credential validation in main function
+  ([`a387849`](https://github.com/MountainGod2/chaturbate-events/commit/a38784920d232d5a948206b504695f710b3b1a60))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`6b66eeb`](https://github.com/MountainGod2/chaturbate-events/commit/6b66eeb57763ddb9127a7f4776b1bde6b27b3f2f))
+
+- **deps**: Update codecov/codecov-action digest to 5a10915
+  ([#9](https://github.com/MountainGod2/chaturbate-events/pull/9),
+  [`c03cfda`](https://github.com/MountainGod2/chaturbate-events/commit/c03cfdacce18e8a072ef2aa57299349da7d15295))
+
+- **deps**: Update setup-uv action version
+  ([`7606372`](https://github.com/MountainGod2/chaturbate-events/commit/760637203649cbd68fb5b6be2794b691c4dc628e))
+
+- **docs**: Refactor README.md layout
+  ([`9d022c3`](https://github.com/MountainGod2/chaturbate-events/commit/9d022c31026f8fd83efc9b3f04c321fbe0d0a16d))
+
+- **workflows**: Remove legacy CI and CD workflow files
+  ([`c65dc18`](https://github.com/MountainGod2/chaturbate-events/commit/c65dc18c800e4cadd1815ac76c68a9fe9e520a9c))
+
+### Documentation
+
+- Consolidate and update Copilot instructions
+  ([`d585411`](https://github.com/MountainGod2/chaturbate-events/commit/d58541153c680794955c62f52fd0567d15e27b0a))
+
+### Features
+
+- **client**: Enhance error logging and handling for authentication and JSON response
+  ([`4725aab`](https://github.com/MountainGod2/chaturbate-events/commit/4725aab592d7bbedd24b8094c511258cd0390ff0))
+
+### Refactoring
+
+- **client**: Improve session initialization for EventClient
+  ([`3859630`](https://github.com/MountainGod2/chaturbate-events/commit/38596302110385ff40e55b3b349d740cba4d3cb1))
+
+- **exceptions**: Enhance EventsError class with detailed attributes and representation
+  ([`59001ac`](https://github.com/MountainGod2/chaturbate-events/commit/59001acb1c94f02673c40acca56f268229a56ce2))
+
+- **renovate**: Update description to include digest updates for automerge
+  ([`ec19380`](https://github.com/MountainGod2/chaturbate-events/commit/ec193802e384f32602bf6783867214c7a42e9d77))
+
+- **router**: Simplify event handler type definitions
+  ([`ec5f4ba`](https://github.com/MountainGod2/chaturbate-events/commit/ec5f4baf77038d6683cfa7a3c4cfd0c85ff7b457))
+
+### Testing
+
+- **e2e**: Update end-to-end tests for EventClient functionality and validation
+  ([`c3f009f`](https://github.com/MountainGod2/chaturbate-events/commit/c3f009fc8e5779c4767e5ddd1a41658e7cf2d061))
+
+
 ## v1.1.4 (2025-09-04)
 
 ### Bug Fixes
