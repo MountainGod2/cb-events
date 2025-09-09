@@ -54,5 +54,5 @@ def test_router_registration() -> None:
     async def any_handler(event: chaturbate_events.Event) -> None:
         pass
 
-    assert "tip" in router._handlers  # noqa: SLF001
-    assert len(router._global_handlers) == 1  # noqa: SLF001
+    assert "tip" in router._handlers
+    assert len(router._global_handlers) == 1
