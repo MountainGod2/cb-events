@@ -29,7 +29,7 @@ async def main() -> None:
     # Define event handler for chat and private messages
     @router.on(EventType.CHAT_MESSAGE)
     @router.on(EventType.PRIVATE_MESSAGE)
-    async def handle_message(event):
+    async def handle_message(event: Event) -> None:
         message = event.message
         user = event.user
         if message and user:
@@ -37,7 +37,7 @@ async def main() -> None:
 
     # Define a catch-all event handler for debugging
     @router.on_any()
-    async def handle_any(event):
+    async def handle_any(event: Event) -> None:
         print(f"Event: {event.type}")
 
     # Connect and process events
@@ -48,6 +48,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    # Run the main function, handling KeyboardInterrupt gracefully
+    # Run the main function
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(main())
