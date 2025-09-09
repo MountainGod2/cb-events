@@ -284,12 +284,12 @@ async def test_client_error_handling(
     if "exception" in mock_response:
         mock_aioresponse.get(url_pattern, exception=mock_response["exception"])
     else:
-        mock_kwargs = {"url": url_pattern, "status": mock_response.get("status", 200)}
+        mock_kwargs = {"status": mock_response.get("status", 200)}
         if "payload" in mock_response:
             mock_kwargs["payload"] = mock_response["payload"]
         if "body" in mock_response:
             mock_kwargs["body"] = mock_response["body"]
-        mock_aioresponse.get(**mock_kwargs)
+        mock_aioresponse.get(url_pattern, **mock_kwargs)
 
     async with EventClient(
         username=str(credentials["username"]),
