@@ -64,33 +64,8 @@ version_toml = ["pyproject.toml:project.version"]
 [tool.ruff]
 indent-width = 4
 lint.ignore = ["ASYNC109", "COM812", "CPY001", "FBT001", "FBT002", "PLR0913"]
-lint.per-file-ignores."examples/*" = [
-    "A004",
-    "ANN001",
-    "ANN201",
-    "ANN202",
-    "D100",
-    "D103",
-    "D104",
-    "PLR2004",
-    "S105",
-    "T201",
-    "TRY400",
-    "RUF029",
-]
-lint.per-file-ignores."tests/*" = [
-    "ANN001",
-    "ANN201",
-    "ANN202",
-    "FBT001",
-    "PLR0913",
-    "PLR2004",
-    "S101",
-    "S105",
-    "S106",
-    "DOC201",
-    "DOC402",
-]
+lint.per-file-ignores."examples/*" = ["ANN001", "ANN202", "D100", "D103", "D104", "T201", "RUF029"]
+lint.per-file-ignores."tests/*" = ["S101"]
 lint.pydocstyle.convention = "google"
 lint.select = ["ALL"]
 lint.unfixable = []
@@ -125,6 +100,10 @@ strict_optional = false
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[[tool.pyright.overrides]]
+include = ["examples/**"]
+reportUnusedFunction = "none"
 
 [tool.coverage]
 omit = ["**/__init__.py", "examples/*", "tests/*"]
