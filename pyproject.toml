@@ -64,7 +64,7 @@ version_toml = ["pyproject.toml:project.version"]
 
 [tool.ruff]
 indent-width = 4
-lint.ignore = ["ASYNC109", "COM812", "CPY001", "FBT001", "FBT002", "PLR0913"]
+lint.ignore = ["COM812", "CPY001"]
 lint.per-file-ignores."examples/*" = ["ANN001", "ANN202", "D100", "D103", "D104", "T201", "RUF029"]
 lint.per-file-ignores."tests/*" = ["S101", "S106", "SLF001", "PLR2004", "ANN401"]
 lint.pydocstyle.convention = "google"
@@ -85,10 +85,6 @@ disallow_untyped_calls = false
 disallow_untyped_defs = false
 ignore_missing_imports = true
 module = "examples.*"
-
-[[tool.mypy.overrides]]
-module = "examples.example"
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 disallow_untyped_calls = false
