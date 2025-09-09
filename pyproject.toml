@@ -14,6 +14,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 build = ["python-semantic-release==10.3.1"]
 dev = [
+    "aioresponses==0.7.7",
     "mypy==1.17.1",
     "pre-commit==4.3.0",
     "pylint==3.3.8",

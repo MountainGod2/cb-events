@@ -84,6 +84,19 @@ wheels = [
 ]
 
 [[package]]
+name = "aioresponses"
+version = "0.7.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/27/eb/a69466280306dc9976687cda06d2c9195ff72533192184627f5e7b1d3f1e/aioresponses-0.7.7.tar.gz", hash = "sha256:66292f1d5c94a3cb984f3336d806446042adb17347d3089f2d3962dd6e5ba55a", size = 39087, upload-time = "2024-11-15T17:13:21.988Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/92/23/04a00b3714803e5a58f893eec230b58956e1e8289d3e223d9e294dac3cda/aioresponses-0.7.7-py2.py3-none-any.whl", hash = "sha256:6975f31fe5e7f2113a41bd387221f31854f285ecbc05527272cd8ba4c50764a3", size = 12152, upload-time = "2024-11-15T17:13:20.085Z" },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -208,6 +221,7 @@ build = [
     { name = "python-semantic-release" },
 ]
 dev = [
+    { name = "aioresponses" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pylint" },
@@ -231,6 +245,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 build = [{ name = "python-semantic-release", specifier = "==10.3.1" }]
 dev = [
+    { name = "aioresponses", specifier = "==0.7.7" },
     { name = "mypy", specifier = "==1.17.1" },
     { name = "pre-commit", specifier = "==4.3.0" },
     { name = "pylint", specifier = "==3.3.8" },
