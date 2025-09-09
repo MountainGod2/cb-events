@@ -2,6 +2,56 @@
 
 <!-- version list -->
 
+## v1.3.1 (2025-09-09)
+
+### Bug Fixes
+
+- **client**: Correct syntax for aiohttp.ClientSession and logging error message
+  ([`62b92d7`](https://github.com/MountainGod2/chaturbate-events/commit/62b92d75cb4de11c9d85c13705a8520929dbb6fb))
+
+- **example**: Add type hints to event handler functions
+  ([`0429c45`](https://github.com/MountainGod2/chaturbate-events/commit/0429c451b94747f4bb331092a9651264c2a5d868))
+
+### Documentation
+
+- **README**: Add license section to README.md
+  ([`849421c`](https://github.com/MountainGod2/chaturbate-events/commit/849421c3cecac3bdd4112706790cd37b4c43f3df))
+
+### Refactoring
+
+- **dependencies**: Add aioresponses to development dependencies
+  ([`de28201`](https://github.com/MountainGod2/chaturbate-events/commit/de28201cd0a0b43186073de0188accb52658fcde))
+
+- **lint**: Expand per-file ignores for test files
+  ([`16cca90`](https://github.com/MountainGod2/chaturbate-events/commit/16cca9074daf0416719648f87e95caf8e83ddb90))
+
+- **pyproject**: Clean up lint ignore rules and remove unnecessary mypy override
+  ([`ba15efb`](https://github.com/MountainGod2/chaturbate-events/commit/ba15efb85d98eef31a2bd5cb0fb56902d808ecc9))
+
+- **tests**: Add tests for additional scenarios
+  ([`b11ff73`](https://github.com/MountainGod2/chaturbate-events/commit/b11ff735d3b4dabc2ac7be429938ce05fc1db1c4))
+
+- **tests**: Correct URL pattern usage in client error handling test
+  ([`c1ba9f2`](https://github.com/MountainGod2/chaturbate-events/commit/c1ba9f2e2b4b8e691443ed2f4e11745232866061))
+
+- **tests**: Improve readability by formatting function parameters and return values
+  ([`5e44f83`](https://github.com/MountainGod2/chaturbate-events/commit/5e44f83ec33f2c554079f9f3f9a14a5b133365ff))
+
+- **tests**: Remove noqa comments from assertions in test_router_registration
+  ([`4e1f4b3`](https://github.com/MountainGod2/chaturbate-events/commit/4e1f4b35613930fc221133645ffbc8303c4a1bb8))
+
+### Testing
+
+- Consolidate and refactor tests to use aioresponses
+  ([`16cd577`](https://github.com/MountainGod2/chaturbate-events/commit/16cd5778245d1ee19ee98f51ad9082498054cc5f))
+
+- Reformat parameterized test cases for improved readability
+  ([`5c89365`](https://github.com/MountainGod2/chaturbate-events/commit/5c89365b12f4a9d4bf7295166662f113900adb74))
+
+- **conftest**: Update mock_http_get to use aioresponses for HTTP interactions
+  ([`f679c76`](https://github.com/MountainGod2/chaturbate-events/commit/f679c76d06b4978c05baddd9fb6417fec290738e))
+
+
 ## v1.3.0 (2025-09-09)
 
 ### Features
