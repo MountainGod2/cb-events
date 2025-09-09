@@ -236,32 +236,24 @@ def test_client_token_masking() -> None:
     ("mock_response", "expected_error", "error_match"),
     [
         # HTTP error statuses
-        (
-            {"status": 400, "payload": {"error": "Bad request"}},
-            EventsError,
-            "HTTP 400"
-        ),
-        (
-            {"status": 500, "body": "Internal Server Error"},
-            EventsError,
-            "HTTP 500"
-        ),
+        ({"status": 400, "payload": {"error": "Bad request"}}, EventsError, "HTTP 400"),
+        ({"status": 500, "body": "Internal Server Error"}, EventsError, "HTTP 500"),
         # JSON decode error
         (
             {"status": 200, "body": "Invalid JSON content"},
             EventsError,
-            "Invalid JSON response"
+            "Invalid JSON response",
         ),
         # Network errors
         (
             {"exception": TimeoutError("Connection timeout")},
             EventsError,
-            "Request timeout"
+            "Request timeout",
         ),
         (
             {"exception": aiohttp.ClientConnectionError("Connection failed")},
             EventsError,
-            "Network error"
+            "Network error",
         ),
         # Timeout with nextUrl (returns empty list instead of error)
         (
@@ -269,11 +261,11 @@ def test_client_token_masking() -> None:
                 "status": 400,
                 "payload": {
                     "status": "waited too long",
-                    "nextUrl": "https://example.com/next"
-                }
+                    "nextUrl": "https://example.com/next",
+                },
             },
             None,
-            None
+            None,
         ),
     ],
 )
@@ -399,16 +391,12 @@ def test_extract_next_url_edge_cases() -> None:
 @pytest.mark.parametrize(
     ("setup_func", "event_type", "expected_calls"),
     [
-        (
-            "setup_multiple_handlers",
-            EventType.TIP,
-            {"handler1": 1, "handler2": 1}
-        ),
+        ("setup_multiple_handlers", EventType.TIP, {"handler1": 1, "handler2": 1}),
         ("setup_no_handlers", EventType.TIP, {}),
         (
             "setup_global_and_specific",
             EventType.TIP,
-            {"global_handler": 1, "tip_handler": 1, "follow_handler": 0}
+            {"global_handler": 1, "tip_handler": 1, "follow_handler": 0},
         ),
     ],
 )
@@ -504,7 +492,7 @@ def test_router_string_event_types() -> None:
                 ("in_fanclub", True),
                 ("is_mod", True),
                 ("is_spying", True),
-            ]
+            ],
         ),
         # Message model - public message
         (
@@ -520,7 +508,7 @@ def test_router_string_event_types() -> None:
                 ("bg_color", "#FF0000"),
                 ("from_user", None),
                 ("to_user", None),
-            ]
+            ],
         ),
         # Message model - private message
         (
@@ -536,7 +524,7 @@ def test_router_string_event_types() -> None:
                 ("from_user", "sender"),
                 ("to_user", "receiver"),
                 ("orig", "original text"),
-            ]
+            ],
         ),
         # Tip model - anonymous tip
         (
@@ -550,7 +538,7 @@ def test_router_string_event_types() -> None:
                 ("tokens", 100),
                 ("is_anon", True),
                 ("message", "Anonymous tip message"),
-            ]
+            ],
         ),
         # Tip model - regular tip
         (
@@ -562,7 +550,7 @@ def test_router_string_event_types() -> None:
             [
                 ("tokens", 50),
                 ("is_anon", False),
-            ]
+            ],
         ),
     ],
 )
@@ -624,7 +612,7 @@ def test_event_properties_edge_cases() -> None:
                 ("message", "Basic error message"),
                 ("status_code", None),
                 ("response_text", None),
-            ]
+            ],
         ),
         # EventsError with all parameters
         (
@@ -641,7 +629,7 @@ def test_event_properties_edge_cases() -> None:
                 ("status_code", 500),
                 ("response_text", "Server error response"),
                 ("extra_info", {"request_id": "12345", "timeout": 30.0}),
-            ]
+            ],
         ),
         # AuthError inheritance test
         (
@@ -653,7 +641,7 @@ def test_event_properties_edge_cases() -> None:
                 ("status_code", 401),
                 ("response_text", "Unauthorized"),
                 ("isinstance_EventsError", True),
-            ]
+            ],
         ),
     ],
 )
