@@ -85,15 +85,15 @@ wheels = [
 
 [[package]]
 name = "aioresponses"
-version = "0.7.7"
+version = "0.7.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/27/eb/a69466280306dc9976687cda06d2c9195ff72533192184627f5e7b1d3f1e/aioresponses-0.7.7.tar.gz", hash = "sha256:66292f1d5c94a3cb984f3336d806446042adb17347d3089f2d3962dd6e5ba55a", size = 39087, upload-time = "2024-11-15T17:13:21.988Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/03/532bbc645bdebcf3b6af3b25d46655259d66ce69abba7720b71ebfabbade/aioresponses-0.7.8.tar.gz", hash = "sha256:b861cdfe5dc58f3b8afac7b0a6973d5d7b2cb608dd0f6253d16b8ee8eaf6df11", size = 40253, upload-time = "2025-01-19T18:14:03.222Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/92/23/04a00b3714803e5a58f893eec230b58956e1e8289d3e223d9e294dac3cda/aioresponses-0.7.7-py2.py3-none-any.whl", hash = "sha256:6975f31fe5e7f2113a41bd387221f31854f285ecbc05527272cd8ba4c50764a3", size = 12152, upload-time = "2024-11-15T17:13:20.085Z" },
+    { url = "https://files.pythonhosted.org/packages/12/b7/584157e43c98aa89810bc2f7099e7e01c728ecf905a66cf705106009228f/aioresponses-0.7.8-py2.py3-none-any.whl", hash = "sha256:b73bd4400d978855e55004b23a3a84cb0f018183bcf066a85ad392800b5b9a94", size = 12518, upload-time = "2025-01-19T18:13:59.633Z" },
 ]
 
 [[package]]
@@ -245,7 +245,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 build = [{ name = "python-semantic-release", specifier = "==10.3.1" }]
 dev = [
-    { name = "aioresponses", specifier = "==0.7.7" },
+    { name = "aioresponses", specifier = "==0.7.8" },
     { name = "mypy", specifier = "==1.17.1" },
     { name = "pre-commit", specifier = "==4.3.0" },
     { name = "pylint", specifier = "==3.3.8" },
