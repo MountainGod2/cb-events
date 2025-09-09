@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.3.0 (2025-09-09)
+
+### Features
+
+- **vscode**: Add extensions.json for recommended VS Code extensions
+  ([`80ae65c`](https://github.com/MountainGod2/chaturbate-events/commit/80ae65c166bf06cc7de40d89c35cc5bc4bbb84b5))
+
+### Refactoring
+
+- **example**: Simplify example file
+  ([`124472b`](https://github.com/MountainGod2/chaturbate-events/commit/124472b14e0bf030d4124446aa08886804b344f7))
+
+- **lint**: Streamline per-file ignores for examples and tests, add Pyright overrides
+  ([`3f45237`](https://github.com/MountainGod2/chaturbate-events/commit/3f452370151ca747e593061fba113851b14e4f39))
+
+- **tests**: Enhance type hints and docstrings in test fixtures and functions
+  ([`e8fe2f2`](https://github.com/MountainGod2/chaturbate-events/commit/e8fe2f20f29b3e2e7db0f8f01be529381534d619))
+
+
 ## v1.2.0 (2025-09-07)
 
 ### Bug Fixes
