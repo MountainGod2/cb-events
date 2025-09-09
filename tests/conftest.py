@@ -119,5 +119,5 @@ def create_url_pattern(username: str, token: str) -> re.Pattern[str]:
         re.Pattern[str]: Compiled regex pattern for matching URLs.
     """
     return re.compile(
-        f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*"
+        f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*",
     )

@@ -321,7 +321,8 @@ async def test_client_session_not_initialized(credentials: dict[str, Any]) -> No
 
 @pytest.mark.asyncio
 async def test_client_continuous_polling(
-    credentials: dict[str, Any], mocker: MockerFixture
+    credentials: dict[str, Any],
+    mocker: MockerFixture,
 ) -> None:
     """Test continuous polling with async iteration."""
     # Create multiple response batches
@@ -337,7 +338,7 @@ async def test_client_continuous_polling(
         nonlocal call_count
         response_mock = AsyncMock(status=200)
         response_mock.json = AsyncMock(
-            return_value=responses[call_count % len(responses)]
+            return_value=responses[call_count % len(responses)],
         )
         response_mock.text = AsyncMock(return_value="")
         context_mock = AsyncMock(

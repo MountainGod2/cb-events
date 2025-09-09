@@ -20,7 +20,9 @@ async def test_client_functionality() -> None:
 async def test_testbed_client() -> None:
     """Test testbed configuration."""
     async with chaturbate_events.EventClient(
-        "testuser", "testtoken", use_testbed=True
+        "testuser",
+        "testtoken",
+        use_testbed=True,
     ) as client:
         assert client.base_url == chaturbate_events.EventClient.TESTBED_URL
 
