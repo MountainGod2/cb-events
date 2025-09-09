@@ -100,7 +100,7 @@ class EventClient:
         """
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=self.timeout + 5)
+                timeout=aiohttp.ClientTimeout(total=self.timeout + 5),
             )
         return self
 
@@ -196,7 +196,8 @@ class EventClient:
             raise EventsError(msg) from err
         except aiohttp.ClientError as err:
             logger.exception(
-                "Network error occurred", extra={"error_type": type(err).__name__}
+                "Network error occurred",
+                extra={"error_type": type(err).__name__},
             )
             msg = f"Network error: {err}"
             raise EventsError(msg) from err
