@@ -1,11 +1,11 @@
 """Pytest configuration and fixtures for Chaturbate Events API tests."""
 
-from collections.abc import AsyncGenerator
+import re
+from collections.abc import AsyncGenerator, Generator
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
-from pytest_mock import MockerFixture
+from aioresponses import aioresponses
 
 from chaturbate_events import Event, EventClient, EventType
 
@@ -98,19 +98,26 @@ async def test_client(
 
 
 @pytest.fixture
-def mock_http_get(mocker: MockerFixture, api_response: dict[str, Any]) -> AsyncMock:
-    """Mock aiohttp ClientSession.get for testing HTTP interactions.
+def mock_aioresponse() -> Generator[aioresponses, None, None]:
+    """Provide aioresponses mock for testing HTTP interactions.
+
+    Yields:
+        aioresponses: The aioresponses mock instance.
+    """
+    with aioresponses() as m:
+        yield m
+
+
+def create_url_pattern(username: str, token: str) -> re.Pattern[str]:
+    """Create URL pattern for matching EventClient requests.
+
+    Args:
+        username: The username for the URL pattern.
+        token: The token for the URL pattern.
 
     Returns:
-        AsyncMock: The mocked HTTP GET response.
+        re.Pattern[str]: Compiled regex pattern for matching URLs.
     """
-    response_mock = AsyncMock()
-    response_mock.status = 200
-    response_mock.json = AsyncMock(return_value=api_response)
-    response_mock.text = AsyncMock(return_value="")
-
-    context_mock = AsyncMock()
-    context_mock.__aenter__ = AsyncMock(return_value=response_mock)
-    context_mock.__aexit__ = AsyncMock(return_value=None)
-
-    return mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
+    return re.compile(
+        f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*"
+    )
