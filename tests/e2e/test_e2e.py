@@ -6,7 +6,7 @@ import chaturbate_events
 
 
 @pytest.mark.asyncio
-async def test_client_functionality():
+async def test_client_functionality() -> None:
     """Validate basic client operations work after build."""
     async with chaturbate_events.EventClient("testuser", "testtoken") as client:
         assert client.username == "testuser"
@@ -17,7 +17,7 @@ async def test_client_functionality():
 
 
 @pytest.mark.asyncio
-async def test_testbed_client():
+async def test_testbed_client() -> None:
     """Test testbed configuration."""
     async with chaturbate_events.EventClient(
         "testuser", "testtoken", use_testbed=True
@@ -25,7 +25,7 @@ async def test_testbed_client():
         assert client.base_url == chaturbate_events.EventClient.TESTBED_URL
 
 
-def test_input_validation():
+def test_input_validation() -> None:
     """Test client validates inputs."""
     with pytest.raises(ValueError, match="Username cannot be empty"):
         chaturbate_events.EventClient("", "token")
@@ -34,7 +34,7 @@ def test_input_validation():
         chaturbate_events.EventClient("user", "")
 
 
-def test_token_masking():
+def test_token_masking() -> None:
     """Test token is masked in string representation."""
     client = chaturbate_events.EventClient("user", "secrettoken123")
     repr_str = repr(client)
@@ -42,16 +42,16 @@ def test_token_masking():
     assert "**********n123" in repr_str
 
 
-def test_router_registration():
+def test_router_registration() -> None:
     """Test event router handler registration."""
     router = chaturbate_events.EventRouter()
 
     @router.on("tip")
-    async def tip_handler(event):
+    async def tip_handler(event: chaturbate_events.Event) -> None:
         pass
 
     @router.on_any()
-    async def any_handler(event):
+    async def any_handler(event: chaturbate_events.Event) -> None:
         pass
 
     assert "tip" in router._handlers  # noqa: SLF001

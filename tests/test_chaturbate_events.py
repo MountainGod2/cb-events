@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from chaturbate_events import (
     AuthError,
@@ -31,7 +32,9 @@ def test_event_model(event_data: dict[str, Any], expected_type: EventType) -> No
 
 
 @pytest.mark.asyncio
-async def test_client_poll_and_auth(credentials, mock_http_get, mocker):
+async def test_client_poll_and_auth(
+    credentials: dict[str, Any], mock_http_get: AsyncMock, mocker: MockerFixture
+) -> None:
     """Test event polling and authentication error handling."""
     async with EventClient(
         username=credentials["username"],
@@ -61,7 +64,11 @@ async def test_client_poll_and_auth(credentials, mock_http_get, mocker):
 
 
 @pytest.mark.asyncio
-async def test_client_multiple_events(credentials, multiple_events, mocker):
+async def test_client_multiple_events(
+    credentials: dict[str, Any],
+    multiple_events: list[dict[str, Any]],
+    mocker: MockerFixture,
+) -> None:
     """Test client processing of multiple events in a single API response."""
     api_response = {"events": multiple_events, "nextUrl": "url"}
     response_mock = AsyncMock(status=200)
@@ -82,7 +89,7 @@ async def test_client_multiple_events(credentials, multiple_events, mocker):
 
 
 @pytest.mark.asyncio
-async def test_client_cleanup(credentials):
+async def test_client_cleanup(credentials: dict[str, Any]) -> None:
     """Test proper cleanup of client resources and session management."""
     client = EventClient(
         username=credentials["username"],
@@ -182,7 +189,7 @@ def test_model_properties() -> None:
     [EventType.TIP, EventType.CHAT_MESSAGE, EventType.BROADCAST_START],
 )
 @pytest.mark.asyncio
-async def test_router_dispatch(event_type):
+async def test_router_dispatch(event_type: EventType) -> None:
     """Test EventRouter event dispatching to registered handlers."""
     router = EventRouter()
     handler = AsyncMock()
