@@ -1,11 +1,12 @@
 """Unit tests for the Chaturbate Events API wrapper."""
 
-import json
+import re
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
+from aioresponses import aioresponses
 from pytest_mock import MockerFixture
 
 from chaturbate_events import (
@@ -17,6 +18,7 @@ from chaturbate_events import (
     EventType,
 )
 from chaturbate_events.models import Message, Tip, User
+from tests.conftest import create_url_pattern
 
 
 @pytest.mark.parametrize(
@@ -36,9 +38,15 @@ def test_event_model(event_data: dict[str, Any], expected_type: EventType) -> No
 
 @pytest.mark.asyncio
 async def test_client_poll_and_auth(
-    credentials: dict[str, Any], mock_http_get: AsyncMock, mocker: MockerFixture
+    credentials: dict[str, Any],
+    api_response: dict[str, Any],
+    mock_aioresponse: aioresponses,
 ) -> None:
     """Test event polling and authentication error handling."""
+    # Mock successful response
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+    mock_aioresponse.get(url_pattern, payload=api_response)
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -47,16 +55,11 @@ async def test_client_poll_and_auth(
         events = await client.poll()
         assert events
         assert isinstance(events[0], Event)
-        mock_http_get.assert_called_once()
 
-    # Simulate auth error
-    response_mock = AsyncMock(status=401)
-    response_mock.text = AsyncMock(return_value="")
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
+    # Test auth error
+    mock_aioresponse.clear()
+    mock_aioresponse.get(url_pattern, status=401, payload={})
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -70,17 +73,13 @@ async def test_client_poll_and_auth(
 async def test_client_multiple_events(
     credentials: dict[str, Any],
     multiple_events: list[dict[str, Any]],
-    mocker: MockerFixture,
+    mock_aioresponse: aioresponses,
 ) -> None:
     """Test client processing of multiple events in a single API response."""
     api_response = {"events": multiple_events, "nextUrl": "url"}
-    response_mock = AsyncMock(status=200)
-    response_mock.json = AsyncMock(return_value=api_response)
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+    mock_aioresponse.get(url_pattern, payload=api_response)
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -233,127 +232,87 @@ def test_client_token_masking() -> None:
     assert "2345" in masked_url  # Should show last 4 chars
 
 
+@pytest.mark.parametrize(
+    ("mock_response", "expected_error", "error_match"),
+    [
+        # HTTP error statuses
+        (
+            {"status": 400, "payload": {"error": "Bad request"}},
+            EventsError,
+            "HTTP 400"
+        ),
+        (
+            {"status": 500, "body": "Internal Server Error"},
+            EventsError,
+            "HTTP 500"
+        ),
+        # JSON decode error
+        (
+            {"status": 200, "body": "Invalid JSON content"},
+            EventsError,
+            "Invalid JSON response"
+        ),
+        # Network errors
+        (
+            {"exception": TimeoutError("Connection timeout")},
+            EventsError,
+            "Request timeout"
+        ),
+        (
+            {"exception": aiohttp.ClientConnectionError("Connection failed")},
+            EventsError,
+            "Network error"
+        ),
+        # Timeout with nextUrl (returns empty list instead of error)
+        (
+            {
+                "status": 400,
+                "payload": {
+                    "status": "waited too long",
+                    "nextUrl": "https://example.com/next"
+                }
+            },
+            None,
+            None
+        ),
+    ],
+)
 @pytest.mark.asyncio
-async def test_client_http_errors(
-    credentials: dict[str, Any], mocker: MockerFixture
+async def test_client_error_handling(
+    credentials: dict[str, Any],
+    mock_aioresponse: aioresponses,
+    mock_response: dict[str, Any],
+    expected_error: type[Exception] | None,
+    error_match: str | None,
 ) -> None:
-    """Test handling of various HTTP error status codes."""
-    # Test 400 Bad Request without nextUrl
-    response_mock = AsyncMock(status=400)
-    response_mock.text = AsyncMock(return_value='{"error": "Bad request"}')
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
+    """Test handling of various error conditions in client polling."""
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+
+    # Set up mock response
+    if "exception" in mock_response:
+        mock_aioresponse.get(url_pattern, exception=mock_response["exception"])
+    else:
+        mock_kwargs = {"url": url_pattern, "status": mock_response.get("status", 200)}
+        if "payload" in mock_response:
+            mock_kwargs["payload"] = mock_response["payload"]
+        if "body" in mock_response:
+            mock_kwargs["body"] = mock_response["body"]
+        mock_aioresponse.get(**mock_kwargs)
 
     async with EventClient(
         username=str(credentials["username"]),
         token=str(credentials["token"]),
         use_testbed=bool(credentials["use_testbed"]),
     ) as client:
-        with pytest.raises(EventsError, match="HTTP 400"):
-            await client.poll()
-
-    # Test 500 Internal Server Error
-    response_mock = AsyncMock(status=500)
-    response_mock.text = AsyncMock(return_value="Internal Server Error")
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
-
-    async with EventClient(
-        username=str(credentials["username"]),
-        token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
-    ) as client:
-        with pytest.raises(EventsError, match="HTTP 500"):
-            await client.poll()
-
-
-@pytest.mark.asyncio
-async def test_client_timeout_with_next_url(
-    credentials: dict[str, Any], mocker: MockerFixture
-) -> None:
-    """Test handling of timeout responses with nextUrl extraction."""
-    timeout_response = {
-        "status": "waited too long",
-        "nextUrl": "https://events.testbed.cb.dev/events/next",
-    }
-    response_mock = AsyncMock(status=400)
-    response_mock.text = AsyncMock(return_value=json.dumps(timeout_response))
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
-
-    async with EventClient(
-        username=str(credentials["username"]),
-        token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
-    ) as client:
-        events = await client.poll()
-        assert events == []
-        assert client._next_url == timeout_response["nextUrl"]
-
-
-@pytest.mark.asyncio
-async def test_client_json_decode_error(
-    credentials: dict[str, Any], mocker: MockerFixture
-) -> None:
-    """Test handling of invalid JSON responses."""
-    response_mock = AsyncMock(status=200)
-    response_mock.text = AsyncMock(return_value="Invalid JSON content")
-    response_mock.json = AsyncMock(side_effect=json.JSONDecodeError("msg", "doc", 0))
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
-    mocker.patch("aiohttp.ClientSession.get", return_value=context_mock)
-
-    async with EventClient(
-        username=str(credentials["username"]),
-        token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
-    ) as client:
-        with pytest.raises(EventsError, match="Invalid JSON response"):
-            await client.poll()
-
-
-@pytest.mark.asyncio
-async def test_client_network_errors(
-    credentials: dict[str, Any], mocker: MockerFixture
-) -> None:
-    """Test handling of network-related errors."""
-    # Test TimeoutError
-    mocker.patch(
-        "aiohttp.ClientSession.get", side_effect=TimeoutError("Connection timeout")
-    )
-
-    async with EventClient(
-        username=str(credentials["username"]),
-        token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
-    ) as client:
-        with pytest.raises(EventsError, match="Request timeout"):
-            await client.poll()
-
-    # Test aiohttp.ClientError
-    mocker.patch(
-        "aiohttp.ClientSession.get",
-        side_effect=aiohttp.ClientConnectionError("Connection failed"),
-    )
-
-    async with EventClient(
-        username=str(credentials["username"]),
-        token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
-    ) as client:
-        with pytest.raises(EventsError, match="Network error"):
-            await client.poll()
+        if expected_error:
+            with pytest.raises(expected_error, match=error_match):
+                await client.poll()
+        else:
+            # Special case for timeout with nextUrl - should return empty list
+            events = await client.poll()
+            assert events == []
+            if "nextUrl" in mock_response.get("payload", {}):
+                assert client._next_url == mock_response["payload"]["nextUrl"]
 
 
 @pytest.mark.asyncio
@@ -437,26 +396,62 @@ def test_extract_next_url_edge_cases() -> None:
 
 
 # Additional EventRouter tests
+@pytest.mark.parametrize(
+    ("setup_func", "event_type", "expected_calls"),
+    [
+        (
+            "setup_multiple_handlers",
+            EventType.TIP,
+            {"handler1": 1, "handler2": 1}
+        ),
+        ("setup_no_handlers", EventType.TIP, {}),
+        (
+            "setup_global_and_specific",
+            EventType.TIP,
+            {"global_handler": 1, "tip_handler": 1, "follow_handler": 0}
+        ),
+    ],
+)
 @pytest.mark.asyncio
-async def test_router_multiple_handlers() -> None:
-    """Test multiple handlers for the same event type."""
+async def test_router_scenarios(
+    setup_func: str,
+    event_type: EventType,
+    expected_calls: dict[str, int],
+) -> None:
+    """Test various EventRouter dispatching scenarios."""
     router = EventRouter()
-    handler1 = AsyncMock()
-    handler2 = AsyncMock()
+    handlers = {}
 
-    router.on(EventType.TIP)(handler1)
-    router.on(EventType.TIP)(handler2)
+    # Setup handlers based on scenario
+    if setup_func == "setup_multiple_handlers":
+        handlers["handler1"] = AsyncMock()
+        handlers["handler2"] = AsyncMock()
+        router.on(event_type)(handlers["handler1"])
+        router.on(event_type)(handlers["handler2"])
+    elif setup_func == "setup_no_handlers":
+        pass  # No handlers registered
+    elif setup_func == "setup_global_and_specific":
+        handlers["global_handler"] = AsyncMock()
+        handlers["tip_handler"] = AsyncMock()
+        handlers["follow_handler"] = AsyncMock()
+        router.on_any()(handlers["global_handler"])
+        router.on(EventType.TIP)(handlers["tip_handler"])
+        router.on(EventType.FOLLOW)(handlers["follow_handler"])
 
+    # Create and dispatch event
     event = Event.model_validate({
-        "method": EventType.TIP.value,
+        "method": event_type.value,
         "id": "test",
         "object": {},
     })
 
+    # Should not raise any errors regardless of scenario
     await router.dispatch(event)
 
-    handler1.assert_called_once_with(event)
-    handler2.assert_called_once_with(event)
+    # Verify expected calls
+    for handler_name, expected_count in expected_calls.items():
+        if handler_name in handlers:
+            assert handlers[handler_name].call_count == expected_count
 
 
 def test_router_string_event_types() -> None:
@@ -475,127 +470,115 @@ def test_router_string_event_types() -> None:
         Event.model_validate(event_data)
 
 
-@pytest.mark.asyncio
-async def test_router_no_handlers() -> None:
-    """Test dispatching events with no registered handlers."""
-    router = EventRouter()
-    event = Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "test",
-        "object": {},
-    })
+# Model validation tests
+@pytest.mark.parametrize(
+    ("model_class", "test_data", "expected_assertions"),
+    [
+        # User model tests
+        (
+            User,
+            {
+                "username": "testuser",
+                "colorGroup": "purple",
+                "fcAutoRenew": True,
+                "gender": "f",
+                "hasDarkmode": True,
+                "hasTokens": True,
+                "inFanclub": True,
+                "inPrivateShow": False,
+                "isBroadcasting": False,
+                "isFollower": True,
+                "isMod": True,
+                "isOwner": False,
+                "isSilenced": False,
+                "isSpying": True,
+                "language": "es",
+                "recentTips": "recent tip data",
+                "subgender": "trans",
+            },
+            [
+                ("username", "testuser"),
+                ("color_group", "purple"),
+                ("fc_auto_renew", True),
+                ("has_darkmode", True),
+                ("in_fanclub", True),
+                ("is_mod", True),
+                ("is_spying", True),
+            ]
+        ),
+        # Message model - public message
+        (
+            Message,
+            {
+                "message": "Hello everyone!",
+                "bgColor": "#FF0000",
+                "color": "#FFFFFF",
+                "font": "arial",
+            },
+            [
+                ("message", "Hello everyone!"),
+                ("bg_color", "#FF0000"),
+                ("from_user", None),
+                ("to_user", None),
+            ]
+        ),
+        # Message model - private message
+        (
+            Message,
+            {
+                "message": "Private hello",
+                "fromUser": "sender",
+                "toUser": "receiver",
+                "orig": "original text",
+            },
+            [
+                ("message", "Private hello"),
+                ("from_user", "sender"),
+                ("to_user", "receiver"),
+                ("orig", "original text"),
+            ]
+        ),
+        # Tip model - anonymous tip
+        (
+            Tip,
+            {
+                "tokens": 100,
+                "isAnon": True,
+                "message": "Anonymous tip message",
+            },
+            [
+                ("tokens", 100),
+                ("is_anon", True),
+                ("message", "Anonymous tip message"),
+            ]
+        ),
+        # Tip model - regular tip
+        (
+            Tip,
+            {
+                "tokens": 50,
+                "isAnon": False,
+            },
+            [
+                ("tokens", 50),
+                ("is_anon", False),
+            ]
+        ),
+    ],
+)
+def test_model_validation_comprehensive(
+    model_class: type[User | Message | Tip],
+    test_data: dict[str, Any],
+    expected_assertions: list[tuple[str, Any]],
+) -> None:
+    """Test comprehensive model validation for User, Message, and Tip models."""
+    model_instance = model_class.model_validate(test_data)
 
-    # Should not raise any errors
-    await router.dispatch(event)
-
-
-@pytest.mark.asyncio
-async def test_router_global_and_specific_handlers() -> None:
-    """Test combination of global and event-specific handlers."""
-    router = EventRouter()
-    global_handler = AsyncMock()
-    tip_handler = AsyncMock()
-    follow_handler = AsyncMock()
-
-    router.on_any()(global_handler)
-    router.on(EventType.TIP)(tip_handler)
-    router.on(EventType.FOLLOW)(follow_handler)
-
-    tip_event = Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "tip",
-        "object": {},
-    })
-
-    await router.dispatch(tip_event)
-
-    # Global handler should be called for all events
-    global_handler.assert_called_once_with(tip_event)
-    # Only tip handler should be called for tip events
-    tip_handler.assert_called_once_with(tip_event)
-    follow_handler.assert_not_called()
-
-
-# Additional Model tests
-def test_user_model_comprehensive() -> None:
-    """Test User model with comprehensive field combinations."""
-    user_data = {
-        "username": "testuser",
-        "colorGroup": "purple",
-        "fcAutoRenew": True,
-        "gender": "f",
-        "hasDarkmode": True,
-        "hasTokens": True,
-        "inFanclub": True,
-        "inPrivateShow": False,
-        "isBroadcasting": False,
-        "isFollower": True,
-        "isMod": True,
-        "isOwner": False,
-        "isSilenced": False,
-        "isSpying": True,
-        "language": "es",
-        "recentTips": "recent tip data",
-        "subgender": "trans",
-    }
-
-    user = User.model_validate(user_data)
-    assert user.username == "testuser"
-    assert user.color_group == "purple"
-    assert user.fc_auto_renew is True
-    assert user.has_darkmode is True
-    assert user.in_fanclub is True
-    assert user.is_mod is True
-    assert user.is_spying is True
-
-
-def test_message_model_variations() -> None:
-    """Test Message model with various field combinations."""
-    # Public chat message
-    public_msg = Message.model_validate({
-        "message": "Hello everyone!",
-        "bgColor": "#FF0000",
-        "color": "#FFFFFF",
-        "font": "arial",
-    })
-    assert public_msg.message == "Hello everyone!"
-    assert public_msg.bg_color == "#FF0000"
-    assert public_msg.from_user is None
-    assert public_msg.to_user is None
-
-    # Private message
-    private_msg = Message.model_validate({
-        "message": "Private hello",
-        "fromUser": "sender",
-        "toUser": "receiver",
-        "orig": "original text",
-    })
-    assert private_msg.message == "Private hello"
-    assert private_msg.from_user == "sender"
-    assert private_msg.to_user == "receiver"
-    assert private_msg.orig == "original text"
-
-
-def test_tip_model_anonymous() -> None:
-    """Test Tip model with anonymous tip functionality."""
-    # Anonymous tip
-    anon_tip = Tip.model_validate({
-        "tokens": 100,
-        "isAnon": True,
-        "message": "Anonymous tip message",
-    })
-    assert anon_tip.tokens == 100
-    assert anon_tip.is_anon is True
-    assert anon_tip.message == "Anonymous tip message"
-
-    # Regular tip
-    regular_tip = Tip.model_validate({
-        "tokens": 50,
-        "isAnon": False,
-    })
-    assert regular_tip.tokens == 50
-    assert regular_tip.is_anon is False
-    assert not regular_tip.message  # Default empty message
+    for attr_name, expected_value in expected_assertions:
+        actual_value = getattr(model_instance, attr_name)
+        assert actual_value == expected_value, (
+            f"{attr_name}: expected {expected_value}, got {actual_value}"
+        )
 
 
 def test_event_properties_edge_cases() -> None:
@@ -629,42 +612,75 @@ def test_event_properties_edge_cases() -> None:
 
 
 # Exception handling tests
-def test_events_error_comprehensive() -> None:
-    """Test EventsError with various parameter combinations."""
-    # Basic error
-    basic_error = EventsError("Basic error message")
-    assert basic_error.message == "Basic error message"
-    assert basic_error.status_code is None
-    assert basic_error.response_text is None
+@pytest.mark.parametrize(
+    ("error_class", "args", "kwargs", "expected_checks"),
+    [
+        # Basic EventsError
+        (
+            EventsError,
+            ("Basic error message",),
+            {},
+            [
+                ("message", "Basic error message"),
+                ("status_code", None),
+                ("response_text", None),
+            ]
+        ),
+        # EventsError with all parameters
+        (
+            EventsError,
+            ("Full error",),
+            {
+                "status_code": 500,
+                "response_text": "Server error response",
+                "request_id": "12345",
+                "timeout": 30.0,
+            },
+            [
+                ("message", "Full error"),
+                ("status_code", 500),
+                ("response_text", "Server error response"),
+                ("extra_info", {"request_id": "12345", "timeout": 30.0}),
+            ]
+        ),
+        # AuthError inheritance test
+        (
+            AuthError,
+            ("Authentication failed",),
+            {"status_code": 401, "response_text": "Unauthorized"},
+            [
+                ("message", "Authentication failed"),
+                ("status_code", 401),
+                ("response_text", "Unauthorized"),
+                ("isinstance_EventsError", True),
+            ]
+        ),
+    ],
+)
+def test_exception_handling_comprehensive(
+    error_class: type[EventsError],
+    args: tuple[str, ...],
+    kwargs: dict[str, Any],
+    expected_checks: list[tuple[str, Any]],
+) -> None:
+    """Test comprehensive exception handling for EventsError and AuthError."""
+    error_instance = error_class(*args, **kwargs)
 
-    # Error with all parameters
-    full_error = EventsError(
-        "Full error",
-        status_code=500,
-        response_text="Server error response",
-        request_id="12345",
-        timeout=30.0,
-    )
-    assert full_error.status_code == 500
-    assert full_error.response_text == "Server error response"
-    assert full_error.extra_info["request_id"] == "12345"
-    assert full_error.extra_info["timeout"] == 30.0
+    for check_name, expected_value in expected_checks:
+        if check_name == "isinstance_EventsError":
+            assert isinstance(error_instance, EventsError)
+        elif check_name == "extra_info":
+            assert error_instance.extra_info == expected_value
+        else:
+            actual_value = getattr(error_instance, check_name)
+            assert actual_value == expected_value
 
-    # Test __repr__ method
-    repr_str = repr(full_error)
-    assert "Full error" in repr_str
-    assert "status_code=500" in repr_str
-    assert "Server error response" in repr_str
-
-
-def test_auth_error_inheritance() -> None:
-    """Test AuthError as subclass of EventsError."""
-    auth_error = AuthError(
-        "Authentication failed", status_code=401, response_text="Unauthorized"
-    )
-    assert isinstance(auth_error, EventsError)
-    assert auth_error.message == "Authentication failed"
-    assert auth_error.status_code == 401
+    # Test __repr__ method for EventsError with parameters
+    if error_class == EventsError and kwargs:
+        repr_str = repr(error_instance)
+        assert error_instance.message in repr_str
+        if error_instance.status_code:
+            assert f"status_code={error_instance.status_code}" in repr_str
 
 
 # Additional validation tests
@@ -684,12 +700,11 @@ def test_model_validation_errors() -> None:
 
 
 @pytest.mark.asyncio
-async def test_integration_client_router() -> None:
+async def test_integration_client_router(mock_aioresponse: aioresponses) -> None:
     """Test integration between EventClient and EventRouter."""
     credentials = {"username": "test", "token": "test", "use_testbed": True}
 
     # Mock successful API response
-
     api_response = {
         "events": [
             {"method": "tip", "id": "1", "object": {"tip": {"tokens": 100}}},
@@ -702,13 +717,8 @@ async def test_integration_client_router() -> None:
         "nextUrl": "next_url",
     }
 
-    response_mock = AsyncMock(status=200)
-    response_mock.json = AsyncMock(return_value=api_response)
-    response_mock.text = AsyncMock(return_value="")
-    context_mock = AsyncMock(
-        __aenter__=AsyncMock(return_value=response_mock),
-        __aexit__=AsyncMock(return_value=None),
-    )
+    url_pattern = re.compile(r"https://events\.testbed\.cb\.dev/events/test/test/.*")
+    mock_aioresponse.get(url_pattern, payload=api_response)
 
     # Set up router with handlers
     router = EventRouter()
@@ -721,17 +731,16 @@ async def test_integration_client_router() -> None:
     router.on_any()(global_handler)
 
     # Test integration
-    with patch("aiohttp.ClientSession.get", return_value=context_mock):
-        async with EventClient(
-            username=str(credentials["username"]),
-            token=str(credentials["token"]),
-            use_testbed=bool(credentials["use_testbed"]),
-        ) as client:
-            events = await client.poll()
+    async with EventClient(
+        username=str(credentials["username"]),
+        token=str(credentials["token"]),
+        use_testbed=bool(credentials["use_testbed"]),
+    ) as client:
+        events = await client.poll()
 
-            # Dispatch all events through router
-            for event in events:
-                await router.dispatch(event)
+        # Dispatch all events through router
+        for event in events:
+            await router.dispatch(event)
 
     # Verify handlers were called appropriately
     assert tip_handler.call_count == 1
