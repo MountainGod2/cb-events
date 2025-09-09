@@ -32,6 +32,10 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## License
+
+Chaturbate Events is [MIT licensed](./LICENSE).
+
 ## Disclaimer
 
 This project is not affiliated with, endorsed by, or sponsored by Chaturbate.
