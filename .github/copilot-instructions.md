@@ -42,7 +42,7 @@ make test-cov           # With coverage
 - Google Python Style Guide, use `uv`, type hints required
 - Use pytest fixtures, mock API responses, parametrize tests
 - Update `__init__.__all__` for public API changes
-- Use `EventsError` for custom exceptions  
+- Use `EventsError` for custom exceptions
 - Never log full tokens, avoid blocking calls
 - Tests pass (`make lint`), high coverage required
 - Requires Python >=3.11, core deps: aiohttp, pydantic
