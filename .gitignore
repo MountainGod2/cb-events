@@ -117,9 +117,7 @@ dmypy.json
 cython_debug/
 
 # IDEs and Editors
-# VS Code settings (keep extensions.json for project recommendations)
-.vscode/
-!.vscode/extensions.json
+.vscode/settings.json
 .idea/
 *.swp
 *.swo
