@@ -118,3 +118,7 @@ include = ["examples/example.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples"]
+skips = ["B101"]
