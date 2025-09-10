@@ -1,48 +1,53 @@
-.PHONY: format check fix mypy pylint pyright ty-check lint test all clean help
+.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean help all
 
-# Default target
-all: format fix lint
+all: format fix lint test
 
-# Format code using ruff
+install:
+	uv sync --all-groups
+
+sync: install
+
+# First-time setup for contributors
+dev-setup: install
+	uv run pre-commit install
+
 format:
 	uv run ruff format
 
-# Check code using ruff (without fixing)
 check:
 	uv run ruff check
 
-# Fix code issues using ruff
 fix:
 	uv run ruff check --fix
 
-# Run mypy type checker
-mypy:
+type-check:
 	uv run mypy ./
-
-# Run pylint
-pylint:
-	uv run pylint ./src
-
-# Run pyright type checker
-pyright:
 	uv run pyright
 
-# Run ty type checker
-ty-check:
-	uv run ty check
+# Full static analysis pipeline
+lint: check type-check
+	uv run pylint ./src
 
-# Run all linting tools
-lint: mypy pylint pyright ty-check
-
-# Run tests
 test:
 	uv run pytest
 
-# Run tests with coverage
+# Coverage reports for CI and local development
 test-cov:
-	uv run pytest --cov=src --cov-report=xml --cov-report=term
+	uv run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html
 
-# Clean up generated files
+test-e2e:
+	uv run pytest tests/e2e/
+
+# Validate changes before commit
+pre-commit:
+	uv run pre-commit run --all-files
+
+build:
+	uv build
+
+# Mirror the CI pipeline locally
+ci: format fix lint test-cov
+
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.py[co]" -delete
@@ -53,20 +58,19 @@ clean:
 	rm -rf .mypy_cache/
 	rm -rf .ruff_cache/
 	rm -rf .pyright/
+	rm -rf dist/
+	rm -rf build/
 
-# Show help
 help:
-	@echo "Available targets:"
-	@echo "  format     - Format code using ruff"
-	@echo "  check      - Check code using ruff (without fixing)"
-	@echo "  fix        - Fix code issues using ruff"
-	@echo "  mypy       - Run mypy type checker"
-	@echo "  pylint     - Run pylint"
-	@echo "  pyright    - Run pyright type checker"
-	@echo "  ty-check   - Run ty type checker"
-	@echo "  lint       - Run all linting tools (mypy, pylint, pyright, ty-check)"
-	@echo "  test       - Run tests"
-	@echo "  test-cov   - Run tests with coverage"
-	@echo "  all        - Run format, fix, and lint (default)"
-	@echo "  clean      - Clean up generated files"
-	@echo "  help       - Show this help message"
+	@echo "Setup:"
+	@echo "  install    sync    dev-setup"
+	@echo ""
+	@echo "Development:"
+	@echo "  format     check     fix       type-check"
+	@echo "  lint       pre-commit"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test       test-cov  test-e2e"
+	@echo ""
+	@echo "Release:"
+	@echo "  build      ci       clean"
