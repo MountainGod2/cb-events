@@ -5,22 +5,90 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
       - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
       - id: pyupgrade
+        name: pyupgrade
+        args: [--py311-plus]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.10
+    rev: v0.13.0
     hooks:
       - id: ruff
+        name: ruff lint
         args:
           - --fix
           - --exit-non-zero-on-fix
       - id: ruff-format
+        name: ruff format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        name: mypy type check
+        additional_dependencies:
+          - aiohttp==3.12.15
+          - pydantic==2.11.7
+        exclude: ^(tests/|examples/)
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        name: bandit security check
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
+
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.9.0
+    hooks:
+      - id: pip-audit
+        name: pip audit security scan
+        args: [--desc, --local]
+
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.33.3
     hooks:
       - id: check-github-workflows
+        name: check github workflows
       - id: check-renovate
+        name: check renovate config
       - id: check-readthedocs
+        name: check readthedocs config
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.2.0
+    hooks:
+      - id: conventional-pre-commit
+        name: conventional commit check
+        stages: [commit-msg]
+        args: [--strict, --force-scope]
+
+  - repo: https://github.com/pycqa/doc8
+    rev: v2.0.0
+    hooks:
+      - id: doc8
+        name: doc8 rst check
+        args: [--max-line-length=88]
+        files: \.rst$
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.36.2
+    hooks:
+      - id: typos
+        name: typos spell check
+        args: [--format=brief]
+        exclude: ^(uv\.lock|\.git/|CHANGELOG\.md)
+        types_or: [text]
