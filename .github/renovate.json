@@ -24,7 +24,7 @@
     ],
     "automerge": true
   },
-  "minimumReleaseAge": "14 days",
+  "minimumReleaseAge": "7 days",
   "platformAutomerge": false,
   "prConcurrentLimit": 5,
   "rangeStrategy": "bump",
