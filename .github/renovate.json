@@ -1,10 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
   "extends": [
     "config:best-practices"
   ],
-
   "automergeType": "branch",
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
@@ -22,7 +20,7 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
-      "at any time"
+      "before 5am on monday"
     ],
     "automerge": true
   },
@@ -37,20 +35,9 @@
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "timezone": "America/Edmonton",
-
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/bower_components/**",
-    "**/vendor/**",
-    "**/__tests__/**",
-    "**/test/**",
-    "**/tests/**",
-    "**/__fixtures__/**"
-  ],
-
   "packageRules": [
     {
-      "description": "Do not automerge major updates; label as breaking, assign MountainGod2",
+      "description": "Major updates require manual review",
       "matchUpdateTypes": [
         "major"
       ],
@@ -64,7 +51,7 @@
       ]
     },
     {
-      "description": "Automerge and auto-approve minor, patch, and digest updates, including type definitions",
+      "description": "Auto-merge non-breaking updates",
       "matchUpdateTypes": [
         "minor",
         "patch",
@@ -74,7 +61,7 @@
       "autoApprove": true
     },
     {
-      "description": "Prevent Renovate from changing requires-python in pyproject.toml",
+      "description": "Keep Python version pinned",
       "matchManagers": [
         "pep621"
       ],
@@ -83,7 +70,7 @@
       ]
     },
     {
-      "description": "Ignore minimum release wait time for pep723 updates to chaturbate-events",
+      "description": "Skip release age for self-references",
       "matchManagers": [
         "pep723"
       ],
@@ -91,9 +78,28 @@
         "chaturbate-events"
       ],
       "minimumReleaseAge": "0"
+    },
+    {
+      "description": "Group dev tools",
+      "matchPackageNames": [
+        "ruff",
+        "mypy",
+        "pylint",
+        "pytest",
+        "pytest-*"
+      ],
+      "groupName": "dev-tools"
+    },
+    {
+      "description": "Group build tools",
+      "matchPackageNames": [
+        "hatchling",
+        "hatch-*",
+        "python-semantic-release"
+      ],
+      "groupName": "build-tools"
     }
   ],
-
   "pep723": {
     "enabled": true,
     "managerFilePatterns": [
@@ -103,5 +109,9 @@
   },
   "pre-commit": {
     "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": true
   }
 }
