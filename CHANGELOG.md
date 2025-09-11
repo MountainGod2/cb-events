@@ -2,6 +2,54 @@
 
 <!-- version list -->
 
+## v1.3.2 (2025-09-11)
+
+### Bug Fixes
+
+- **renovate**: Update minimum release age from 14 days to 7 days
+  ([`7923a7d`](https://github.com/MountainGod2/chaturbate-events/commit/7923a7d956a12a982311d50d06efc8b1dae67887))
+
+### Chores
+
+- **deps**: Remove outdated 'ty' dependency from development requirements
+  ([`2ca470a`](https://github.com/MountainGod2/chaturbate-events/commit/2ca470a5918339fdbfeac476715bba090a1aec68))
+
+- **deps**: Remove outdated dependency from dev requirements
+  ([`2b69943`](https://github.com/MountainGod2/chaturbate-events/commit/2b699437e22e818b4be500656d3c0e7d01eeb694))
+
+- **deps**: Update dependency aioresponses to v0.7.8
+  ([`46c64a8`](https://github.com/MountainGod2/chaturbate-events/commit/46c64a8b8f5c164eb687c5143e3f23bafcb526e9))
+
+- **instructions**: Remove trailing whitespace in custom exceptions guideline
+  ([`9d597ec`](https://github.com/MountainGod2/chaturbate-events/commit/9d597ece666e1ca5111dda2290764e4cf8fe821f))
+
+- **pre-commit**: Update configuration and add new hooks for additional checks
+  ([`9f3b181`](https://github.com/MountainGod2/chaturbate-events/commit/9f3b18174161ad2c7615afe03db6cab8581e1866))
+
+- **pyproject**: Add Bandit configuration to exclude directories and skip specific checks
+  ([`4d6a7d8`](https://github.com/MountainGod2/chaturbate-events/commit/4d6a7d811e48e775ba0f9ebdab25b05bfa3054ac))
+
+### Refactoring
+
+- **.gitignore**: Refine IDE settings and ensure ruff cache is ignored
+  ([`89faec8`](https://github.com/MountainGod2/chaturbate-events/commit/89faec83d27bd1c9e28f9ffdb43c0bba3b980791))
+
+- **extensions**: Add newline at end of file
+  ([`ff6c9e6`](https://github.com/MountainGod2/chaturbate-events/commit/ff6c9e61218118f229c52c8ed1dbeb303864328c))
+
+- **Makefile**: Enhance organization and improve help output
+  ([`4b32f94`](https://github.com/MountainGod2/chaturbate-events/commit/4b32f94d446abcb4695483c09153830c99498723))
+
+- **renovate**: Add 'pyright' to dev tools package grouping
+  ([`e71957a`](https://github.com/MountainGod2/chaturbate-events/commit/e71957a9ee8faf04b1e60affad83a56ec4aa220d))
+
+- **renovate**: Update schedule and descriptions in package rules
+  ([`eb40292`](https://github.com/MountainGod2/chaturbate-events/commit/eb4029287ab5486c01543ea847c0d0c1dbe0ca3e))
+
+- **verify_upstream**: Ensure newline at end of file
+  ([`b84df2b`](https://github.com/MountainGod2/chaturbate-events/commit/b84df2bd8aa22bf7a124929965f3ad994a0efc77))
+
+
 ## v1.3.1 (2025-09-09)
 
 ### Bug Fixes
