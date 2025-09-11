@@ -18,7 +18,7 @@ dev = [
     "mypy==1.17.1",
     "pre-commit==4.3.0",
     "pylint==3.3.8",
-    "pyright==1.1.404",
+    "pyright==1.1.405",
     "pytest-aiohttp==1.1.0",
     "pytest-asyncio==1.1.0",
     "pytest-cov==6.2.1",
