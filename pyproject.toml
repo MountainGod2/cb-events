@@ -6,6 +6,24 @@ authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 requires-python = ">=3.11"
 dependencies = ["aiohttp==3.12.15", "pydantic==2.11.7"]
 dynamic = ["readme"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/MountainGod2/chaturbate-events"
+"Changelog" = "https://github.com/MountainGod2/chaturbate-events/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/MountainGod2/chaturbate-events/issues"
+
 
 [build-system]
 requires = ["hatchling==1.27.0", "hatch-fancy-pypi-readme==25.1.0"]
