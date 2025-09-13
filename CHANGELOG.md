@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.4.1 (2025-09-13)
+
+### Bug Fixes
+
+- **pyproject**: Add additional classifiers for improved package metadata
+  ([`2cebae1`](https://github.com/MountainGod2/chaturbate-events/commit/2cebae14f1ce754727c2f2ce701831b826d337e6))
+
+
 ## v1.4.0 (2025-09-13)
 
 ### Chores
