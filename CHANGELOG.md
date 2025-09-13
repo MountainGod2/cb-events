@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.5.0 (2025-09-13)
+
+### Features
+
+- **pyproject**: Update project metadata with additional keywords and URLs
+  ([`daa2dbb`](https://github.com/MountainGod2/chaturbate-events/commit/daa2dbb33a6309994bb9c830b0a2928745561971))
+
+
 ## v1.4.1 (2025-09-13)
 
 ### Bug Fixes
