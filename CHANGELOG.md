@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v1.4.0 (2025-09-13)
+
+### Chores
+
+- **deps**: Update dependency pyright to v1.1.405
+  ([`9c31fff`](https://github.com/MountainGod2/chaturbate-events/commit/9c31fff16ed6f416e1414effdfc5d87608a24317))
+
+- **deps**: Update dependency pytest-mock to v3.15.0
+  ([`d6e8016`](https://github.com/MountainGod2/chaturbate-events/commit/d6e80163e00f43849d295afd50517c3fe5751572))
+
+- **deps**: Update dependency ruff to v0.12.11
+  ([`645e8ca`](https://github.com/MountainGod2/chaturbate-events/commit/645e8ca74f9f6f1057b6987f07199166773cf774))
+
+- **deps**: Update dev-tools
+  ([`651dc2e`](https://github.com/MountainGod2/chaturbate-events/commit/651dc2eb2b4c47e4879f2beb29c4640ed898e52c))
+
+### Documentation
+
+- **README**: Add environment variable setup and error handling sections
+  ([`45d5b79`](https://github.com/MountainGod2/chaturbate-events/commit/45d5b79dc60c6041feb858580634e8ade0354e3d))
+
+### Features
+
+- **pyproject**: Add classifiers and project URLs for better package metadata
+  ([`fed8e20`](https://github.com/MountainGod2/chaturbate-events/commit/fed8e20a2104c802eaf11b8399e4dbc064e7d18f))
+
+### Refactoring
+
+- **ci-cd**: Update runner version from ubuntu-latest to ubuntu-24.04
+  ([`ae30cf3`](https://github.com/MountainGod2/chaturbate-events/commit/ae30cf3409ccdc125decc99c36056bee3461b18e))
+
+- **tests**: Split and reorganize test cases
+  ([`7776d0d`](https://github.com/MountainGod2/chaturbate-events/commit/7776d0d12b0a3f10990aea352611a5b084a33a76))
+
+
 ## v1.3.2 (2025-09-11)
 
 ### Bug Fixes
