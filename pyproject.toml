@@ -10,6 +10,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -17,13 +18,13 @@ classifiers = [
     "Topic :: Internet",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/MountainGod2/chaturbate-events"
 "Changelog" = "https://github.com/MountainGod2/chaturbate-events/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/MountainGod2/chaturbate-events/issues"
-
 
 [build-system]
 requires = ["hatchling==1.27.0", "hatch-fancy-pypi-readme==25.1.0"]
