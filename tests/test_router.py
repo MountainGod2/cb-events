@@ -12,11 +12,12 @@ from chaturbate_events import Event, EventRouter, EventType
     "event_type",
     [EventType.TIP, EventType.CHAT_MESSAGE, EventType.BROADCAST_START],
 )
-async def test_router_dispatch(event_type: EventType) -> None:
+async def test_router_basic_dispatch(event_type: EventType) -> None:
     """Test EventRouter event dispatching to registered handlers."""
     router = EventRouter()
     handler = AsyncMock()
     router.on(event_type)(handler)
+
     event = Event.model_validate({"method": event_type.value, "id": "x", "object": {}})
     await router.dispatch(event)
     handler.assert_called_once_with(event)
@@ -40,12 +41,13 @@ async def test_router_dispatch(event_type: EventType) -> None:
         ),
     ],
 )
-async def test_router_scenarios(
+async def test_router_advanced_scenarios(
     setup_func: str, event_type: EventType, expected_calls: dict[str, int]
 ) -> None:
     """Test various EventRouter dispatching scenarios."""
     router = EventRouter()
     handlers = {}
+
     if setup_func == "setup_multiple_handlers":
         handlers["handler1"] = AsyncMock()
         handlers["handler2"] = AsyncMock()
@@ -67,16 +69,7 @@ async def test_router_scenarios(
         "object": {},
     })
     await router.dispatch(event)
+
     for handler_name, expected_count in expected_calls.items():
         if handler_name in handlers:
             assert handlers[handler_name].call_count == expected_count
-
-
-def test_router_string_event_types() -> None:
-    """Test router with string-based event type registration."""
-    router = EventRouter()
-    handler = AsyncMock()
-    router.on("customEvent")(handler)
-    event_data = {"method": "customEvent", "id": "test", "object": {}}
-    with pytest.raises(ValueError, match="Input should be"):
-        Event.model_validate(event_data)

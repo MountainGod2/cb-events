@@ -9,7 +9,7 @@ from chaturbate_events import EventClient, EventRouter, EventType
 
 
 @pytest.mark.asyncio
-async def test_integration_client_router(mock_aioresponse: Any) -> None:
+async def test_client_router_integration(mock_aioresponse: Any) -> None:
     """Test integration between EventClient and EventRouter."""
     credentials = {"username": "test", "token": "test", "use_testbed": True}
     api_response = {

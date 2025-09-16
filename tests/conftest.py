@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from aioresponses import aioresponses
 
-from chaturbate_events import Event, EventClient, EventType
+from chaturbate_events import EventClient, EventType
 
 
 @pytest.fixture
@@ -40,16 +40,6 @@ def event_data() -> dict[str, Any]:
             "message": {"message": "Great show!"},
         },
     }
-
-
-@pytest.fixture
-def test_event(event_data: dict[str, Any]) -> Event:
-    """Create a validated Event instance for testing.
-
-    Returns:
-        Event: The validated Event instance.
-    """
-    return Event.model_validate(event_data)
 
 
 @pytest.fixture

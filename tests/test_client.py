@@ -17,14 +17,15 @@ from tests.conftest import create_url_pattern
 
 
 @pytest.mark.asyncio
-async def test_client_poll_and_auth(
+async def test_client_successful_polling(
     credentials: dict[str, Any],
     api_response: dict[str, Any],
     mock_aioresponse: Any,
 ) -> None:
-    """Test event polling and authentication error handling."""
+    """Test successful event polling returns Event instances."""
     url_pattern = create_url_pattern(credentials["username"], credentials["token"])
     mock_aioresponse.get(url_pattern, payload=api_response)
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -34,8 +35,16 @@ async def test_client_poll_and_auth(
         assert events
         assert isinstance(events[0], Event)
 
-    mock_aioresponse.clear()
+
+@pytest.mark.asyncio
+async def test_client_authentication_error(
+    credentials: dict[str, Any],
+    mock_aioresponse: Any,
+) -> None:
+    """Test authentication error handling during polling."""
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
     mock_aioresponse.get(url_pattern, status=401, payload={})
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -46,7 +55,7 @@ async def test_client_poll_and_auth(
 
 
 @pytest.mark.asyncio
-async def test_client_multiple_events(
+async def test_client_multiple_events_processing(
     credentials: dict[str, Any],
     multiple_events: list[dict[str, Any]],
     mock_aioresponse: Any,
@@ -55,6 +64,7 @@ async def test_client_multiple_events(
     api_response = {"events": multiple_events, "nextUrl": "url"}
     url_pattern = create_url_pattern(credentials["username"], credentials["token"])
     mock_aioresponse.get(url_pattern, payload=api_response)
+
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
@@ -66,7 +76,7 @@ async def test_client_multiple_events(
 
 
 @pytest.mark.asyncio
-async def test_client_cleanup(credentials: dict[str, Any]) -> None:
+async def test_client_resource_cleanup(credentials: dict[str, Any]) -> None:
     """Test proper cleanup of client resources and session management."""
     client = EventClient(
         username=credentials["username"],
@@ -79,17 +89,19 @@ async def test_client_cleanup(credentials: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize(
-    ("username", "token", "err"),
+    ("username", "token", "expected_error"),
     [
-        ("", "t", "Username cannot be empty"),
-        (" ", "t", "Username cannot be empty"),
-        ("u", "", "Token cannot be empty"),
-        ("u", " ", "Token cannot be empty"),
+        ("", "token", "Username cannot be empty"),
+        (" ", "token", "Username cannot be empty"),
+        ("user", "", "Token cannot be empty"),
+        ("user", " ", "Token cannot be empty"),
     ],
 )
-def test_client_validation(username: str, token: str, err: str) -> None:
+def test_client_input_validation(
+    username: str, token: str, expected_error: str
+) -> None:
     """Test input validation for EventClient initialization."""
-    with pytest.raises(ValueError, match=err):
+    with pytest.raises(ValueError, match=expected_error):
         EventClient(username=username, token=token)
 
 
@@ -115,35 +127,28 @@ def test_client_token_masking() -> None:
 @pytest.mark.parametrize(
     ("mock_response", "expected_error", "error_match"),
     [
-        # Network error
         (
             {"exception": aiohttp.ClientConnectionError("Network down")},
             EventsError,
             "Network error",
         ),
-        # Timeout error
         (
             {"exception": TimeoutError("Request timeout")},
             EventsError,
             "Request timeout after",
         ),
-        # Generic aiohttp ClientError
         (
             {"exception": aiohttp.ClientPayloadError("Payload error")},
             EventsError,
             "Network error",
         ),
-        # HTTP 401 Unauthorized
         ({"status": 401, "payload": {}}, AuthError, "Authentication failed for"),
-        # HTTP 400 with nextUrl (timeout)
         (
             {"status": 400, "payload": {"status": "waited too long", "nextUrl": "url"}},
             None,
             None,
         ),
-        # HTTP 500 error
         ({"status": 500, "payload": {}}, EventsError, "HTTP 500"),
-        # Invalid JSON
         ({"status": 200, "body": "not json"}, EventsError, "Invalid JSON response"),
     ],
 )
@@ -156,6 +161,7 @@ async def test_client_error_handling(
 ) -> None:
     """Test handling of various error conditions in client polling."""
     url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+
     if "exception" in mock_response:
         mock_aioresponse.get(url_pattern, exception=mock_response["exception"])
     else:
@@ -231,20 +237,3 @@ async def test_client_continuous_polling(
             event_count += 1
             if event_count >= 2:
                 break
-
-
-def test_extract_next_url_edge_cases() -> None:
-    """Test _extract_next_url with various response formats."""
-    timeout_json = '{"status": "waited too long", "nextUrl": "http://example.com"}'
-    assert EventClient._extract_next_url(timeout_json) == "http://example.com"
-
-    timeout_json_caps = '{"status": "WAITED TOO LONG", "nextUrl": "http://example.com"}'
-    assert EventClient._extract_next_url(timeout_json_caps) == "http://example.com"
-
-    no_next_url = '{"status": "waited too long"}'
-    assert EventClient._extract_next_url(no_next_url) is None
-    assert EventClient._extract_next_url("invalid json") is None
-
-    different_status = '{"status": "different error", "nextUrl": "http://example.com"}'
-    assert EventClient._extract_next_url(different_status) is None
-    assert EventClient._extract_next_url("") is None

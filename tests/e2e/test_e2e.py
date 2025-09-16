@@ -8,7 +8,7 @@ from chaturbate_events import AuthError, Event, EventClient, EventRouter, EventT
 
 
 @pytest.mark.asyncio
-async def test_client_functionality() -> None:
+async def test_client_basic_functionality() -> None:
     """Validate basic client operations work after build."""
     async with EventClient("testuser", "testtoken") as client:
         assert client.username == "testuser"
@@ -19,7 +19,7 @@ async def test_client_functionality() -> None:
 
 
 @pytest.mark.asyncio
-async def test_full_workflow_integration() -> None:
+async def test_complete_workflow_integration() -> None:
     """Test a complete workflow without making actual API calls."""
     router = EventRouter()
 
@@ -38,20 +38,3 @@ async def test_full_workflow_integration() -> None:
         assert "tip" in router._handlers
         assert len(router._global_handlers) == 1
         assert router._global_handlers[0] == handle_any
-
-
-def test_input_validation() -> None:
-    """Test client validates inputs."""
-    with pytest.raises(ValueError, match="Username cannot be empty"):
-        EventClient("", "token")
-
-    with pytest.raises(ValueError, match="Token cannot be empty"):
-        EventClient("user", "")
-
-
-def test_token_masking() -> None:
-    """Test token is masked in string representation."""
-    client = EventClient("user", "secrettoken123")
-    repr_str = repr(client)
-    assert "secrettoken123" not in repr_str
-    assert "**********n123" in repr_str
