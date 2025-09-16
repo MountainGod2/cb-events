@@ -82,7 +82,7 @@ client = EventClient(
 ## Error Handling
 
 ```python
-from chaturbate_events import EventsError, AuthError
+from chaturbate_events.exceptions import EventsError, AuthError
 
 try:
     async with EventClient(username, token) as client:

@@ -4,17 +4,7 @@ RESPONSE_PREVIEW_LENGTH = 50
 
 
 class EventsError(Exception):
-    """Base exception for all Chaturbate Events API failures.
-
-    This is the parent class for all exceptions that can be raised
-    when interacting with the Events API.
-
-    Attributes:
-        message: The error message.
-        status_code: HTTP status code if available.
-        response_text: Response text if available.
-        extra_info: Additional error context.
-    """
+    """Base exception for all Chaturbate Events API failures."""
 
     def __init__(
         self,
