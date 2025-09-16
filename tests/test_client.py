@@ -7,12 +7,11 @@ import aiohttp
 import pytest
 
 from chaturbate_events import (
-    AuthError,
     Event,
     EventClient,
-    EventsError,
     EventType,
 )
+from chaturbate_events.exceptions import AuthError, EventsError
 from tests.conftest import create_url_pattern
 
 

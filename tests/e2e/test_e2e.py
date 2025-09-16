@@ -4,7 +4,8 @@ import asyncio
 
 import pytest
 
-from chaturbate_events import AuthError, Event, EventClient, EventRouter, EventType
+from chaturbate_events import Event, EventClient, EventRouter, EventType
+from chaturbate_events.exceptions import AuthError
 
 
 @pytest.mark.asyncio

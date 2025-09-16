@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from chaturbate_events import AuthError, EventsError
+from chaturbate_events.exceptions import AuthError, EventsError
 
 
 @pytest.mark.parametrize(
