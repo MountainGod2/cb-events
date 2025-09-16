@@ -1,0 +1,35 @@
+# Read the Docs configuration file for Sphinx projects
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+# Set the OS, Python version and use custom build commands for uv support
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.12"
+  commands:
+    # Install uv for fast dependency management
+    - asdf plugin add uv
+    - asdf install uv latest
+    - asdf global uv latest
+    # Install dependencies including docs group
+    - uv sync --group docs --frozen
+    # Clean any existing build artifacts
+    - rm -rf docs/_build docs/api
+    # Build documentation using the same command as Makefile but with warning failures
+    - mkdir -p $READTHEDOCS_OUTPUT/html/
+    - uv run --group docs sphinx-build -E -T -a -W -b html -D language=en docs $READTHEDOCS_OUTPUT/html
+
+# Optional formats for downloadable documentation
+formats:
+  - pdf
+  - epub
+
+# Enable and configure search functionality
+search:
+  ranking: {}
+  ignore:
+    - search.html
+    - genindex.html
+    - py-modindex.html

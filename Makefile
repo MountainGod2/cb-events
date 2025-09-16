@@ -1,4 +1,4 @@
-.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean help all
+.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck help all
 
 all: format fix lint test
 
@@ -45,6 +45,28 @@ pre-commit:
 build:
 	uv build
 
+# Build documentation
+docs: FORCE
+	rm -rf docs/_build && rm -rf docs/api
+	uv run --group docs sphinx-build -E -T -a -b html -D language=en docs docs/_build/html
+
+# Clean documentation build artifacts
+docs-clean:
+	rm -rf docs/_build/
+	rm -rf docs/api/
+
+# Serve documentation locally for development
+docs-serve: docs
+	@echo "Serving documentation at http://localhost:8000"
+	@echo "Press Ctrl+C to stop the server"
+	uv run python -m http.server 8000 -d docs/_build/html
+
+# Check documentation links
+docs-linkcheck:
+	uv run --group docs sphinx-build -b linkcheck docs docs/_build/linkcheck
+
+FORCE:
+
 # Mirror the CI pipeline locally
 ci: format fix lint test-cov
 
@@ -71,6 +93,9 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test       test-cov  test-e2e"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  docs       docs-clean docs-serve docs-linkcheck"
 	@echo ""
 	@echo "Release:"
 	@echo "  build      ci       clean"
