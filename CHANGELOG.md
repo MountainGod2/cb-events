@@ -2,6 +2,57 @@
 
 <!-- version list -->
 
+## v1.6.0 (2025-09-16)
+
+### Bug Fixes
+
+- Reorganize imports for consistency across test files
+  ([`f0fd75c`](https://github.com/MountainGod2/chaturbate-events/commit/f0fd75c11b7e9f666e48bf20ed180901dfa0ee86))
+
+- **docs**: Update deployment environment name to match GitHub Pages convention
+  ([`c3709c6`](https://github.com/MountainGod2/chaturbate-events/commit/c3709c69355f2bdcadb29fcc5e15ec3cfd8028b0))
+
+### Chores
+
+- Remove obsolete documentation workflow
+  ([`b44b425`](https://github.com/MountainGod2/chaturbate-events/commit/b44b4258fbc3c5bd01fb915e08ebd26939af055a))
+
+- **deps**: Update astral-sh/setup-uv digest to b75a909
+  ([`cc10b6d`](https://github.com/MountainGod2/chaturbate-events/commit/cc10b6d70864d9eab33fa9f0d8ccdfc0d886b94e))
+
+- **deps**: Update dependency pytest-cov to v6.3.0
+  ([`81696dc`](https://github.com/MountainGod2/chaturbate-events/commit/81696dcec549e99fdc4e62dff183afea89916488))
+
+- **deps**: Update dependency pytest-cov to v7
+  ([#10](https://github.com/MountainGod2/chaturbate-events/pull/10),
+  [`96be89f`](https://github.com/MountainGod2/chaturbate-events/commit/96be89fa75f0179e57832f8a6366258beeb24100))
+
+- **deps**: Update dependency python-semantic-release to v10.3.2
+  ([`06a7995`](https://github.com/MountainGod2/chaturbate-events/commit/06a79950012963f417fd2c8d38b20911cd8f9aec))
+
+- **deps**: Update dependency python-semantic-release to v10.4.0
+  ([`4ae3c90`](https://github.com/MountainGod2/chaturbate-events/commit/4ae3c90234eca1ed0cd51472087b388e803c7f1b))
+
+- **gitignore**: Expanded ignored files
+  ([`5e09024`](https://github.com/MountainGod2/chaturbate-events/commit/5e09024e166525c3fe66b1b368495f3b17813c7b))
+
+### Features
+
+- **docs**: Added sphinx auto-doc pipeline
+  ([`da2ddf4`](https://github.com/MountainGod2/chaturbate-events/commit/da2ddf4f7677377503a153cc988fdf26754c5464))
+
+### Refactoring
+
+- **client**: Simplify error handling in nextUrl extraction
+  ([`06887e4`](https://github.com/MountainGod2/chaturbate-events/commit/06887e4f47b98d54c3ec30a6e96ef034b2b9abbf))
+
+- **exceptions**: Simplify exception class documentation and imports
+  ([`76653d7`](https://github.com/MountainGod2/chaturbate-events/commit/76653d7276a5be54fc64ad3d9dc550cc6b070d77))
+
+- **tests**: Improve test function names and remove unused tests
+  ([`81ca969`](https://github.com/MountainGod2/chaturbate-events/commit/81ca969717110a90462302261c3b47b252f18fd7))
+
+
 ## v1.5.0 (2025-09-13)
 
 ### Features
