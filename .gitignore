@@ -44,6 +44,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_tmpdir/
 
 # Translations
 *.mo
@@ -113,15 +114,21 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+# pyright type checker
+.pyright/
+
 # Cython debug symbols
 cython_debug/
 
 # IDEs and Editors
 .vscode/settings.json
+.vscode/.ropeproject
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
 
 # OS generated files
 .DS_Store
@@ -142,9 +149,48 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.test
 
 # uv
 .uv_cache/
 
 # Ruff
 .ruff_cache/
+
+# pre-commit
+.pre-commit-config.yaml.backup
+
+# Documentation
+docs/_build/
+docs/api/
+docs/_build.*
+docs/.jupyter_cache/
+.jupyter_cache/
+
+# Semantic release
+CHANGELOG.md.backup
+.python-semantic-release/
+
+# Read the Docs
+site/
+
+# Profiling
+*.prof
+*.pstats
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Local development files
+local/
+.local/
+
+# Node.js (if used for documentation tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
