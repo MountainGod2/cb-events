@@ -213,13 +213,10 @@ class EventClient:
             The extracted nextUrl string if present in a timeout error response,
             otherwise None.
         """
-        try:
-            error_data = json.loads(text)
-            if "waited too long" in error_data.get("status", "").lower():
-                next_url = error_data.get("nextUrl")
-                return str(next_url) if next_url else None
-        except (json.JSONDecodeError, KeyError):
-            pass
+        error_data = json.loads(text)
+        if "waited too long" in error_data.get("status", "").lower():
+            next_url = error_data.get("nextUrl")
+            return str(next_url) if next_url else None
         return None
 
     async def poll_continuously(self) -> AsyncIterator[Event]:
