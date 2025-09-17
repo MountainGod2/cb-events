@@ -16,8 +16,6 @@ extensions: list[str] = [
     "sphinx.ext.todo",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
-    "sphinx_copybutton",
-    "sphinx_design",
 ]
 version: str = __version__
 release: str = __version__
