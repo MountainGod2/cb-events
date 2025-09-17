@@ -187,7 +187,13 @@ class EventClient:
 
                 self._next_url = data["nextUrl"]
                 events = [Event.model_validate(item) for item in data.get("events", [])]
-                logger.debug("Received %d events", len(events))
+                logger.debug(
+                    "Received %d events",
+                    len(events),
+                    extra={"event_types": [event.type.value for event in events[:3]]}
+                    if events
+                    else {},
+                )
                 return events
 
         except TimeoutError as err:
