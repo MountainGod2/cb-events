@@ -43,7 +43,7 @@ build-backend = "hatchling.build"
 build = ["python-semantic-release==10.4.0"]
 dev = [
     "aioresponses==0.7.8",
-    "mypy==1.17.1",
+    "mypy==1.18.1",
     "pre-commit==4.3.0",
     "pylint==3.3.8",
     "pyright==1.1.405",
