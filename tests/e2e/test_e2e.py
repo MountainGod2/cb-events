@@ -8,6 +8,7 @@ from chaturbate_events import Event, EventClient, EventRouter, EventType
 from chaturbate_events.exceptions import AuthError
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_client_basic_functionality() -> None:
     """Validate basic client operations work after build."""
@@ -19,6 +20,7 @@ async def test_client_basic_functionality() -> None:
             await client.poll()
 
 
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_complete_workflow_integration() -> None:
     """Test a complete workflow without making actual API calls."""
