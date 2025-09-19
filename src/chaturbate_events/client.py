@@ -7,7 +7,8 @@ from http import HTTPStatus
 from types import TracebackType
 from typing import Self
 
-import aiohttp
+from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiolimiter import AsyncLimiter
 
 from .exceptions import AuthError, EventsError
 from .models import Event
@@ -54,8 +55,9 @@ class EventClient:
         self.token = token.strip()
         self.timeout = timeout
         self.base_url = self.TESTBED_URL if use_testbed else self.BASE_URL
-        self.session: aiohttp.ClientSession | None = None
+        self.session: ClientSession | None = None
         self._next_url: str | None = None
+        self._rate_limiter = AsyncLimiter(max_rate=2000, time_period=60)
 
     def __repr__(self) -> str:
         """Return string representation with masked authentication token.
@@ -99,8 +101,8 @@ class EventClient:
             The EventClient instance with an active HTTP session.
         """
         if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=self.timeout + 5),
+            self.session = ClientSession(
+                timeout=ClientTimeout(total=self.timeout + 5),
             )
         return self
 
@@ -140,7 +142,7 @@ class EventClient:
         logger.debug("Polling events from %s", self._mask_url(url))
 
         try:
-            async with self.session.get(url) as resp:
+            async with self._rate_limiter, self.session.get(url) as resp:
                 text = await resp.text()
 
                 if resp.status in {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}:
@@ -200,7 +202,7 @@ class EventClient:
             logger.warning("Request timeout after %ds", self.timeout)
             msg = f"Request timeout after {self.timeout}s"
             raise EventsError(msg) from err
-        except aiohttp.ClientError as err:
+        except ClientError as err:
             logger.exception(
                 "Network error occurred",
                 extra={"error_type": type(err).__name__},
