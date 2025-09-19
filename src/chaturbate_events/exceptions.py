@@ -12,7 +12,6 @@ class EventsError(Exception):
         *,
         status_code: int | None = None,
         response_text: str | None = None,
-        **extra_info: float | str | bool | None,
     ) -> None:
         """Initialize EventsError with enhanced error information.
 
@@ -20,13 +19,11 @@ class EventsError(Exception):
             message: The error message.
             status_code: HTTP status code if available.
             response_text: Response text if available.
-            **extra_info: Additional error context information.
         """
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.response_text = response_text
-        self.extra_info = extra_info
 
     def __repr__(self) -> str:
         """Return detailed string representation of the error."""
@@ -40,8 +37,6 @@ class EventsError(Exception):
                 else self.response_text
             )
             parts.append(f"response_text='{preview}'")
-        if self.extra_info:
-            parts.append(f"extra_info={self.extra_info}")
         return f"{self.__class__.__name__}({', '.join(parts)})"
 
 

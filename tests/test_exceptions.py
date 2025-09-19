@@ -26,14 +26,11 @@ from chaturbate_events.exceptions import AuthError, EventsError
             {
                 "status_code": 500,
                 "response_text": "Server error response",
-                "request_id": "12345",
-                "timeout": 30.0,
             },
             [
                 ("message", "Full error"),
                 ("status_code", 500),
                 ("response_text", "Server error response"),
-                ("extra_info", {"request_id": "12345", "timeout": 30.0}),
             ],
         ),
         (
@@ -61,8 +58,6 @@ def test_exception_handling_comprehensive(
     for check_name, expected_value in expected_checks:
         if check_name == "isinstance_EventsError":
             assert isinstance(error_instance, EventsError)
-        elif check_name == "extra_info":
-            assert getattr(error_instance, "extra_info", None) == expected_value
         else:
             actual_value = getattr(error_instance, check_name, None)
             assert actual_value == expected_value
@@ -100,9 +95,3 @@ def test_exception_repr_coverage() -> None:
     error_no_status = EventsError("Test error")
     repr_no_status = repr(error_no_status)
     assert "status_code=" not in repr_no_status
-
-    error_with_extra = EventsError(
-        "Test error", extra_key="extra_value", debug_flag=True
-    )
-    repr_with_extra = repr(error_with_extra)
-    assert "extra_info=" in repr_with_extra
