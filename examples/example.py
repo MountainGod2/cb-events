@@ -18,24 +18,13 @@ async def main() -> None:
     # Create an event router for handling different event types
     router = EventRouter()
 
-    # Define event handler for tip events
+    # Define event handler(See EventType for all types)
     @router.on(EventType.TIP)
     async def handle_tip(event: Event) -> None:
-        tip = event.tip
-        user = event.user
-        if tip and user:
-            print(f"{user.username} tipped {tip.tokens} tokens")
+        if event.tip and event.user:
+            print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
-    # Define event handler for chat and private messages
-    @router.on(EventType.CHAT_MESSAGE)
-    @router.on(EventType.PRIVATE_MESSAGE)
-    async def handle_message(event: Event) -> None:
-        message = event.message
-        user = event.user
-        if message and user:
-            print(f"{user.username}: {message.message}")
-
-    # Define a catch-all event handler for debugging
+    # Define a catch-all event handler
     @router.on_any()
     async def handle_any(event: Event) -> None:
         print(f"Event: {event.type}")
