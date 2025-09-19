@@ -18,6 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries",
@@ -123,6 +124,7 @@ unfixable = []
     "D104",   # missing-docstring-in-public-package
     "T201",   # print-found
     "RUF029", # function-uses-implicit-return
+    "INP001", # implicit-namespace-package
 ]
 "tests/*" = [
     "S101",    # assert-used
@@ -130,6 +132,7 @@ unfixable = []
     "SLF001",  # private-member-access
     "PLR2004", # magic-value-comparison
     "ANN401",  # any-type
+    "ARG001",  # unused-function-argument
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -171,10 +174,15 @@ minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = ["--strict-markers", "--strict-config", "--disable-warnings"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--disable-warnings",
+    "--tb=short",
+    "--cov-report=term-missing:skip-covered",
+]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
     "e2e: marks tests as end-to-end tests",
 ]
 filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
@@ -199,6 +207,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "raise AssertionError",
     "@abstractmethod",
+    "def __repr__",
+    "def __str__",
 ]
 show_missing = true
 skip_covered = true
