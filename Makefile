@@ -36,7 +36,7 @@ test-cov:
 	uv run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html
 
 test-e2e:
-	uv run pytest tests/e2e/
+	uv run pytest -m e2e
 
 # Validate changes before commit
 pre-commit:

@@ -164,7 +164,7 @@ jobs:
           uv pip install dist/chaturbate_events-*.whl
 
       - name: Run end-to-end tests
-        run: uv run pytest -vv -m e2e
+        run: make test-e2e
 
       - name: Clean cache
         run: uv cache prune --ci
