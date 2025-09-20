@@ -5,6 +5,7 @@ import asyncio
 import pytest
 
 from chaturbate_events import Event, EventClient, EventRouter, EventType
+from chaturbate_events.constants import TESTBED_URL
 from chaturbate_events.exceptions import AuthError
 
 
@@ -36,7 +37,7 @@ async def test_complete_workflow_integration() -> None:
         pass
 
     async with EventClient("testuser", "testtoken", use_testbed=True) as client:
-        assert client.base_url == EventClient.TESTBED_URL
+        assert client.base_url == TESTBED_URL
 
         assert "tip" in router._handlers
         assert len(router._global_handlers) == 1

@@ -14,6 +14,17 @@ from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
 
+class BaseEventModel(BaseModel):
+    """Base model with shared configuration for all event-related models."""
+
+    model_config = ConfigDict(
+        alias_generator=to_snake,
+        populate_by_name=True,
+        extra="ignore",
+        frozen=True,
+    )
+
+
 class EventType(StrEnum):
     """Supported event types from the Chaturbate Events API.
 
@@ -40,7 +51,7 @@ class EventType(StrEnum):
     MEDIA_PURCHASE = "mediaPurchase"
 
 
-class User(BaseModel):
+class User(BaseEventModel):
     """User information from Chaturbate events.
 
     Represents user data associated with various event types including
@@ -65,15 +76,8 @@ class User(BaseModel):
     recent_tips: str = Field(default="", alias="recentTips")
     subgender: str = Field(default="")
 
-    model_config = ConfigDict(
-        alias_generator=to_snake,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
 
-
-class Message(BaseModel):
+class Message(BaseEventModel):
     """Chat message content and metadata from message events.
 
     Contains the message text along with formatting and routing information
@@ -89,15 +93,17 @@ class Message(BaseModel):
     from_user: str | None = Field(default=None, alias="fromUser")
     to_user: str | None = Field(default=None, alias="toUser")
 
-    model_config = ConfigDict(
-        alias_generator=to_snake,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
+    @property
+    def is_private(self) -> bool:
+        """Check if the message is a private message.
+
+        Returns:
+            True if the message is private, False otherwise.
+        """
+        return self.from_user is not None and self.to_user is not None
 
 
-class Tip(BaseModel):
+class Tip(BaseEventModel):
     """Tip transaction details from tip events.
 
     Contains the token amount and metadata for tip transactions including
@@ -108,15 +114,8 @@ class Tip(BaseModel):
     is_anon: bool = Field(default=False, alias="isAnon")
     message: str = Field(default="")
 
-    model_config = ConfigDict(
-        alias_generator=to_snake,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
 
-
-class RoomSubject(BaseModel):
+class RoomSubject(BaseEventModel):
     """Room subject information from subject change events.
 
     Contains the updated room subject/title when a broadcaster
@@ -125,15 +124,8 @@ class RoomSubject(BaseModel):
 
     subject: str
 
-    model_config = ConfigDict(
-        alias_generator=to_snake,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
 
-
-class Event(BaseModel):
+class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
     Represents a single event with typed access to associated data through
@@ -143,13 +135,6 @@ class Event(BaseModel):
     type: EventType = Field(alias="method")
     id: str
     data: dict[str, Any] = Field(default_factory=dict, alias="object")
-
-    model_config = ConfigDict(
-        alias_generator=to_snake,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
 
     @property
     def user(self) -> User | None:
@@ -181,9 +166,8 @@ class Event(BaseModel):
             Message object if this is a message event with message data,
             otherwise None.
         """
-        if self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE} and (
-            message_data := self.data.get("message")
-        ):
+        message_types = {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
+        if self.type in message_types and (message_data := self.data.get("message")):
             return Message.model_validate(message_data)
         return None
 

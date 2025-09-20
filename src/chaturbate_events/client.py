@@ -5,25 +5,29 @@ import logging
 from collections.abc import AsyncIterator
 from http import HTTPStatus
 from types import TracebackType
-from typing import Self
+from typing import Any, Self
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
 from aiolimiter import AsyncLimiter
 
+from .constants import (
+    AUTH_ERROR_STATUSES,
+    BASE_URL,
+    DEFAULT_TIMEOUT,
+    RATE_LIMIT_MAX_RATE,
+    RATE_LIMIT_TIME_PERIOD,
+    TESTBED_URL,
+    TIMEOUT_ERROR_INDICATOR,
+    TOKEN_MASK_LENGTH,
+)
 from .exceptions import AuthError, EventsError
 from .models import Event
-
-DEFAULT_TIMEOUT = 10
-TOKEN_MASK_LENGTH = 4
 
 logger = logging.getLogger(__name__)
 
 
 class EventClient:
     """HTTP client for polling Chaturbate Events API."""
-
-    BASE_URL = "https://eventsapi.chaturbate.com/events"
-    TESTBED_URL = "https://events.testbed.cb.dev/events"
 
     def __init__(
         self,
@@ -54,10 +58,12 @@ class EventClient:
         self.username = username.strip()
         self.token = token.strip()
         self.timeout = timeout
-        self.base_url = self.TESTBED_URL if use_testbed else self.BASE_URL
+        self.base_url = TESTBED_URL if use_testbed else BASE_URL
         self.session: ClientSession | None = None
         self._next_url: str | None = None
-        self._rate_limiter = AsyncLimiter(max_rate=2000, time_period=60)
+        self._rate_limiter = AsyncLimiter(
+            max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
+        )
 
     def __repr__(self) -> str:
         """Return string representation with masked authentication token.
@@ -115,6 +121,68 @@ class EventClient:
         """Clean up HTTP session and resources on context manager exit."""
         await self.close()
 
+    def _build_poll_url(self) -> str:
+        """Build the polling URL for the next request.
+
+        Returns:
+            The URL to use for the next polling request.
+        """
+        if self._next_url:
+            return self._next_url
+        return f"{self.base_url}/{self.username}/{self.token}/?timeout={self.timeout}"
+
+    def _handle_auth_error(self, status_code: int) -> None:
+        """Handle authentication errors from API responses.
+
+        Args:
+            status_code: The HTTP status code from the response.
+
+        Raises:
+            AuthError: If the status code indicates an authentication failure.
+        """
+        logger.warning(
+            "Authentication failed for user %s",
+            self.username,
+            extra={"status_code": status_code},
+        )
+        msg = f"Authentication failed for {self.username}"
+        raise AuthError(msg)
+
+    def _handle_timeout_response(self, text: str) -> bool:
+        """Handle timeout responses and extract nextUrl.
+
+        Args:
+            text: The response text to check for timeout indicators.
+
+        Returns:
+            True if this was a timeout response that was handled, False otherwise.
+        """
+        if next_url := self._extract_next_url(text):
+            logger.debug("Received nextUrl from timeout response")
+            self._next_url = next_url
+            return True
+        return False
+
+    def _parse_response_data(self, resp_data: dict[str, Any]) -> list[Event]:
+        """Parse API response data into Event objects.
+
+        Args:
+            resp_data: The parsed JSON response data.
+
+        Returns:
+            List of Event objects from the response.
+        """
+        self._next_url = resp_data["nextUrl"]
+        events = [Event.model_validate(item) for item in resp_data.get("events", [])]
+        logger.debug(
+            "Received %d events",
+            len(events),
+            extra={"event_types": [event.type.value for event in events[:3]]}
+            if events
+            else {},
+        )
+        return events
+
     async def poll(self) -> list[Event]:
         """Execute a single poll request and return parsed events.
 
@@ -127,38 +195,26 @@ class EventClient:
             if no events are available or on timeout.
 
         Raises:
-            AuthError: If authentication fails (401/403 status).
             EventsError: For network errors, timeouts, or invalid JSON responses.
         """
         if self.session is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        url = (
-            self._next_url
-            or f"{self.base_url}/{self.username}/{self.token}/?timeout={self.timeout}"
-        )
-
+        url = self._build_poll_url()
         logger.debug("Polling events from %s", self._mask_url(url))
 
         try:
             async with self._rate_limiter, self.session.get(url) as resp:
                 text = await resp.text()
 
-                if resp.status in {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}:
-                    logger.warning(
-                        "Authentication failed for user %s",
-                        self.username,
-                        extra={"status_code": resp.status},
-                    )
-                    msg = f"Authentication failed for {self.username}"
-                    raise AuthError(msg)
+                if resp.status in AUTH_ERROR_STATUSES:
+                    self._handle_auth_error(resp.status)
 
-                if resp.status == HTTPStatus.BAD_REQUEST and (
-                    next_url := self._extract_next_url(text)
+                if (
+                    resp.status == HTTPStatus.BAD_REQUEST
+                    and self._handle_timeout_response(text)
                 ):
-                    logger.debug("Received nextUrl from timeout response")
-                    self._next_url = next_url
                     return []
 
                 if resp.status != HTTPStatus.OK:
@@ -187,16 +243,7 @@ class EventClient:
                         response_text=text,
                     ) from json_err
 
-                self._next_url = data["nextUrl"]
-                events = [Event.model_validate(item) for item in data.get("events", [])]
-                logger.debug(
-                    "Received %d events",
-                    len(events),
-                    extra={"event_types": [event.type.value for event in events[:3]]}
-                    if events
-                    else {},
-                )
-                return events
+                return self._parse_response_data(data)
 
         except TimeoutError as err:
             logger.warning("Request timeout after %ds", self.timeout)
@@ -222,7 +269,7 @@ class EventClient:
             otherwise None.
         """
         error_data = json.loads(text)
-        if "waited too long" in error_data.get("status", "").lower():
+        if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower():
             next_url = error_data.get("nextUrl")
             return str(next_url) if next_url else None
         return None

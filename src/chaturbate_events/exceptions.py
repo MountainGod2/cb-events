@@ -1,6 +1,6 @@
 """Exception classes for the Chaturbate Events client."""
 
-RESPONSE_PREVIEW_LENGTH = 50
+from .constants import RESPONSE_PREVIEW_LENGTH
 
 
 class EventsError(Exception):
