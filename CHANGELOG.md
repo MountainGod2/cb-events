@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v1.7.0 (2025-09-20)
+
+### Bug Fixes
+
+- Update CI/CD workflow and Makefile to use 'make test-e2e' for end-to-end tests
+  ([`f5e3379`](https://github.com/MountainGod2/chaturbate-events/commit/f5e3379e7312791d895e4f274730abd582f44404))
+
+### Features
+
+- Refactor EventClient and introduce constants for improved configuration and error handling
+  ([`0c6576d`](https://github.com/MountainGod2/chaturbate-events/commit/0c6576d7d2b7b2b44d27687b23884cf2c4f4b72c))
+
+### Refactoring
+
+- Remove test_config.py
+  ([`0918753`](https://github.com/MountainGod2/chaturbate-events/commit/091875360a4491641b6145f81dfdc285b9ed48ca))
+
+- **tests**: Move e2e tests into main test module
+  ([`d390688`](https://github.com/MountainGod2/chaturbate-events/commit/d390688b2c15746f54906cd99f4cd3faa2183603))
+
+### Testing
+
+- **lint**: Add rules for logging exceptions and hardcoded credentials in tests
+  ([`e13cb6c`](https://github.com/MountainGod2/chaturbate-events/commit/e13cb6c007e3e8273e53a7b3eefea6334feed83f))
+
+
 ## v1.6.1 (2025-09-20)
 
 ### Bug Fixes
