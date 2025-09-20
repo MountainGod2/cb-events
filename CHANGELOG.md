@@ -2,6 +2,67 @@
 
 <!-- version list -->
 
+## v1.6.1 (2025-09-20)
+
+### Bug Fixes
+
+- **deps**: Update dependency pydantic to v2.11.9
+  ([#13](https://github.com/MountainGod2/chaturbate-events/pull/13),
+  [`87459bd`](https://github.com/MountainGod2/chaturbate-events/commit/87459bd6d00ff585cbd3dd63a3fc31c2ebc5c20d))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`bcb49da`](https://github.com/MountainGod2/chaturbate-events/commit/bcb49da0b71f061d1111aa8e446d7bdacb11283f))
+
+- **deps**: Update dependency mypy to v1.18.1
+  ([`c3fe901`](https://github.com/MountainGod2/chaturbate-events/commit/c3fe901241590323f172e52535243baf689e5a63))
+
+- **deps**: Update dependency pytest-asyncio to v1.2.0
+  ([`56971c7`](https://github.com/MountainGod2/chaturbate-events/commit/56971c72cd63a96d320fb2e797d4977c6de77e86))
+
+- **deps**: Update dependency python-semantic-release to v10.4.1
+  ([`1f2cad7`](https://github.com/MountainGod2/chaturbate-events/commit/1f2cad7ebd0fc656ec9d1fbc8f08b2be15ddc5d6))
+
+- **deps**: Update dependency ruff to v0.13.0
+  ([`ea9f0da`](https://github.com/MountainGod2/chaturbate-events/commit/ea9f0da5ea21ff1dcd748ac79d56c9299db44153))
+
+- **deps**: Update pre-commit hook pre-commit/mirrors-mypy to v1.18.1
+  ([`b48f664`](https://github.com/MountainGod2/chaturbate-events/commit/b48f6640b861df1b7f1e81e282dc5e01ea8e2ab0))
+
+- **docs**: Remove unused sphinx-copybutton and sphinx-design dependencies
+  ([`fe12847`](https://github.com/MountainGod2/chaturbate-events/commit/fe12847d69f6f1e05fc976d210cf59c60717be1d))
+
+### Refactoring
+
+- **ci-cd**: Update end-to-end test command to filter by e2e marker
+  ([`4f13743`](https://github.com/MountainGod2/chaturbate-events/commit/4f137433f5a0844e40b47a097fed441d6a618ad6))
+
+- **client**: Include event types in debug output
+  ([`01b9dbd`](https://github.com/MountainGod2/chaturbate-events/commit/01b9dbd187cca76962226d86f2d232c5576f7de9))
+
+- **client**: Replace aiohttp references with specific imports and add rate limiter to polling
+  ([`49fda32`](https://github.com/MountainGod2/chaturbate-events/commit/49fda328bd31843de46c85234bca37ce7fc45ad6))
+
+- **example**: Remove unused __init__.py file from examples directory
+  ([`9c58f84`](https://github.com/MountainGod2/chaturbate-events/commit/9c58f8401804a6108d174a9d1cdffe42c8123281))
+
+- **example**: Simplify tip event handler and remove message handlers
+  ([`314085e`](https://github.com/MountainGod2/chaturbate-events/commit/314085e02c75ff2e5f4b7a8746fee1556b325bc7))
+
+- **exceptions**: Remove extra_info parameter from EventsError initialization
+  ([`cacb857`](https://github.com/MountainGod2/chaturbate-events/commit/cacb8575bdda43b631c714fbf1f1522f412c7937))
+
+- **pyproject**: Update Python classifiers and ruff linting rules, enhance pytest options
+  ([`566d270`](https://github.com/MountainGod2/chaturbate-events/commit/566d270083d270d54645b65f4b4fd3e011d2b621))
+
+- **tests**: Add missing e2e marker to test functions in test_e2e.py
+  ([`2e0e41e`](https://github.com/MountainGod2/chaturbate-events/commit/2e0e41e926ac2969b853a6364e660585d0671104))
+
+- **tests**: Remove obsolete integration test for EventClient and EventRouter
+  ([`74187df`](https://github.com/MountainGod2/chaturbate-events/commit/74187dfffa02ae91e5203062e4209d51cde429ee))
+
+
 ## v1.6.0 (2025-09-16)
 
 ### Bug Fixes
