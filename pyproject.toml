@@ -125,9 +125,11 @@ unfixable = []
     "T201",   # print-found
     "RUF029", # function-uses-implicit-return
     "INP001", # implicit-namespace-package
+    "TRY400", # use-logging-exception
 ]
 "tests/*" = [
     "S101",    # assert-used
+    "S105",    # hardcoded-credentials
     "S106",    # hardcoded-password-func-arg
     "SLF001",  # private-member-access
     "PLR2004", # magic-value-comparison
