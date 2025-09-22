@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.8.0 (2025-09-22)
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`5a20dea`](https://github.com/MountainGod2/chaturbate-events/commit/5a20dea6cf61fba522e06b7b0654f1955a5720e0))
+
+### Features
+
+- Enhance EventClient with configurable retry logic for network errors
+  ([`bcd4b38`](https://github.com/MountainGod2/chaturbate-events/commit/bcd4b384ee148a99abb900038e8fc0ca482d6de9))
+
+### Refactoring
+
+- Formatted to conform with updated line length settings
+  ([`2240311`](https://github.com/MountainGod2/chaturbate-events/commit/224031147e6ca5af764f2d3ee5006b2ac7eba062))
+
+- Improve event handling messages and clarify credential validation
+  ([`05af4c6`](https://github.com/MountainGod2/chaturbate-events/commit/05af4c60fe4353f891221bd9cbbfce040f2ccac4))
+
+- Remove obsolete Python version and funding link from pyproject.toml
+  ([`b84da0a`](https://github.com/MountainGod2/chaturbate-events/commit/b84da0adf3e8327eabb9134a19965c7fe812b502))
+
+
 ## v1.7.0 (2025-09-20)
 
 ### Bug Fixes
