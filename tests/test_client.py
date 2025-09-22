@@ -1,7 +1,6 @@
 """Tests for EventClient (polling, error handling, session, etc.)."""
 
 from typing import Any
-from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
@@ -96,9 +95,7 @@ async def test_client_resource_cleanup(credentials: dict[str, Any]) -> None:
         ("user", " ", "Token cannot be empty"),
     ],
 )
-def test_client_input_validation(
-    username: str, token: str, expected_error: str
-) -> None:
+def test_client_input_validation(username: str, token: str, expected_error: str) -> None:
     """Test input validation for EventClient initialization."""
     with pytest.raises(ValueError, match=expected_error):
         EventClient(username=username, token=token)
@@ -123,6 +120,7 @@ def test_client_token_masking() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("mock_response", "expected_error", "error_match"),
     [
@@ -147,7 +145,7 @@ def test_client_token_masking() -> None:
             None,
             None,
         ),
-        ({"status": 500, "payload": {}}, EventsError, "HTTP 500"),
+        ({"status": 500, "payload": {}}, EventsError, "Network error"),
         ({"status": 200, "body": "not json"}, EventsError, "Invalid JSON response"),
     ],
 )
@@ -200,31 +198,24 @@ async def test_client_session_not_initialized(credentials: dict[str, Any]) -> No
 
 @pytest.mark.asyncio
 async def test_client_continuous_polling(
-    credentials: dict[str, Any], mocker: Any
+    credentials: dict[str, Any], mock_aioresponse: Any
 ) -> None:
     """Test continuous polling with async iteration."""
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+
     responses = [
         {"events": [{"method": "tip", "id": "1", "object": {}}], "nextUrl": "url1"},
         {"events": [{"method": "follow", "id": "2", "object": {}}], "nextUrl": "url2"},
         {"events": [], "nextUrl": "url3"},
     ]
-    call_count = 0
 
-    def mock_response(*_args: object, **_kwargs: object) -> Any:
-        nonlocal call_count
-        response_mock = AsyncMock(status=200)
-        response_mock.json = AsyncMock(
-            return_value=responses[call_count % len(responses)]
-        )
-        response_mock.text = AsyncMock(return_value="")
-        context_mock = AsyncMock(
-            __aenter__=AsyncMock(return_value=response_mock),
-            __aexit__=AsyncMock(return_value=None),
-        )
-        call_count += 1
-        return context_mock
+    # Mock the initial URL
+    mock_aioresponse.get(url_pattern, payload=responses[0])
 
-    mocker.patch("aiohttp.ClientSession.get", side_effect=mock_response)
+    # Mock the subsequent URLs from nextUrl
+    mock_aioresponse.get("url1", payload=responses[1])
+    mock_aioresponse.get("url2", payload=responses[2])
+
     async with EventClient(
         username=str(credentials["username"]),
         token=str(credentials["token"]),

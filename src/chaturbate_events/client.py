@@ -8,11 +8,16 @@ from types import TracebackType
 from typing import Any, Self
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
 
 from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
+    DEFAULT_RETRY_ATTEMPTS,
+    DEFAULT_RETRY_BACKOFF,
+    DEFAULT_RETRY_EXPONENTIAL_BASE,
+    DEFAULT_RETRY_MAX_DELAY,
     DEFAULT_TIMEOUT,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
@@ -29,6 +34,7 @@ logger = logging.getLogger(__name__)
 class EventClient:
     """HTTP client for polling Chaturbate Events API."""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         username: str,
@@ -36,6 +42,10 @@ class EventClient:
         *,
         timeout: int = DEFAULT_TIMEOUT,
         use_testbed: bool = False,
+        retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
+        retry_backoff: float = DEFAULT_RETRY_BACKOFF,
+        retry_exponential_base: float = DEFAULT_RETRY_EXPONENTIAL_BASE,
+        retry_max_delay: float = DEFAULT_RETRY_MAX_DELAY,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
 
@@ -44,6 +54,10 @@ class EventClient:
             token: Authentication token with Events API scope.
             timeout: Request timeout in seconds. Defaults to 10.
             use_testbed: Whether to use the testbed API endpoint. Defaults to False.
+            retry_attempts: Maximum number of retry attempts. Defaults to 3.
+            retry_backoff: Initial retry backoff in seconds. Defaults to 1.0.
+            retry_exponential_base: Base for exponential backoff. Defaults to 2.0.
+            retry_max_delay: Maximum delay between retries in seconds. Defaults to 30.0.
 
         Raises:
             ValueError: If username or token is empty or contains only whitespace.
@@ -60,9 +74,24 @@ class EventClient:
         self.timeout = timeout
         self.base_url = TESTBED_URL if use_testbed else BASE_URL
         self.session: ClientSession | None = None
+        self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
         self._rate_limiter = AsyncLimiter(
             max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
+        )
+
+        self._retry_options = ExponentialRetry(
+            attempts=retry_attempts,
+            start_timeout=retry_backoff,
+            max_timeout=retry_max_delay,
+            factor=retry_exponential_base,
+            statuses={
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                HTTPStatus.BAD_GATEWAY,
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                HTTPStatus.GATEWAY_TIMEOUT,
+                HTTPStatus.TOO_MANY_REQUESTS,
+            },
         )
 
     def __repr__(self) -> str:
@@ -109,6 +138,9 @@ class EventClient:
         if self.session is None or self.session.closed:
             self.session = ClientSession(
                 timeout=ClientTimeout(total=self.timeout + 5),
+            )
+            self.retry_client = RetryClient(
+                client_session=self.session, retry_options=self._retry_options
             )
         return self
 
@@ -177,9 +209,7 @@ class EventClient:
         logger.debug(
             "Received %d events",
             len(events),
-            extra={"event_types": [event.type.value for event in events[:3]]}
-            if events
-            else {},
+            extra={"event_types": [event.type.value for event in events[:3]]} if events else {},
         )
         return events
 
@@ -197,7 +227,7 @@ class EventClient:
         Raises:
             EventsError: For network errors, timeouts, or invalid JSON responses.
         """
-        if self.session is None:
+        if self.session is None or self.retry_client is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
@@ -205,16 +235,13 @@ class EventClient:
         logger.debug("Polling events from %s", self._mask_url(url))
 
         try:
-            async with self._rate_limiter, self.session.get(url) as resp:
+            async with self._rate_limiter, self.retry_client.get(url) as resp:
                 text = await resp.text()
 
                 if resp.status in AUTH_ERROR_STATUSES:
                     self._handle_auth_error(resp.status)
 
-                if (
-                    resp.status == HTTPStatus.BAD_REQUEST
-                    and self._handle_timeout_response(text)
-                ):
+                if resp.status == HTTPStatus.BAD_REQUEST and self._handle_timeout_response(text):
                     return []
 
                 if resp.status != HTTPStatus.OK:
@@ -303,6 +330,9 @@ class EventClient:
         Closes the aiohttp ClientSession and resets the nextUrl state.
         Safe to call multiple times.
         """
+        if self.retry_client:
+            await self.retry_client.close()
+            self.retry_client = None
         if self.session:
             await self.session.close()
             self.session = None

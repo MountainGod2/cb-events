@@ -6,7 +6,7 @@ authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 maintainers = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
 requires-python = ">=3.11"
-dependencies = ["aiohttp==3.12.15", "aiolimiter==1.2.1", "pydantic==2.11.9"]
+dependencies = ["aiohttp==3.12.15", "aiohttp-retry==2.9.1", "aiolimiter==1.2.1", "pydantic==2.11.9"]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
 classifiers = [
@@ -100,7 +100,7 @@ patterns = [
 
 [tool.ruff]
 target-version = "py311"
-line-length = 88
+line-length = 100
 indent-width = 4
 
 [tool.ruff.lint]
@@ -112,6 +112,7 @@ ignore = [
     "ISC001", # single-line-implicit-string-concatenation (conflicts with formatter)
 ]
 unfixable = []
+pylint.max-args = 10
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = [
@@ -233,5 +234,8 @@ disable = [
     "missing-module-docstring", # handled by ruff
 ]
 
+[tool.pylint.design]
+max-attributes = 10
+
 [tool.pylint.format]
-max-line-length = 88
+max-line-length = 100
