@@ -81,9 +81,7 @@ def test_exception_repr_coverage() -> None:
     assert "response_text='Short response'" in repr_short
 
     long_text = "A" * 100
-    error_long_response = EventsError(
-        "Test error", status_code=500, response_text=long_text
-    )
+    error_long_response = EventsError("Test error", status_code=500, response_text=long_text)
     repr_long = repr(error_long_response)
     assert "..." in repr_long
     assert "AAAAAAAAAAAAAAAAAAAAAA" in repr_long

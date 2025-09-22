@@ -32,9 +32,7 @@ class EventRouter:
             A decorator function that registers the handler for the specified
             event type.
         """
-        type_key = (
-            event_type.value if isinstance(event_type, EventType) else str(event_type)
-        )
+        type_key = event_type.value if isinstance(event_type, EventType) else str(event_type)
 
         def decorator(func: EventHandler) -> EventHandler:
             self._handlers[type_key].append(func)

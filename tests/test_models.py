@@ -15,9 +15,7 @@ from chaturbate_events.models import Message, Tip, User
         ({"method": "chatMessage", "id": "2", "object": {}}, EventType.CHAT_MESSAGE),
     ],
 )
-def test_event_model_validation(
-    event_data: dict[str, Any], expected_type: EventType
-) -> None:
+def test_event_model_validation(event_data: dict[str, Any], expected_type: EventType) -> None:
     """Test Event model validation and type mapping functionality."""
     event = Event.model_validate(event_data)
     assert event.type == expected_type
