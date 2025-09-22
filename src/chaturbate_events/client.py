@@ -54,7 +54,7 @@ class EventClient:
             token: Authentication token with Events API scope.
             timeout: Request timeout in seconds. Defaults to 10.
             use_testbed: Whether to use the testbed API endpoint. Defaults to False.
-            retry_attempts: Maximum number of retry attempts. Defaults to 3.
+            retry_attempts: Maximum number of retry attempts. Defaults to 8.
             retry_backoff: Initial retry backoff in seconds. Defaults to 1.0.
             retry_exponential_base: Base for exponential backoff. Defaults to 2.0.
             retry_max_delay: Maximum delay between retries in seconds. Defaults to 30.0.

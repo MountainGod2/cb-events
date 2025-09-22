@@ -33,7 +33,7 @@ async def test_client_default_retry_configuration(credentials: dict[str, Any]) -
         username=credentials["username"],
         token=credentials["token"],
     ) as client:
-        assert client._retry_options.attempts == 3
+        assert client._retry_options.attempts == 8  # Default value
         assert client.retry_client is not None
 
 
