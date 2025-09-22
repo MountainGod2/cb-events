@@ -12,21 +12,28 @@ async def main() -> None:
 
     # Validate credentials
     if not username or not token:
-        print("Missing Chaturbate credentials")
+        print("Please set CB_USERNAME and CB_TOKEN environment variables")
         return
 
-    # Create an event router for handling different event types
+    # Create event router
     router = EventRouter()
 
-    # Define event handler(See EventType for all types)
     @router.on(EventType.TIP)
     async def handle_tip(event: Event) -> None:
         if event.tip and event.user:
-            print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+            tokens = event.tip.tokens
+            username = event.user.username
+            print(f"{username} tipped {tokens} tokens!")
 
-    # Define a catch-all event handler
+    @router.on(EventType.CHAT_MESSAGE)
+    async def handle_message(event: Event) -> None:
+        if event.message and event.user:
+            message = event.message.message
+            username = event.user.username
+            print(f"{username} says: {message}")
+
     @router.on_any()
-    async def handle_any(event: Event) -> None:
+    async def handle_any_event(event: Event) -> None:
         print(f"Event: {event.type}")
 
     # Connect and process events
