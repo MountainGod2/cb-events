@@ -3,11 +3,12 @@
 import re
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from aioresponses import aioresponses
 
-from chaturbate_events import EventClient, EventType
+from chaturbate_events import Event, EventClient, EventRouter, EventType
 
 
 @pytest.fixture
@@ -111,3 +112,41 @@ def create_url_pattern(username: str, token: str) -> re.Pattern[str]:
     return re.compile(
         f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*",
     )
+
+
+@pytest.fixture
+def sample_event() -> Event:
+    """Provide a sample Event instance for testing.
+
+    Returns:
+        Event: A sample Event instance.
+    """
+    return Event.model_validate({
+        "method": EventType.TIP.value,
+        "id": "test_event_123",
+        "object": {
+            "tip": {"tokens": 100},
+            "user": {"username": "test_user"},
+            "message": {"message": "Test message"},
+        },
+    })
+
+
+@pytest.fixture
+def event_router() -> EventRouter:
+    """Provide a clean EventRouter instance for testing.
+
+    Returns:
+        EventRouter: A clean EventRouter instance.
+    """
+    return EventRouter()
+
+
+@pytest.fixture
+def mock_handler() -> AsyncMock:
+    """Provide a mock async handler for testing.
+
+    Returns:
+        AsyncMock: A mock async handler.
+    """
+    return AsyncMock()

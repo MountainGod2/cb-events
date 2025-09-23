@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from chaturbate_events import Event, EventType
-from chaturbate_events.models import Message, Tip, User
+from chaturbate_events.models import Message, RoomSubject, Tip, User
 
 
 @pytest.mark.parametrize(
@@ -13,6 +13,13 @@ from chaturbate_events.models import Message, Tip, User
     [
         ({"method": "tip", "id": "1", "object": {}}, EventType.TIP),
         ({"method": "chatMessage", "id": "2", "object": {}}, EventType.CHAT_MESSAGE),
+        ({"method": "broadcastStart", "id": "3", "object": {}}, EventType.BROADCAST_START),
+        ({"method": "broadcastStop", "id": "4", "object": {}}, EventType.BROADCAST_STOP),
+        ({"method": "userEnter", "id": "5", "object": {}}, EventType.USER_ENTER),
+        ({"method": "userLeave", "id": "6", "object": {}}, EventType.USER_LEAVE),
+        ({"method": "follow", "id": "7", "object": {}}, EventType.FOLLOW),
+        ({"method": "unfollow", "id": "8", "object": {}}, EventType.UNFOLLOW),
+        ({"method": "roomSubjectChange", "id": "9", "object": {}}, EventType.ROOM_SUBJECT_CHANGE),
     ],
 )
 def test_event_model_validation(event_data: dict[str, Any], expected_type: EventType) -> None:
@@ -21,12 +28,6 @@ def test_event_model_validation(event_data: dict[str, Any], expected_type: Event
     assert event.type == expected_type
     assert event.id == event_data["id"]
     assert isinstance(event.data, dict)
-
-
-def test_event_validation_with_invalid_data() -> None:
-    """Test Event model validation with invalid input data."""
-    with pytest.raises(ValueError, match="Input should be"):
-        Event.model_validate({"method": "invalid", "id": "x"})
 
 
 @pytest.mark.parametrize(
@@ -61,6 +62,8 @@ def test_event_validation_with_invalid_data() -> None:
                 ("in_fanclub", True),
                 ("is_mod", True),
                 ("is_spying", True),
+                ("language", "es"),
+                ("subgender", "trans"),
             ],
         ),
         (
@@ -74,6 +77,8 @@ def test_event_validation_with_invalid_data() -> None:
             [
                 ("message", "Hello everyone!"),
                 ("bg_color", "#FF0000"),
+                ("color", "#FFFFFF"),
+                ("font", "arial"),
                 ("from_user", None),
                 ("to_user", None),
             ],
@@ -98,7 +103,16 @@ def test_event_validation_with_invalid_data() -> None:
             {"tokens": 100, "isAnon": True, "message": "Anonymous tip message"},
             [("tokens", 100), ("is_anon", True), ("message", "Anonymous tip message")],
         ),
-        (Tip, {"tokens": 50, "isAnon": False}, [("tokens", 50), ("is_anon", False)]),
+        (
+            Tip,
+            {"tokens": 50, "isAnon": False},
+            [("tokens", 50), ("is_anon", False), ("message", "")],
+        ),
+        (
+            RoomSubject,
+            {"subject": "New room topic"},
+            [("subject", "New room topic")],
+        ),
     ],
 )
 def test_model_validation_comprehensive(
@@ -106,77 +120,126 @@ def test_model_validation_comprehensive(
     test_data: dict[str, Any],
     expected_assertions: list[tuple[str, Any]],
 ) -> None:
-    """Test comprehensive model validation for User, Message, and Tip models."""
+    """Test comprehensive model validation for User, Message, Tip, and RoomSubject models."""
     model_instance = model_class.model_validate(test_data)
     for attr_name, expected_value in expected_assertions:
         actual_value = getattr(model_instance, attr_name)
         assert actual_value == expected_value
 
 
-def test_model_validation_errors() -> None:
+@pytest.mark.parametrize(
+    ("invalid_data", "expected_error_pattern"),
+    [
+        ({"method": "tip"}, "Field required"),
+        ({"method": "invalidMethod", "id": "test"}, "Input should be"),
+        ({"username": 123}, "Input should be a valid string"),
+        ({}, "Field required"),
+        ({"tokens": "not_a_number"}, "Input should be a valid integer"),
+        ({"isAnon": "not_boolean"}, "Input should be a valid boolean"),
+    ],
+)
+def test_model_validation_errors(invalid_data: dict[str, Any], expected_error_pattern: str) -> None:
     """Test model validation with malformed data."""
-    with pytest.raises(ValueError, match="Field required"):
-        Event.model_validate({"method": "tip"})
+    if "method" in invalid_data:
+        with pytest.raises(ValueError, match=expected_error_pattern):
+            Event.model_validate(invalid_data)
+    elif "username" in invalid_data or not invalid_data:
+        with pytest.raises(ValueError, match=expected_error_pattern):
+            User.model_validate(invalid_data)
+    elif "tokens" in invalid_data or "isAnon" in invalid_data:
+        with pytest.raises(ValueError, match=expected_error_pattern):
+            Tip.model_validate(invalid_data)
 
-    with pytest.raises(ValueError, match="Input should be"):
-        Event.model_validate({"method": "invalidMethod", "id": "test"})
 
-    with pytest.raises(ValueError, match="Input should be a valid string"):
-        User.model_validate({"username": 123})
-
-
-def test_event_properties_edge_cases() -> None:
-    """Test Event model properties with missing or incorrect data."""
-    event_no_user = Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "test",
-        "object": {"tip": {"tokens": 50}},
-    })
-    assert event_no_user.user is None
-    assert event_no_user.tip is not None
-    assert event_no_user.message is None
-
-    chat_event = Event.model_validate({
-        "method": EventType.CHAT_MESSAGE.value,
-        "id": "test",
-        "object": {"message": {"message": "hello"}},
-    })
-    assert chat_event.tip is None
-    assert chat_event.message is not None
-
-    broadcast_event = Event.model_validate({
-        "method": EventType.BROADCAST_START.value,
-        "id": "test",
-        "object": {"broadcaster": "streamer123"},
-    })
-    assert broadcast_event.broadcaster == "streamer123"
-
-    event_with_user = Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "test",
-        "object": {
-            "tip": {"tokens": 100},
-            "user": {
-                "username": "tipper123",
-                "colorGroup": "purple",
-                "hasTokens": True,
-                "inFanclub": False,
+@pytest.mark.parametrize(
+    ("event_data", "property_checks"),
+    [
+        (
+            {
+                "method": EventType.TIP.value,
+                "id": "tip_test",
+                "object": {
+                    "tip": {"tokens": 100, "isAnon": False},
+                    "user": {"username": "tipper123", "hasTokens": True},
+                },
             },
-        },
-    })
+            [
+                ("tip.tokens", 100),
+                ("tip.is_anon", False),
+                ("user.username", "tipper123"),
+                ("user.has_tokens", True),
+                ("message", None),
+            ],
+        ),
+        (
+            {
+                "method": EventType.CHAT_MESSAGE.value,
+                "id": "chat_test",
+                "object": {
+                    "message": {"message": "Hello chat!", "color": "#FF0000"},
+                    "user": {"username": "chatter", "isMod": True},
+                },
+            },
+            [
+                ("message.message", "Hello chat!"),
+                ("message.color", "#FF0000"),
+                ("user.username", "chatter"),
+                ("user.is_mod", True),
+                ("tip", None),
+            ],
+        ),
+        (
+            {
+                "method": EventType.ROOM_SUBJECT_CHANGE.value,
+                "id": "subject_test",
+                "object": {
+                    "broadcaster": "streamer123",
+                    "subject": "New topic here",
+                },
+            },
+            [
+                ("broadcaster", "streamer123"),
+                ("room_subject.subject", "New topic here"),
+                ("tip", None),
+                ("user", None),
+            ],
+        ),
+        (
+            {
+                "method": EventType.BROADCAST_START.value,
+                "id": "broadcast_test",
+                "object": {"broadcaster": "streamer456"},
+            },
+            [
+                ("broadcaster", "streamer456"),
+                ("user", None),
+                ("tip", None),
+                ("message", None),
+                ("room_subject", None),
+            ],
+        ),
+    ],
+)
+def test_event_properties_comprehensive(
+    event_data: dict[str, Any],
+    property_checks: list[tuple[str, Any]],
+) -> None:
+    """Test Event model properties with various data combinations."""
+    event = Event.model_validate(event_data)
 
-    user = event_with_user.user
-    assert user is not None
-    assert user.username == "tipper123"
-    assert user.color_group == "purple"
-    assert user.has_tokens is True
-    assert user.in_fanclub is False
+    for property_path, expected_value in property_checks:
+        obj = event
+        for prop in property_path.split("."):
+            obj = getattr(obj, prop, None)
+            if obj is None:
+                break
 
-    room_subject_event = Event.model_validate({
-        "method": "roomSubjectChange",
-        "id": "s",
-        "object": {"broadcaster": "u", "subject": "topic"},
-    })
-    assert room_subject_event.room_subject is not None
-    assert room_subject_event.room_subject.subject == "topic"
-    assert room_subject_event.broadcaster == "u"
+        assert obj == expected_value, (
+            f"Property {property_path} should be {expected_value}, got {obj}"
+        )
+
+
+def test_event_validation_with_invalid_data() -> None:
+    """Test Event model validation with completely invalid input data."""
+    with pytest.raises(ValueError, match="Input should be"):
+        Event.model_validate({"method": "invalid", "id": "x"})

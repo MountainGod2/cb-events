@@ -10,66 +10,75 @@ from chaturbate_events import Event, EventRouter, EventType
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "event_type",
-    [EventType.TIP, EventType.CHAT_MESSAGE, EventType.BROADCAST_START],
+    [EventType.TIP, EventType.CHAT_MESSAGE, EventType.BROADCAST_START, EventType.USER_ENTER],
 )
-async def test_router_basic_dispatch(event_type: EventType) -> None:
+async def test_router_basic_dispatch(
+    event_type: EventType, event_router: EventRouter, mock_handler: AsyncMock
+) -> None:
     """Test EventRouter event dispatching to registered handlers."""
-    router = EventRouter()
-    handler = AsyncMock()
-    router.on(event_type)(handler)
+    event_router.on(event_type)(mock_handler)
 
-    event = Event.model_validate({"method": event_type.value, "id": "x", "object": {}})
-    await router.dispatch(event)
-    handler.assert_called_once_with(event)
+    event = Event.model_validate({"method": event_type.value, "id": "test_event", "object": {}})
+    await event_router.dispatch(event)
+    mock_handler.assert_called_once_with(event)
 
-    any_handler = AsyncMock()
-    router.on_any()(any_handler)
-    await router.dispatch(event)
-    any_handler.assert_called_once_with(event)
+
+@pytest.mark.asyncio
+async def test_router_any_handler(
+    event_router: EventRouter, mock_handler: AsyncMock, sample_event: Event
+) -> None:
+    """Test EventRouter global 'any' event handler."""
+    event_router.on_any()(mock_handler)
+    await event_router.dispatch(sample_event)
+    mock_handler.assert_called_once_with(sample_event)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("setup_func", "event_type", "expected_calls"),
+    ("setup_scenario", "event_type", "expected_calls"),
     [
-        ("setup_multiple_handlers", EventType.TIP, {"handler1": 1, "handler2": 1}),
-        ("setup_no_handlers", EventType.TIP, {}),
-        (
-            "setup_global_and_specific",
-            EventType.TIP,
-            {"global_handler": 1, "tip_handler": 1, "follow_handler": 0},
-        ),
+        ("multiple_specific", EventType.TIP, 2),
+        ("no_handlers", EventType.FOLLOW, 0),
+        ("mixed_handlers", EventType.TIP, 2),
     ],
 )
 async def test_router_advanced_scenarios(
-    setup_func: str, event_type: EventType, expected_calls: dict[str, int]
+    setup_scenario: str,
+    event_type: EventType,
+    expected_calls: int,
+    event_router: EventRouter,
 ) -> None:
     """Test various EventRouter dispatching scenarios."""
-    router = EventRouter()
-    handlers = {}
+    handlers = []
 
-    if setup_func == "setup_multiple_handlers":
-        handlers["handler1"] = AsyncMock()
-        handlers["handler2"] = AsyncMock()
-        router.on(event_type)(handlers["handler1"])
-        router.on(event_type)(handlers["handler2"])
-    elif setup_func == "setup_no_handlers":
-        pass
-    elif setup_func == "setup_global_and_specific":
-        handlers["global_handler"] = AsyncMock()
-        handlers["tip_handler"] = AsyncMock()
-        handlers["follow_handler"] = AsyncMock()
-        router.on_any()(handlers["global_handler"])
-        router.on(EventType.TIP)(handlers["tip_handler"])
-        router.on(EventType.FOLLOW)(handlers["follow_handler"])
+    if setup_scenario == "multiple_specific":
+        handler1, handler2 = AsyncMock(), AsyncMock()
+        event_router.on(event_type)(handler1)
+        event_router.on(event_type)(handler2)
+        handlers = [handler1, handler2]
 
-    event = Event.model_validate({
-        "method": event_type.value,
-        "id": "test",
-        "object": {},
-    })
-    await router.dispatch(event)
+    elif setup_scenario == "mixed_handlers":
+        specific_handler, global_handler = AsyncMock(), AsyncMock()
+        event_router.on(event_type)(specific_handler)
+        event_router.on_any()(global_handler)
+        handlers = [specific_handler, global_handler]
 
-    for handler_name, expected_count in expected_calls.items():
-        if handler_name in handlers:
-            assert handlers[handler_name].call_count == expected_count
+    event = Event.model_validate({"method": event_type.value, "id": "test", "object": {}})
+    await event_router.dispatch(event)
+
+    total_calls = sum(handler.call_count for handler in handlers)
+    assert total_calls == expected_calls
+
+
+def test_router_decorator_functionality(event_router: EventRouter) -> None:
+    """Test EventRouter decorator registration functionality."""
+    tip_handler = AsyncMock()
+    decorated_handler = event_router.on(EventType.TIP)(tip_handler)
+    assert decorated_handler is tip_handler
+    assert EventType.TIP in event_router._handlers
+    assert tip_handler in event_router._handlers[EventType.TIP]
+
+    global_handler = AsyncMock()
+    decorated_global = event_router.on_any()(global_handler)
+    assert decorated_global is global_handler
+    assert global_handler in event_router._global_handlers
