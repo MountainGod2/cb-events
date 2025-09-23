@@ -4,7 +4,7 @@ WORKDIR /tmp
 COPY uv.lock pyproject.toml README.md ./
 COPY src/ ./src/
 
-RUN pip --quiet --no-cache-dir install uv==0.8.20 && \
+RUN pip --quiet --no-cache-dir install uv==0.8.22 && \
     python -m venv /opt/venv && \
     . /opt/venv/bin/activate && \
     uv sync --frozen --no-dev && \
