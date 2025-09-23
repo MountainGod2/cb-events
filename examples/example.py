@@ -3,6 +3,7 @@ import contextlib
 import os
 
 from chaturbate_events import Event, EventClient, EventRouter, EventType
+from chaturbate_events.exceptions import AuthError
 
 
 async def main() -> None:
@@ -44,6 +45,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    # Run the main function
-    with contextlib.suppress(KeyboardInterrupt):
+    # Run the main function with graceful shutdown
+    with contextlib.suppress(KeyboardInterrupt, AuthError):
         asyncio.run(main())
