@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+docs/
+htmlcov/
+
+# Development and testing
+tests/
+.pytest_cache/
+coverage.xml
+.coverage
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+
+# Other project files
+Dockerfile*
+docker-compose*
+Makefile
+.pre-commit-config.yaml
