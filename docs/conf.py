@@ -2,9 +2,14 @@
 
 from chaturbate_events import __version__
 
+# Project configuration
 project = "chaturbate_events"
 project_copyright = "2025, MountainGod2"
 author = "MountainGod2"
+version: str = __version__
+release: str = __version__
+
+# Sphinx extensions
 extensions: list[str] = [
     "myst_nb",
     "autoapi.extension",
@@ -16,11 +21,36 @@ extensions: list[str] = [
     "sphinx.ext.todo",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
+    "sphinxcontrib.autodoc_pydantic",
 ]
-version: str = __version__
-release: str = __version__
 
-# Napoleon settings
+# Build exclusions
+exclude_patterns: list[str] = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "examples/",
+    "tutorials/",
+    "**/.pytest_cache",
+    "**/__pycache__",
+]
+
+# HTML output configuration
+html_theme = "furo"
+html_title = "Chaturbate Events API Client Library"
+html_show_sourcelink = False
+html_copy_source = False
+
+html_theme_options = {
+    "source_repository": "https://github.com/MountainGod2/chaturbate-events/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+    "navigation_with_keys": True,
+    "top_of_page_button": "edit",
+    "announcement": None,
+}
+
+# Napoleon extension configuration
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = False
@@ -36,7 +66,16 @@ napoleon_preprocess_types = False
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
-# AutoAPI settings
+# Autodoc Pydantic configuration
+autodoc_pydantic_model_show_json = True
+autodoc_pydantic_model_show_config = True
+autodoc_pydantic_model_show_validator_members = True
+autodoc_pydantic_model_show_validator_summary = True
+autodoc_pydantic_field_list_validators = False
+autodoc_pydantic_model_erdantic_figure = False
+autodoc_pydantic_model_signature_prefix = "class"
+
+# AutoAPI configuration
 autoapi_dirs: list[str] = ["../src"]
 autoapi_type = "python"
 autoapi_template_dir = "_templates/autoapi"
@@ -53,94 +92,35 @@ autoapi_member_order = "groupwise"
 autoapi_root = "api"
 autoapi_keep_files = True
 autoapi_ignore = ["*/tests/*", "*/test_*"]
+autoapi_generate_api_docs = True
 
-# Intersphinx mapping
+# Intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
     "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
 }
 
-# MyST-NB settings
+# MyST-NB configuration
 nb_execution_timeout = 60
 nb_execution_allow_errors = False
 
-exclude_patterns: list[str] = [
-    "_build",
-    "Thumbs.db",
-    ".DS_Store",
-    "examples/",
-    "tutorials/",
-    "**/.pytest_cache",
-    "**/__pycache__",
-]
-html_theme = "furo"
+# Type hints configuration
+typehints_fully_qualified = False
+always_document_param_types = True
+typehints_document_rtype = True
+typehints_use_rtype = True
 
-# Modern theme options for Furo
-html_theme_options = {
-    "source_repository": "https://github.com/MountainGod2/chaturbate-events/",
-    "source_branch": "main",
-    "source_directory": "docs/",
-    "navigation_with_keys": True,
-    "top_of_page_button": "edit",
-    "announcement": None,
-}
-
-html_title = "Chaturbate Events API Client Library"
-html_show_sourcelink = False
-html_copy_source = False
-
+# Coverage extension configuration
 coverage_show_missing_items = True
 
+# sphinx.ext.todo configuration
 todo_include_todos = True
 
+# Link check configuration
 linkcheck_ignore: list[str] = [
     "https://chaturbate.com/statsapi/authtoken/",
     r"https://github\.com/.*",
     r"http://localhost:\d+",
     r"file://.*",
-]
-
-__all__ = [
-    "author",
-    "autoapi_dirs",
-    "autoapi_ignore",
-    "autoapi_keep_files",
-    "autoapi_member_order",
-    "autoapi_options",
-    "autoapi_python_class_content",
-    "autoapi_root",
-    "autoapi_template_dir",
-    "autoapi_type",
-    "coverage_show_missing_items",
-    "exclude_patterns",
-    "extensions",
-    "html_copy_source",
-    "html_show_sourcelink",
-    "html_theme",
-    "html_theme_options",
-    "html_title",
-    "intersphinx_mapping",
-    "linkcheck_ignore",
-    "napoleon_attr_annotations",
-    "napoleon_google_docstring",
-    "napoleon_include_init_with_doc",
-    "napoleon_include_private_with_doc",
-    "napoleon_include_special_with_doc",
-    "napoleon_numpy_docstring",
-    "napoleon_preprocess_types",
-    "napoleon_type_aliases",
-    "napoleon_use_admonition_for_examples",
-    "napoleon_use_admonition_for_notes",
-    "napoleon_use_admonition_for_references",
-    "napoleon_use_ivar",
-    "napoleon_use_param",
-    "napoleon_use_rtype",
-    "nb_execution_allow_errors",
-    "nb_execution_timeout",
-    "project",
-    "project_copyright",
-    "release",
-    "todo_include_todos",
-    "version",
 ]
