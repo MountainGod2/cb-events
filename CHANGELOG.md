@@ -2,6 +2,47 @@
 
 <!-- version list -->
 
+## v1.9.0 (2025-09-24)
+
+### Bug Fixes
+
+- Update uv dependency to version 0.8.22 in Dockerfile
+  ([`b7356c0`](https://github.com/MountainGod2/chaturbate-events/commit/b7356c023bfd6b1c555abd84c8eb8224e2a9e27d))
+
+### Chores
+
+- **deps**: Update dependency pytest-mock to v3.15.1
+  ([`47b38c5`](https://github.com/MountainGod2/chaturbate-events/commit/47b38c5a49094f36836427a0aca0ee70511bbb4c))
+
+- **deps**: Update pre-commit hook versions for ruff, mypy, and check-jsonschema
+  ([`6f9476a`](https://github.com/MountainGod2/chaturbate-events/commit/6f9476abe3c636413b5872e38dc1cc0ddc2d9b03))
+
+### Features
+
+- Add Dockerfile and .dockerignore for containerization
+  ([`60b691b`](https://github.com/MountainGod2/chaturbate-events/commit/60b691bfa9607e90ff2d8843ceb5804c6d89e247))
+
+- Add python-version configuration for pyrefly tool
+  ([`6abab23`](https://github.com/MountainGod2/chaturbate-events/commit/6abab23d4da331b99452265e3be044708099b875))
+
+### Refactoring
+
+- Enhance test coverage for Event models and EventRouter functionality
+  ([`24878f1`](https://github.com/MountainGod2/chaturbate-events/commit/24878f1316d36291ed006f69a56727bdb3537182))
+
+- Improve graceful shutdown handling in example script
+  ([`df5d02f`](https://github.com/MountainGod2/chaturbate-events/commit/df5d02f766f4f708fe087ef4229442323e0a94b4))
+
+- Move create_url_pattern function to test_client.py and remove unused import from conftest.py
+  ([`32c7ab3`](https://github.com/MountainGod2/chaturbate-events/commit/32c7ab3aef339875334526b0a1d737aa51f2b59c))
+
+- Remove is_private property from Message model
+  ([`0bf2fb0`](https://github.com/MountainGod2/chaturbate-events/commit/0bf2fb07855306b6fc2f542d90ef7858664ba954))
+
+- Update default retry attempts to 8 and adjust documentation accordingly
+  ([`a878d1c`](https://github.com/MountainGod2/chaturbate-events/commit/a878d1c13a97953a1e3a19556698f6188f0c98d1))
+
+
 ## v1.8.0 (2025-09-22)
 
 ### Chores
