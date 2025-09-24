@@ -239,3 +239,6 @@ max-attributes = 10
 
 [tool.pylint.format]
 max-line-length = 100
+
+[tool.pyrefly]
+python-version = "3.11.0"
