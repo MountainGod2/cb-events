@@ -1,6 +1,5 @@
 """Pytest configuration and fixtures for Chaturbate Events API tests."""
 
-import re
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
 from unittest.mock import AsyncMock
@@ -97,21 +96,6 @@ def mock_aioresponse() -> Generator[aioresponses, None, None]:
     """
     with aioresponses() as m:
         yield m
-
-
-def create_url_pattern(username: str, token: str) -> re.Pattern[str]:
-    """Create URL pattern for matching EventClient requests.
-
-    Args:
-        username: The username for the URL pattern.
-        token: The token for the URL pattern.
-
-    Returns:
-        re.Pattern[str]: Compiled regex pattern for matching URLs.
-    """
-    return re.compile(
-        f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*",
-    )
 
 
 @pytest.fixture

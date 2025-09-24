@@ -1,5 +1,6 @@
 """Tests for EventClient (polling, error handling, session, retry functionality, etc.)."""
 
+import re
 from typing import Any
 from unittest.mock import patch
 
@@ -12,7 +13,21 @@ from chaturbate_events import (
     EventType,
 )
 from chaturbate_events.exceptions import AuthError, EventsError
-from tests.conftest import create_url_pattern
+
+
+def create_url_pattern(username: str, token: str) -> re.Pattern[str]:
+    """Create URL pattern for matching EventClient requests.
+
+    Args:
+        username: The username for the URL pattern.
+        token: The token for the URL pattern.
+
+    Returns:
+        re.Pattern[str]: Compiled regex pattern for matching URLs.
+    """
+    return re.compile(
+        f"https://events\\.testbed\\.cb\\.dev/events/{username}/{token}/.*",
+    )
 
 
 @pytest.mark.asyncio
