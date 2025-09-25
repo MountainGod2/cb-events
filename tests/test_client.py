@@ -383,6 +383,36 @@ async def test_client_retry_backoff_timing(
                 await client.poll()
 
 
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_client_retry_on_cloudflare_errors(
+    credentials: dict[str, Any],
+    api_response: dict[str, Any],
+    mock_aioresponse: Any,
+) -> None:
+    """Test client retries on Cloudflare errors (521, 522, 523, 524)."""
+    url_pattern = create_url_pattern(credentials["username"], credentials["token"])
+
+    # Test each Cloudflare error code
+    cloudflare_errors = [521, 522, 523, 524]
+
+    for error_code in cloudflare_errors:
+        # Mock the error response followed by success
+        mock_aioresponse.get(
+            url_pattern, status=error_code, payload={"error": f"cloudflare error {error_code}"}
+        )
+        mock_aioresponse.get(url_pattern, payload=api_response)
+
+        async with EventClient(
+            username=credentials["username"],
+            token=credentials["token"],
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=2,
+        ) as client:
+            events = await client.poll()
+            assert events, f"Should retry and succeed for Cloudflare error {error_code}"
+
+
 @pytest.mark.parametrize(
     ("error_class", "args", "kwargs", "expected_checks"),
     [

@@ -14,6 +14,10 @@ from aiolimiter import AsyncLimiter
 from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
+    CLOUDFLARE_CONNECTION_TIMEOUT,
+    CLOUDFLARE_ORIGIN_UNREACHABLE,
+    CLOUDFLARE_TIMEOUT_OCCURRED,
+    CLOUDFLARE_WEB_SERVER_DOWN,
     DEFAULT_RETRY_ATTEMPTS,
     DEFAULT_RETRY_BACKOFF,
     DEFAULT_RETRY_EXPONENTIAL_BASE,
@@ -92,6 +96,10 @@ class EventClient:
                 HTTPStatus.SERVICE_UNAVAILABLE,
                 HTTPStatus.GATEWAY_TIMEOUT,
                 HTTPStatus.TOO_MANY_REQUESTS,
+                CLOUDFLARE_WEB_SERVER_DOWN,  # Cloudflare: Web Server Is Down
+                CLOUDFLARE_CONNECTION_TIMEOUT,  # Cloudflare: Connection Timed Out
+                CLOUDFLARE_ORIGIN_UNREACHABLE,  # Cloudflare: Origin Is Unreachable
+                CLOUDFLARE_TIMEOUT_OCCURRED,  # Cloudflare: A Timeout Occurred
             },
         )
 
