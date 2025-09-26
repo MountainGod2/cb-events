@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aioresponses import aioresponses
 
-from chaturbate_events import Event, EventClient, EventRouter, EventType
+from chaturbate_events import Event, EventClient, EventClientConfig, EventRouter, EventType
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ async def test_client(
     client = EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
     )
     yield client
     await client.close()

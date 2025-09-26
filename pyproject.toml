@@ -113,7 +113,6 @@ ignore = [
     "ISC001", # single-line-implicit-string-concatenation (conflicts with formatter)
 ]
 unfixable = []
-pylint.max-args = 10
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = [

@@ -10,6 +10,7 @@ import pytest
 from chaturbate_events import (
     Event,
     EventClient,
+    EventClientConfig,
     EventType,
 )
 from chaturbate_events.exceptions import AuthError, EventsError
@@ -43,7 +44,7 @@ async def test_client_successful_polling(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
     ) as client:
         events = await client.poll()
         assert events
@@ -62,7 +63,7 @@ async def test_client_authentication_error(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
     ) as client:
         with pytest.raises(AuthError, match="Authentication failed for"):
             await client.poll()
@@ -82,7 +83,7 @@ async def test_client_multiple_events_processing(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
     ) as client:
         events = await client.poll()
         types = [e.type for e in events]
@@ -95,7 +96,7 @@ async def test_client_resource_cleanup(credentials: dict[str, Any]) -> None:
     client = EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
     )
     async with client:
         pass
@@ -188,7 +189,7 @@ async def test_client_error_handling(
     async with EventClient(
         username=str(credentials["username"]),
         token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
+        config=EventClientConfig(use_testbed=bool(credentials["use_testbed"])),
     ) as client:
         if expected_error:
             with pytest.raises(expected_error, match=error_match):
@@ -206,7 +207,7 @@ async def test_client_session_not_initialized(credentials: dict[str, Any]) -> No
     client = EventClient(
         username=str(credentials["username"]),
         token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
+        config=EventClientConfig(use_testbed=bool(credentials["use_testbed"])),
     )
     with pytest.raises(EventsError, match="Session not initialized"):
         await client.poll()
@@ -235,7 +236,7 @@ async def test_client_continuous_polling(
     async with EventClient(
         username=str(credentials["username"]),
         token=str(credentials["token"]),
-        use_testbed=bool(credentials["use_testbed"]),
+        config=EventClientConfig(use_testbed=bool(credentials["use_testbed"])),
     ) as client:
         event_count = 0
         async for event in client:
@@ -251,10 +252,12 @@ async def test_client_retry_configuration(credentials: dict[str, Any]) -> None:
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        retry_attempts=5,
-        retry_backoff=2.0,
-        retry_max_delay=60.0,
-        retry_exponential_base=3.0,
+        config=EventClientConfig(
+            retry_attempts=5,
+            retry_backoff=2.0,
+            retry_max_delay=60.0,
+            retry_exponential_base=3.0,
+        ),
     ) as client:
         assert client._retry_options.attempts == 5
         assert client.retry_client is not None
@@ -287,8 +290,10 @@ async def test_client_retry_on_server_errors(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
-        retry_attempts=2,
+        config=EventClientConfig(
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=2,
+        ),
     ) as client:
         events = await client.poll()
         assert events
@@ -309,8 +314,10 @@ async def test_client_retry_exhaustion(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
-        retry_attempts=2,
+        config=EventClientConfig(
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=2,
+        ),
     ) as client:
         with pytest.raises(EventsError):
             await client.poll()
@@ -329,8 +336,10 @@ async def test_client_no_retry_on_auth_errors(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
-        retry_attempts=3,
+        config=EventClientConfig(
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=3,
+        ),
     ) as client:
         with pytest.raises(AuthError):
             await client.poll()
@@ -352,8 +361,10 @@ async def test_client_retry_on_rate_limit(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
-        retry_attempts=2,
+        config=EventClientConfig(
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=2,
+        ),
     ) as client:
         events = await client.poll()
         assert events
@@ -373,10 +384,12 @@ async def test_client_retry_backoff_timing(
     async with EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        use_testbed=credentials["use_testbed"],
-        retry_attempts=3,
-        retry_backoff=0.1,
-        retry_max_delay=1.0,
+        config=EventClientConfig(
+            use_testbed=credentials["use_testbed"],
+            retry_attempts=3,
+            retry_backoff=0.1,
+            retry_max_delay=1.0,
+        ),
     ) as client:
         with pytest.raises(EventsError):
             with patch("asyncio.sleep"):
@@ -406,8 +419,10 @@ async def test_client_retry_on_cloudflare_errors(
         async with EventClient(
             username=credentials["username"],
             token=credentials["token"],
-            use_testbed=credentials["use_testbed"],
-            retry_attempts=2,
+            config=EventClientConfig(
+                use_testbed=credentials["use_testbed"],
+                retry_attempts=2,
+            ),
         ) as client:
             events = await client.poll()
             assert events, f"Should retry and succeed for Cloudflare error {error_code}"
