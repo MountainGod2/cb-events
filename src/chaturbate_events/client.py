@@ -11,6 +11,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
 
+from .config import EventClientConfig
 from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
@@ -18,11 +19,6 @@ from .constants import (
     CLOUDFLARE_ORIGIN_UNREACHABLE,
     CLOUDFLARE_TIMEOUT_OCCURRED,
     CLOUDFLARE_WEB_SERVER_DOWN,
-    DEFAULT_RETRY_ATTEMPTS,
-    DEFAULT_RETRY_BACKOFF,
-    DEFAULT_RETRY_EXPONENTIAL_BASE,
-    DEFAULT_RETRY_MAX_DELAY,
-    DEFAULT_TIMEOUT,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
     TESTBED_URL,
@@ -39,30 +35,19 @@ logger = logging.getLogger(__name__)
 class EventClient:
     """HTTP client for polling Chaturbate Events API."""
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         username: str,
         token: str,
         *,
-        timeout: int = DEFAULT_TIMEOUT,
-        use_testbed: bool = False,
-        retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
-        retry_backoff: float = DEFAULT_RETRY_BACKOFF,
-        retry_exponential_base: float = DEFAULT_RETRY_EXPONENTIAL_BASE,
-        retry_max_delay: float = DEFAULT_RETRY_MAX_DELAY,
+        config: EventClientConfig | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
 
         Args:
             username: Chaturbate username for authentication.
             token: Authentication token with Events API scope.
-            timeout: Request timeout in seconds. Defaults to 10.
-            use_testbed: Whether to use the testbed API endpoint. Defaults to False.
-            retry_attempts: Maximum number of retry attempts. Defaults to 8.
-            retry_backoff: Initial retry backoff in seconds. Defaults to 1.0.
-            retry_exponential_base: Base for exponential backoff. Defaults to 2.0.
-            retry_max_delay: Maximum delay between retries in seconds. Defaults to 30.0.
+            config: Configuration object with client settings. If None, uses defaults.
 
         Raises:
             ValueError: If username or token is empty or contains only whitespace.
@@ -76,8 +61,11 @@ class EventClient:
 
         self.username = username.strip()
         self.token = token.strip()
-        self.timeout = timeout
-        self.base_url = TESTBED_URL if use_testbed else BASE_URL
+
+        # Use provided config or create default
+        self.config = config if config is not None else EventClientConfig()
+        self.timeout = self.config.timeout
+        self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
@@ -86,10 +74,10 @@ class EventClient:
         )
 
         self._retry_options = ExponentialRetry(
-            attempts=retry_attempts,
-            start_timeout=retry_backoff,
-            max_timeout=retry_max_delay,
-            factor=retry_exponential_base,
+            attempts=self.config.retry_attempts,
+            start_timeout=self.config.retry_backoff,
+            max_timeout=self.config.retry_max_delay,
+            factor=self.config.retry_exponential_base,
             statuses={
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 HTTPStatus.BAD_GATEWAY,
@@ -222,65 +210,26 @@ class EventClient:
         )
         return events
 
-    async def poll(self) -> list[Event]:
-        """Execute a single poll request and return parsed events.
+    async def _make_request(self, url: str) -> tuple[int, str]:
+        """Make an HTTP request to the API and return status and response text.
 
-        Makes an HTTP request to the Events API and parses the response into
-        Event objects. Handles authentication errors, timeouts, and maintains
-        the polling state with nextUrl for subsequent requests.
+        Args:
+            url: The URL to make the request to.
 
         Returns:
-            A list of Event objects parsed from the API response. May be empty
-            if no events are available or on timeout.
+            A tuple of (status_code, response_text).
 
         Raises:
-            EventsError: For network errors, timeouts, or invalid JSON responses.
+            EventsError: For network errors or timeouts.
         """
         if self.session is None or self.retry_client is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        url = self._build_poll_url()
-        logger.debug("Polling events from %s", self._mask_url(url))
-
         try:
             async with self._rate_limiter, self.retry_client.get(url) as resp:
                 text = await resp.text()
-
-                if resp.status in AUTH_ERROR_STATUSES:
-                    self._handle_auth_error(resp.status)
-
-                if resp.status == HTTPStatus.BAD_REQUEST and self._handle_timeout_response(text):
-                    return []
-
-                if resp.status != HTTPStatus.OK:
-                    logger.error("HTTP error %d: %s", resp.status, text[:200])
-                    msg = f"HTTP {resp.status}: {text[:200]}"
-                    raise EventsError(
-                        msg,
-                        status_code=resp.status,
-                        response_text=text,
-                    )
-
-                try:
-                    data = await resp.json()
-                except json.JSONDecodeError as json_err:
-                    logger.exception(
-                        "Invalid JSON response received",
-                        extra={
-                            "status_code": resp.status,
-                            "response_preview": text[:100],
-                        },
-                    )
-                    msg = f"Invalid JSON response: {json_err}"
-                    raise EventsError(
-                        msg,
-                        status_code=resp.status,
-                        response_text=text,
-                    ) from json_err
-
-                return self._parse_response_data(data)
-
+                return resp.status, text
         except TimeoutError as err:
             logger.warning("Request timeout after %ds", self.timeout)
             msg = f"Request timeout after {self.timeout}s"
@@ -292,6 +241,89 @@ class EventClient:
             )
             msg = f"Network error: {err}"
             raise EventsError(msg) from err
+
+    def _handle_response_status(self, status: int, text: str) -> bool:
+        """Handle response status codes and determine if processing should continue.
+
+        Args:
+            status: HTTP status code.
+            text: Response text.
+
+        Returns:
+            True if processing should continue, False if this was handled as a timeout.
+
+        Raises:
+            EventsError: For error status codes.
+        """
+        if status in AUTH_ERROR_STATUSES:
+            self._handle_auth_error(status)
+
+        if status == HTTPStatus.BAD_REQUEST and self._handle_timeout_response(text):
+            return False
+
+        if status != HTTPStatus.OK:
+            logger.error("HTTP error %d: %s", status, text[:200])
+            msg = f"HTTP {status}: {text[:200]}"
+            raise EventsError(
+                msg,
+                status_code=status,
+                response_text=text,
+            )
+
+        return True
+
+    @staticmethod
+    def _parse_json_response(text: str, status: int) -> dict[str, Any]:
+        """Parse JSON response and handle parsing errors.
+
+        Args:
+            text: Response text to parse.
+            status: HTTP status code for error context.
+
+        Returns:
+            Parsed JSON data.
+
+        Raises:
+            EventsError: If JSON parsing fails.
+        """
+        try:
+            return json.loads(text)  # type: ignore[no-any-return]
+        except json.JSONDecodeError as json_err:
+            logger.exception(
+                "Invalid JSON response received",
+                extra={
+                    "status_code": status,
+                    "response_preview": text[:100],
+                },
+            )
+            msg = f"Invalid JSON response: {json_err}"
+            raise EventsError(
+                msg,
+                status_code=status,
+                response_text=text,
+            ) from json_err
+
+    async def poll(self) -> list[Event]:
+        """Execute a single poll request and return parsed events.
+
+        Makes an HTTP request to the Events API and parses the response into
+        Event objects. Handles authentication errors, timeouts, and maintains
+        the polling state with nextUrl for subsequent requests.
+
+        Returns:
+            A list of Event objects parsed from the API response. May be empty
+            if no events are available or on timeout.
+        """
+        url = self._build_poll_url()
+        logger.debug("Polling events from %s", self._mask_url(url))
+
+        status, text = await self._make_request(url)
+
+        if not self._handle_response_status(status, text):
+            return []  # Timeout handled
+
+        data = self._parse_json_response(text, status)
+        return self._parse_response_data(data)
 
     @staticmethod
     def _extract_next_url(text: str) -> str | None:

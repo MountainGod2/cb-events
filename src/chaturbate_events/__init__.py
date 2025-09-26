@@ -8,6 +8,7 @@ See individual module docstrings and the project README for usage examples and d
 from importlib.metadata import version as get_version
 
 from .client import EventClient
+from .config import EventClientConfig
 from .models import (
     Event,
     EventType,
@@ -22,6 +23,7 @@ __version__ = get_version("chaturbate-events")
 __all__ = [
     "Event",
     "EventClient",
+    "EventClientConfig",
     "EventRouter",
     "EventType",
     "Message",

@@ -73,12 +73,7 @@ Or pass directly to client:
 ```python
 from chaturbate_events import EventClient
 
-client = EventClient(
-    username="your_username",
-    token="your_api_token",
-    timeout=10,
-    use_testbed=True  # For development
-)
+client = EventClient(username="your_username"token="your_api_token")
 ```
 
 ### Retry Configuration
@@ -91,15 +86,19 @@ from chaturbate_events import EventClient
 client = EventClient(
     username="your_username",
     token="your_api_token",
-    retry_attempts=5,            # Maximum retry attempts
-    retry_backoff=2.0,           # Initial backoff delay in seconds
-    retry_max_delay=60.0,        # Maximum delay between retries
-    retry_exponential_base=2.0   # Exponential backoff factor
-)
+    config=EventClientConfig(
+        timeout=10
+        use_testbed=True,
+        retry_attempts=5,            # Maximum retry attempts
+        retry_backoff=2.0,           # Initial backoff delay in seconds
+        retry_max_delay=60.0,        # Maximum delay between retries
+        retry_exponential_base=2.0   # Exponential backoff factor
+        )
+    )
 ```
 
 **Default retry behavior:**
-- Retries on: 500, 502, 503, 504, 429 status codes
+- Retries on: 500, 502-504, 521-524 (Cloudflare), and 429 status codes
 - No retry on: authentication errors (401, 403)
 - 8 attempts with exponential backoff (1s, 2s, 4s...)
 - Maximum delay: 30 seconds
@@ -124,6 +123,7 @@ except EventsError as e:
 - Python 3.11+
 - aiohttp
 - pydantic
+- aiolimiter
 
 ## License
 

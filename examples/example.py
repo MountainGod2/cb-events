@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import os
 
-from chaturbate_events import Event, EventClient, EventRouter, EventType
+from chaturbate_events import Event, EventClient, EventClientConfig, EventRouter, EventType
 from chaturbate_events.exceptions import AuthError
 
 
@@ -38,7 +38,7 @@ async def main() -> None:
         print(f"Event: {event.type}")
 
     # Connect and process events
-    async with EventClient(username, token, use_testbed=True) as client:
+    async with EventClient(username, token, config=EventClientConfig(use_testbed=True)) as client:
         print("Listening for events... (Ctrl+C to stop)")
         async for event in client:
             await router.dispatch(event)
