@@ -39,7 +39,6 @@ class EventClient:
         self,
         username: str,
         token: str,
-        *,
         config: EventClientConfig | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
