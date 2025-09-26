@@ -42,7 +42,7 @@ build-backend = "hatchling.build"
 build = ["python-semantic-release==10.4.1"]
 dev = [
     "aioresponses==0.7.8",
-    "mypy==1.18.1",
+    "mypy==1.18.2",
     "pre-commit==4.3.0",
     "pylint==3.3.8",
     "pyright==1.1.405",
@@ -52,7 +52,7 @@ dev = [
     "pytest-mock==3.15.1",
     "pytest==8.4.2",
     "python-semantic-release==10.4.1",
-    "ruff==0.13.0",
+    "ruff==0.13.1",
 ]
 docs = [
     "autodoc-pydantic==2.2.0",
