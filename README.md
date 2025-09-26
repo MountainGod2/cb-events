@@ -113,9 +113,9 @@ try:
         async for event in client:
             await router.dispatch(event)
 except AuthError:
-    print("Invalid credentials")
+    logger.error("Authentication failed")
 except EventsError as e:
-    print(f"API error: {e}")
+    logger.error("API error: %s", e.message)
 ```
 
 ## Requirements
