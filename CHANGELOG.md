@@ -2,6 +2,38 @@
 
 <!-- version list -->
 
+## v1.10.0 (2025-09-26)
+
+### Chores
+
+- **deps**: Update dev-tools
+  ([`50adc7e`](https://github.com/MountainGod2/chaturbate-events/commit/50adc7e8cc6a9c18f3efce3b3153bd8d0b321d25))
+
+### Documentation
+
+- Add autodoc-pydantic and settings
+  ([`7972be7`](https://github.com/MountainGod2/chaturbate-events/commit/7972be7ab233aaee2a300b6faae12756c94b0d6f))
+
+- **README**: Refactor error handling in example
+  ([`867bd48`](https://github.com/MountainGod2/chaturbate-events/commit/867bd48d7bce3358aad824fc2606d14dcdd45134))
+
+### Features
+
+- Add Cloudflare error handling and retry tests in EventClient
+  ([`4025f06`](https://github.com/MountainGod2/chaturbate-events/commit/4025f06f313c368c023e7d071de7c1a2e55ce878))
+
+- Introduce EventClientConfig for improved configuration management
+  ([`d72090f`](https://github.com/MountainGod2/chaturbate-events/commit/d72090f33489ed026437eec1b97b4129a4e3b655))
+
+- Refactor EventClient initialization to use EventClientConfig for improved configuration management
+  ([`6047035`](https://github.com/MountainGod2/chaturbate-events/commit/60470353be78730b198392a69211be9171dae6f1))
+
+### Testing
+
+- Add tests for EventClientConfig validation
+  ([`9d2eb63`](https://github.com/MountainGod2/chaturbate-events/commit/9d2eb63408485e2ac1f0ad3fba30ee5ab92157d6))
+
+
 ## v1.9.0 (2025-09-24)
 
 ### Bug Fixes
