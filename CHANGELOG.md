@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.11.0 (2025-09-27)
+
+### Bug Fixes
+
+- **Dockerfile**: Add '-u' flag to python entrypoint for unbuffered output
+  ([`8984894`](https://github.com/MountainGod2/chaturbate-events/commit/898489447b3c941767c49c45fb441d8e965c812b))
+
+### Chores
+
+- **pyproject**: Update organization
+  ([`8c3a264`](https://github.com/MountainGod2/chaturbate-events/commit/8c3a26491ebf989a79128b75a2f473d414c355cf))
+
+### Features
+
+- **config**: Add example environment file for Chaturbate API credentials
+  ([`c607eda`](https://github.com/MountainGod2/chaturbate-events/commit/c607eda015f0ce40bf0dbfcd381545ddf51d9f74))
+
+### Refactoring
+
+- **client**: Remove redundant asterisk in EventClient constructor parameters
+  ([`2376cdd`](https://github.com/MountainGod2/chaturbate-events/commit/2376cdd8c557c7cffe68795c610a2a916c82d3f9))
+
+
 ## v1.10.0 (2025-09-26)
 
 ### Chores
