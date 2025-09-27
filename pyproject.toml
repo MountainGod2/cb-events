@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling==1.27.0", "hatch-fancy-pypi-readme==25.1.0"]
+build-backend = "hatchling.build"
+
 [project]
 name = "chaturbate-events"
 version = "1.10.0"
@@ -10,7 +14,7 @@ dependencies = ["aiohttp==3.12.15", "aiohttp-retry==2.9.1", "aiolimiter==1.2.1",
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -28,39 +32,37 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/MountainGod2/chaturbate-events"
-"Documentation" = "https://github.com/MountainGod2/chaturbate-events#readme"
-"Repository" = "https://github.com/MountainGod2/chaturbate-events.git"
-"Changelog" = "https://github.com/MountainGod2/chaturbate-events/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/MountainGod2/chaturbate-events"
+Documentation = "https://github.com/MountainGod2/chaturbate-events#readme"
+Repository = "https://github.com/MountainGod2/chaturbate-events.git"
+Changelog = "https://github.com/MountainGod2/chaturbate-events/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/MountainGod2/chaturbate-events/issues"
-
-[build-system]
-requires = ["hatchling==1.27.0", "hatch-fancy-pypi-readme==25.1.0"]
-build-backend = "hatchling.build"
 
 [dependency-groups]
 build = ["python-semantic-release==10.4.1"]
+
 dev = [
-    "aioresponses==0.7.8",
-    "mypy==1.18.2",
-    "pre-commit==4.3.0",
-    "pylint==3.3.8",
-    "pyright==1.1.405",
-    "pytest-aiohttp==1.1.0",
+    "pytest==8.4.2",
     "pytest-asyncio==1.2.0",
+    "pytest-aiohttp==1.1.0",
     "pytest-cov==7.0.0",
     "pytest-mock==3.15.1",
-    "pytest==8.4.2",
-    "python-semantic-release==10.4.1",
+    "aioresponses==0.7.8",
     "ruff==0.13.1",
+    "mypy==1.18.2",
+    "pyright==1.1.405",
+    "pylint==3.3.8",
+    "pre-commit==4.3.0",
+    "python-semantic-release==10.4.1",
 ]
+
 docs = [
+    "sphinx==8.2.3",
+    "sphinx-autoapi==3.6.0",
+    "sphinx-autodoc-typehints==3.2.0",
     "autodoc-pydantic==2.2.0",
     "furo==2025.7.19",
     "myst-nb==1.3.0",
-    "sphinx-autoapi==3.6.0",
-    "sphinx-autodoc-typehints==3.2.0",
-    "sphinx==8.2.3",
 ]
 
 [tool.hatch]
@@ -69,7 +71,7 @@ metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
 metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Replace relative links to the GitHub repository with absolute links.
+# Replace relative links in the README with absolute links to the GitHub repository
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/chaturbate-events/tree/main/\g<3>)'
 
@@ -107,34 +109,12 @@ indent-width = 4
 [tool.ruff.lint]
 preview = true
 select = ["ALL"]
-ignore = [
-    "COM812", # trailing-comma-missing (conflicts with formatter)
-    "CPY001", # missing-copyright-notice
-    "ISC001", # single-line-implicit-string-concatenation (conflicts with formatter)
-]
+ignore = ["COM812", "CPY001", "ISC001"]
 unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = [
-    "ANN001", # missing-type-annotation-for-function-argument
-    "ANN202", # missing-return-type-annotation-for-private-function
-    "D100",   # missing-docstring-in-public-module
-    "D103",   # missing-docstring-in-public-function
-    "D104",   # missing-docstring-in-public-package
-    "T201",   # print-found
-    "RUF029", # function-uses-implicit-return
-    "INP001", # implicit-namespace-package
-    "TRY400", # use-logging-exception
-]
-"tests/*" = [
-    "S101",    # assert-used
-    "S105",    # hardcoded-credentials
-    "S106",    # hardcoded-password-func-arg
-    "SLF001",  # private-member-access
-    "PLR2004", # magic-value-comparison
-    "ANN401",  # any-type
-    "ARG001",  # unused-function-argument
-]
+"examples/*" = ["ANN001", "ANN202", "D100", "D103", "D104", "T201", "RUF029", "INP001", "TRY400"]
+"tests/*" = ["S101", "S105", "S106", "SLF001", "PLR2004", "ANN401", "ARG001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -170,6 +150,31 @@ disallow_untyped_defs = false
 no_implicit_optional = false
 strict_optional = false
 
+[tool.pyright]
+python-version = "3.11.0"
+
+[[tool.pyright.overrides]]
+include = ["examples/**"]
+reportUnusedFunction = "none"
+reportMissingImports = "none"
+
+[tool.pylint.main]
+load-plugins = ["pylint.extensions.typing"]
+
+[tool.pylint.messages_control]
+disable = [
+    "too-few-public-methods",
+    "too-many-arguments",
+    "line-too-long",
+    "missing-module-docstring",
+]
+
+[tool.pylint.design]
+max-attributes = 10
+
+[tool.pylint.format]
+max-line-length = 100
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
@@ -187,11 +192,6 @@ markers = [
     "e2e: marks tests as end-to-end tests",
 ]
 filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
-
-[[tool.pyright.overrides]]
-include = ["examples/**"]
-reportUnusedFunction = "none"
-reportMissingImports = "none"
 
 [tool.coverage.run]
 source = ["src/"]
@@ -222,23 +222,3 @@ directory = "htmlcov"
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
 skips = ["B101"]
-
-[tool.pylint.main]
-load-plugins = ["pylint.extensions.typing"]
-
-[tool.pylint.messages_control]
-disable = [
-    "too-few-public-methods",
-    "too-many-arguments",
-    "line-too-long",            # handled by ruff/black
-    "missing-module-docstring", # handled by ruff
-]
-
-[tool.pylint.design]
-max-attributes = 10
-
-[tool.pylint.format]
-max-line-length = 100
-
-[tool.pyrefly]
-python-version = "3.11.0"
