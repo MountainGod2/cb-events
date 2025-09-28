@@ -7,13 +7,13 @@ from unittest.mock import patch
 import aiohttp
 import pytest
 
-from chaturbate_events import (
+from cb_events import (
     Event,
     EventClient,
     EventClientConfig,
     EventType,
 )
-from chaturbate_events.exceptions import AuthError, EventsError
+from cb_events.exceptions import AuthError, EventsError
 
 
 def create_url_pattern(username: str, token: str) -> re.Pattern[str]:

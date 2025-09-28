@@ -2,8 +2,8 @@ import asyncio
 import contextlib
 import os
 
-from chaturbate_events import Event, EventClient, EventClientConfig, EventRouter, EventType
-from chaturbate_events.exceptions import AuthError
+from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
+from cb_events.exceptions import AuthError
 
 
 async def main() -> None:

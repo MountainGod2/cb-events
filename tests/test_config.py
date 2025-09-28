@@ -2,8 +2,8 @@
 
 import pytest
 
-from chaturbate_events.config import EventClientConfig
-from chaturbate_events.constants import (
+from cb_events.config import EventClientConfig
+from cb_events.constants import (
     DEFAULT_RETRY_ATTEMPTS,
     DEFAULT_RETRY_BACKOFF,
     DEFAULT_RETRY_EXPONENTIAL_BASE,

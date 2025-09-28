@@ -1,15 +1,15 @@
-# Chaturbate Events
+# CB Events
 
 Async Python wrapper for Chaturbate Events API with real-time event notifications.
 
-[![PyPI](https://img.shields.io/pypi/v/chaturbate-events)](https://pypi.org/project/chaturbate-events/)
-[![Python](https://img.shields.io/pypi/pyversions/chaturbate-events)](https://pypi.org/project/chaturbate-events/)
+[![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
+[![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
 [![License](https://img.shields.io/github/license/MountainGod2/chaturbate-events)](https://github.com/MountainGod2/chaturbate-events/tree/main/LICENSE)
 
 ## Installation
 
 ```bash
-pip install chaturbate-events
+pip install cb-events
 ```
 
 ## Quick Start
@@ -17,7 +17,7 @@ pip install chaturbate-events
 ```python
 import asyncio
 import os
-from chaturbate_events import EventClient, EventRouter, EventType
+from cb_events import EventClient, EventRouter, EventType
 
 async def main():
     # Get credentials from environment
@@ -82,7 +82,7 @@ client = EventClient(
 ## Error Handling
 
 ```python
-from chaturbate_events.exceptions import EventsError, AuthError
+from cb_events.exceptions import EventsError, AuthError
 
 try:
     async with EventClient(username, token) as client:

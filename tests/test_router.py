@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from chaturbate_events import Event, EventRouter, EventType
+from cb_events import Event, EventRouter, EventType
 
 
 @pytest.mark.asyncio

@@ -232,6 +232,77 @@ wheels = [
 ]
 
 [[package]]
+name = "cb-events"
+version = "1.11.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "aiohttp-retry" },
+    { name = "aiolimiter" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+build = [
+    { name = "python-semantic-release" },
+]
+dev = [
+    { name = "aioresponses" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pylint" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-aiohttp" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "python-semantic-release" },
+    { name = "ruff" },
+]
+docs = [
+    { name = "autodoc-pydantic" },
+    { name = "furo" },
+    { name = "myst-nb" },
+    { name = "sphinx" },
+    { name = "sphinx-autoapi" },
+    { name = "sphinx-autodoc-typehints" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = "==3.12.15" },
+    { name = "aiohttp-retry", specifier = "==2.9.1" },
+    { name = "aiolimiter", specifier = "==1.2.1" },
+    { name = "pydantic", specifier = "==2.11.9" },
+]
+
+[package.metadata.requires-dev]
+build = [{ name = "python-semantic-release", specifier = "==10.4.1" }]
+dev = [
+    { name = "aioresponses", specifier = "==0.7.8" },
+    { name = "mypy", specifier = "==1.18.2" },
+    { name = "pre-commit", specifier = "==4.3.0" },
+    { name = "pylint", specifier = "==3.3.8" },
+    { name = "pyright", specifier = "==1.1.405" },
+    { name = "pytest", specifier = "==8.4.2" },
+    { name = "pytest-aiohttp", specifier = "==1.1.0" },
+    { name = "pytest-asyncio", specifier = "==1.2.0" },
+    { name = "pytest-cov", specifier = "==7.0.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
+    { name = "python-semantic-release", specifier = "==10.4.1" },
+    { name = "ruff", specifier = "==0.13.1" },
+]
+docs = [
+    { name = "autodoc-pydantic", specifier = "==2.2.0" },
+    { name = "furo", specifier = "==2025.7.19" },
+    { name = "myst-nb", specifier = "==1.3.0" },
+    { name = "sphinx", specifier = "==8.2.3" },
+    { name = "sphinx-autoapi", specifier = "==3.6.0" },
+    { name = "sphinx-autodoc-typehints", specifier = "==3.2.0" },
+]
+
+[[package]]
 name = "certifi"
 version = "2025.8.3"
 source = { registry = "https://pypi.org/simple" }
@@ -370,77 +441,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/8c/9839225320046ed279c6e839d51f028342eb77c91c89b8ef2549f951f3ec/charset_normalizer-3.4.3-cp314-cp314-win32.whl", hash = "sha256:c6dbd0ccdda3a2ba7c2ecd9d77b37f3b5831687d8dc1b6ca5f56a4880cc7b7ce", size = 100086, upload-time = "2025-08-09T07:56:52.722Z" },
     { url = "https://files.pythonhosted.org/packages/ee/7a/36fbcf646e41f710ce0a563c1c9a343c6edf9be80786edeb15b6f62e17db/charset_normalizer-3.4.3-cp314-cp314-win_amd64.whl", hash = "sha256:73dc19b562516fc9bcf6e5d6e596df0b4eb98d87e4f79f3ae71840e6ed21361c", size = 107400, upload-time = "2025-08-09T07:56:55.172Z" },
     { url = "https://files.pythonhosted.org/packages/8a/1f/f041989e93b001bc4e44bb1669ccdcf54d3f00e628229a85b08d330615c5/charset_normalizer-3.4.3-py3-none-any.whl", hash = "sha256:ce571ab16d890d23b5c278547ba694193a45011ff86a9162a71307ed9f86759a", size = 53175, upload-time = "2025-08-09T07:57:26.864Z" },
-]
-
-[[package]]
-name = "chaturbate-events"
-version = "1.11.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aiohttp" },
-    { name = "aiohttp-retry" },
-    { name = "aiolimiter" },
-    { name = "pydantic" },
-]
-
-[package.dev-dependencies]
-build = [
-    { name = "python-semantic-release" },
-]
-dev = [
-    { name = "aioresponses" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pylint" },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-aiohttp" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "python-semantic-release" },
-    { name = "ruff" },
-]
-docs = [
-    { name = "autodoc-pydantic" },
-    { name = "furo" },
-    { name = "myst-nb" },
-    { name = "sphinx" },
-    { name = "sphinx-autoapi" },
-    { name = "sphinx-autodoc-typehints" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = "==3.12.15" },
-    { name = "aiohttp-retry", specifier = "==2.9.1" },
-    { name = "aiolimiter", specifier = "==1.2.1" },
-    { name = "pydantic", specifier = "==2.11.9" },
-]
-
-[package.metadata.requires-dev]
-build = [{ name = "python-semantic-release", specifier = "==10.4.1" }]
-dev = [
-    { name = "aioresponses", specifier = "==0.7.8" },
-    { name = "mypy", specifier = "==1.18.2" },
-    { name = "pre-commit", specifier = "==4.3.0" },
-    { name = "pylint", specifier = "==3.3.8" },
-    { name = "pyright", specifier = "==1.1.405" },
-    { name = "pytest", specifier = "==8.4.2" },
-    { name = "pytest-aiohttp", specifier = "==1.1.0" },
-    { name = "pytest-asyncio", specifier = "==1.2.0" },
-    { name = "pytest-cov", specifier = "==7.0.0" },
-    { name = "pytest-mock", specifier = "==3.15.1" },
-    { name = "python-semantic-release", specifier = "==10.4.1" },
-    { name = "ruff", specifier = "==0.13.1" },
-]
-docs = [
-    { name = "autodoc-pydantic", specifier = "==2.2.0" },
-    { name = "furo", specifier = "==2025.7.19" },
-    { name = "myst-nb", specifier = "==1.3.0" },
-    { name = "sphinx", specifier = "==8.2.3" },
-    { name = "sphinx-autoapi", specifier = "==3.6.0" },
-    { name = "sphinx-autodoc-typehints", specifier = "==3.2.0" },
 ]
 
 [[package]]

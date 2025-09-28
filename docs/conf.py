@@ -1,9 +1,9 @@
 """Documentation configuration file for Sphinx."""  # noqa: INP001
 
-from chaturbate_events import __version__
+from cb_events import __version__
 
 # Project configuration
-project = "chaturbate_events"
+project = "cb_events"
 project_copyright = "2025, MountainGod2"
 author = "MountainGod2"
 version: str = __version__
@@ -37,7 +37,7 @@ exclude_patterns: list[str] = [
 
 # HTML output configuration
 html_theme = "furo"
-html_title = "Chaturbate Events API Client Library"
+html_title = "CB Events API Client Library"
 html_show_sourcelink = False
 html_copy_source = False
 

@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 
-from chaturbate_events import Event, EventClient, EventClientConfig, EventRouter, EventType
-from chaturbate_events.constants import TESTBED_URL
-from chaturbate_events.exceptions import AuthError
+from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
+from cb_events.constants import TESTBED_URL
+from cb_events.exceptions import AuthError
 
 
 @pytest.mark.e2e

@@ -4,8 +4,8 @@ from typing import Any
 
 import pytest
 
-from chaturbate_events import Event, EventType
-from chaturbate_events.models import Message, RoomSubject, Tip, User
+from cb_events import Event, EventType
+from cb_events.models import Message, RoomSubject, Tip, User
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-"""Chaturbate Events API Python package.
+"""CB Events API Python package.
 
 This package provides an async Python wrapper for the Chaturbate Events API.
 
@@ -19,7 +19,7 @@ from .models import (
 )
 from .router import EventRouter
 
-__version__ = get_version("chaturbate-events")
+__version__ = get_version("cb-events")
 __all__ = [
     "Event",
     "EventClient",

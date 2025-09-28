@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aioresponses import aioresponses
 
-from chaturbate_events import Event, EventClient, EventClientConfig, EventRouter, EventType
+from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
 
 
 @pytest.fixture
