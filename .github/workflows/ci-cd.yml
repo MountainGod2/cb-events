@@ -160,8 +160,8 @@ jobs:
       - name: Install distribution artifact
         if: ${{ steps.download-artifacts.outcome == 'success' }}
         run: |
-          uv pip uninstall chaturbate-events
-          uv pip install dist/chaturbate_events-*.whl
+          uv pip uninstall cb-events
+          uv pip install dist/cb_events-*.whl
 
       - name: Run end-to-end tests
         run: make test-e2e
@@ -244,11 +244,11 @@ jobs:
     needs:
       - build
       - release
-    if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/chaturbate-events' }}
+    if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/cb-events' }}
 
     environment:
       name: pypi
-      url: https://pypi.org/project/chaturbate-events/
+      url: https://pypi.org/project/cb-events/
 
     permissions:
       id-token: write

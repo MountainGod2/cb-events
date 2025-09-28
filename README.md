@@ -4,7 +4,7 @@ Async Python wrapper for Chaturbate Events API with real-time event notification
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
-[![License](https://img.shields.io/github/license/MountainGod2/chaturbate-events)](./LICENSE)
+[![License](https://img.shields.io/github/license/MountainGod2/cb-events)](./LICENSE)
 
 ## Installation
 

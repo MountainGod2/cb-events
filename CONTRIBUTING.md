@@ -1,4 +1,4 @@
-# Contributing to chaturbate-events
+# Contributing to cb-events
 
 Thanks for pitching in. Here’s how to help:
 
