@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v1.11.1 (2025-09-28)
+
+### Bug Fixes
+
+- Update references from 'chaturbate-events' to 'cb-events'
+  ([`bdcb541`](https://github.com/MountainGod2/cb-events/commit/bdcb54126c5bb8187b794a91dc80abb5026dc41e))
+
+- **semantic-release**: Add patterns for docs and initial commit to exclude commit patterns
+  ([`859dd31`](https://github.com/MountainGod2/cb-events/commit/859dd3114c696a9a9b93e52615b9e650c41c865f))
+
+### Refactoring
+
+- **all**: Change project name from 'chaturbate-events' to 'cb-events'
+  ([`877355a`](https://github.com/MountainGod2/cb-events/commit/877355a8d4f7b756cc44ad25665f1eec8b5ff3c9))
+
+
 ## v1.11.0 (2025-09-27)
 
 ### Bug Fixes
