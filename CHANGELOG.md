@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.12.0 (2025-09-29)
+
+### Features
+
+- **models**: Add is_private property to determine message type
+  ([`ae04d36`](https://github.com/MountainGod2/cb-events/commit/ae04d366f2efc2a9ce7d5a36a7bd1ebdb47c9b7d))
+
+
 ## v1.11.1 (2025-09-28)
 
 ### Bug Fixes
