@@ -128,6 +128,55 @@ def test_model_validation_comprehensive(
 
 
 @pytest.mark.parametrize(
+    ("message_data", "expected_is_private"),
+    [
+        # Public chat message (no from_user/to_user)
+        (
+            {"message": "Hello everyone!"},
+            False,
+        ),
+        # Public chat message with color
+        (
+            {"message": "Hello!", "color": "#FF0000", "font": "arial"},
+            False,
+        ),
+        # Private message (has both from_user and to_user)
+        (
+            {
+                "message": "Private hello",
+                "fromUser": "sender",
+                "toUser": "receiver",
+            },
+            True,
+        ),
+        # Incomplete private message (only from_user)
+        (
+            {
+                "message": "Not private",
+                "fromUser": "sender",
+            },
+            False,
+        ),
+        # Incomplete private message (only to_user)
+        (
+            {
+                "message": "Not private",
+                "toUser": "receiver",
+            },
+            False,
+        ),
+    ],
+)
+def test_message_is_private_property(
+    message_data: dict[str, Any],
+    expected_is_private: bool,
+) -> None:
+    """Test Message.is_private property correctly identifies private vs public messages."""
+    message = Message.model_validate(message_data)
+    assert message.is_private == expected_is_private
+
+
+@pytest.mark.parametrize(
     ("invalid_data", "expected_error_pattern"),
     [
         ({"method": "tip"}, "Field required"),

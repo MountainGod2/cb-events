@@ -93,6 +93,16 @@ class Message(BaseEventModel):
     from_user: str | None = Field(default=None, alias="fromUser")
     to_user: str | None = Field(default=None, alias="toUser")
 
+    @property
+    def is_private(self) -> bool:
+        """Check if this message is a private message.
+
+        Returns:
+            True if this is a private message (has both from_user and to_user),
+            False if this is a public chat message.
+        """
+        return self.from_user is not None and self.to_user is not None
+
 
 class Tip(BaseEventModel):
     """Tip transaction details from tip events.
