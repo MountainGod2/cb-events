@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v1.13.0 (2025-09-29)
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`23e82c5`](https://github.com/MountainGod2/cb-events/commit/23e82c5c7edff080423ea458c277d047c05e6c82))
+
+### Documentation
+
+- **config**: Update docstring to clarify attributes of EventClientConfig
+  ([`678ed15`](https://github.com/MountainGod2/cb-events/commit/678ed158295048e58f342929c856d02cee24298e))
+
+- **README**: Update usage instructions
+  ([`8a67c9e`](https://github.com/MountainGod2/cb-events/commit/8a67c9e208c5cb922c63aae3dbb69d18f8675331))
+
+### Features
+
+- **router**: Add logging for event dispatching
+  ([`47754e9`](https://github.com/MountainGod2/cb-events/commit/47754e9f5a1b0d95948da5033282f4575b79ed4a))
+
+### Refactoring
+
+- **constants**: Reorganize retry attributes
+  ([`cd7eabb`](https://github.com/MountainGod2/cb-events/commit/cd7eabb067e80e5d1c33c3eac2bd8f6568c2417a))
+
+### Testing
+
+- **client**: Add tests for session management and timeout response handling
+  ([`7b6b5f2`](https://github.com/MountainGod2/cb-events/commit/7b6b5f225c38c19b2768786daac244e366ffa80c))
+
+
 ## v1.12.0 (2025-09-29)
 
 ### Features
