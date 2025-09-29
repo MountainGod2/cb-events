@@ -514,3 +514,155 @@ def test_exception_repr_coverage() -> None:
     error_no_status = EventsError("Test error")
     repr_no_status = repr(error_no_status)
     assert "status_code=" not in repr_no_status
+
+
+@pytest.mark.asyncio
+async def test_client_session_closed_and_recreated(credentials: dict[str, Any]) -> None:
+    """Test that session is recreated when closed."""
+    client = EventClient(
+        username=credentials["username"],
+        token=credentials["token"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+    )
+
+    # First context manager entry
+    async with client:
+        first_session = client.session
+        assert first_session is not None
+        assert not first_session.closed
+
+    # Manually close the session to simulate it being closed
+    if first_session:
+        await first_session.close()
+        assert first_session.closed
+
+    # Re-enter context manager - should create new session due to closed state
+    async with client:
+        second_session = client.session
+        assert second_session is not None
+        assert not second_session.closed
+        assert second_session is not first_session  # Should be a different session
+
+
+@pytest.mark.asyncio
+async def test_client_session_closed_branch(credentials: dict[str, Any]) -> None:
+    """Test the specific branch where session exists but is closed."""
+    client = EventClient(
+        username=credentials["username"],
+        token=credentials["token"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+    )
+
+    await client.__aenter__()  # noqa: PLC2801
+    first_session = client.session
+    assert first_session is not None
+    assert not first_session.closed
+
+    # Close the session but don't call client.close() to keep the session reference
+    await first_session.close()
+    assert first_session.closed
+
+    # Now call __aenter__ again - this should trigger the session.closed branch
+    await client.__aenter__()  # type: ignore[unreachable]  # noqa: PLC2801
+    second_session = client.session
+    assert second_session is not None
+    assert not second_session.closed
+    assert second_session is not first_session
+
+    # Clean up
+    await client.close()
+
+
+@pytest.mark.asyncio
+async def test_client_aenter_session_not_closed(credentials: dict[str, Any]) -> None:
+    """Test __aenter__ when session exists and is not closed."""
+    client = EventClient(
+        username=credentials["username"],
+        token=credentials["token"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+    )
+
+    # Create a session first
+    await client.__aenter__()  # noqa: PLC2801
+    first_session = client.session
+    assert first_session is not None
+    assert not first_session.closed
+
+    # Call __aenter__ again without closing - should return same session
+    result = await client.__aenter__()  # noqa: PLC2801
+    assert result is client
+    assert client.session is first_session  # Should be the same session
+    session = client.session
+    assert session is not None
+    assert not session.closed
+
+    # Clean up
+    await client.close()
+
+
+def test_handle_timeout_response_no_next_url(credentials: dict[str, Any]) -> None:
+    """Test _handle_timeout_response returns False when no nextUrl is extracted."""
+    client = EventClient(
+        username=credentials["username"],
+        token=credentials["token"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+    )
+
+    # Test with valid JSON but no timeout indicator
+    response_text = '{"status": "some other error", "message": "different error"}'
+    result = client._handle_timeout_response(response_text)
+    assert result is False
+    assert client._next_url is None
+
+
+def test_handle_timeout_response_with_next_url(credentials: dict[str, Any]) -> None:
+    """Test _handle_timeout_response returns True when nextUrl is extracted."""
+    client = EventClient(
+        username=credentials["username"],
+        token=credentials["token"],
+        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+    )
+
+    # Test with timeout indicator and nextUrl
+    response_text = '{"status": "waited too long for events", "nextUrl": "http://example.com/next"}'
+    result = client._handle_timeout_response(response_text)
+    assert result is True
+    assert client._next_url == "http://example.com/next"
+
+
+def test_extract_next_url_no_timeout_indicator() -> None:
+    """Test _extract_next_url returns None when timeout indicator is not present."""
+    # Test with valid JSON but no timeout indicator
+    response_text = (
+        '{"status": "some error", "message": "different error", "nextUrl": "http://example.com"}'
+    )
+    result = EventClient._extract_next_url(response_text)
+    assert result is None
+
+    # Test with empty status
+    response_text = '{"status": "", "nextUrl": "http://example.com"}'
+    result = EventClient._extract_next_url(response_text)
+    assert result is None
+
+    # Test with status that doesn't contain timeout indicator
+    response_text = '{"status": "some other error", "nextUrl": "http://example.com"}'
+    result = EventClient._extract_next_url(response_text)
+    assert result is None
+
+
+def test_extract_next_url_with_timeout_indicator() -> None:
+    """Test _extract_next_url returns nextUrl when timeout indicator is present."""
+    # Test with timeout indicator and nextUrl
+    response_text = '{"status": "waited too long for events", "nextUrl": "http://example.com/next"}'
+    result = EventClient._extract_next_url(response_text)
+    assert result == "http://example.com/next"
+
+    # Test with timeout indicator and nextUrl as None
+    response_text = '{"status": "waited too long for events", "nextUrl": null}'
+    result = EventClient._extract_next_url(response_text)
+    assert result is None
+
+    # Test with timeout indicator but no nextUrl field
+    response_text = '{"status": "waited too long for events"}'
+    result = EventClient._extract_next_url(response_text)
+    assert result is None
