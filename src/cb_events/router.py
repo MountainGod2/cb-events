@@ -1,9 +1,14 @@
 """Event routing system with decorator-based handler registration."""
 
+import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 
 from .models import Event, EventType
+
+logger = logging.getLogger(__name__)
+"""Module-level logger for the EventRouter."""
+
 
 EventHandler = Callable[[Event], Awaitable[None]]
 """Type alias for event handler functions."""
@@ -59,6 +64,11 @@ class EventRouter:
         Args:
             event: The event to dispatch to registered handlers.
         """
+        logger.debug(
+            "Dispatching %s event to %d handlers",
+            event.type.value,
+            len(self._global_handlers) + len(self._handlers.get(event.type.value, [])),
+        )
         for handler in self._global_handlers:
             await handler(event)
         for handler in self._handlers.get(event.type.value, []):
