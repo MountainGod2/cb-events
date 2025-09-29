@@ -15,7 +15,13 @@ from .constants import (
 class EventClientConfig:
     """Configuration object for EventClient initialization.
 
-    This class encapsulates all configuration parameters for the EventClient
+    Attributes:
+        timeout (int): Timeout for API requests in seconds. Default is 10.
+        use_testbed (bool): Whether to use the testbed API endpoint. Default is False.
+        retry_attempts (int): Number of retry attempts for failed requests. Default is 8.
+        retry_backoff (float): Initial backoff time in seconds between retries. Default is 1.0.
+        retry_exponential_base (float): Base for exponential backoff calculation. Default is 2.0.
+        retry_max_delay (float): Maximum delay in seconds between retries. Default is 30.0.
     """
 
     timeout: int = DEFAULT_TIMEOUT
