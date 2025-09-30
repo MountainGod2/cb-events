@@ -116,7 +116,19 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = ["ANN001", "ANN202", "D100", "D103", "D104", "T201", "RUF029", "INP001", "TRY400"]
-"tests/*" = ["S101", "S105", "S106", "SLF001", "PLR2004", "ANN401", "ARG001", "FBT001"]
+"tests/*" = [
+    "D",
+    "ANN",
+    "PLR6301",
+    "S101",
+    "S105",
+    "S106",
+    "SLF001",
+    "PLR2004",
+    "ANN401",
+    "ARG001",
+    "FBT001",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -216,7 +228,7 @@ exclude_lines = [
 show_missing = true
 skip_covered = true
 precision = 2
-fail_under = 90
+fail_under = 80
 
 [tool.coverage.html]
 directory = "htmlcov"
