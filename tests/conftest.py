@@ -1,6 +1,7 @@
-"""Pytest configuration and fixtures for Chaturbate Events API tests."""
+"""Test configuration and shared fixtures."""
 
-from collections.abc import AsyncGenerator, Generator
+import re
+from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -11,26 +12,25 @@ from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventT
 
 
 @pytest.fixture
-def credentials() -> dict[str, Any]:
-    """Provide test credentials for EventClient initialization.
-
-    Returns:
-        dict[str, Any]: The test credentials.
-    """
+def credentials() -> dict[str, str]:
     return {
         "username": "test_user",
-        "token": "test_token",
-        "use_testbed": True,
+        "token": "test_token_1234",
     }
 
 
 @pytest.fixture
-def event_data() -> dict[str, Any]:
-    """Provide sample event data for testing Event model validation.
+def testbed_config() -> EventClientConfig:
+    return EventClientConfig(use_testbed=True)
 
-    Returns:
-        dict[str, Any]: The sample event data.
-    """
+
+@pytest.fixture
+def testbed_url_pattern():
+    return re.compile(r"https://events\.testbed\.cb\.dev/events/.*/.*")
+
+
+@pytest.fixture
+def sample_event_data() -> dict[str, Any]:
     return {
         "method": EventType.TIP.value,
         "id": "event_123",
@@ -43,94 +43,56 @@ def event_data() -> dict[str, Any]:
 
 
 @pytest.fixture
-def api_response(event_data: dict[str, Any]) -> dict[str, Any]:
-    """Provide sample API response structure for testing client polling.
-
-    Returns:
-        dict[str, Any]: The sample API response.
-    """
+def simple_tip_event_data() -> dict[str, Any]:
     return {
-        "events": [event_data],
+        "method": EventType.TIP.value,
+        "id": "test_event",
+        "object": {},
+    }
+
+
+@pytest.fixture
+def api_response(sample_event_data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "events": [sample_event_data],
         "nextUrl": "https://events.testbed.cb.dev/events/next_page_token",
     }
 
 
 @pytest.fixture
-def multiple_events() -> list[dict[str, Any]]:
-    """Provide multiple event dictionaries for testing batch processing.
-
-    Returns:
-        list[dict[str, Any]]: The multiple event dictionaries.
-    """
-    return [
-        {"method": "tip", "id": "event_1", "object": {}},
-        {"method": "follow", "id": "event_2", "object": {}},
-        {"method": "chatMessage", "id": "event_3", "object": {}},
-    ]
+def sample_event(sample_event_data: dict[str, Any]) -> Event:
+    return Event.model_validate(sample_event_data)
 
 
 @pytest.fixture
-async def test_client(
-    credentials: dict[str, Any],
-) -> AsyncGenerator[EventClient]:
-    """Provide an EventClient instance with automatic cleanup for testing.
+def simple_tip_event(simple_tip_event_data: dict[str, Any]) -> Event:
+    return Event.model_validate(simple_tip_event_data)
 
-    Yields:
-        AsyncGenerator[EventClient]: The EventClient instance.
-    """
+
+@pytest.fixture
+async def client(
+    credentials: dict[str, str], testbed_config: EventClientConfig
+) -> AsyncGenerator[EventClient, None]:
     client = EventClient(
         username=credentials["username"],
         token=credentials["token"],
-        config=EventClientConfig(use_testbed=credentials["use_testbed"]),
+        config=testbed_config,
     )
     yield client
     await client.close()
 
 
 @pytest.fixture
-def mock_aioresponse() -> Generator[aioresponses, None, None]:
-    """Provide aioresponses mock for testing HTTP interactions.
-
-    Yields:
-        aioresponses: The aioresponses mock instance.
-    """
-    with aioresponses() as m:
-        yield m
-
-
-@pytest.fixture
-def sample_event() -> Event:
-    """Provide a sample Event instance for testing.
-
-    Returns:
-        Event: A sample Event instance.
-    """
-    return Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "test_event_123",
-        "object": {
-            "tip": {"tokens": 100},
-            "user": {"username": "test_user"},
-            "message": {"message": "Test message"},
-        },
-    })
-
-
-@pytest.fixture
-def event_router() -> EventRouter:
-    """Provide a clean EventRouter instance for testing.
-
-    Returns:
-        EventRouter: A clean EventRouter instance.
-    """
+def router() -> EventRouter:
     return EventRouter()
 
 
 @pytest.fixture
 def mock_handler() -> AsyncMock:
-    """Provide a mock async handler for testing.
-
-    Returns:
-        AsyncMock: A mock async handler.
-    """
     return AsyncMock()
+
+
+@pytest.fixture
+def mock_response():
+    with aioresponses() as m:
+        yield m
