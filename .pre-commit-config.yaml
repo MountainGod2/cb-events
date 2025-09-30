@@ -51,12 +51,14 @@ repos:
         additional_dependencies: ["bandit[toml]"]
         exclude: ^tests/
 
-  - repo: https://github.com/pypa/pip-audit
-    rev: v2.9.0
+  - repo: local
     hooks:
       - id: pip-audit
         name: pip audit security scan
-        args: [--desc, --local]
+        entry: uv run --all-groups --with pip-audit pip-audit -l
+        language: system
+        pass_filenames: false
+        always_run: true
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.34.0
