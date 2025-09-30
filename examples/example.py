@@ -1,3 +1,9 @@
+"""Example usage of the Chaturbate Events API client.
+
+This example demonstrates how to connect to the Events API, register event handlers,
+and process real-time events from Chaturbate.
+"""
+
 import asyncio
 import contextlib
 import os
