@@ -1,112 +1,119 @@
 # CB Events
 
-Async Python wrapper for Chaturbate Events API with real-time event notifications.
+Async Python client for the Chaturbate Events API with real-time event streaming.
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
-[![License](https://img.shields.io/github/license/MountainGod2/chaturbate-events)](https://github.com/MountainGod2/chaturbate-events/tree/main/LICENSE)
+[![License](https://img.shields.io/github/license/MountainGod2/cb-events)](./LICENSE)
 
 ## Installation
 
 ```bash
-pip install cb-events
+$ uv pip install cb-events
 ```
 
-## Quick Start
-
+## Usage
 ```python
 import asyncio
 import os
 from cb_events import EventClient, EventRouter, EventType
 
+router = EventRouter()
+
+@router.on(EventType.TIP)
+async def handle_tip(event):
+    print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+
+@router.on(EventType.CHAT_MESSAGE)
+async def handle_chat(event):
+    print(f"{event.user.username}: {event.message.message}")
+
 async def main():
-    # Get credentials from environment
     username = os.getenv("CB_USERNAME")
     token = os.getenv("CB_TOKEN")
-
-    router = EventRouter()
-
-    @router.on(EventType.TIP)
-    async def handle_tip(event):
-        tip = event.tip
-        user = event.user
-        if tip and user:
-            print(f"{user.username} tipped {tip.tokens} tokens")
-
-    @router.on(EventType.CHAT_MESSAGE)
-    async def handle_message(event):
-        message = event.message
-        user = event.user
-        if message and user:
-            print(f"{user.username}: {message.message}")
 
     async with EventClient(username, token) as client:
         async for event in client:
             await router.dispatch(event)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
 
 ## Event Types
 
-Handle various broadcaster events:
-
-- **Tips**: `TIP`
-- **Chat**: `CHAT_MESSAGE`, `PRIVATE_MESSAGE`
-- **Users**: `USER_ENTER`, `USER_LEAVE`, `FOLLOW`, `UNFOLLOW`
-- **Broadcast**: `BROADCAST_START`, `BROADCAST_STOP`, `ROOM_SUBJECT_CHANGE`
-- **Fanclub**: `FANCLUB_JOIN`
-- **Media**: `MEDIA_PURCHASE`
+- `TIP`, `FANCLUB_JOIN`, `MEDIA_PURCHASE`
+- `CHAT_MESSAGE`, `PRIVATE_MESSAGE`
+- `USER_ENTER`, `USER_LEAVE`, `FOLLOW`, `UNFOLLOW`
+- `BROADCAST_START`, `BROADCAST_STOP`, `ROOM_SUBJECT_CHANGE`
 
 ## Configuration
 
-Set credentials via environment variables:
+Environment variables:
 
 ```bash
-export CB_USERNAME="your_username"
-export CB_TOKEN="your_api_token"
+export CB_USERNAME="username"
+export CB_TOKEN="api_token"
 ```
 
-Or pass directly to client:
+Direct instantiation:
+
+```python
+client = EventClient("username", "token")
+```
+
+Configuration options (defaults shown below):
 
 ```python
 client = EventClient(
     username="your_username",
     token="your_api_token",
-    timeout=10,
-    use_testbed=True  # For development
-)
+    config=EventClientConfig(
+        timeout=10                   # Maximum time to wait for events
+        use_testbed=False,           # Use Chaturbate testbed URL
+        retry_attempts=8,            # Maximum retry attempts
+        retry_backoff=1.0,           # Initial backoff delay in seconds
+        retry_exponential_base=2.0   # Exponential backoff factor
+        retry_max_delay=30.0,        # Maximum delay between retries
+        )
+    )
 ```
 
 ## Error Handling
 
 ```python
-from cb_events.exceptions import EventsError, AuthError
+from cb_events.exceptions import AuthError, EventsError
 
 try:
     async with EventClient(username, token) as client:
         async for event in client:
             await router.dispatch(event)
 except AuthError:
-    print("Invalid credentials")
+    # Authentication failed
+    pass
 except EventsError as e:
-    print(f"API error: {e}")
+    # API error
+    pass
 ```
+
+Automatic retry on 429, 5xx status codes. No retry on authentication errors.
 
 ## Requirements
 
-- Python 3.11+
-- aiohttp
-- pydantic
+- Python ≥3.11
+- aiohttp, pydantic, aiolimiter
+
+```bash
+$ uv pip compile pyproject.toml -o requirements.txt
+```
 
 ## License
 
-MIT licensed. See [LICENSE](https://github.com/MountainGod2/chaturbate-events/tree/main/LICENSE).
+MIT licensed. See [LICENSE](./LICENSE).
 
 ## Disclaimer
 
 Not affiliated with Chaturbate.
+
 
 ```{toctree}
 :maxdepth: 2
