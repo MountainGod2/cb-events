@@ -28,9 +28,6 @@ from .constants import (
 from .exceptions import AuthError, EventsError
 from .models import Event
 
-logger = logging.getLogger(__name__)
-"""Module-level logger for the EventClient."""
-
 
 class EventClient:
     """HTTP client for polling Chaturbate Events API."""
@@ -40,6 +37,7 @@ class EventClient:
         username: str,
         token: str,
         config: EventClientConfig | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
 
@@ -47,6 +45,7 @@ class EventClient:
             username: Chaturbate username for authentication.
             token: Authentication token with Events API scope.
             config: Configuration object with client settings. If None, uses defaults.
+            logger: Optional custom logger for the client. If None, uses default.
 
         Raises:
             ValueError: If username or token is empty or contains only whitespace.
@@ -61,7 +60,10 @@ class EventClient:
         self.username = username.strip()
         self.token = token.strip()
 
-        # Use provided config or create default
+        # Configure logging
+        self._logger: logging.Logger = logger or logging.getLogger("cb_events")
+
+        # Use provided config or defaults
         self.config = config if config is not None else EventClientConfig()
         self.timeout = self.config.timeout
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
@@ -72,6 +74,7 @@ class EventClient:
             max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
         )
 
+        # Configure retry strategy
         self._retry_options = ExponentialRetry(
             attempts=self.config.retry_attempts,
             start_timeout=self.config.retry_backoff,
@@ -131,7 +134,7 @@ class EventClient:
         Returns:
             The EventClient instance with an active HTTP session.
         """
-        if self.session is None or self.session.closed:
+        if self.session is None:
             self.session = ClientSession(
                 timeout=ClientTimeout(total=self.timeout + 5),
             )
@@ -168,7 +171,7 @@ class EventClient:
         Raises:
             AuthError: If the status code indicates an authentication failure.
         """
-        logger.warning(
+        self._logger.warning(
             "Authentication failed for user %s",
             self.username,
             extra={"status_code": status_code},
@@ -186,7 +189,7 @@ class EventClient:
             True if this was a timeout response that was handled, False otherwise.
         """
         if next_url := self._extract_next_url(text):
-            logger.debug("Received nextUrl from timeout response")
+            self._logger.debug("Received nextUrl from timeout response")
             self._next_url = next_url
             return True
         return False
@@ -202,7 +205,7 @@ class EventClient:
         """
         self._next_url = resp_data["nextUrl"]
         events = [Event.model_validate(item) for item in resp_data.get("events", [])]
-        logger.debug(
+        self._logger.debug(
             "Received %d events",
             len(events),
             extra={"event_types": [event.type.value for event in events[:3]]} if events else {},
@@ -249,7 +252,7 @@ class EventClient:
             return False
 
         if status != HTTPStatus.OK:
-            logger.error("HTTP error %d: %s", status, text[:200])
+            self._logger.error("HTTP error %d: %s", status, text[:200])
             msg = f"HTTP {status}: {text[:200]}"
             raise EventsError(
                 msg,
@@ -283,7 +286,7 @@ class EventClient:
             if no events are available or on timeout.
         """
         url = self._build_poll_url()
-        logger.debug("Polling events from %s", self._mask_url(url))
+        self._logger.debug("Polling events from %s", self._mask_url(url))
 
         status, text = await self._make_request(url)
 
@@ -336,9 +339,13 @@ class EventClient:
     async def close(self) -> None:
         """Close the HTTP session and reset polling state.
 
-        Closes the aiohttp ClientSession and resets the nextUrl state.
-        Safe to call multiple times.
+        Raises:
+            RuntimeError: If already closed.
         """
+        if self.session is None and self.retry_client is None:
+            msg = "Client already closed"
+            raise RuntimeError(msg)
+
         if self.retry_client:
             await self.retry_client.close()
             self.retry_client = None
