@@ -18,8 +18,7 @@ DEFAULT_RETRY_MAX_DELAY = 30.0
 BASE_URL = "https://eventsapi.chaturbate.com/events"
 TESTBED_URL = "https://events.testbed.cb.dev/events"
 
-# HTTP status codes for specific handling
-TIMEOUT_ERROR_STATUSES = {HTTPStatus.BAD_REQUEST}
+# HTTP status codes for error handling
 AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 
 # Cloudflare-specific status codes for retry
