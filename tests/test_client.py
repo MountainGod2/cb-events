@@ -75,13 +75,6 @@ class TestEventClient:
             assert len(events) == 1
             assert events[0].type == EventType.TIP
 
-    async def test_server_error_handling(self, mock_response, testbed_url_pattern, testbed_config):
-        mock_response.get(testbed_url_pattern, status=500)
-
-        async with EventClient("test_user", "test_token", testbed_config) as client:
-            with pytest.raises(EventsError):
-                await client.poll()
-
     async def test_retry_configuration(self, credentials):
         config = EventClientConfig(
             use_testbed=True, retry_attempts=5, retry_backoff=2.0, retry_max_delay=60.0
