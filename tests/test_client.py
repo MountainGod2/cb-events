@@ -85,13 +85,13 @@ class TestEventClient:
         assert client.config.retry_backoff == 2.0
         assert client.config.retry_max_delay == 60.0
 
-        await client.close()
+    async def test_rate_limit_handling(self, mock_response, testbed_url_pattern):
+        mock_response.get(testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded")
+        config = EventClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
-    async def test_rate_limit_handling(self, client, mock_response, testbed_url_pattern):
-        mock_response.get(testbed_url_pattern, status=429)
-
-        with pytest.raises(EventsError):
-            await client.poll()
+        async with EventClient("test_user", "test_token", config=config) as client:
+            with pytest.raises(EventsError, match="HTTP 429: Rate limit exceeded"):
+                await client.poll()
 
 
 class TestEventClientConfig:
