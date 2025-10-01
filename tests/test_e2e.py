@@ -6,6 +6,7 @@ from cb_events import EventClient, EventRouter, EventType
 from cb_events.exceptions import AuthError
 
 
+@pytest.mark.e2e
 class TestIntegration:
     async def test_client_router_integration(
         self, mock_response, testbed_url_pattern, testbed_config
