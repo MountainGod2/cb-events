@@ -7,7 +7,7 @@ from http import HTTPStatus
 from types import TracebackType
 from typing import Any, Self
 
-from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
 
@@ -219,27 +219,15 @@ class EventClient:
             A tuple of (status_code, response_text).
 
         Raises:
-            EventsError: For network errors or timeouts.
+            EventsError: If the session is not initialized.
         """
         if self.session is None or self.retry_client is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        try:
-            async with self._rate_limiter, self.retry_client.get(url) as resp:
-                text = await resp.text()
-                return resp.status, text
-        except TimeoutError as err:
-            logger.warning("Request timeout after %ds", self.timeout)
-            msg = f"Request timeout after {self.timeout}s"
-            raise EventsError(msg) from err
-        except ClientError as err:
-            logger.exception(
-                "Network error occurred",
-                extra={"error_type": type(err).__name__},
-            )
-            msg = f"Network error: {err}"
-            raise EventsError(msg) from err
+        async with self._rate_limiter, self.retry_client.get(url) as resp:
+            text = await resp.text()
+            return resp.status, text
 
     def _handle_response_status(self, status: int, text: str) -> bool:
         """Handle response status codes and determine if processing should continue.
@@ -272,35 +260,16 @@ class EventClient:
         return True
 
     @staticmethod
-    def _parse_json_response(text: str, status: int) -> dict[str, Any]:
+    def _parse_json_response(text: str) -> dict[str, Any]:
         """Parse JSON response and handle parsing errors.
 
         Args:
             text: Response text to parse.
-            status: HTTP status code for error context.
 
         Returns:
             Parsed JSON data.
-
-        Raises:
-            EventsError: If JSON parsing fails.
         """
-        try:
-            return json.loads(text)  # type: ignore[no-any-return]
-        except json.JSONDecodeError as json_err:
-            logger.exception(
-                "Invalid JSON response received",
-                extra={
-                    "status_code": status,
-                    "response_preview": text[:100],
-                },
-            )
-            msg = f"Invalid JSON response: {json_err}"
-            raise EventsError(
-                msg,
-                status_code=status,
-                response_text=text,
-            ) from json_err
+        return json.loads(text)  # type: ignore[no-any-return]
 
     async def poll(self) -> list[Event]:
         """Execute a single poll request and return parsed events.
@@ -321,7 +290,7 @@ class EventClient:
         if not self._handle_response_status(status, text):
             return []  # Timeout handled
 
-        data = self._parse_json_response(text, status)
+        data = self._parse_json_response(text)
         return self._parse_response_data(data)
 
     @staticmethod
