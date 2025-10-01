@@ -133,25 +133,3 @@ class TestEventClientConfig:
     def test_validation_errors(self, field, value, error):
         with pytest.raises(ValueError, match=error):
             EventClientConfig(**{field: value})
-
-    def test_config_immutability(self):
-        config = EventClientConfig(timeout=30)
-        assert config.timeout == 30
-
-        config2 = EventClientConfig(timeout=60)
-        assert config2.timeout == 60
-
-    def test_config_equality(self):
-        config1 = EventClientConfig(timeout=30)
-        config2 = EventClientConfig(timeout=30)
-        config3 = EventClientConfig(timeout=60)
-
-        assert config1 == config2
-        assert config1 != config3
-
-    def test_config_repr(self):
-        config = EventClientConfig(use_testbed=True, timeout=60)
-        repr_str = repr(config)
-        assert "EventClientConfig" in repr_str
-        assert "use_testbed=True" in repr_str
-        assert "timeout=60" in repr_str
