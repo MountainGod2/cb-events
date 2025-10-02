@@ -143,7 +143,7 @@ class Event(BaseEventModel):
         Returns:
             User object if user data is present in the event, otherwise None.
         """
-        if user_data := self.data.get("user"):  # pylint: disable=no-member
+        if user_data := self.data.get("user"):
             return User.model_validate(user_data)
         return None
 
@@ -154,7 +154,7 @@ class Event(BaseEventModel):
         Returns:
             Tip object if this is a tip event with tip data, otherwise None.
         """
-        if self.type == EventType.TIP and (tip_data := self.data.get("tip")):  # pylint: disable=no-member
+        if self.type == EventType.TIP and (tip_data := self.data.get("tip")):
             return Tip.model_validate(tip_data)
         return None
 
@@ -167,7 +167,7 @@ class Event(BaseEventModel):
             otherwise None.
         """
         message_types = {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
-        if self.type in message_types and (message_data := self.data.get("message")):  # pylint: disable=no-member
+        if self.type in message_types and (message_data := self.data.get("message")):
             return Message.model_validate(message_data)
         return None
 
@@ -190,4 +190,4 @@ class Event(BaseEventModel):
         Returns:
             The broadcaster username if present in the event data, otherwise None.
         """
-        return self.data.get("broadcaster")  # pylint: disable=no-member
+        return self.data.get("broadcaster")
