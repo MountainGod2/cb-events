@@ -47,6 +47,9 @@ jobs:
       - name: Run linting
         run: make lint
 
+      - name: Run security scanning
+        run: make bandit
+
       - name: Run tests with coverage
         run: make test-cov
 

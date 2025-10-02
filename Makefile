@@ -28,6 +28,10 @@ type-check:
 lint: check type-check
 	uv run pylint ./src
 
+# Security scanning
+bandit:
+	uv run bandit -r src/
+
 test:
 	uv run pytest
 
@@ -68,7 +72,7 @@ docs-linkcheck:
 FORCE:
 
 # Mirror the CI pipeline locally
-ci: format fix lint test-cov
+ci: format fix lint bandit test-cov
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -89,7 +93,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  format     check     fix       type-check"
-	@echo "  lint       pre-commit"
+	@echo "  lint       bandit    pre-commit"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test       test-cov  test-e2e"
