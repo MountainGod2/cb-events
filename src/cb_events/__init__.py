@@ -17,13 +17,14 @@ from .models import (
     Tip,
     User,
 )
-from .router import EventRouter
+from .router import EventHandler, EventRouter
 
 __version__ = get_version("cb-events")
 __all__ = [
     "Event",
     "EventClient",
     "EventClientConfig",
+    "EventHandler",
     "EventRouter",
     "EventType",
     "Message",
