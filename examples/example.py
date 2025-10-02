@@ -1,4 +1,3 @@
-# ruff: noqa: ARG001, C901, PLR0915
 """An example script that demonstrates handling various events from Chatubate."""
 
 import asyncio
