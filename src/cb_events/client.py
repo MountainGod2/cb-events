@@ -61,7 +61,7 @@ class EventClient:
         self.token = token.strip()
 
         # Configure logging
-        self._logger: logging.Logger = logger or logging.getLogger("cb_events")
+        self._logger: logging.Logger = logger or logging.getLogger(__name__)
 
         # Use provided config or defaults
         self.config = config if config is not None else EventClientConfig()
@@ -179,14 +179,14 @@ class EventClient:
         msg = f"Authentication failed for {self.username}"
         raise AuthError(msg)
 
-    def _handle_timeout_response(self, text: str) -> bool:
-        """Handle timeout responses and extract nextUrl.
+    def _extract_and_update_next_url(self, text: str) -> bool:
+        """Extract nextUrl from timeout response and update internal state.
 
         Args:
-            text: The response text to check for timeout indicators.
+            text: The response text containing potential error data with nextUrl.
 
         Returns:
-            True if this was a timeout response that was handled, False otherwise.
+            True if nextUrl was found and updated, False otherwise.
         """
         if next_url := self._extract_next_url(text):
             self._logger.debug("Received nextUrl from timeout response")
@@ -233,22 +233,18 @@ class EventClient:
             return resp.status, text
 
     def _handle_response_status(self, status: int, text: str) -> bool:
-        """Handle response status codes and determine if processing should continue.
-
-        Args:
-            status: HTTP status code.
-            text: Response text.
+        """Handle response status codes.
 
         Returns:
-            True if processing should continue, False if this was handled as a timeout.
+            True if processing should continue, False if timeout was handled.
 
         Raises:
-            EventsError: For error status codes.
+            EventsError: For non-OK, non-timeout statuses.
         """
         if status in AUTH_ERROR_STATUSES:
             self._handle_auth_error(status)
 
-        if status == HTTPStatus.BAD_REQUEST and self._handle_timeout_response(text):
+        if status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text):
             return False
 
         if status != HTTPStatus.OK:
@@ -272,7 +268,8 @@ class EventClient:
         Returns:
             Parsed JSON data.
         """
-        return json.loads(text)  # type: ignore[no-any-return]
+        data: dict[str, Any] = json.loads(text)
+        return data
 
     async def poll(self) -> list[Event]:
         """Execute a single poll request and return parsed events.
@@ -313,7 +310,7 @@ class EventClient:
             return str(next_url) if next_url else None
         return None
 
-    async def poll_continuously(self) -> AsyncIterator[Event]:
+    async def _poll_continuously(self) -> AsyncIterator[Event]:
         """Continuously poll the API and yield events as they arrive.
 
         Creates an infinite loop that polls the Events API and yields individual
@@ -334,18 +331,10 @@ class EventClient:
         Returns:
             An async iterator that yields Event objects continuously from the API.
         """
-        return self.poll_continuously()
+        return self._poll_continuously()
 
     async def close(self) -> None:
-        """Close the HTTP session and reset polling state.
-
-        Raises:
-            RuntimeError: If already closed.
-        """
-        if self.session is None and self.retry_client is None:
-            msg = "Client already closed"
-            raise RuntimeError(msg)
-
+        """Close the HTTP session and reset polling state."""
         if self.retry_client:
             await self.retry_client.close()
             self.retry_client = None
