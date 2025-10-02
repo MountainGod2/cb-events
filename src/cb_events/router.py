@@ -6,6 +6,9 @@ from collections.abc import Awaitable, Callable
 
 from .models import Event, EventType
 
+logger = logging.getLogger(__name__)
+"""logging.Logger: Default logger for the EventRouter module."""
+
 EventHandler = Callable[[Event], Awaitable[None]]
 """Type alias for event handler functions."""
 
@@ -18,15 +21,10 @@ class EventRouter:
     events are dispatched.
     """
 
-    def __init__(self, logger: logging.Logger | None = None) -> None:
-        """Initialize the event router with handler registries.
-
-        Args:
-            logger: Optional custom logger for the router. If None, uses default.
-        """
+    def __init__(self) -> None:
+        """Initialize the event router with handler registries."""
         self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self._global_handlers: list[EventHandler] = []
-        self._logger: logging.Logger = logger or logging.getLogger(__name__)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
         """Register a handler for a specific event type.
@@ -65,7 +63,7 @@ class EventRouter:
         Args:
             event: The event to dispatch to registered handlers.
         """
-        self._logger.debug(
+        logger.debug(
             "Dispatching %s event to %d handlers",
             event.type.value,
             len(self._global_handlers) + len(self._handlers.get(event.type.value, [])),

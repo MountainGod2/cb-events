@@ -28,6 +28,9 @@ from .constants import (
 from .exceptions import AuthError, EventsError
 from .models import Event
 
+logger = logging.getLogger(__name__)
+"""logging.Logger: Default logger for the EventClient module."""
+
 
 class EventClient:
     """HTTP client for polling Chaturbate Events API."""
@@ -37,7 +40,6 @@ class EventClient:
         username: str,
         token: str,
         config: EventClientConfig | None = None,
-        logger: logging.Logger | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
 
@@ -45,7 +47,6 @@ class EventClient:
             username: Chaturbate username for authentication.
             token: Authentication token with Events API scope.
             config: Configuration object with client settings. If None, uses defaults.
-            logger: Optional custom logger for the client. If None, uses default.
 
         Raises:
             ValueError: If username or token is empty or contains only whitespace.
@@ -59,9 +60,6 @@ class EventClient:
 
         self.username = username.strip()
         self.token = token.strip()
-
-        # Configure logging
-        self._logger: logging.Logger = logger or logging.getLogger(__name__)
 
         # Use provided config or defaults
         self.config = config if config is not None else EventClientConfig()
@@ -171,7 +169,7 @@ class EventClient:
         Raises:
             AuthError: If the status code indicates an authentication failure.
         """
-        self._logger.warning(
+        logger.warning(
             "Authentication failed for user %s",
             self.username,
             extra={"status_code": status_code},
@@ -189,7 +187,7 @@ class EventClient:
             True if nextUrl was found and updated, False otherwise.
         """
         if next_url := self._extract_next_url(text):
-            self._logger.debug("Received nextUrl from timeout response")
+            logger.debug("Received nextUrl from timeout response")
             self._next_url = next_url
             return True
         return False
@@ -205,7 +203,7 @@ class EventClient:
         """
         self._next_url = resp_data["nextUrl"]
         events = [Event.model_validate(item) for item in resp_data.get("events", [])]
-        self._logger.debug(
+        logger.debug(
             "Received %d events",
             len(events),
             extra={"event_types": [event.type.value for event in events[:3]]} if events else {},
@@ -248,7 +246,7 @@ class EventClient:
             return False
 
         if status != HTTPStatus.OK:
-            self._logger.error("HTTP error %d: %s", status, text[:200])
+            logger.error("HTTP error %d: %s", status, text[:200])
             msg = f"HTTP {status}: {text[:200]}"
             raise EventsError(
                 msg,
@@ -283,7 +281,7 @@ class EventClient:
             if no events are available or on timeout.
         """
         url = self._build_poll_url()
-        self._logger.debug("Polling events from %s", self._mask_url(url))
+        logger.debug("Polling events from %s", self._mask_url(url))
 
         status, text = await self._make_request(url)
 
