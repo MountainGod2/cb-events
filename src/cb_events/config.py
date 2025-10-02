@@ -11,7 +11,7 @@ from .constants import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class EventClientConfig:
     """Configuration object for EventClient initialization.
 
