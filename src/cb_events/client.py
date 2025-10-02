@@ -230,21 +230,38 @@ class EventClient:
             text = await resp.text()
             return resp.status, text
 
-    def _handle_response_status(self, status: int, text: str) -> bool:
-        """Handle response status codes.
+    def _check_auth_error(self, status: int) -> None:
+        """Check for authentication errors and raise if found.
 
-        Returns:
-            True if processing should continue, False if timeout was handled.
-
-        Raises:
-            EventsError: For non-OK, non-timeout statuses.
+        Args:
+            status: HTTP status code from the response.
         """
         if status in AUTH_ERROR_STATUSES:
             self._handle_auth_error(status)
 
-        if status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text):
-            return False
+    def _handle_timeout_response(self, status: int, text: str) -> bool:
+        """Handle timeout responses from the API.
 
+        Args:
+            status: HTTP status code from the response.
+            text: Response text containing potential error data with nextUrl.
+
+        Returns:
+            True if timeout was handled and nextUrl extracted, False otherwise.
+        """
+        return status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text)
+
+    @staticmethod
+    def _handle_error_response(status: int, text: str) -> None:
+        """Handle non-OK error responses from the API.
+
+        Args:
+            status: HTTP status code from the response.
+            text: Response text containing error information.
+
+        Raises:
+            EventsError: For non-OK status codes with error details.
+        """
         if status != HTTPStatus.OK:
             logger.error("HTTP error %d: %s", status, text[:200])
             msg = f"HTTP {status}: {text[:200]}"
@@ -253,6 +270,23 @@ class EventClient:
                 status_code=status,
                 response_text=text,
             )
+
+    def _handle_response_status(self, status: int, text: str) -> bool:
+        """Handle response status codes.
+
+        Args:
+            status: HTTP status code from the response.
+            text: Response text from the API.
+
+        Returns:
+            True if processing should continue, False if timeout was handled.
+        """
+        self._check_auth_error(status)
+
+        if self._handle_timeout_response(status, text):
+            return False
+
+        self._handle_error_response(status, text)
 
         return True
 
