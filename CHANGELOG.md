@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.2.0 (2025-10-02)
+
+### Features
+
+- **security**: Add bandit for security scanning
+  ([`67ac009`](https://github.com/MountainGod2/cb-events/commit/67ac009f48ea9d0076cc0ba32a5fb09f7fba612c))
+
+
 ## v2.1.0 (2025-10-02)
 
 ### Chores
