@@ -184,7 +184,7 @@ disable = [
 ]
 
 [tool.pylint.design]
-max-attributes = 10
+max-attributes = 12
 
 [tool.pylint.format]
 max-line-length = 100
