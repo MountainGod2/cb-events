@@ -6,10 +6,6 @@ from collections.abc import Awaitable, Callable
 
 from .models import Event, EventType
 
-logger = logging.getLogger(__name__)
-"""Module-level logger for the EventRouter."""
-
-
 EventHandler = Callable[[Event], Awaitable[None]]
 """Type alias for event handler functions."""
 
@@ -22,22 +18,27 @@ class EventRouter:
     events are dispatched.
     """
 
-    def __init__(self) -> None:
-        """Initialize the event router with handler registries."""
+    def __init__(self, logger: logging.Logger | None = None) -> None:
+        """Initialize the event router with handler registries.
+
+        Args:
+            logger: Optional custom logger for the router. If None, uses default.
+        """
         self._handlers: dict[str, list[EventHandler]] = defaultdict(list)
         self._global_handlers: list[EventHandler] = []
+        self._logger: logging.Logger = logger or logging.getLogger(__name__)
 
-    def on(self, event_type: EventType | str) -> Callable[[EventHandler], EventHandler]:
+    def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
         """Register a handler for a specific event type.
 
         Args:
-            event_type: The event type to handle, either an EventType enum or string.
+            event_type: The event type to handle.
 
         Returns:
             A decorator function that registers the handler for the specified
             event type.
         """
-        type_key = event_type.value if isinstance(event_type, EventType) else str(event_type)
+        type_key = event_type.value
 
         def decorator(func: EventHandler) -> EventHandler:
             self._handlers[type_key].append(func)
@@ -64,7 +65,7 @@ class EventRouter:
         Args:
             event: The event to dispatch to registered handlers.
         """
-        logger.debug(
+        self._logger.debug(
             "Dispatching %s event to %d handlers",
             event.type.value,
             len(self._global_handlers) + len(self._handlers.get(event.type.value, [])),
