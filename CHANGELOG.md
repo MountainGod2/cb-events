@@ -2,6 +2,82 @@
 
 <!-- version list -->
 
+## v2.0.0 (2025-10-02)
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to d0cc045
+  ([`bc47524`](https://github.com/MountainGod2/cb-events/commit/bc4752451746e5994b7c029a41280110d463f613))
+
+### Documentation
+
+- **example**: Update docstring
+  ([`29aa02e`](https://github.com/MountainGod2/cb-events/commit/29aa02ebd190361c7c7ebbbd989ee9227aba76a1))
+
+- **index**: Updated to match README
+  ([`a8a4c52`](https://github.com/MountainGod2/cb-events/commit/a8a4c52b0e36047b57147ffe9d62663b27abbe65))
+
+- **pyproject**: Increase max-attributes limit
+  ([`a67407d`](https://github.com/MountainGod2/cb-events/commit/a67407d64d41d174843fb0aa1a58463d044fce35))
+
+### Refactoring
+
+- **client**: Improve error handling in EventClient response processing
+  ([`ee104ab`](https://github.com/MountainGod2/cb-events/commit/ee104abd409562202724492fde52153e8767d220))
+
+- **client**: Improve logging configuration
+  ([`2e270c6`](https://github.com/MountainGod2/cb-events/commit/2e270c6460499dfe6388eb0ad53c461030731a76))
+
+- **client**: Improve logging configuration
+  ([`eacbf8c`](https://github.com/MountainGod2/cb-events/commit/eacbf8c1478ec1c1eecdbc2072e1658795504a8d))
+
+- **client**: Simplify error handling and JSON parsing in EventClient
+  ([`de72f0d`](https://github.com/MountainGod2/cb-events/commit/de72f0d55ca5ec6a15f7855edf568bfa16038093))
+
+- **config**: Make EventClientConfig dataclass immutable
+  ([`cd63846`](https://github.com/MountainGod2/cb-events/commit/cd63846db0cd2ef456ef08b72ac88646d411170c))
+
+- **constants**: Update HTTP status codes for error handling
+  ([`dfd3f4a`](https://github.com/MountainGod2/cb-events/commit/dfd3f4a89e20b572135ad2560aa2af82525ce31b))
+
+- **example**: Enhance event handling and improve documentation in example.py
+  ([`f3bc6d0`](https://github.com/MountainGod2/cb-events/commit/f3bc6d07320de2f7283b06e9685ff1290038c91a))
+
+- **init**: Add EventHandler to module exports
+  ([`56c7388`](https://github.com/MountainGod2/cb-events/commit/56c7388bd2b4155968de1f9748f733a8e7788702))
+
+- **logging**: Standardize logger usage in EventClient and EventRouter
+  ([`496a8b0`](https://github.com/MountainGod2/cb-events/commit/496a8b0bf81fbf3bc581835a2957556b8ed7ac17))
+
+- **models**: Remove pylint disable comments for member access
+  ([`9447fa2`](https://github.com/MountainGod2/cb-events/commit/9447fa2b33913623d5caf7e5918a322af0c748ff))
+
+- **pre-commit**: Replace pip-audit repo with local configuration
+  ([`9693f8f`](https://github.com/MountainGod2/cb-events/commit/9693f8f931f1061023933897719608332373bab2))
+
+- **router**: Add stricter event type handling
+  ([`1998d65`](https://github.com/MountainGod2/cb-events/commit/1998d65a510465c13325f08808b67bd526e36db8))
+
+- **tests**: Add e2e marker to TestIntegration class
+  ([`ed0a919`](https://github.com/MountainGod2/cb-events/commit/ed0a919dc7d4d46da02afd0515ca014c722daf99))
+
+- **tests**: Remove obsolete test_config.py, enhance test_e2e.py, add test_exceptions.py, and
+  streamline model tests
+  ([`abf4538`](https://github.com/MountainGod2/cb-events/commit/abf45380b483ef395e5e94ea4373623f5332440e))
+
+- **tests**: Remove redundant server error handling test from TestEventClient
+  ([`7428912`](https://github.com/MountainGod2/cb-events/commit/7428912c4711784cf238836989dea9fadf55f1b2))
+
+- **tests**: Remove redundant tests from TestEventClientConfig
+  ([`d451a9a`](https://github.com/MountainGod2/cb-events/commit/d451a9a643b877595fb4b874bfed67bbe96ab6c1))
+
+- **tests**: Update per-file ignores and adjust coverage fail threshold
+  ([`bbdf5aa`](https://github.com/MountainGod2/cb-events/commit/bbdf5aa0119170fff80c36b61b7cc061e6195555))
+
+- **tests**: Update rate limit handling test
+  ([`4e1cee3`](https://github.com/MountainGod2/cb-events/commit/4e1cee3191b7a2767b6853ee16d9520557029c4a))
+
+
 ## v1.13.0 (2025-09-29)
 
 ### Chores
