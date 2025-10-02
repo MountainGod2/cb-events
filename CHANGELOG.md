@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v2.1.0 (2025-10-02)
+
+### Chores
+
+- **deps**: Update dependency ruff to v0.13.2
+  ([`4c13ae1`](https://github.com/MountainGod2/cb-events/commit/4c13ae18dd96cb93c8867d5ac9d36b6fdffa9a05))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.13.2
+  ([`12af5ca`](https://github.com/MountainGod2/cb-events/commit/12af5ca78f449d00381a0570c27fdd36dd6147e5))
+
+### Features
+
+- **deps**: Add pylint-pydantic for enhanced linting support
+  ([`93daedb`](https://github.com/MountainGod2/cb-events/commit/93daedb79010f40b81c02068d4d048054cc8627b))
+
+### Refactoring
+
+- **models**: Remove pylint disable comments for user data access
+  ([`60cee53`](https://github.com/MountainGod2/cb-events/commit/60cee53242180c40081928ebe339e9303d96fc62))
+
+- **pylint**: Remove unused message control settings and adjust max attributes
+  ([`1045f54`](https://github.com/MountainGod2/cb-events/commit/1045f54079e27e480b9402be76445ad9b088939a))
+
+
 ## v2.0.0 (2025-10-02)
 
 ### Chores
