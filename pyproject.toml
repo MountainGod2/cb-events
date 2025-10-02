@@ -176,16 +176,8 @@ reportMissingImports = "none"
 [tool.pylint.main]
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
-[tool.pylint.messages_control]
-disable = [
-    "too-few-public-methods",
-    "too-many-arguments",
-    "line-too-long",
-    "missing-module-docstring",
-]
-
 [tool.pylint.design]
-max-attributes = 12
+max-attributes = 10
 
 [tool.pylint.format]
 max-line-length = 100
