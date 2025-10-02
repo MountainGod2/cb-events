@@ -54,6 +54,7 @@ dev = [
     "pylint==3.3.8",
     "pre-commit==4.3.0",
     "python-semantic-release==10.4.1",
+    "pylint-pydantic>=0.3.5",
 ]
 
 docs = [
@@ -173,7 +174,7 @@ reportUnusedFunction = "none"
 reportMissingImports = "none"
 
 [tool.pylint.main]
-load-plugins = ["pylint.extensions.typing"]
+load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
 [tool.pylint.messages_control]
 disable = [
