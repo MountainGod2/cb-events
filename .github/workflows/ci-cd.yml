@@ -19,7 +19,8 @@ jobs:
     name: Test
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
+      security-events: write
 
     strategy:
       matrix:
