@@ -30,7 +30,7 @@ lint: check type-check
 
 # Security scanning
 bandit:
-	uv run bandit -r src/
+	uv run bandit -r src/ -f sarif -o bandit.sarif
 
 test:
 	uv run pytest
