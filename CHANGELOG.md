@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v2.3.2 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Use environment variables for package and wheel names in install and deploy steps
+  ([`ab2a7b4`](https://github.com/MountainGod2/cb-events/commit/ab2a7b4760ad5da274cecdb07130f9030e8aaf81))
+
+### Chores
+
+- **deps**: Update github/codeql-action digest to 64d10c1
+  ([`35272ec`](https://github.com/MountainGod2/cb-events/commit/35272ec6e51a6c16738d92af16231e55caccfc2c))
+
+- **deps**: Update pre-commit hook adhtruong/mirrors-typos to v1.36.3
+  ([`60a84b5`](https://github.com/MountainGod2/cb-events/commit/60a84b56b45884f15b60664d11cf5c97966c180d))
+
+
 ## v2.3.1 (2025-10-03)
 
 ### Bug Fixes
