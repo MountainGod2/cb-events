@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.3.6 (2025-10-03)
+
+### Bug Fixes
+
+- Update project URLs to reflect the correct repository name
+  ([`d45d2e9`](https://github.com/MountainGod2/cb-events/commit/d45d2e98626f009b096c21fe3cbc613df8b0e503))
+
+
 ## v2.3.5 (2025-10-03)
 
 ### Bug Fixes
