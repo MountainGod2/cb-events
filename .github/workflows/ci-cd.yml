@@ -1,5 +1,9 @@
 name: CI/CD
 
+env:
+  PACKAGE_NAME: cb-events
+  WHEEL_NAME: cb_events
+
 on:
   push:
     branches:
@@ -217,8 +221,8 @@ jobs:
       - name: Install distribution artifact
         if: ${{ steps.download-artifacts.outcome == 'success' }}
         run: |
-          uv pip uninstall cb-events
-          uv pip install dist/cb_events-*.whl
+          uv pip uninstall ${{ env.PACKAGE_NAME }}
+          uv pip install dist/${{ env.WHEEL_NAME }}-*.whl
 
       - name: Run end-to-end tests
         run: make test-e2e
@@ -301,11 +305,11 @@ jobs:
     needs:
       - build
       - release
-    if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/cb-events' }}
+    if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/${{ env.PACKAGE_NAME }}' }}
 
     environment:
       name: pypi
-      url: https://pypi.org/project/cb-events/
+      url: https://pypi.org/project/${{ env.PACKAGE_NAME }}/
 
     permissions:
       contents: read
