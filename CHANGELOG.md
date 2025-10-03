@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.3.1 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Add read permission for actions in security scan job
+  ([`07b5cd0`](https://github.com/MountainGod2/cb-events/commit/07b5cd046ae8b34b6f03a40665a8a45c6ddd2f26))
+
+
 ## v2.3.0 (2025-10-03)
 
 ### Bug Fixes
