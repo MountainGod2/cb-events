@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v2.3.4 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Remove unnecessary setup and conditions
+  ([`c5df60b`](https://github.com/MountainGod2/cb-events/commit/c5df60be6a99c160a674f7dfa61db1c904a5ece1))
+
+- **ci/cd**: Update SARIF upload action and improve artifact handling
+  ([`7706b3b`](https://github.com/MountainGod2/cb-events/commit/7706b3be0a464857ac9b70d4d6b8970109fd3369))
+
+
 ## v2.3.3 (2025-10-03)
 
 ### Bug Fixes
