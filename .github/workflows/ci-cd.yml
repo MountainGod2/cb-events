@@ -66,6 +66,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       contents: read
       security-events: write
 
