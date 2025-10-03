@@ -32,11 +32,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MountainGod2/chaturbate-events"
-Documentation = "https://github.com/MountainGod2/chaturbate-events#readme"
-Repository = "https://github.com/MountainGod2/chaturbate-events.git"
-Changelog = "https://github.com/MountainGod2/chaturbate-events/blob/main/CHANGELOG.md"
-"Issue Tracker" = "https://github.com/MountainGod2/chaturbate-events/issues"
+Homepage = "https://github.com/MountainGod2/cb-events"
+Documentation = "https://github.com/MountainGod2/cb-events#readme"
+Repository = "https://github.com/MountainGod2/cb-events.git"
+Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/MountainGod2/cb-events/issues"
 
 [dependency-groups]
 build = ["python-semantic-release==10.4.1"]
@@ -75,7 +75,7 @@ metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 # Replace relative links in the README with absolute links to the GitHub repository
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
-replacement = '[\1](https://github.com/MountainGod2/chaturbate-events/tree/main/\g<3>)'
+replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
