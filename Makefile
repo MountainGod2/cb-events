@@ -1,4 +1,4 @@
-.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck help all
+.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
 
 all: format fix lint test
 
@@ -31,6 +31,15 @@ lint: check type-check
 # Security scanning
 bandit:
 	uv run bandit -r src/ -f sarif -o bandit.sarif
+
+# Trivy security scanning
+trivy:
+	@command -v trivy >/dev/null 2>&1 || { \
+		echo "Installing Trivy..."; \
+		curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin; \
+	}
+	trivy fs --severity HIGH,CRITICAL --format table .
+	trivy config --severity HIGH,CRITICAL --format table .
 
 test:
 	uv run pytest
@@ -72,7 +81,7 @@ docs-linkcheck:
 FORCE:
 
 # Mirror the CI pipeline locally
-ci: format fix lint bandit test-cov
+ci: format fix lint bandit trivy test-cov
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -93,7 +102,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  format     check     fix       type-check"
-	@echo "  lint       bandit    pre-commit"
+	@echo "  lint       bandit    trivy     pre-commit"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test       test-cov  test-e2e"

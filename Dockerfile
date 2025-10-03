@@ -16,4 +16,6 @@ WORKDIR /app
 COPY --chown=1000:1000 examples/example.py /app/
 COPY --chown=1000:1000 --from=builder /opt/venv /opt/venv
 
+USER 1000:1000
+
 ENTRYPOINT ["/opt/venv/bin/python", "-u", "example.py"]

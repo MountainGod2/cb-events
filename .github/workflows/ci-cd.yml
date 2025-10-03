@@ -50,14 +50,30 @@ jobs:
       - name: Run security scanning
         run: make bandit
 
+      - name: Run vulnerability scanner
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          scan-type: "fs"
+          skip-dirs: ".git,.github,.venv,docs/_build"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: 1
+
       - name: Run tests with coverage
         run: make test-cov
 
-      - name: Upload Security Results
+      - name: Upload bandit results
         uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
         with:
           sarif_file: bandit.sarif
           category: bandit
+
+      - name: Upload trivy results
+        if: always()
+        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
+        with:
+          sarif_file: trivy-results.sarif
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
