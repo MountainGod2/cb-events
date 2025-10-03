@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.3.3 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Remove environment variables for package and wheel names in deployment steps
+  ([`f95180d`](https://github.com/MountainGod2/cb-events/commit/f95180d4a586d82414dacf92b00ac60106f8ff23))
+
+
 ## v2.3.2 (2025-10-03)
 
 ### Bug Fixes
