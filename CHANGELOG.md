@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.3.5 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Update SARIF upload action to a newer version
+  ([`5fd1e0a`](https://github.com/MountainGod2/cb-events/commit/5fd1e0a9fc3197969cf17e33fedafd307014fbcc))
+
+
 ## v2.3.4 (2025-10-03)
 
 ### Bug Fixes
