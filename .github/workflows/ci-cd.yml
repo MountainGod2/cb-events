@@ -88,7 +88,7 @@ jobs:
         run: make bandit
 
       - name: Upload Bandit results
-        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
+        uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
@@ -105,7 +105,7 @@ jobs:
           exit-code: 0
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
+        uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
