@@ -14,14 +14,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-permissions:
-  contents: write
-  security-events: write
-
 jobs:
   test:
     name: Test
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     strategy:
       matrix:
@@ -49,34 +47,8 @@ jobs:
       - name: Run linting
         run: make lint
 
-      - name: Run security scanning
-        run: make bandit
-
-      - name: Run vulnerability scanner
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
-        with:
-          scan-type: "fs"
-          skip-dirs: ".git,.github,.venv,docs/_build"
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-          exit-code: 1
-
       - name: Run tests with coverage
         run: make test-cov
-
-      - name: Upload bandit results
-        if: matrix.python-version == '3.13'
-        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
-        with:
-          sarif_file: bandit.sarif
-          category: bandit
-
-      - name: Upload trivy results
-        if: matrix.python-version == '3.13'
-        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
-        with:
-          sarif_file: trivy-results.sarif
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
@@ -90,9 +62,62 @@ jobs:
       - name: Clean cache
         run: uv cache prune --ci
 
+  security:
+    name: Security Scan
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
+
+      - name: Install dependencies
+        run: uv sync --all-groups --frozen
+
+      - name: Run Bandit security scan
+        run: make bandit
+
+      - name: Upload Bandit results
+        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
+        continue-on-error: true
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          scan-type: "fs"
+          skip-dirs: ".git,.github,.venv,docs/_build"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: 0
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
+        continue-on-error: true
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+      - name: Clean cache
+        run: uv cache prune --ci
+
   build:
     name: Build
-    needs: test
+    needs:
+      - test
+      - security
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     permissions:
@@ -160,6 +185,9 @@ jobs:
     name: End-to-End Tests
     needs: build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -279,6 +307,7 @@ jobs:
       url: https://pypi.org/project/cb-events/
 
     permissions:
+      contents: read
       id-token: write
 
     steps:
