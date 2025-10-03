@@ -88,7 +88,7 @@ jobs:
         run: make bandit
 
       - name: Upload Bandit results
-        uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
+        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
@@ -105,7 +105,7 @@ jobs:
           exit-code: 0
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
+        uses: github/codeql-action/upload-sarif@3599b3baa15b485a2e49ef411a7a4bb2452e7f93 # v3
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
@@ -133,6 +133,9 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+
+      - name: Setup release branch
+        run: git checkout -B ${{ github.ref_name }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
@@ -182,7 +185,6 @@ jobs:
   e2e:
     name: End-to-End Tests
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -196,6 +198,7 @@ jobs:
 
       - name: Download distribution artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        if: ${{ needs.build.outputs.released == 'true' }}
         id: download-artifacts
         with:
           name: ${{ needs.build.outputs.dist_artifacts }}
@@ -212,6 +215,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Install distribution artifact
+        if: ${{ steps.download-artifacts.outcome == 'success' }}
         run: |
           uv pip uninstall cb-events
           uv pip install dist/cb_events-*.whl
@@ -242,13 +246,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Download lock file
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          name: ${{ needs.build.outputs.lock_artifact }}
+      - name: Reset to workflow SHA
+        run: git reset --hard ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
@@ -266,6 +268,11 @@ jobs:
         with:
           name: ${{ needs.build.outputs.dist_artifacts }}
           path: dist
+
+      - name: Download lock file
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: ${{ needs.build.outputs.lock_artifact }}
 
       - name: Stage lock file
         run: git add uv.lock
