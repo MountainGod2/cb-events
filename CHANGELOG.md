@@ -2,6 +2,41 @@
 
 <!-- version list -->
 
+## v2.3.0 (2025-10-03)
+
+### Bug Fixes
+
+- **ci/cd**: Consolidate permissions for security events and contents in CI/CD workflow
+  ([`96e5f4e`](https://github.com/MountainGod2/cb-events/commit/96e5f4ecfa74b140dcbe624a486d8ddf9abb0483))
+
+- **ci/cd**: Update permissions and enhance security scanning steps in CI/CD workflow
+  ([`000ad71`](https://github.com/MountainGod2/cb-events/commit/000ad71f0172cd24a49a78f5117453a5dd36fc47))
+
+- **ci/cd**: Update permissions to allow write access for contents and security events
+  ([`3f88370`](https://github.com/MountainGod2/cb-events/commit/3f883702fc3329af2619b0fce976b799a80075f3))
+
+### Chores
+
+- **deps**: Remove autodoc-pydantic dependency from docs requirements
+  ([`9eafc61`](https://github.com/MountainGod2/cb-events/commit/9eafc61ea81d67514633b112740a66e7f008ea12))
+
+- **deps**: Update dependency furo to v2025.9.25
+  ([`349c50b`](https://github.com/MountainGod2/cb-events/commit/349c50b606896af43cd3b81614030bd25ed8f168))
+
+### Features
+
+- **security**: Add Trivy vulnerability scanning to CI/CD pipeline and Makefile
+  ([`d36299d`](https://github.com/MountainGod2/cb-events/commit/d36299d4e5a90d00a572a94ba20e0c895b53710a))
+
+- **security**: Integrate Bandit for security scanning and upload SARIF results
+  ([`0d9a319`](https://github.com/MountainGod2/cb-events/commit/0d9a3199fe7bd537efefc7433814b0905b378663))
+
+### Refactoring
+
+- **lint**: Remove specific ruff ignores from example script and update per-file ignores
+  ([`5cffc8e`](https://github.com/MountainGod2/cb-events/commit/5cffc8ee887aba17b1d04e59f2cf3b3f0c1a2d87))
+
+
 ## v2.2.0 (2025-10-02)
 
 ### Features
