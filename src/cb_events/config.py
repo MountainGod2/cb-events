@@ -13,23 +13,20 @@ from .constants import (
 
 @dataclass(frozen=True)
 class EventClientConfig:
-    """Configuration object for EventClient initialization.
+    """Configuration for the Chaturbate Events API client."""
 
-    Attributes:
-        timeout (int): Timeout for API requests in seconds. Default is 10.
-        use_testbed (bool): Whether to use the testbed API endpoint. Default is False.
-        retry_attempts (int): Number of retry attempts for failed requests. Default is 8.
-        retry_backoff (float): Initial backoff time in seconds between retries. Default is 1.0.
-        retry_exponential_base (float): Base for exponential backoff calculation. Default is 2.0.
-        retry_max_delay (float): Maximum delay in seconds between retries. Default is 30.0.
-    """
-
-    timeout: int = DEFAULT_TIMEOUT
-    use_testbed: bool = False
-    retry_attempts: int = DEFAULT_RETRY_ATTEMPTS
-    retry_backoff: float = DEFAULT_RETRY_BACKOFF
-    retry_exponential_base: float = DEFAULT_RETRY_EXPONENTIAL_BASE
-    retry_max_delay: float = DEFAULT_RETRY_MAX_DELAY
+    timeout: int = DEFAULT_TIMEOUT  # Timeout for API requests in seconds
+    """int: Timeout for API requests in seconds."""
+    use_testbed: bool = False  # Whether to use the testbed API endpoint
+    """bool: Whether to use the testbed API endpoint."""
+    retry_attempts: int = DEFAULT_RETRY_ATTEMPTS  # Number of retry attempts
+    """int: Number of retry attempts."""
+    retry_backoff: float = DEFAULT_RETRY_BACKOFF  # Initial backoff time in seconds
+    """float: Initial backoff time in seconds."""
+    retry_exponential_base: float = DEFAULT_RETRY_EXPONENTIAL_BASE  # Exponential backoff base
+    """float: Exponential backoff base."""
+    retry_max_delay: float = DEFAULT_RETRY_MAX_DELAY  # Maximum delay between retries
+    """float: Maximum delay between retries."""
 
     def __post_init__(self) -> None:
         """Validate configuration values after initialization.
