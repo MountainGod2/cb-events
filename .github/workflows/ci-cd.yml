@@ -151,7 +151,7 @@ jobs:
           fetch-depth: 1
 
       - if: needs.build.outputs.released == 'true'
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
         id: download
         with:
           name: dist
@@ -203,12 +203,12 @@ jobs:
 
       - run: uv sync --group build --no-default-groups --frozen
 
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      - uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
         with:
           name: dist
           path: dist
 
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      - uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
         with:
           name: uv.lock
 
@@ -235,7 +235,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      - uses: actions/download-artifact@4a24838f3d5601fd639834081e118c2995d51e1c
         with:
           name: dist
           path: dist
