@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v2.3.7 (2025-10-04)
+
+### Bug Fixes
+
+- **docs**: Update license links to use absolute URLs
+  ([`d1da265`](https://github.com/MountainGod2/cb-events/commit/d1da26582b61b97eb1679d124317057220f6d1b4))
+
+### Chores
+
+- **docs**: Remove unused autodoc Pydantic configuration
+  ([`b0da7e8`](https://github.com/MountainGod2/cb-events/commit/b0da7e8bd9f3a3317049219e7236df81f13ea55b))
+
+### Documentation
+
+- **conf**: Remove unused sphinxcontrib.autodoc_pydantic extension
+  ([`377f3d4`](https://github.com/MountainGod2/cb-events/commit/377f3d49c19efb106e4988d0f6c607234a611d5c))
+
+### Refactoring
+
+- **config**: Simplify EventClientConfig docstring
+  ([`ccc7fb5`](https://github.com/MountainGod2/cb-events/commit/ccc7fb59fe5c241ade6e827a6daf87bd2ca666d0))
+
+
 ## v2.3.6 (2025-10-03)
 
 ### Bug Fixes
