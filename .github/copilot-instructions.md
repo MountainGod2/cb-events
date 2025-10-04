@@ -134,6 +134,7 @@ make docs-serve         # Serve docs locally
   - Commit messages should not sound "AI-generated" or overly formal
   - Use the imperative mood ("Add feature" not "Added feature")
   - Reflect the scope and impact of changes made
+  - Avoid words like "improve", "refactor", "optimize" without specifics
 
 ---
 
