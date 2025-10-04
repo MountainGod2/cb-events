@@ -21,7 +21,6 @@ extensions: list[str] = [
     "sphinx.ext.todo",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
-    "sphinxcontrib.autodoc_pydantic",
 ]
 
 # Build exclusions
