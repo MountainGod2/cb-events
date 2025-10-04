@@ -65,15 +65,6 @@ napoleon_preprocess_types = False
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
-# Autodoc Pydantic configuration
-autodoc_pydantic_model_show_json = True
-autodoc_pydantic_model_show_config = True
-autodoc_pydantic_model_show_validator_members = True
-autodoc_pydantic_model_show_validator_summary = True
-autodoc_pydantic_field_list_validators = False
-autodoc_pydantic_model_erdantic_figure = False
-autodoc_pydantic_model_signature_prefix = "class"
-
 # AutoAPI configuration
 autoapi_dirs: list[str] = ["../src"]
 autoapi_type = "python"
