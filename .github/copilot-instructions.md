@@ -130,11 +130,21 @@ make docs-serve         # Serve docs locally
   - `docs(README):` - Documentation changes
   - `tests(conftest):` - Test updates
   - `chore(deps):` - Dependency updates
-  - Keep commit messages as concise as possible while being descriptive
-  - Commit messages should not sound "AI-generated" or overly formal
-  - Use the imperative mood ("Add feature" not "Added feature")
-  - Reflect the scope and impact of changes made
-  - Avoid words like "update", "improve", "enhance", "refactor", "optimize", "clarity", without specifics
+
+- **Writing effective commit messages**:
+  - Use imperative mood ("Add" not "Added", "Fix" not "Fixed")
+  - Be specific about what changed, not how or why
+  - Avoid vague verbs: ❌ update, improve, enhance, refine, optimize, tweak, clean up, fix up
+  - Use precise actions: ✅ add, remove, replace, rename, move, extract, inline, merge, split, convert, reorder
+  - Focus on the observable change, not the process
+  - Keep concise but descriptive - avoid AI-sounding formality
+
+- **Examples of good vs bad commits**:
+  - ❌ `docs(copilot): update commit guidelines` → ✅ `docs(copilot): add examples of specific commit verbs`
+  - ❌ `fix(client): improve error handling` → ✅ `fix(client): add AuthError for 401 responses`
+  - ❌ `refactor(router): optimize dispatching` → ✅ `refactor(router): cache handler lookups in dispatch`
+  - ❌ `chore(deps): update dependencies` → ✅ `chore(deps): bump aiohttp from 3.9.0 to 3.9.1`
+  - ❌ `test(client): enhance test coverage` → ✅ `test(client): add tests for retry backoff logic`
 
 ---
 
