@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
@@ -10,61 +10,74 @@ on:
       - main
   workflow_dispatch:
 
+# Prevent concurrent runs on the same ref, but allow PRs to cancel in-progress runs
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Global environment variables
+env:
+  PYTHON_VERSION_DEFAULT: "3.13"
+  UV_CACHE_SUFFIX_KEY: ${{ hashFiles('uv.lock') }}
+
 jobs:
-  test:
-    name: Test
+  quality-assurance:
+    name: QA - Python ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
 
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.11, 3.12, 3.13]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
 
-      - name: Install uv
+      - name: Set up Python tooling
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ env.UV_CACHE_SUFFIX_KEY }}
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: uv sync --all-groups --frozen
 
-      - name: Format and fix code
+      - name: Run code formatters
         run: |
           make format
           make fix
 
-      - name: Run linting
+      - name: Run static analysis and linting
         run: make lint
 
-      - name: Run tests with coverage
+      - name: Execute test suite with coverage
         run: make test-cov
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage reports
+        if: always()
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           files: ./coverage.xml
-          flags: ${{ matrix.python-version }}
-          name: Coverage (${{ matrix.python-version }})
+          flags: python-${{ matrix.python-version }}
+          name: coverage-python-${{ matrix.python-version }}
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Clean cache
+      - name: Clean UV cache
+        if: always()
         run: uv cache prune --ci
 
-  security:
-    name: Security Scan
+  security-scan:
+    name: Security Analysis
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -73,28 +86,31 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
 
-      - name: Install uv
+      - name: Set up Python tooling
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ env.UV_CACHE_SUFFIX_KEY }}
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: uv sync --all-groups --frozen
 
-      - name: Run Bandit security scan
+      - name: Run Bandit security analyzer
         run: make bandit
 
-      - name: Upload Bandit results
+      - name: Upload Bandit SARIF results
+        if: always()
         uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
           category: bandit
 
-      - name: Run Trivy vulnerability scan
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           scan-type: "fs"
@@ -104,27 +120,31 @@ jobs:
           severity: "CRITICAL,HIGH"
           exit-code: 0
 
-      - name: Upload Trivy results
+      - name: Upload Trivy SARIF results
+        if: always()
         uses: github/codeql-action/upload-sarif@64d10c13136e1c5bce3e5fbde8d4906eeaafc885 # v3
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
           category: trivy
 
-      - name: Clean cache
+      - name: Clean UV cache
+        if: always()
         run: uv cache prune --ci
 
-  build:
-    name: Build
+  build-package:
+    name: Build Distribution
     needs:
-      - test
-      - security
-    if: ${{ github.ref == 'refs/heads/main' }}
+      - quality-assurance
+      - security-scan
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
+
     env:
-      DIST_DIR: dist
+      ARTIFACTS_DIR: dist
       LOCK_FILE: uv.lock
 
     steps:
@@ -134,58 +154,59 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Setup release branch
+      - name: Configure Git branch
         run: git checkout -B ${{ github.ref_name }}
 
-      - name: Install uv
+      - name: Set up Python tooling
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ env.UV_CACHE_SUFFIX_KEY }}
 
       - name: Install build dependencies
         run: uv sync --group build --no-default-groups --frozen
 
-      - name: Build package
-        id: semantic-release
+      - name: Generate package version
+        id: version
         env:
           GH_TOKEN: "none"
         run: uv run semantic-release -v version --no-commit --no-tag
 
       - name: Upload distribution artifacts
-        if: ${{ steps.semantic-release.outputs.released == 'true' }}
+        if: steps.version.outputs.released == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.DIST_DIR }}
-          path: ${{ format('{0}/**', env.DIST_DIR) }}
+          name: python-package-distributions
+          path: ${{ env.ARTIFACTS_DIR }}/*
           if-no-files-found: error
           retention-days: 2
 
-      - name: Upload lock file
-        if: ${{ steps.semantic-release.outputs.released == 'true' }}
+      - name: Upload updated lock file
+        if: steps.version.outputs.released == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.LOCK_FILE }}
+          name: dependency-lock
           path: ${{ env.LOCK_FILE }}
           if-no-files-found: error
           retention-days: 2
 
-      - name: Clean cache
+      - name: Clean UV cache
+        if: always()
         run: uv cache prune --ci
 
     outputs:
-      released: ${{ steps.semantic-release.outputs.released }}
-      version: ${{ steps.semantic-release.outputs.version }}
-      tag: ${{ steps.semantic-release.outputs.tag }}
-      is_prerelease: ${{ steps.semantic-release.outputs.is_prerelease }}
-      dist_artifacts: ${{ env.DIST_DIR }}
-      lock_artifact: ${{ env.LOCK_FILE }}
+      released: ${{ steps.version.outputs.released }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
 
-  e2e:
-    name: End-to-End Tests
-    needs: build
+  integration-test:
+    name: Integration Tests
+    needs: build-package
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -196,51 +217,51 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 1
 
-      - name: Download distribution artifacts
+      - name: Download built distribution
+        if: needs.build-package.outputs.released == 'true'
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        if: ${{ needs.build.outputs.released == 'true' }}
-        id: download-artifacts
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
+          name: python-package-distributions
           path: ./dist
 
-      - name: Install uv
+      - name: Set up Python tooling
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ env.UV_CACHE_SUFFIX_KEY }}
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: uv sync --frozen
 
-      - name: Install distribution artifact
-        if: ${{ steps.download-artifacts.outcome == 'success' }}
+      - name: Install built package
+        if: needs.build-package.outputs.released == 'true'
         run: |
           uv pip uninstall cb-events
           uv pip install dist/cb_events-*.whl
 
-      - name: Run end-to-end tests
+      - name: Execute end-to-end tests
         run: make test-e2e
 
-      - name: Clean cache
+      - name: Clean UV cache
+        if: always()
         run: uv cache prune --ci
 
-  release:
-    name: Release
+  publish-release:
+    name: Publish Release
     needs:
-      - build
-      - e2e
-    if: ${{ github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true' }}
-
-    concurrency:
-      group: ${{ github.workflow }}-release-${{ github.ref_name }}
-      cancel-in-progress: false
-
+      - build-package
+      - integration-test
+    if: github.ref == 'refs/heads/main' && needs.build-package.outputs.released == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
 
-    runs-on: ubuntu-24.04
+    # Prevent concurrent releases
+    concurrency:
+      group: ${{ github.workflow }}-release
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
@@ -249,77 +270,82 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Reset to workflow SHA
+      - name: Reset to workflow commit SHA
         run: git reset --hard ${{ github.sha }}
 
-      - name: Install uv
+      - name: Set up Python tooling
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ env.UV_CACHE_SUFFIX_KEY }}
 
       - name: Install build dependencies
         run: uv sync --group build --no-default-groups --frozen
 
       - name: Download distribution artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        id: download-dist
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
+          name: python-package-distributions
           path: dist
 
-      - name: Download lock file
+      - name: Download updated lock file
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: ${{ needs.build.outputs.lock_artifact }}
+          name: dependency-lock
 
-      - name: Stage lock file
+      - name: Stage lock file for commit
         run: git add uv.lock
 
-      - name: Create release
-        id: semantic-release
+      - name: Verify upstream branch status
+        shell: bash
+        run: bash .github/workflows/verify_upstream.sh
+
+      - name: Create GitHub release
+        id: release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bash .github/workflows/verify_upstream.sh
           uv run semantic-release -v --strict version --skip-build
           uv run semantic-release publish
 
-      - name: Clean cache
+      - name: Clean UV cache
+        if: always()
         run: uv cache prune --ci
 
     outputs:
-      released: ${{ steps.semantic-release.outputs.released }}
-      version: ${{ steps.semantic-release.outputs.version }}
-      tag: ${{ steps.semantic-release.outputs.tag }}
+      released: ${{ steps.release.outputs.released }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
 
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-24.04
+  deploy-pypi:
+    name: Deploy to PyPI
     needs:
-      - build
-      - release
-    if: ${{ github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/cb-events' }}
-
-    environment:
-      name: pypi
-      url: https://pypi.org/project/cb-events/
-
+      - build-package
+      - publish-release
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.publish-release.outputs.released == 'true' &&
+      github.repository == 'MountainGod2/cb-events'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
       id-token: write
 
+    environment:
+      name: pypi
+      url: https://pypi.org/project/cb-events/${{ needs.publish-release.outputs.version }}/
+
     steps:
       - name: Download distribution artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        id: download-artifacts
         with:
-          name: ${{ needs.build.outputs.dist_artifacts }}
+          name: python-package-distributions
           path: dist
 
-      - name: Publish to PyPI
+      - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1
         with:
           packages-dir: dist
