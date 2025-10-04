@@ -4,7 +4,7 @@ Async Python client for the Chaturbate Events API with real-time event streaming
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
-[![License](https://img.shields.io/github/license/MountainGod2/cb-events)](./LICENSE)
+[![License](https://img.shields.io/github/license/MountainGod2/cb-events)](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
 
 ## Installation
 
@@ -108,7 +108,7 @@ $ uv pip compile pyproject.toml -o requirements.txt
 
 ## License
 
-MIT licensed. See [LICENSE](./LICENSE).
+MIT licensed. See [LICENSE](https://github.com/MountainGod2/cb-events/blob/main/LICENSE).
 
 ## Disclaimer
 
