@@ -240,7 +240,7 @@ jobs:
           name: dist
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc
+      - uses: pypa/gh-action-pypi-publish@ab69e431e9c9f48a3310be0a56527c679f56e04d
         with:
           packages-dir: dist
           print-hash: true
