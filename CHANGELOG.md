@@ -2,6 +2,67 @@
 
 <!-- version list -->
 
+## v2.4.0 (2025-10-05)
+
+### Chores
+
+- **deps**: Update actions/checkout digest to ff7abcd
+  ([#14](https://github.com/MountainGod2/cb-events/pull/14),
+  [`0ae19ac`](https://github.com/MountainGod2/cb-events/commit/0ae19acf5603ab9f9e88e32dcc25b98ff6ebd5da))
+
+- **deps**: Update actions/download-artifact digest to 4a24838
+  ([#15](https://github.com/MountainGod2/cb-events/pull/15),
+  [`538a229`](https://github.com/MountainGod2/cb-events/commit/538a2290b92bba27e306a72a02ac854ac2b1903b))
+
+- **deps**: Update actions/upload-artifact digest to 2848b2c
+  ([#16](https://github.com/MountainGod2/cb-events/pull/16),
+  [`28852d3`](https://github.com/MountainGod2/cb-events/commit/28852d39e9ded40d80a9520340583d7ee3f6f54c))
+
+- **deps**: Update astral-sh/setup-uv digest to d9ee7e2
+  ([#17](https://github.com/MountainGod2/cb-events/pull/17),
+  [`61a4db0`](https://github.com/MountainGod2/cb-events/commit/61a4db0cf493292e8a98c5a547d26b03956779b7))
+
+- **deps**: Update github/codeql-action digest to 065c6cf
+  ([#18](https://github.com/MountainGod2/cb-events/pull/18),
+  [`5a97c5f`](https://github.com/MountainGod2/cb-events/commit/5a97c5f5e29f95277739ae2ca52107eaa1c74c04))
+
+- **deps**: Update pypa/gh-action-pypi-publish digest to ab69e43
+  ([`db639b9`](https://github.com/MountainGod2/cb-events/commit/db639b91d61db0bf603b792fdb3f9de69638ad48))
+
+### Documentation
+
+- **copilot**: Enhance commit message guidelines with specific examples and actionable verbs
+  ([`518dd5e`](https://github.com/MountainGod2/cb-events/commit/518dd5e0c76c2f8062faefeab16396e4ace2989b))
+
+- **copilot**: Enhance documentation with development standards and usage patterns
+  ([`44d88e3`](https://github.com/MountainGod2/cb-events/commit/44d88e3277bf56d744fc483af3f7b7d5077bf1ca))
+
+- **copilot**: Refine commit message guidelines to discourage vague terms
+  ([`7565a8a`](https://github.com/MountainGod2/cb-events/commit/7565a8a64a9a901789fc6c0c61c6396329c58942))
+
+- **copilot**: Update commit message guidelines to avoid vague terms
+  ([`3932231`](https://github.com/MountainGod2/cb-events/commit/3932231cb86774fbf49f338f6f170af2fb1216fb))
+
+- **copilot**: Update commit message guidelines to specify language usage
+  ([`155a803`](https://github.com/MountainGod2/cb-events/commit/155a803f1fdc96e986cd3a5e641322c0845809d1))
+
+### Features
+
+- **ci-cd**: Add attestations permissions and step for build provenance
+  ([`e3a58c0`](https://github.com/MountainGod2/cb-events/commit/e3a58c03144b80cd50f2e67c8d37eab32f9e3967))
+
+### Refactoring
+
+- **ci-cd**: Improve job descriptions and steps
+  ([`5698980`](https://github.com/MountainGod2/cb-events/commit/56989807b9083a123c132978f0d9f8816b00e5af))
+
+- **ci-cd**: Modify workflow structure and update job definitions
+  ([`bb1d04a`](https://github.com/MountainGod2/cb-events/commit/bb1d04a651f1360086a4f304db6ed25a8fe491cc))
+
+- **ci-cd**: Streamline workflow jobs and improve naming conventions
+  ([`4702b90`](https://github.com/MountainGod2/cb-events/commit/4702b9069f8aadcd3ff612e412c82b58437b65dc))
+
+
 ## v2.3.7 (2025-10-04)
 
 ### Bug Fixes
