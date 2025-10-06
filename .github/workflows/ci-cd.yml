@@ -248,6 +248,6 @@ jobs:
           verbose: true
           attestations: true
 
-      - uses: actions/attest-build-provenance@3752c92e3bd95a40782ebef53ea5f91088c20e48
+      - uses: actions/attest-build-provenance@bed76f6f806fc6af1c3d142325ca64330160764d
         with:
           subject-path: dist/*
