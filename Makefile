@@ -86,6 +86,7 @@ ci: format fix lint bandit trivy test-cov
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.py[co]" -delete
+	rm -rf *.sarif
 	rm -rf .pytest_cache/
 	rm -rf coverage.xml
 	rm -rf .coverage
