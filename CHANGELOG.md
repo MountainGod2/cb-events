@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v2.4.2 (2025-10-07)
+
+### Bug Fixes
+
+- **docs**: Update build command to allow AutoAPI duplicate warnings
+  ([`caf9c15`](https://github.com/MountainGod2/cb-events/commit/caf9c1511cf9bcb06f6959b233a3e42a7c76af8f))
+
+### Refactoring
+
+- **docs**: Enhance documentation across modules with detailed descriptions and examples
+  ([`b63effe`](https://github.com/MountainGod2/cb-events/commit/b63effe8af7943a5e6fe93783c3ff055fac6d326))
+
+- **docs**: Suppress duplicate object warnings and additional autoapi warnings
+  ([`2688f95`](https://github.com/MountainGod2/cb-events/commit/2688f95c932c481bd7a3c58e6b83a1a939356dc1))
+
+
 ## v2.4.1 (2025-10-07)
 
 ### Bug Fixes
