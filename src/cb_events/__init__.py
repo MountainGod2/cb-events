@@ -9,6 +9,7 @@ from importlib.metadata import version as get_version
 
 from .client import EventClient
 from .config import EventClientConfig
+from .exceptions import AuthError, EventsError
 from .models import (
     Event,
     EventType,
@@ -21,12 +22,14 @@ from .router import EventHandler, EventRouter
 
 __version__ = get_version("cb-events")
 __all__ = [
+    "AuthError",
     "Event",
     "EventClient",
     "EventClientConfig",
     "EventHandler",
     "EventRouter",
     "EventType",
+    "EventsError",
     "Message",
     "RoomSubject",
     "Tip",

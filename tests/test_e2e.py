@@ -2,8 +2,7 @@
 
 import pytest
 
-from cb_events import EventClient, EventRouter, EventType
-from cb_events.exceptions import AuthError
+from cb_events import AuthError, EventClient, EventRouter, EventType
 
 
 @pytest.mark.e2e

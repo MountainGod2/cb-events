@@ -4,8 +4,7 @@ import asyncio
 import contextlib
 import os
 
-from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
-from cb_events.exceptions import AuthError
+from cb_events import AuthError, Event, EventClient, EventClientConfig, EventRouter, EventType
 
 
 async def main() -> None:

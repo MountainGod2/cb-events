@@ -2,7 +2,7 @@
 
 import pytest
 
-from cb_events.exceptions import AuthError, EventsError
+from cb_events import AuthError, EventsError
 
 
 class TestExceptions:

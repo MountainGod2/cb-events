@@ -81,7 +81,7 @@ client = EventClient(
 ## Error Handling
 
 ```python
-from cb_events.exceptions import AuthError, EventsError
+from cb_events import AuthError, EventsError
 
 try:
     async with EventClient(username, token) as client:
