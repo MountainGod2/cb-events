@@ -1,4 +1,9 @@
-"""Asynchronous client for the Chaturbate Events API."""
+"""Asynchronous client for the Chaturbate Events API.
+
+This module provides the EventClient class for connecting to the Chaturbate
+Events API and streaming real-time events. It includes automatic retry logic,
+rate limiting, and credential handling.
+"""
 
 import asyncio
 import json
@@ -30,11 +35,24 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 logger = logging.getLogger(__name__)
-"""logging.Logger: Default logger for the EventClient module."""
 
 
 class EventClient:
-    """HTTP client for polling Chaturbate Events API."""
+    """Asynchronous HTTP client for polling the Chaturbate Events API.
+
+    Provides real-time event streaming with automatic retry logic, rate limiting,
+    and secure credential handling. Use as an async context manager or iterate
+    directly for continuous event streaming.
+
+    Attributes:
+        username: Chaturbate username for authentication.
+        token: Authentication token with Events API scope.
+        config: Configuration object with client settings.
+        timeout: Timeout for API requests in seconds.
+        base_url: Base URL for API requests (production or testbed).
+        session: Async HTTP session for making requests.
+        retry_client: Retry-enabled HTTP client wrapper.
+    """
 
     def __init__(
         self,
@@ -150,7 +168,13 @@ class EventClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Clean up HTTP session and resources on context manager exit."""
+        """Clean up HTTP session and resources on context manager exit.
+
+        Args:
+            exc_type: Exception type if an exception was raised.
+            exc_val: Exception value if an exception was raised.
+            exc_tb: Exception traceback if an exception was raised.
+        """
         await self.close()
 
     def _build_poll_url(self) -> str:
@@ -369,7 +393,11 @@ class EventClient:
         return self._poll_continuously()
 
     async def close(self) -> None:
-        """Close the HTTP session and reset polling state."""
+        """Close the HTTP session and reset polling state.
+
+        Safely closes all active connections and cleans up resources.
+        Can be called multiple times safely.
+        """
         async with self._lock:
             if self._closed:
                 return

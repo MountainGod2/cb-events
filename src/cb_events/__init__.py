@@ -1,8 +1,44 @@
-"""CB Events API Python package.
+"""Asynchronous Python wrapper for the Chaturbate Events API.
 
-This package provides an async Python wrapper for the Chaturbate Events API.
+This package provides a complete async client for streaming real-time events
+from the Chaturbate Events API. It includes automatic retry logic, rate limiting,
+secure credential handling, and type-safe event routing.
 
-See individual module docstrings and the project README for usage examples and details.
+Main Components:
+    EventClient: Async HTTP client for polling and streaming events.
+    EventRouter: Decorator-based event handler registration and dispatch.
+    Event: Type-safe event model with property-based data access.
+    EventType: Enumeration of all supported event types.
+    EventClientConfig: Configuration for client behavior and retry logic.
+
+Exception Classes:
+    EventsError: Base exception for all API-related errors.
+    AuthError: Authentication and authorization failures.
+
+Example:
+    Basic usage with async context manager and event router:
+
+    .. code-block:: python
+
+        import asyncio
+        from cb_events import EventClient, EventRouter, EventType, Event
+
+        router = EventRouter()
+
+        @router.on(EventType.TIP)
+        async def handle_tip(event: Event) -> None:
+            if event.tip and event.user:
+                print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+
+        async def main():
+            async with EventClient(username="...", token="...") as client:
+                async for event in client:
+                    await router.dispatch(event)
+
+        asyncio.run(main())
+
+See individual module docstrings and the project README for detailed usage
+examples and API documentation.
 """
 
 from importlib.metadata import version as get_version
