@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v2.4.1 (2025-10-07)
+
+### Bug Fixes
+
+- **client**: Improve resource cleanup in close method with locking mechanism
+  ([`ff71761`](https://github.com/MountainGod2/cb-events/commit/ff71761ba2443347c3d71cd44fffc0b3bbe1ec75))
+
+- **pylint**: Increase max attributes limit from 10 to 12
+  ([`f26817e`](https://github.com/MountainGod2/cb-events/commit/f26817e514f2c31686a396d1a7fbf14420d1cbf8))
+
+### Chores
+
+- **clean**: Remove SARIF files during cleanup
+  ([`aae48a6`](https://github.com/MountainGod2/cb-events/commit/aae48a6727eb4321a1d28a52b8e1fa8e2da6e862))
+
+- **deps**: Lock file maintenance
+  ([`3c57df3`](https://github.com/MountainGod2/cb-events/commit/3c57df3724ffeafe1c54397530b441efadf1f97d))
+
+- **deps**: Update actions/attest-build-provenance digest to 3752c92
+  ([`87804c2`](https://github.com/MountainGod2/cb-events/commit/87804c2a100003a7f63c5d17077fa13372fc29ed))
+
+- **deps**: Update actions/attest-build-provenance digest to bed76f6
+  ([`6809828`](https://github.com/MountainGod2/cb-events/commit/6809828480e9799fc56edec7256370578d1bb0f5))
+
+### Refactoring
+
+- **imports**: Consolidate exception imports
+  ([`04fa725`](https://github.com/MountainGod2/cb-events/commit/04fa725e1ec65d3456acd7f76d6e2b4f8b5f4172))
+
+
 ## v2.4.0 (2025-10-05)
 
 ### Chores
