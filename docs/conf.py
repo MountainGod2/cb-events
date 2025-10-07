@@ -82,8 +82,6 @@ autoapi_root = "api"
 autoapi_keep_files = True
 autoapi_ignore = ["*/tests/*", "*/test_*"]
 autoapi_generate_api_docs = True
-# Suppress duplicate object warnings
-autoapi_add_toctree_entry = False
 
 # Intersphinx configuration
 intersphinx_mapping = {
