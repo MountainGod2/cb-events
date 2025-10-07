@@ -75,7 +75,6 @@ autoapi_options = [
     "show-inheritance",
     "show-module-summary",
     "special-members",
-    "imported-members",
 ]
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
@@ -83,6 +82,8 @@ autoapi_root = "api"
 autoapi_keep_files = True
 autoapi_ignore = ["*/tests/*", "*/test_*"]
 autoapi_generate_api_docs = True
+# Suppress duplicate object warnings
+autoapi_add_toctree_entry = False
 
 # Intersphinx configuration
 intersphinx_mapping = {
@@ -98,6 +99,17 @@ nb_execution_allow_errors = False
 # Type hints configuration
 typehints_fully_qualified = False
 always_document_param_types = True
+
+# Suppress warnings
+suppress_warnings = [
+    "autoapi.python_import_resolution",
+    "ref.python",
+    "autoapi.not_readable",
+    "app.add_node",
+    "app.add_directive",
+    "app.add_role",
+]
+
 typehints_document_rtype = True
 typehints_use_rtype = True
 
