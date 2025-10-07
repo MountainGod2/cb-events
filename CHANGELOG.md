@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v2.4.3 (2025-10-07)
+
+### Bug Fixes
+
+- **docs**: Suppress duplicate object warnings in AutoAPI configuration
+  ([`65c5978`](https://github.com/MountainGod2/cb-events/commit/65c597844ba13b69cc3e077a8c53edc8bac89992))
+
+
 ## v2.4.2 (2025-10-07)
 
 ### Bug Fixes
