@@ -1,5 +1,6 @@
 """Asynchronous client for the Chaturbate Events API."""
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -71,6 +72,8 @@ class EventClient:
         self._rate_limiter = AsyncLimiter(
             max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
         )
+        self._closed = False
+        self._lock = asyncio.Lock()
 
         # Configure retry strategy
         self._retry_options = ExponentialRetry(
@@ -367,10 +370,14 @@ class EventClient:
 
     async def close(self) -> None:
         """Close the HTTP session and reset polling state."""
-        if self.retry_client:
-            await self.retry_client.close()
-            self.retry_client = None
-        if self.session:
-            await self.session.close()
-            self.session = None
-        self._next_url = None
+        async with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            if self.retry_client:
+                await self.retry_client.close()
+                self.retry_client = None
+            if self.session:
+                await self.session.close()
+                self.session = None
+            self._next_url = None
