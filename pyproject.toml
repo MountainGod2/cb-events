@@ -191,7 +191,7 @@ reportMissingImports = "none"
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
 [tool.pylint.design]
-max-attributes = 10
+max-attributes = 12
 
 [tool.pylint.format]
 max-line-length = 100
