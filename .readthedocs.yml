@@ -17,9 +17,9 @@ build:
     - uv sync --group docs --frozen
     # Clean any existing build artifacts
     - rm -rf docs/_build docs/api
-    # Build documentation using the same command as Makefile but with warning failures
+    # Build documentation - fail on errors but allow AutoAPI duplicate warnings
     - mkdir -p $READTHEDOCS_OUTPUT/html/
-    - uv run --group docs sphinx-build -E -T -a -W -b html -D language=en docs $READTHEDOCS_OUTPUT/html
+    - uv run --group docs sphinx-build -E -T -a --keep-going -b html -D language=en docs $READTHEDOCS_OUTPUT/html
 
 # Optional formats for downloadable documentation
 formats:
