@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 
+from .exceptions import RouterError
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
@@ -84,22 +85,67 @@ class EventRouter:
 
         return decorator
 
-    async def dispatch(self, event: Event) -> None:
+    async def dispatch(self, event: Event, *, raise_on_error: bool = False) -> None:
         """Dispatch an event to all matching registered handlers.
 
         Calls all registered handlers for the given event. Global handlers
         (registered with on_any) are called first, followed by type-specific
         handlers. All handlers are awaited in registration order.
 
+        By default, handler exceptions are logged but do not stop dispatch.
+        If raise_on_error is True, the first handler exception will be wrapped
+        in a RouterError and raised, stopping further handler execution.
+
         Args:
             event: The event to dispatch to registered handlers.
+            raise_on_error: If True, raise RouterError on handler failure.
+                If False (default), log errors and continue dispatch.
+
+        Raises:
+            RouterError: If raise_on_error is True and a handler raises an exception.
         """
         logger.debug(
             "Dispatching %s event to %d handlers",
             event.type.value,
             len(self._global_handlers) + len(self._handlers.get(event.type.value, [])),
         )
+
+        # Dispatch to global handlers
         for handler in self._global_handlers:
-            await handler(event)
+            try:
+                await handler(event)
+            except Exception as e:
+                handler_name = getattr(handler, "__name__", repr(handler))
+                logger.exception(
+                    "Error in global handler '%s' for %s event",
+                    handler_name,
+                    event.type.value,
+                )
+                if raise_on_error:
+                    msg = f"Handler '{handler_name}' failed for {event.type.value} event"
+                    raise RouterError(
+                        msg,
+                        event_type=event.type.value,
+                        handler_name=handler_name,
+                        original_error=e,
+                    ) from e
+
+        # Dispatch to type-specific handlers
         for handler in self._handlers.get(event.type.value, []):
-            await handler(event)
+            try:
+                await handler(event)
+            except Exception as e:
+                handler_name = getattr(handler, "__name__", repr(handler))
+                logger.exception(
+                    "Error in handler '%s' for %s event",
+                    handler_name,
+                    event.type.value,
+                )
+                if raise_on_error:
+                    msg = f"Handler '{handler_name}' failed for {event.type.value} event"
+                    raise RouterError(
+                        msg,
+                        event_type=event.type.value,
+                        handler_name=handler_name,
+                        original_error=e,
+                    ) from e

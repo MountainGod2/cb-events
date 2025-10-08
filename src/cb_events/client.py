@@ -98,7 +98,7 @@ class EventClient:
             attempts=self.config.retry_attempts,
             start_timeout=self.config.retry_backoff,
             max_timeout=self.config.retry_max_delay,
-            factor=self.config.retry_exponential_base,
+            factor=self.config.retry_factor,
             statuses={
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 HTTPStatus.BAD_GATEWAY,

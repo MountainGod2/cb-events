@@ -72,7 +72,7 @@ client = EventClient(
         use_testbed=False,           # Use Chaturbate testbed URL
         retry_attempts=8,            # Maximum retry attempts
         retry_backoff=1.0,           # Initial backoff delay in seconds
-        retry_exponential_base=2.0   # Exponential backoff factor
+        retry_factor=2.0   # Exponential backoff factor
         retry_max_delay=30.0,        # Maximum delay between retries
         )
     )
@@ -81,19 +81,32 @@ client = EventClient(
 ## Error Handling
 
 ```python
-from cb_events.exceptions import AuthError, EventsError
+from cb_events import AuthError, EventsError, RouterError
 
 try:
     async with EventClient(username, token) as client:
         async for event in client:
+            # Default: errors logged, dispatch continues
             await router.dispatch(event)
+
+            # Strict mode: stop on first error
+            # await router.dispatch(event, raise_on_error=True)
 except AuthError:
-    # Authentication failed
+    # Authentication failed (401/403)
     pass
+except RouterError as e:
+    # Handler execution failed (when raise_on_error=True)
+    print(f"Handler '{e.handler_name}' failed")
+    print(f"Event type: {e.event_type}")
+    print(f"Original error: {e.original_error}")
 except EventsError as e:
-    # API error
+    # Other API errors
     pass
 ```
+
+**Error Handling Modes:**
+- **Default** (`raise_on_error=False`): Errors are logged but dispatch continues to other handlers
+- **Strict** (`raise_on_error=True`): First error stops dispatch and raises `RouterError`
 
 Automatic retry on 429, 5xx status codes. No retry on authentication errors.
 

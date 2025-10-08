@@ -4,7 +4,15 @@ import asyncio
 import contextlib
 import os
 
-from cb_events import AuthError, Event, EventClient, EventClientConfig, EventRouter, EventType
+from cb_events import (
+    AuthError,
+    Event,
+    EventClient,
+    EventClientConfig,
+    EventRouter,
+    EventType,
+    RouterError,
+)
 
 
 async def main() -> None:
@@ -124,7 +132,15 @@ async def main() -> None:
         print("Listening for events... (Ctrl+C to stop)")
 
         async for event in client:
-            await router.dispatch(event)
+            try:
+                # By default, handler errors are logged but don't stop dispatch
+                # Set raise_on_error=True to stop on first error
+                await router.dispatch(event)
+            except RouterError as e:
+                print(f"Router error: {e.message}")
+                print(f"  Event type: {e.event_type}")
+                print(f"  Handler: {e.handler_name}")
+                print(f"  Original error: {e.original_error}")
 
 
 if __name__ == "__main__":

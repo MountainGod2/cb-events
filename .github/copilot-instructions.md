@@ -34,6 +34,9 @@ Async Python wrapper for Chaturbate Events API. Real-time event notifications wi
 - Decorator-based event handling (`@router.on`, `@router.on_any`)
 - Type-safe event dispatching
 - Multiple handlers per event type supported
+- Built-in error handling with `raise_on_error` parameter
+- Default behavior: log errors, continue dispatch
+- Strict mode: stop on first error with `RouterError`
 
 ### Models (Pydantic-based)
 

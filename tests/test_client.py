@@ -107,7 +107,7 @@ class TestEventClientConfig:
             timeout=60,
             retry_attempts=5,
             retry_backoff=2.0,
-            retry_exponential_base=3.0,
+            retry_factor=3.0,
             retry_max_delay=120.0,
         )
 
@@ -115,7 +115,7 @@ class TestEventClientConfig:
         assert config.timeout == 60
         assert config.retry_attempts == 5
         assert config.retry_backoff == 2.0
-        assert config.retry_exponential_base == 3.0
+        assert config.retry_factor == 3.0
         assert config.retry_max_delay == 120.0
 
     @pytest.mark.parametrize(
@@ -125,8 +125,8 @@ class TestEventClientConfig:
             ("timeout", 0, "Timeout must be greater than 0"),
             ("retry_attempts", -1, "Retry attempts must be non-negative"),
             ("retry_backoff", -1, "Retry backoff must be non-negative"),
-            ("retry_exponential_base", 0, "Retry exponential base must be greater than 0"),
-            ("retry_exponential_base", -1, "Retry exponential base must be greater than 0"),
+            ("retry_factor", 0, "Retry exponential base must be greater than 0"),
+            ("retry_factor", -1, "Retry exponential base must be greater than 0"),
             ("retry_max_delay", -1, "Retry max delay must be non-negative"),
         ],
     )

@@ -72,7 +72,7 @@ client = EventClient(
         use_testbed=False,           # Use Chaturbate testbed URL
         retry_attempts=8,            # Maximum retry attempts
         retry_backoff=1.0,           # Initial backoff delay in seconds
-        retry_exponential_base=2.0   # Exponential backoff factor
+        retry_factor=2.0   # Exponential backoff factor
         retry_max_delay=30.0,        # Maximum delay between retries
         )
     )

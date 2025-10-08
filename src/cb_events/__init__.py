@@ -45,7 +45,7 @@ from importlib.metadata import version as get_version
 
 from .client import EventClient
 from .config import EventClientConfig
-from .exceptions import AuthError, EventsError
+from .exceptions import AuthError, EventsError, RouterError
 from .models import (
     Event,
     EventType,
@@ -68,6 +68,7 @@ __all__ = [
     "EventsError",
     "Message",
     "RoomSubject",
+    "RouterError",
     "Tip",
     "User",
 ]
