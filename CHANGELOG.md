@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v2.5.0 (2025-10-08)
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to f610be5
+  ([`192a753`](https://github.com/MountainGod2/cb-events/commit/192a7530152f33c03cbd4e13d74f4e0e121fdad6))
+
+- **deps**: Update github/codeql-action digest to 5528384
+  ([`d9e86d7`](https://github.com/MountainGod2/cb-events/commit/d9e86d755c80ab6be6b19e90ddaac28e556af47a))
+
+### Features
+
+- Add error handling modes and RouterError for event dispatching
+  ([`e1999cc`](https://github.com/MountainGod2/cb-events/commit/e1999ccb0cf5f48de3e2b7e3ec88e2dbc0a0782b))
+
+### Refactoring
+
+- Enhance event router documentation and improve error handling logic
+  ([`d98aabd`](https://github.com/MountainGod2/cb-events/commit/d98aabdca1ffe1336cd024d09b74d0de697c156c))
+
+
 ## v2.4.3 (2025-10-07)
 
 ### Bug Fixes
