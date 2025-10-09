@@ -1,6 +1,7 @@
 """Tests for EventClient functionality."""
 
 import pytest
+from pydantic_core import ValidationError
 
 from cb_events import EventClient, EventClientConfig, EventType
 from cb_events.exceptions import AuthError, EventsError
@@ -119,17 +120,32 @@ class TestEventClientConfig:
         assert config.retry_max_delay == 120.0
 
     @pytest.mark.parametrize(
-        ("field", "value", "error"),
+        ("field", "value", "constraint_type"),
         [
-            ("timeout", -1, "Timeout must be greater than 0"),
-            ("timeout", 0, "Timeout must be greater than 0"),
-            ("retry_attempts", -1, "Retry attempts must be non-negative"),
-            ("retry_backoff", -1, "Retry backoff must be non-negative"),
-            ("retry_factor", 0, "Retry exponential base must be greater than 0"),
-            ("retry_factor", -1, "Retry exponential base must be greater than 0"),
-            ("retry_max_delay", -1, "Retry max delay must be non-negative"),
+            ("timeout", -1, "greater_than"),
+            ("timeout", 0, "greater_than"),
+            ("retry_attempts", -1, "greater_than_equal"),
+            ("retry_backoff", -1, "greater_than_equal"),
+            ("retry_factor", 0, "greater_than"),
+            ("retry_factor", -1, "greater_than"),
+            ("retry_max_delay", -1, "greater_than_equal"),
         ],
     )
-    def test_validation_errors(self, field, value, error):
-        with pytest.raises(ValueError, match=error):
+    def test_validation_errors(self, field, value, constraint_type):
+        with pytest.raises(ValidationError) as exc_info:
             EventClientConfig(**{field: value})
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == constraint_type
+        assert errors[0]["loc"] == (field,)
+
+    def test_retry_max_delay_validation(self):
+        with pytest.raises(ValidationError) as exc_info:
+            EventClientConfig(retry_backoff=10.0, retry_max_delay=5.0)
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        ctx = errors[0].get("ctx", {})
+        error_msg = str(ctx.get("error", ""))
+        assert "Retry max delay must be >= retry backoff" in error_msg
