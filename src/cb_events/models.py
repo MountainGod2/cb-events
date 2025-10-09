@@ -32,19 +32,16 @@ class EventType(StrEnum):
     registration with the EventRouter.
     """
 
-    # Broadcast state events
     BROADCAST_START = "broadcastStart"
     BROADCAST_STOP = "broadcastStop"
     ROOM_SUBJECT_CHANGE = "roomSubjectChange"
 
-    # User activity events
     USER_ENTER = "userEnter"
     USER_LEAVE = "userLeave"
     FOLLOW = "follow"
     UNFOLLOW = "unfollow"
     FANCLUB_JOIN = "fanclubJoin"
 
-    # Content events
     CHAT_MESSAGE = "chatMessage"
     PRIVATE_MESSAGE = "privateMessage"
     TIP = "tip"
@@ -120,7 +117,6 @@ class Message(BaseEventModel):
     color: str = Field(default="")
     font: str = Field(default="default")
     orig: str | None = Field(default=None)
-    # Private message specific fields
     from_user: str | None = Field(default=None, alias="fromUser")
     to_user: str | None = Field(default=None, alias="toUser")
 
@@ -216,7 +212,6 @@ class Event(BaseEventModel):
             Message object if this is a message event with message data,
             otherwise None.
         """
-        # Use set for efficient membership testing and combine conditions
         if self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE} and (
             message_data := self.data.get("message")
         ):
