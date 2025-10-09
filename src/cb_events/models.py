@@ -132,7 +132,7 @@ class Message(BaseEventModel):
             True if this is a private message (has both from_user and to_user),
             False if this is a public chat message.
         """
-        return self.from_user is not None and self.to_user is not None
+        return bool(self.from_user and self.to_user)
 
 
 class Tip(BaseEventModel):
@@ -216,8 +216,10 @@ class Event(BaseEventModel):
             Message object if this is a message event with message data,
             otherwise None.
         """
-        message_types = {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
-        if self.type in message_types and (message_data := self.data.get("message")):
+        # Use set for efficient membership testing and combine conditions
+        if self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE} and (
+            message_data := self.data.get("message")
+        ):
             return Message.model_validate(message_data)
         return None
 
