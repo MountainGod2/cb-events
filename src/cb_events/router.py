@@ -22,8 +22,6 @@ class EventRouter:
 
     def __init__(self) -> None:
         """Initialize the event router with unified handler registry."""
-        # Unified handler storage: EventType | None -> list[EventHandler]
-        # None key = global handlers that apply to all events
         self._handlers: dict[EventType | None, list[EventHandler]] = defaultdict(list)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
@@ -90,13 +88,11 @@ class EventRouter:
             RouterError: If any handler raises an exception, it is caught, logged,
                 and re-raised as a RouterError with context about the failure.
         """
-        # Collect all relevant handlers: global handlers + specific handlers
         all_handlers = [
             *self._handlers[None],
             *self._handlers[event.type],
         ]
 
-        # Early exit if no handlers
         if not all_handlers:
             return
 
