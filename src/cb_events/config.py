@@ -52,3 +52,6 @@ class EventClientConfig:
         if self.retry_max_delay < 0:
             msg = "Retry max delay must be non-negative"
             raise ValueError(msg)
+        if self.retry_max_delay < self.retry_backoff:
+            msg = "Retry max delay must be >= retry backoff"
+            raise ValueError(msg)
