@@ -2,6 +2,70 @@
 
 <!-- version list -->
 
+## v3.0.0 (2025-10-09)
+
+### Bug Fixes
+
+- **config**: Add validation for retry max delay against retry backoff
+  ([`58bd2b2`](https://github.com/MountainGod2/cb-events/commit/58bd2b277569f9ed085b7707d94cebc15c4b3083))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to eb1897b
+  ([#19](https://github.com/MountainGod2/cb-events/pull/19),
+  [`a6b30e0`](https://github.com/MountainGod2/cb-events/commit/a6b30e0da3e82d01a1fa5285bd354b8285d9fa38))
+
+### Refactoring
+
+- **client**: Implement shared rate limiters for event handling and clear them before tests
+  ([`f8ae923`](https://github.com/MountainGod2/cb-events/commit/f8ae923cd1a815b554635ba8a0ebd9b59787dae5))
+
+- **client**: Remove redundant comments and streamline initialization in EventClient
+  ([`724271a`](https://github.com/MountainGod2/cb-events/commit/724271a4cf7ae18ea8b20f5f23ac35039fd0caf2))
+
+- **client**: Streamline error handling by consolidating response status checks and utilizing
+  CLOUDFLARE_ERROR_CODES
+  ([`966bbe4`](https://github.com/MountainGod2/cb-events/commit/966bbe48f01fde52ffc4f723ad237f888d58e971))
+
+- **config**: Migrate EventClientConfig to use Pydantic for improved validation and configuration
+  management
+  ([`2e6ba15`](https://github.com/MountainGod2/cb-events/commit/2e6ba15bd20eb07d7c097d656ed92de89242c92c))
+
+- **constants**: Remove unnecessary comments and streamline constant definitions
+  ([`0931794`](https://github.com/MountainGod2/cb-events/commit/09317943079e0c729049c564dc7a26cee815f782))
+
+- **example**: Simplify event dispatching by removing error handling logic
+  ([`247287d`](https://github.com/MountainGod2/cb-events/commit/247287d0b2ce0e3abb31689a2bbc2852173637a4))
+
+- **exceptions**: Simplify RouterError class by removing unnecessary attributes and improving
+  documentation
+  ([`1f97a21`](https://github.com/MountainGod2/cb-events/commit/1f97a21af60bd1db9fee7ff1181760304545d3b2))
+
+- **models**: Remove redundant comments in EventType and Message classes
+  ([`d189568`](https://github.com/MountainGod2/cb-events/commit/d1895684e784ff99902ffc87283e385b32f99506))
+
+- **models**: Simplify boolean checks and optimize membership testing in Message and Event classes
+  ([`809af39`](https://github.com/MountainGod2/cb-events/commit/809af39ebf2d6786546e3b86bc4f6805399edffd))
+
+- **router**: Remove unnecessary comments
+  ([`bad3bad`](https://github.com/MountainGod2/cb-events/commit/bad3bad7bae43beb8dd6e84c6f638271fcd55d6e))
+
+- **router**: Simplify event dispatching and improve error handling with RouterError
+  ([`c7b5318`](https://github.com/MountainGod2/cb-events/commit/c7b5318b627a016af852718af8ed46d00292a634))
+
+- **router**: Unify handler registry and improve event dispatching logic
+  ([`64386cf`](https://github.com/MountainGod2/cb-events/commit/64386cf65c4a06ed579f94203824f6f196acf4bc))
+
+- **tests**: Enhance validation error handling in EventClientConfig tests
+  ([`0665c8e`](https://github.com/MountainGod2/cb-events/commit/0665c8e0333fae463f5a6061f521236c9b2cc11c))
+
+- **tests**: Update global handler assertion to use None key in EventRouter tests
+  ([`20cfbce`](https://github.com/MountainGod2/cb-events/commit/20cfbce297216012924742196d1d09737f4b2017))
+
+- **tests**: Update RouterError tests to use EventType constants and remove redundant cases
+  ([`4a0f7fb`](https://github.com/MountainGod2/cb-events/commit/4a0f7fb2b4d2721b8c44eb80151e5996aa175799))
+
+
 ## v2.5.0 (2025-10-08)
 
 ### Chores
