@@ -1,9 +1,10 @@
-"""Event routing system with decorator-based handler registration and safe handler execution."""
+"""Event routing system with decorator-based handler registration."""
 
 import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
 
+from .exceptions import RouterError
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
@@ -81,11 +82,13 @@ class EventRouter:
         """Dispatch an event to all matching registered handlers.
 
         All registered handlers are awaited sequentially.
-        Exceptions in individual handlers are logged and ignored so they do
-        not interrupt dispatch of subsequent handlers.
 
         Args:
             event: The event to dispatch.
+
+        Raises:
+            RouterError: If any handler raises an exception, it is caught, logged,
+                and re-raised as a RouterError with context about the failure.
         """
         event_type = event.type
         specific_handlers = self._handlers.get(event_type, [])
@@ -100,9 +103,16 @@ class EventRouter:
         for handler in all_handlers:
             try:
                 await handler(event)
-            except Exception:  # pylint: disable=broad-exception-caught
+            except Exception as e:
+                handler_name = getattr(handler, "__name__", repr(handler))
                 logger.exception(
-                    "Error in handler %r for event type %s",
-                    getattr(handler, "__name__", repr(handler)),
+                    "Error in handler %s for event type %s",
+                    handler_name,
                     getattr(event_type, "value", str(event_type)),
                 )
+                msg = f"Error in handler {handler_name} for event type {event_type}"
+                raise RouterError(
+                    msg,
+                    event_type=event_type,
+                    handler_name=handler_name,
+                ) from e
