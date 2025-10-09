@@ -1,6 +1,6 @@
 """Configuration classes for the Chaturbate Events API client."""
 
-from dataclasses import dataclass
+from pydantic import BaseModel, Field, model_validator
 
 from .constants import (
     DEFAULT_RETRY_ATTEMPTS,
@@ -11,8 +11,7 @@ from .constants import (
 )
 
 
-@dataclass(frozen=True)
-class EventClientConfig:
+class EventClientConfig(BaseModel):
     """Configuration for the Chaturbate Events API client.
 
     Attributes:
@@ -24,34 +23,26 @@ class EventClientConfig:
         retry_max_delay: Maximum delay between retries in seconds.
     """
 
-    timeout: int = DEFAULT_TIMEOUT
-    use_testbed: bool = False
-    retry_attempts: int = DEFAULT_RETRY_ATTEMPTS
-    retry_backoff: float = DEFAULT_RETRY_BACKOFF
-    retry_factor: float = DEFAULT_RETRY_FACTOR
-    retry_max_delay: float = DEFAULT_RETRY_MAX_DELAY
+    model_config = {"frozen": True}
 
-    def __post_init__(self) -> None:
-        """Validate configuration values after initialization.
+    timeout: int = Field(default=DEFAULT_TIMEOUT, gt=0)
+    use_testbed: bool = False
+    retry_attempts: int = Field(default=DEFAULT_RETRY_ATTEMPTS, ge=0)
+    retry_backoff: float = Field(default=DEFAULT_RETRY_BACKOFF, ge=0)
+    retry_factor: float = Field(default=DEFAULT_RETRY_FACTOR, gt=0)
+    retry_max_delay: float = Field(default=DEFAULT_RETRY_MAX_DELAY, ge=0)
+
+    @model_validator(mode="after")
+    def validate_retry_delays(self) -> "EventClientConfig":
+        """Validate that retry_max_delay is at least as large as retry_backoff.
+
+        Returns:
+            The validated config instance.
 
         Raises:
-            ValueError: If any configuration value is invalid.
+            ValueError: If retry_max_delay is less than retry_backoff.
         """
-        if self.timeout <= 0:
-            msg = "Timeout must be greater than 0"
-            raise ValueError(msg)
-        if self.retry_attempts < 0:
-            msg = "Retry attempts must be non-negative"
-            raise ValueError(msg)
-        if self.retry_backoff < 0:
-            msg = "Retry backoff must be non-negative"
-            raise ValueError(msg)
-        if self.retry_factor <= 0:
-            msg = "Retry exponential base must be greater than 0"
-            raise ValueError(msg)
-        if self.retry_max_delay < 0:
-            msg = "Retry max delay must be non-negative"
-            raise ValueError(msg)
         if self.retry_max_delay < self.retry_backoff:
             msg = "Retry max delay must be >= retry backoff"
             raise ValueError(msg)
+        return self
