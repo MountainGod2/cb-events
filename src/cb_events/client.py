@@ -11,7 +11,7 @@ import logging
 from collections.abc import AsyncIterator
 from http import HTTPStatus
 from types import TracebackType
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
@@ -54,6 +54,9 @@ class EventClient:
         retry_client: Retry-enabled HTTP client wrapper.
     """
 
+    _rate_limiters: ClassVar[dict[str, AsyncLimiter]] = {}
+    """Shared rate limiters per username to handle event loop reuse."""
+
     def __init__(
         self,
         username: str,
@@ -87,9 +90,11 @@ class EventClient:
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
-        self._rate_limiter = AsyncLimiter(
-            max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
-        )
+        if username not in EventClient._rate_limiters:
+            EventClient._rate_limiters[username] = AsyncLimiter(
+                max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
+            )
+        self._rate_limiter = EventClient._rate_limiters[username]
         self._closed = False
         self._lock = asyncio.Lock()
 
