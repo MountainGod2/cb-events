@@ -81,7 +81,6 @@ class EventClient:
         self.username = username.strip()
         self.token = token.strip()
 
-        # Use provided config or defaults
         self.config = config if config is not None else EventClientConfig()
         self.timeout = self.config.timeout
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
@@ -96,7 +95,6 @@ class EventClient:
         self._closed = False
         self._lock = asyncio.Lock()
 
-        # Configure retry strategy
         self._retry_options = ExponentialRetry(
             attempts=self.config.retry_attempts,
             start_timeout=self.config.retry_backoff,
@@ -257,7 +255,6 @@ class EventClient:
             AuthError: For authentication failures.
             EventsError: For other HTTP errors.
         """
-        # Check for authentication errors first
         if status in AUTH_ERROR_STATUSES:
             logger.warning(
                 "Authentication failed for user %s",
@@ -267,11 +264,9 @@ class EventClient:
             msg = f"Authentication failed for {self.username}"
             raise AuthError(msg)
 
-        # Handle timeout responses with nextUrl extraction
         if status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text):
             return False
 
-        # Handle other error responses
         if status != HTTPStatus.OK:
             logger.error("HTTP error %d: %s", status, text[:200])
             msg = f"HTTP {status}: {text[:200]}"
