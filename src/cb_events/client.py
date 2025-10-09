@@ -21,15 +21,13 @@ from .config import EventClientConfig
 from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
-    CLOUDFLARE_CONNECTION_TIMEOUT,
-    CLOUDFLARE_ORIGIN_UNREACHABLE,
-    CLOUDFLARE_TIMEOUT_OCCURRED,
-    CLOUDFLARE_WEB_SERVER_DOWN,
+    CLOUDFLARE_ERROR_CODES,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
     TESTBED_URL,
     TIMEOUT_ERROR_INDICATOR,
     TOKEN_MASK_LENGTH,
+    URL_TEMPLATE,
 )
 from .exceptions import AuthError, EventsError
 from .models import Event
@@ -110,10 +108,7 @@ class EventClient:
                 HTTPStatus.SERVICE_UNAVAILABLE,
                 HTTPStatus.GATEWAY_TIMEOUT,
                 HTTPStatus.TOO_MANY_REQUESTS,
-                CLOUDFLARE_WEB_SERVER_DOWN,  # Cloudflare: Web Server Is Down
-                CLOUDFLARE_CONNECTION_TIMEOUT,  # Cloudflare: Connection Timed Out
-                CLOUDFLARE_ORIGIN_UNREACHABLE,  # Cloudflare: Origin Is Unreachable
-                CLOUDFLARE_TIMEOUT_OCCURRED,  # Cloudflare: A Timeout Occurred
+                *CLOUDFLARE_ERROR_CODES,
             },
         )
 
@@ -188,26 +183,12 @@ class EventClient:
         Returns:
             The URL to use for the next polling request.
         """
-        if self._next_url:
-            return self._next_url
-        return f"{self.base_url}/{self.username}/{self.token}/?timeout={self.timeout}"
-
-    def _handle_auth_error(self, status_code: int) -> None:
-        """Handle authentication errors from API responses.
-
-        Args:
-            status_code: The HTTP status code from the response.
-
-        Raises:
-            AuthError: If the status code indicates an authentication failure.
-        """
-        logger.warning(
-            "Authentication failed for user %s",
-            self.username,
-            extra={"status_code": status_code},
+        return self._next_url or URL_TEMPLATE.format(
+            base_url=self.base_url,
+            username=self.username,
+            token=self.token,
+            timeout=self.timeout,
         )
-        msg = f"Authentication failed for {self.username}"
-        raise AuthError(msg)
 
     def _extract_and_update_next_url(self, text: str) -> bool:
         """Extract nextUrl from timeout response and update internal state.
@@ -262,38 +243,35 @@ class EventClient:
             text = await resp.text()
             return resp.status, text
 
-    def _check_auth_error(self, status: int) -> None:
-        """Check for authentication errors and raise if found.
+    def _handle_response_status(self, status: int, text: str) -> bool:
+        """Handle response status codes and errors.
 
         Args:
             status: HTTP status code from the response.
-        """
-        if status in AUTH_ERROR_STATUSES:
-            self._handle_auth_error(status)
-
-    def _handle_timeout_response(self, status: int, text: str) -> bool:
-        """Handle timeout responses from the API.
-
-        Args:
-            status: HTTP status code from the response.
-            text: Response text containing potential error data with nextUrl.
+            text: Response text from the API.
 
         Returns:
-            True if timeout was handled and nextUrl extracted, False otherwise.
-        """
-        return status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text)
-
-    @staticmethod
-    def _handle_error_response(status: int, text: str) -> None:
-        """Handle non-OK error responses from the API.
-
-        Args:
-            status: HTTP status code from the response.
-            text: Response text containing error information.
+            True if processing should continue, False if timeout was handled.
 
         Raises:
-            EventsError: For non-OK status codes with error details.
+            AuthError: For authentication failures.
+            EventsError: For other HTTP errors.
         """
+        # Check for authentication errors first
+        if status in AUTH_ERROR_STATUSES:
+            logger.warning(
+                "Authentication failed for user %s",
+                self.username,
+                extra={"status_code": status},
+            )
+            msg = f"Authentication failed for {self.username}"
+            raise AuthError(msg)
+
+        # Handle timeout responses with nextUrl extraction
+        if status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text):
+            return False
+
+        # Handle other error responses
         if status != HTTPStatus.OK:
             logger.error("HTTP error %d: %s", status, text[:200])
             msg = f"HTTP {status}: {text[:200]}"
@@ -302,23 +280,6 @@ class EventClient:
                 status_code=status,
                 response_text=text,
             )
-
-    def _handle_response_status(self, status: int, text: str) -> bool:
-        """Handle response status codes.
-
-        Args:
-            status: HTTP status code from the response.
-            text: Response text from the API.
-
-        Returns:
-            True if processing should continue, False if timeout was handled.
-        """
-        self._check_auth_error(status)
-
-        if self._handle_timeout_response(status, text):
-            return False
-
-        self._handle_error_response(status, text)
 
         return True
 
