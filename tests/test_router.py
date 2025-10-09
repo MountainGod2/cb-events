@@ -93,4 +93,4 @@ class TestEventRouter:
 
         assert EventType.TIP in router._handlers
         assert len(router._handlers[EventType.TIP]) == 1
-        assert len(router._global_handlers) == 1
+        assert len(router._handlers[None]) == 1
