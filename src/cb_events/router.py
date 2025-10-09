@@ -21,10 +21,10 @@ class EventRouter:
     """
 
     def __init__(self) -> None:
-        """Initialize the event router with empty handler registries."""
-        # Use EventType as the key rather than str; this keeps typing/enums consistent.
-        self._handlers: dict[EventType, list[EventHandler]] = defaultdict(list)
-        self._global_handlers: list[EventHandler] = []
+        """Initialize the event router with unified handler registry."""
+        # Unified handler storage: EventType | None -> list[EventHandler]
+        # None key = global handlers that apply to all events
+        self._handlers: dict[EventType | None, list[EventHandler]] = defaultdict(list)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
         """Register a handler for a specific event type.
@@ -73,7 +73,7 @@ class EventRouter:
         """
 
         def decorator(func: EventHandler) -> EventHandler:
-            self._global_handlers.append(func)
+            self._handlers[None].append(func)
             return func
 
         return decorator
@@ -90,13 +90,19 @@ class EventRouter:
             RouterError: If any handler raises an exception, it is caught, logged,
                 and re-raised as a RouterError with context about the failure.
         """
-        event_type = event.type
-        specific_handlers = self._handlers.get(event_type, [])
-        all_handlers: list[EventHandler] = [*self._global_handlers, *specific_handlers]
+        # Collect all relevant handlers: global handlers + specific handlers
+        all_handlers = [
+            *self._handlers[None],
+            *self._handlers[event.type],
+        ]
+
+        # Early exit if no handlers
+        if not all_handlers:
+            return
 
         logger.debug(
             "Dispatching %s event to %d handlers",
-            getattr(event_type, "value", str(event_type)),
+            event.type.value,
             len(all_handlers),
         )
 
@@ -108,11 +114,11 @@ class EventRouter:
                 logger.exception(
                     "Error in handler %s for event type %s",
                     handler_name,
-                    getattr(event_type, "value", str(event_type)),
+                    event.type.value,
                 )
-                msg = f"Error in handler {handler_name} for event type {event_type}"
+                msg = f"Error in handler {handler_name} for event type {event.type}"
                 raise RouterError(
                     msg,
-                    event_type=event_type,
+                    event_type=event.type,
                     handler_name=handler_name,
                 ) from e
