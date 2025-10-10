@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v3.0.1 (2025-10-10)
+
+### Bug Fixes
+
+- **docs**: Corrected event handling examples and descriptions
+  ([`82c148f`](https://github.com/MountainGod2/cb-events/commit/82c148f10aa5b65e30c6e300c42c614d186cfb7c))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 3495667
+  ([`88dfaf1`](https://github.com/MountainGod2/cb-events/commit/88dfaf1331ae3b7be696e91b1c9daf0a4e597f82))
+
+- **deps**: Update astral-sh/setup-uv digest to 6d2eb15
+  ([`43e466f`](https://github.com/MountainGod2/cb-events/commit/43e466f8cf8f612cb9167bbef2c5bd1e76a8d39b))
+
+- **deps**: Update dependency pyright to v1.1.406
+  ([`d3c6a54`](https://github.com/MountainGod2/cb-events/commit/d3c6a54d52c9d6fd6e649ae3bb692e690f0f2d67))
+
+- **deps**: Update github/codeql-action digest to 6fd4ceb
+  ([#20](https://github.com/MountainGod2/cb-events/pull/20),
+  [`143f801`](https://github.com/MountainGod2/cb-events/commit/143f801eef6ff35252a5cafed2da5652c718a1ec))
+
+- **deps**: Update pre-commit hook adhtruong/mirrors-typos to v1.37.0
+  ([#21](https://github.com/MountainGod2/cb-events/pull/21),
+  [`c4370ac`](https://github.com/MountainGod2/cb-events/commit/c4370accde13abd74494645534340cc72504e8c3))
+
+- **deps**: Update pre-commit hook adhtruong/mirrors-typos to v1.37.1
+  ([`d4e1d3d`](https://github.com/MountainGod2/cb-events/commit/d4e1d3d96edb26345987862a301124c44d40dfb7))
+
+
 ## v3.0.0 (2025-10-09)
 
 ### Bug Fixes
