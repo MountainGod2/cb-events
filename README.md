@@ -16,17 +16,19 @@ $ uv pip install cb-events
 ```python
 import asyncio
 import os
-from cb_events import EventClient, EventRouter, EventType
+from cb_events import EventClient, EventRouter, EventType, Event
 
 router = EventRouter()
 
 @router.on(EventType.TIP)
-async def handle_tip(event):
-    print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+async def handle_tip(event: Event) -> None:
+    if event.user and event.tip:
+        print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
 @router.on(EventType.CHAT_MESSAGE)
-async def handle_chat(event):
-    print(f"{event.user.username}: {event.message.message}")
+async def handle_chat(event: Event) -> None:
+    if event.user and event.message:
+        print(f"{event.user.username}: {event.message.message}")
 
 async def main():
     username = os.getenv("CB_USERNAME")
@@ -58,24 +60,28 @@ export CB_TOKEN="api_token"
 Direct instantiation:
 
 ```python
+from cb_events import EventClient, EventClientConfig
+
 client = EventClient("username", "token")
 ```
 
-Configuration options (defaults shown below):
+Configuration options (defaults shown):
 
 ```python
+from cb_events import EventClient, EventClientConfig
+
 client = EventClient(
     username="your_username",
     token="your_api_token",
     config=EventClientConfig(
-        timeout=10                   # Maximum time to wait for events
-        use_testbed=False,           # Use Chaturbate testbed URL
-        retry_attempts=8,            # Maximum retry attempts
-        retry_backoff=1.0,           # Initial backoff delay in seconds
-        retry_factor=2.0   # Exponential backoff factor
-        retry_max_delay=30.0,        # Maximum delay between retries
-        )
+        timeout=10,              # Timeout for API requests in seconds
+        use_testbed=False,       # Use testbed API endpoint
+        retry_attempts=8,        # Maximum retry attempts for failed requests
+        retry_backoff=1.0,       # Initial backoff time in seconds
+        retry_factor=2.0,        # Exponential backoff multiplier
+        retry_max_delay=30.0,    # Maximum delay between retries in seconds
     )
+)
 ```
 
 ## Error Handling
@@ -86,29 +92,22 @@ from cb_events import AuthError, EventsError, RouterError
 try:
     async with EventClient(username, token) as client:
         async for event in client:
-            # Default: errors logged, dispatch continues
             await router.dispatch(event)
-
-            # Strict mode: stop on first error
-            # await router.dispatch(event, raise_on_error=True)
 except AuthError:
     # Authentication failed (401/403)
     pass
 except RouterError as e:
-    # Handler execution failed (when raise_on_error=True)
-    print(f"Handler '{e.handler_name}' failed")
-    print(f"Event type: {e.event_type}")
-    print(f"Original error: {e.original_error}")
+    # Handler execution failed
+    print(f"Handler '{e.handler_name}' failed on {e.event_type}")
 except EventsError as e:
-    # Other API errors
-    pass
+    # API errors (HTTP errors, network issues)
+    if e.status_code:
+        print(f"API error {e.status_code}: {e.message}")
 ```
 
-**Error Handling Modes:**
-- **Default** (`raise_on_error=False`): Errors are logged but dispatch continues to other handlers
-- **Strict** (`raise_on_error=True`): First error stops dispatch and raises `RouterError`
+Handler exceptions are caught, logged, and re-raised as `RouterError` with context.
 
-Automatic retry on 429, 5xx status codes. No retry on authentication errors.
+Automatic retry on 429, 5xx, and Cloudflare error codes. No retry on authentication errors.
 
 ## Requirements
 

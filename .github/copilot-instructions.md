@@ -34,9 +34,7 @@ Async Python wrapper for Chaturbate Events API. Real-time event notifications wi
 - Decorator-based event handling (`@router.on`, `@router.on_any`)
 - Type-safe event dispatching
 - Multiple handlers per event type supported
-- Built-in error handling with `raise_on_error` parameter
-- Default behavior: log errors, continue dispatch
-- Strict mode: stop on first error with `RouterError`
+- Handler exceptions logged and re-raised as `RouterError` with context
 
 ### Models (Pydantic-based)
 
@@ -104,7 +102,7 @@ make docs-serve         # Serve docs locally
 ### Architecture & Patterns
 
 - **API changes**: Update `__init__.__all__` for public exports
-- **Error handling**: Use `EventsError` base class, `AuthError` for auth failures
+- **Error handling**: `EventsError` base class, `AuthError` for auth failures, `RouterError` for handler failures
 - **Security**: Never log full tokens, use token masking utilities
 - **Performance**: Avoid blocking calls, use async context managers
 
@@ -155,24 +153,29 @@ make docs-serve         # Serve docs locally
 
 ```python
 # Basic usage with router
-async with EventClient(username, token) as client:
-    async for event in client:
-        await router.dispatch(event)
+from cb_events import EventClient, EventRouter, EventType, Event
 
-# Type-safe event handling
+router = EventRouter()
+
 @router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None:
     if event.tip and event.user:
         print(f"{event.user.username}: {event.tip.tokens} tokens")
 
+async with EventClient(username, token) as client:
+    async for event in client:
+        await router.dispatch(event)
+
 # Custom retry configuration
-async with EventClient(
-    username,
-    token,
+from cb_events import EventClientConfig
+
+config = EventClientConfig(
     retry_attempts=5,
     retry_backoff=2.0,
-    retry_max_delay=60.0
-) as client:
+    retry_max_delay=60.0,
+)
+
+async with EventClient(username, token, config=config) as client:
     async for event in client:
         await router.dispatch(event)
 ```
