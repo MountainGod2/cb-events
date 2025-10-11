@@ -31,11 +31,14 @@ Example:
                 print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
         async def main():
-            async with EventClient(username="...", token="...") as client:
+            async with EventClient(username="...", token="...", config=None) as client:
                 async for event in client:
                     await router.dispatch(event)
 
         asyncio.run(main())
+
+Note:
+    The `config` parameter in EventClient must be passed as a keyword argument.
 
 See individual module docstrings and the project README for detailed usage
 examples and API documentation.
