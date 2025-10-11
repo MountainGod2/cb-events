@@ -84,6 +84,8 @@ client = EventClient(
 )
 ```
 
+Note: The `config` parameter must be passed as a keyword argument.
+
 ## Error Handling
 
 ```python
