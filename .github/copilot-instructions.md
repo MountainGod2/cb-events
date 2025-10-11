@@ -2,157 +2,69 @@
 
 ## Overview
 
-Async Python wrapper for Chaturbate Events API. Real-time event notifications with strong typing and rate limiting.
-
-> **Status:** Active development. Breaking changes possible.
+Async Python wrapper for Chaturbate Events API with real-time event streaming, strong typing, and rate limiting.
 
 ---
 
-## Core Architecture
+## Core Components
 
-- **Async-first design**: All operations use asyncio with proper context management
-- **Strong typing**: Full Pydantic models with type hints throughout
-- **Security**: Token masking (last 4 chars), secure credential handling
-- **Rate limiting**: Built-in 2000 req/min rate limiter with aiolimiter
-- **Retry logic**: Configurable exponential backoff retry with aiohttp-retry
-- **Environment integration**: `CB_USERNAME`, `CB_TOKEN` for credentials
-
----
-
-## Key Components
-
-### EventClient
-
-- Async context manager for API connections
-- Supports both production and testbed endpoints (`use_testbed=True`)
-- Automatic rate limiting and timeout handling
-- Configurable retry logic with exponential backoff (individual parameters)
-- Iterator protocol for continuous event streaming
-
-### EventRouter
-
-- Decorator-based event handling (`@router.on`, `@router.on_any`)
-- Type-safe event dispatching
-- Multiple handlers per event type supported
-- Handler exceptions logged and re-raised as `RouterError` with context
-
-### Models (Pydantic-based)
-
-- `Event`: Core event container with type-safe property access
-- `EventType`: String enum for all supported event types
-- `User`, `Message`, `Tip`, `RoomSubject`: Typed data models
-- All models use snake_case conversion and are frozen
-
----
-
-## Development Commands
-
-```bash
-# Setup and dependencies
-uv sync --all-groups    # Install all dependencies
-make dev-setup          # First-time contributor setup
-make install            # Basic installation
-
-# Code quality
-uv run ruff format      # Format code
-uv run ruff check --fix # Lint and auto-fix
-make type-check         # MyPy + Pyright
-make lint               # Full static analysis (ruff + type + pylint)
-
-# Testing
-make test               # Run tests
-make test-cov           # With coverage reports
-make test-e2e           # End-to-end tests
-make pre-commit         # Validate before commit
-
-# Documentation
-make docs               # Build Sphinx docs
-make docs-serve         # Serve docs locally
-```
-
----
-
-## Event Types (EventType enum)
-
-- **Broadcast**: `BROADCAST_START`, `BROADCAST_STOP`, `ROOM_SUBJECT_CHANGE`
-- **Messages**: `CHAT_MESSAGE`, `PRIVATE_MESSAGE`
-- **User activity**: `USER_ENTER`, `USER_LEAVE`, `FOLLOW`, `UNFOLLOW`
-- **Monetization**: `TIP`, `FANCLUB_JOIN`, `MEDIA_PURCHASE`
+- **EventClient**: Async context manager for API polling with retry logic and rate limiting
+- **EventRouter**: Decorator-based event handling (`@router.on`, `@router.on_any`)
+- **Models**: Pydantic-based with `Event`, `EventType`, `User`, `Message`, `Tip`, `RoomSubject`
 
 ---
 
 ## Development Standards
 
-### Code Quality
+### Code Style (Google Python Style Guide)
 
-- **Python**: >=3.11 required, semantic versioning via python-semantic-release
-- **Dependencies**: Core: aiohttp, aiohttp-retry, aiolimiter, pydantic; Dev: pytest, ruff, mypy, etc.
-- **Code style**: Ruff formatting, strict type checking (mypy + pyright)
-- **Type everything**: All functions must have complete type hints including return types
-- **Keep it DRY**: Don't duplicate logic - refactor common patterns into reusable functions
-- **Explicit over implicit**: Prefer clear, verbose code over clever shortcuts
+- **Type hints**: Required on all functions/methods with return types
+- **Docstrings**: Google style with Args/Returns/Raises for all public APIs
+- **Constants**: Module-level constants need inline documentation
+- **Performance**: Use `__slots__` for performance-critical classes
+- **Arguments**: Prefer keyword-only args for functions with >2 parameters
+- **Type hints**: Use `Self` for methods returning instance (not string annotation)
 
-### Testing & Documentation
+### Testing
 
-- **Testing**: pytest with asyncio, aioresponses for mocking, high coverage required
-- **Test philosophy**: Modify tests to match codebase changes, not the reverse - maintain code integrity as source of truth
-- **Documentation**: Sphinx with autoapi, Google-style docstrings
-- **Document public APIs**: All public functions/classes need docstrings, private ones are optional
-
-### Architecture & Patterns
-
-- **API changes**: Update `__init__.__all__` for public exports
-- **Error handling**: `EventsError` base class, `AuthError` for auth failures, `RouterError` for handler failures
-- **Security**: Never log full tokens, use token masking utilities
-- **Performance**: Avoid blocking calls, use async context managers
-
----
-
-## Workflow & Process Rules
+- **Framework**: pytest with asyncio, aioresponses for mocking
+- **Philosophy**: Modify tests to match code changes, not the reverse
 
 ### File Management
 
-- **No summary documents**: Never create improvement summaries, changelogs, or documentation files for changes made - code and commit messages are sufficient
-- **No TODO files**: Don't create TODO.md, ROADMAP.md, or similar tracking files - use GitHub Issues instead
-- **No manual changelogs**: CHANGELOG.md is auto-generated by semantic-release, never edit manually
+- **Never create**: IMPROVEMENTS.md, CHANGES.md, NOTES.md, TODO.md, ROADMAP.md, or summary documents
+- **CHANGELOG.md**: Auto-generated by semantic-release - never edit manually
+- **Work directly**: Edit source files, tests, and docs - no intermediate documents
 
 ### Tool Usage
 
-- **Always use tools**: Don't suggest terminal commands in chat - use run_in_terminal tool directly
-- **Always use edit tools**: Don't output code blocks for file changes - use replace_string_in_file or create_file tools
-- **Validate changes**: After editing code, use get_errors tool to check for issues
-- **Run tests after changes**: Use runTests tool to validate changes, don't just suggest running tests
+- **Always use tools**: Use run_in_terminal, replace_string_in_file, runTests - never just suggest commands
+- **Validate**: Run get_errors after editing, runTests after changes
 
-### Commit Standards
+### Commit Messages
 
-- **Commit message format**: Follow conventional commits for semantic versioning:
-  - `feat(client):` - New features
-  - `fix(router):` - Bug fixes
-  - `docs(README):` - Documentation changes
-  - `tests(conftest):` - Test updates
-  - `chore(deps):` - Dependency updates
+Follow conventional commits with imperative mood and specific verbs:
 
-- **Writing effective commit messages**:
-  - Use imperative mood ("Add" not "Added", "Fix" not "Fixed")
-  - Be specific about what changed, not how or why
-  - Avoid vague verbs: ❌ update, improve, enhance, refine, optimize, tweak, clean up, fix up
-  - Use precise actions: ✅ add, remove, replace, rename, move, extract, inline, merge, split, convert, reorder
-  - Focus on the observable change, not the process
-  - Keep concise but descriptive - avoid AI-sounding formality
+- `feat(client):` - New features
+- `fix(router):` - Bug fixes
+- `docs(README):` - Documentation
+- `tests(client):` - Test updates
+- `chore(deps):` - Dependencies
 
-- **Examples of good vs bad commits**:
-  - ❌ `docs(copilot): update commit guidelines` → ✅ `docs(copilot): add examples of specific commit verbs`
-  - ❌ `fix(client): improve error handling` → ✅ `fix(client): add AuthError for 401 responses`
-  - ❌ `refactor(router): optimize dispatching` → ✅ `refactor(router): cache handler lookups in dispatch`
-  - ❌ `chore(deps): update dependencies` → ✅ `chore(deps): bump aiohttp from 3.9.0 to 3.9.1`
-  - ❌ `test(client): enhance test coverage` → ✅ `test(client): add tests for retry backoff logic`
+**Good verbs**: add, remove, replace, rename, move, extract, inline, merge, split, convert
+**Bad verbs**: update, improve, enhance, refine, optimize, tweak, clean up
+
+Examples:
+- ✅ `fix(client): add AuthError for 401 responses`
+- ❌ `fix(client): improve error handling`
+- ✅ `chore(deps): bump aiohttp from 3.9.0 to 3.9.1`
+- ❌ `chore(deps): update dependencies`
 
 ---
 
-## Usage Patterns
+## Usage Pattern
 
 ```python
-# Basic usage with router
 from cb_events import EventClient, EventRouter, EventType, Event
 
 router = EventRouter()
@@ -162,19 +74,6 @@ async def handle_tip(event: Event) -> None:
     if event.tip and event.user:
         print(f"{event.user.username}: {event.tip.tokens} tokens")
 
-async with EventClient(username, token) as client:
-    async for event in client:
-        await router.dispatch(event)
-
-# Custom retry configuration
-from cb_events import EventClientConfig
-
-config = EventClientConfig(
-    retry_attempts=5,
-    retry_backoff=2.0,
-    retry_max_delay=60.0,
-)
-
 async with EventClient(username, token, config=config) as client:
     async for event in client:
         await router.dispatch(event)
@@ -182,4 +81,10 @@ async with EventClient(username, token, config=config) as client:
 
 ---
 
-*Reference: `examples/event_response_example.json` for API response structure*
+## Key Details
+
+- **Python**: >=3.11 required
+- **Dependencies**: aiohttp, aiohttp-retry, aiolimiter, pydantic
+- **Rate limit**: 2000 req/min built-in
+- **Security**: Token masking (last 4 chars only)
+- **Environment**: `CB_USERNAME`, `CB_TOKEN` for credentials
