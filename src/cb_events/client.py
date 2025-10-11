@@ -59,6 +59,7 @@ class EventClient:
         self,
         username: str,
         token: str,
+        *,
         config: EventClientConfig | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
@@ -287,9 +288,21 @@ class EventClient:
 
         Returns:
             Parsed JSON data.
+
+        Raises:
+            EventsError: If the response is not valid JSON.
         """
-        data: dict[str, Any] = json.loads(text)
-        return data
+        try:
+            data: dict[str, Any] = json.loads(text)
+        except json.JSONDecodeError as e:
+            msg = f"Invalid JSON response: {e.msg}"
+            logger.exception("Failed to parse JSON response: %s", text[:200])
+            raise EventsError(
+                msg,
+                response_text=text,
+            ) from e
+        else:
+            return data
 
     async def poll(self) -> list[Event]:
         """Execute a single poll request and return parsed events.
@@ -323,8 +336,17 @@ class EventClient:
         Returns:
             The extracted nextUrl string if present in a timeout error response,
             otherwise None.
+
+        Note:
+            JSON parsing errors are silently ignored and return None, as this
+            method is used for error recovery and should not raise exceptions.
         """
-        error_data = json.loads(text)
+        try:
+            error_data = json.loads(text)
+        except json.JSONDecodeError:
+            logger.debug("Failed to parse error response for nextUrl extraction")
+            return None
+
         if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower():
             next_url = error_data.get("nextUrl")
             return str(next_url) if next_url else None
