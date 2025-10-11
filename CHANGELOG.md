@@ -2,6 +2,73 @@
 
 <!-- version list -->
 
+## v3.0.2 (2025-10-11)
+
+### Bug Fixes
+
+- **client**: Improve JSON parsing error handling in EventClient
+  ([`2f4572e`](https://github.com/MountainGod2/cb-events/commit/2f4572e5d4d7267e3b3016fff45f55514e08a55a))
+
+### Chores
+
+- **deps**: Add 'ty' package version 0.0.1a22 to dev dependencies
+  ([`bc36a9d`](https://github.com/MountainGod2/cb-events/commit/bc36a9ddaa104f4d3063ab3e3e02759e92f441f0))
+
+- **deps**: Update astral-sh/setup-uv digest to 1a91c38
+  ([`63160be`](https://github.com/MountainGod2/cb-events/commit/63160be95a31da8c8948d6aa996fdd2bd7f23344))
+
+- **deps**: Update dependency ruff to v0.13.3
+  ([`f578eca`](https://github.com/MountainGod2/cb-events/commit/f578eca009328edd862354e960707bf74e302b1f))
+
+- **deps**: Update github/codeql-action digest to 17783bf
+  ([`de93a9c`](https://github.com/MountainGod2/cb-events/commit/de93a9cde26df999820c9143eac2924de1e2ba50))
+
+- **deps**: Update pre-commit hook adhtruong/mirrors-typos to v1.37.2
+  ([`0293300`](https://github.com/MountainGod2/cb-events/commit/029330025cd80c3b2b4b531892d3a4580c8f4ff2))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.13.3
+  ([`6aa5514`](https://github.com/MountainGod2/cb-events/commit/6aa55140f0f1275815e42940685b370482f527ec))
+
+- **example**: Remove unnecessary docstring from main function
+  ([`6fb644b`](https://github.com/MountainGod2/cb-events/commit/6fb644bc710e550a101fe7ad08bcb61c22cb1e4b))
+
+### Documentation
+
+- **__init__**: Update example to include config parameter as a keyword argument
+  ([`ec18d4b`](https://github.com/MountainGod2/cb-events/commit/ec18d4bdcd4de258cb6585f8c2ed68cc3b3643ce))
+
+- **constants**: Add additional docstrings
+  ([`829f40b`](https://github.com/MountainGod2/cb-events/commit/829f40be5c117c3cf2b4ac2f4a21dfb9fe178684))
+
+- **copilot**: Refine Chaturbate Events API instructions
+  ([`c8b584f`](https://github.com/MountainGod2/cb-events/commit/c8b584f13bd3cd47340358b27240ca674dc7aad6))
+
+- **README**: Clarify that the config parameter must be passed as a keyword argument
+  ([`e243099`](https://github.com/MountainGod2/cb-events/commit/e243099a5354b569ea563d6165a532260e36da16))
+
+### Refactoring
+
+- **client**: Simplify return logic in data handling
+  ([`37726d2`](https://github.com/MountainGod2/cb-events/commit/37726d253339bbe4b4bb721dd9ff190b8bff428d))
+
+- **config**: Use Self type hint in validate_retry_delays method
+  ([`b9bf527`](https://github.com/MountainGod2/cb-events/commit/b9bf52773e9c8c9cce62d34180bc70f70258a20e))
+
+- **exceptions**: Enhance error messages and add string representations
+  ([`62278a2`](https://github.com/MountainGod2/cb-events/commit/62278a299b313de4e0cc7a9a630c4a3d1a6e6c3a))
+
+- **router**: Enhance error handling in dispatch method and improve docstrings
+  ([`5502196`](https://github.com/MountainGod2/cb-events/commit/5502196ebedbb555ead8f2d08a0ce7843398ddee))
+
+- **router**: Remove handling of SystemExit and KeyboardInterrupt in dispatch method
+  ([`fc8a98a`](https://github.com/MountainGod2/cb-events/commit/fc8a98ac2b07433aa15f1935d1d8fc1387dc9322))
+
+### Testing
+
+- Enhance error handling in EventClient tests and add new exception tests
+  ([`ba0ceb1`](https://github.com/MountainGod2/cb-events/commit/ba0ceb1336f562558b1035a89f159fbcbb0e2407))
+
+
 ## v3.0.1 (2025-10-10)
 
 ### Bug Fixes
