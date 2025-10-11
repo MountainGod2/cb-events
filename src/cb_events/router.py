@@ -10,6 +10,12 @@ from .models import Event, EventType
 logger = logging.getLogger(__name__)
 
 EventHandler = Callable[[Event], Awaitable[None]]
+"""Type alias for async event handler functions.
+
+Event handlers are async functions that accept an Event and return None.
+They are registered using the EventRouter.on() or EventRouter.on_any()
+decorators and are called sequentially when events are dispatched.
+"""
 
 
 class EventRouter:
@@ -19,6 +25,8 @@ class EventRouter:
     event types or all events. Handlers are called in registration order when
     events are dispatched, allowing multiple handlers per event type.
     """
+
+    __slots__ = ("_handlers",)
 
     def __init__(self) -> None:
         """Initialize the event router with unified handler registry."""
@@ -79,14 +87,23 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch an event to all matching registered handlers.
 
-        All registered handlers are awaited sequentially.
+        All registered handlers are awaited sequentially. If any handler raises
+        an exception, it is caught, logged, and re-raised as a RouterError with
+        context about the failure. The original exception is preserved via
+        exception chaining.
 
         Args:
             event: The event to dispatch.
 
         Raises:
-            RouterError: If any handler raises an exception, it is caught, logged,
-                and re-raised as a RouterError with context about the failure.
+            RouterError: If any handler raises an exception. The original exception
+                is preserved as the cause (__cause__) for full traceback access.
+            SystemExit: Re-raised if a handler attempts to exit the program.
+            KeyboardInterrupt: Re-raised if a handler receives an interrupt signal.
+
+        Note:
+            SystemExit and KeyboardInterrupt are not caught and will propagate
+            immediately to allow graceful shutdown.
         """
         all_handlers = [
             *self._handlers[None],
@@ -105,6 +122,9 @@ class EventRouter:
         for handler in all_handlers:
             try:
                 await handler(event)
+            except (SystemExit, KeyboardInterrupt):
+                # Let system interrupts propagate immediately
+                raise
             except Exception as e:
                 handler_name = getattr(handler, "__name__", repr(handler))
                 logger.exception(
@@ -112,7 +132,7 @@ class EventRouter:
                     handler_name,
                     event.type.value,
                 )
-                msg = f"Error in handler {handler_name} for event type {event.type}"
+                msg = f"Error in handler {handler_name} for event type {event.type.value}"
                 raise RouterError(
                     msg,
                     event_type=event.type,
