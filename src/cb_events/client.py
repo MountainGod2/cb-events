@@ -301,8 +301,7 @@ class EventClient:
                 msg,
                 response_text=text,
             ) from e
-        else:
-            return data
+        return data
 
     async def poll(self) -> list[Event]:
         """Execute a single poll request and return parsed events.
