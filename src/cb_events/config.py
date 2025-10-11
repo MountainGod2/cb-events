@@ -1,5 +1,7 @@
 """Configuration classes for the Chaturbate Events API client."""
 
+from typing import Self
+
 from pydantic import BaseModel, Field, model_validator
 
 from .constants import (
@@ -33,7 +35,7 @@ class EventClientConfig(BaseModel):
     retry_max_delay: float = Field(default=DEFAULT_RETRY_MAX_DELAY, ge=0)
 
     @model_validator(mode="after")
-    def validate_retry_delays(self) -> "EventClientConfig":
+    def validate_retry_delays(self) -> Self:
         """Validate that retry_max_delay is at least as large as retry_backoff.
 
         Returns:
