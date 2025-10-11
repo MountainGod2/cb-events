@@ -135,6 +135,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    """Run the main function with graceful shutdown."""
     with contextlib.suppress(KeyboardInterrupt, AuthError):
         asyncio.run(main())
