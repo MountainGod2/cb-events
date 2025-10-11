@@ -30,7 +30,7 @@ class TestEventClient:
         mock_response.get(testbed_url_pattern, payload=api_response)
 
         config = EventClientConfig(use_testbed=True)
-        async with EventClient("test_user", "test_token", config) as client:
+        async with EventClient("test_user", "test_token", config=config) as client:
             events = await client.poll()
             assert len(events) == 1
             assert events[0].type == EventType.TIP
@@ -39,7 +39,7 @@ class TestEventClient:
         mock_response.get(testbed_url_pattern, status=401)
 
         config = EventClientConfig(use_testbed=True)
-        async with EventClient("test_user", "test_token", config) as client:
+        async with EventClient("test_user", "test_token", config=config) as client:
             with pytest.raises(AuthError):
                 await client.poll()
 
@@ -53,7 +53,7 @@ class TestEventClient:
 
         mock_response.get(testbed_url_pattern, payload=response)
 
-        async with EventClient("test_user", "test_token", testbed_config) as client:
+        async with EventClient("test_user", "test_token", config=testbed_config) as client:
             events = await client.poll()
         assert len(events) == 3
         expected_types = [EventType.TIP, EventType.FOLLOW, EventType.CHAT_MESSAGE]
@@ -64,7 +64,7 @@ class TestEventClient:
 
         mock_response.get(testbed_url_pattern, payload=response)
 
-        async with EventClient("test_user", "test_token", testbed_config) as client:
+        async with EventClient("test_user", "test_token", config=testbed_config) as client:
             events = []
             count = 0
             async for event in client:
@@ -92,6 +92,14 @@ class TestEventClient:
 
         async with EventClient("test_user", "test_token", config=config) as client:
             with pytest.raises(EventsError, match="HTTP 429: Rate limit exceeded"):
+                await client.poll()
+
+    async def test_invalid_json_response(self, mock_response, testbed_url_pattern):
+        mock_response.get(testbed_url_pattern, status=200, body="Not valid JSON")
+        config = EventClientConfig(use_testbed=True)
+
+        async with EventClient("test_user", "test_token", config=config) as client:
+            with pytest.raises(EventsError, match="Invalid JSON response"):
                 await client.poll()
 
 

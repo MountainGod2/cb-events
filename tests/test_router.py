@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from cb_events import Event, EventType
+from cb_events import Event, EventType, RouterError
 
 
 class TestEventRouter:
@@ -94,3 +94,37 @@ class TestEventRouter:
         assert EventType.TIP in router._handlers
         assert len(router._handlers[EventType.TIP]) == 1
         assert len(router._handlers[None]) == 1
+
+    async def test_handler_exception_wrapped(self, router, simple_tip_event):
+        async def failing_handler(event):  # noqa: RUF029
+            msg = "Handler failed"
+            raise ValueError(msg)
+
+        router.on(EventType.TIP)(failing_handler)
+
+        with pytest.raises(RouterError) as exc_info:
+            await router.dispatch(simple_tip_event)
+
+        # Verify exception chaining
+        assert exc_info.value.event_type == EventType.TIP
+        assert exc_info.value.handler_name == "failing_handler"
+        assert isinstance(exc_info.value.__cause__, ValueError)
+        assert str(exc_info.value.__cause__) == "Handler failed"
+
+    async def test_system_exit_not_caught(self, router, simple_tip_event):
+        async def exit_handler(event):  # noqa: RUF029
+            raise SystemExit(1)
+
+        router.on(EventType.TIP)(exit_handler)
+
+        with pytest.raises(SystemExit):
+            await router.dispatch(simple_tip_event)
+
+    async def test_keyboard_interrupt_not_caught(self, router, simple_tip_event):
+        async def interrupt_handler(event):  # noqa: RUF029
+            raise KeyboardInterrupt
+
+        router.on(EventType.TIP)(interrupt_handler)
+
+        with pytest.raises(KeyboardInterrupt):
+            await router.dispatch(simple_tip_event)
