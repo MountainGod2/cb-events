@@ -98,12 +98,6 @@ class EventRouter:
         Raises:
             RouterError: If any handler raises an exception. The original exception
                 is preserved as the cause (__cause__) for full traceback access.
-            SystemExit: Re-raised if a handler attempts to exit the program.
-            KeyboardInterrupt: Re-raised if a handler receives an interrupt signal.
-
-        Note:
-            SystemExit and KeyboardInterrupt are not caught and will propagate
-            immediately to allow graceful shutdown.
         """
         all_handlers = [
             *self._handlers[None],
@@ -122,9 +116,6 @@ class EventRouter:
         for handler in all_handlers:
             try:
                 await handler(event)
-            except (SystemExit, KeyboardInterrupt):
-                # Let system interrupts propagate immediately
-                raise
             except Exception as e:
                 handler_name = getattr(handler, "__name__", repr(handler))
                 logger.exception(
