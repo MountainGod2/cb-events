@@ -87,7 +87,7 @@ repos:
         files: \.rst$
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.37.1
+    rev: v1.37.2
     hooks:
       - id: typos
         name: typos spell check
