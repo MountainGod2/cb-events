@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v3.0.3 (2025-10-12)
+
+### Bug Fixes
+
+- **deps**: Update dependency pydantic to v2.11.10
+  ([`e436274`](https://github.com/MountainGod2/cb-events/commit/e4362744b9e36cb4c8345f66582fa484b1f48b05))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 9c6b5e9
+  ([`ef54921`](https://github.com/MountainGod2/cb-events/commit/ef549215905ada16018af963c0aa779c732f5ac7))
+
+
 ## v3.0.2 (2025-10-11)
 
 ### Bug Fixes
