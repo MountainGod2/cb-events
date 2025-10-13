@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v3.0.4 (2025-10-13)
+
+### Bug Fixes
+
+- **deps**: Update dependency aiohttp to v3.13.0
+  ([`e035676`](https://github.com/MountainGod2/cb-events/commit/e035676aa192ff96869a62d26083fa2b1e980007))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`001bbe6`](https://github.com/MountainGod2/cb-events/commit/001bbe62d6cf1e9cf3720c0a8d39c0b35fd92fee))
+
+- **deps**: Update astral-sh/setup-uv digest to 2382069
+  ([`67616f4`](https://github.com/MountainGod2/cb-events/commit/67616f4206a5f3c4bc492280986aa91088c8d399))
+
+- **deps**: Update astral-sh/setup-uv digest to 3259c62
+  ([`22e9405`](https://github.com/MountainGod2/cb-events/commit/22e9405514ab060cee073829822390662b2073e8))
+
+- **deps**: Update dependency pylint to v3.3.9
+  ([`65b746d`](https://github.com/MountainGod2/cb-events/commit/65b746d89debead3de57468282be0ac83af91dc2))
+
+
 ## v3.0.3 (2025-10-12)
 
 ### Bug Fixes
