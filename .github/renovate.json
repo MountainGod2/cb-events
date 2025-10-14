@@ -147,7 +147,7 @@
       "matchManagers": [
         "pre-commit"
       ],
-      "groupName": "pre-commit",
+      "groupName": "pre-commit-hooks",
       "matchUpdateTypes": [
         "minor",
         "patch"
