@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v3.0.5 (2025-10-14)
+
+### Bug Fixes
+
+- **deps**: Update dependency pydantic to v2.12.0
+  ([#24](https://github.com/MountainGod2/cb-events/pull/24),
+  [`f8e50e7`](https://github.com/MountainGod2/cb-events/commit/f8e50e7a8e1fa6d585d7e49a9cbaf7659a24c8a2))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 3ccd0fd
+  ([`c412300`](https://github.com/MountainGod2/cb-events/commit/c412300deed9fe4abf4933d0b31f6682ea60a8f5))
+
+- **deps**: Update dependency pylint to v4
+  ([#23](https://github.com/MountainGod2/cb-events/pull/23),
+  [`8e8577b`](https://github.com/MountainGod2/cb-events/commit/8e8577be4d03fc48feeab10c0f3fc93350aa2683))
+
+- **deps**: Update dependency pylint-pydantic to v0.4.0
+  ([#25](https://github.com/MountainGod2/cb-events/pull/25),
+  [`b2b0e6e`](https://github.com/MountainGod2/cb-events/commit/b2b0e6e33480559a38e62d69a4189462280a0fa8))
+
+- **deps**: Update pre-commit hook adhtruong/mirrors-typos to v1.38.0
+  ([`cc6ea5e`](https://github.com/MountainGod2/cb-events/commit/cc6ea5e6f86978ffd8696f750e9f003de614bb2c))
+
+
 ## v3.0.4 (2025-10-13)
 
 ### Bug Fixes
