@@ -46,6 +46,7 @@ coverage.xml
 .hypothesis/
 .pytest_tmpdir/
 bandit.sarif
+junit.xml
 
 # Translations
 *.mo
