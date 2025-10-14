@@ -106,7 +106,8 @@
         "pylint-*",
         "bandit",
         "bandit-*",
-        "ruff"
+        "ruff",
+        "pre-commit"
       ],
       "groupName": "dev",
       "matchUpdateTypes": [
@@ -142,10 +143,9 @@
       ]
     },
     {
-      "description": "Pre-commit hooks and configuration",
-      "matchPackageNames": [
-        "pre-commit",
-        "pre-commit-*"
+      "description": "Pre-commit hooks",
+      "matchManagers": [
+        "pre-commit"
       ],
       "groupName": "pre-commit",
       "matchUpdateTypes": [
