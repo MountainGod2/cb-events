@@ -51,7 +51,7 @@ dev = [
     "ruff==0.13.3",
     "mypy==1.18.2",
     "pyright==1.1.406",
-    "pylint==3.3.9",
+    "pylint==4.0.0",
     "pre-commit==4.3.0",
     "python-semantic-release==10.4.1",
     "pylint-pydantic==0.4.0",
