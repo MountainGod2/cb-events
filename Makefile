@@ -46,7 +46,7 @@ test:
 
 # Coverage reports for CI and local development
 test-cov:
-	uv run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html
+	uv run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html --junitxml=junit.xml
 
 test-e2e:
 	uv run pytest -m e2e
