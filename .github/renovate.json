@@ -80,25 +80,78 @@
       "minimumReleaseAge": "0"
     },
     {
-      "description": "Group dev tools",
+      "description": "Runtime dependencies (async HTTP and validation)",
       "matchPackageNames": [
-        "ruff",
-        "mypy",
-        "pylint",
-        "pyright",
-        "pytest",
-        "pytest-*"
+        "aiohttp",
+        "aiohttp-retry",
+        "aiolimiter",
+        "pydantic",
+        "pydantic-*"
       ],
-      "groupName": "dev-tools"
+      "groupName": "runtime",
+      "labels": [
+        "dependencies",
+        "core"
+      ]
     },
     {
-      "description": "Group build tools",
+      "description": "Development tools (testing, linting, and type checking)",
+      "matchPackageNames": [
+        "pytest",
+        "pytest-*",
+        "aioresponses",
+        "mypy",
+        "pyright",
+        "pylint",
+        "pylint-*",
+        "bandit",
+        "bandit-*",
+        "ruff"
+      ],
+      "groupName": "dev",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "description": "Documentation tools (Sphinx and extensions)",
+      "matchPackageNames": [
+        "sphinx",
+        "sphinx-*",
+        "furo",
+        "myst-*"
+      ],
+      "groupName": "docs",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "description": "Build and release tools",
       "matchPackageNames": [
         "hatchling",
         "hatch-*",
         "python-semantic-release"
       ],
-      "groupName": "build-tools"
+      "groupName": "build",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "description": "Pre-commit hooks and configuration",
+      "matchPackageNames": [
+        "pre-commit",
+        "pre-commit-*"
+      ],
+      "groupName": "pre-commit",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
     }
   ],
   "pep723": {
