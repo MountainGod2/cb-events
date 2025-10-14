@@ -2,6 +2,58 @@
 
 <!-- version list -->
 
+## v3.1.0 (2025-10-14)
+
+### Chores
+
+- Add junit.xml output to test coverage reports
+  ([`999f029`](https://github.com/MountainGod2/cb-events/commit/999f029d4342fde889eba90970618181ad341824))
+
+- Add junit.xml to .gitignore
+  ([`7630ed3`](https://github.com/MountainGod2/cb-events/commit/7630ed3cec3aba4f2933680aa326d2d7c3d88810))
+
+- **deps**: Reduce minimum release age from 7 days to 4 days
+  ([`c6bcf49`](https://github.com/MountainGod2/cb-events/commit/c6bcf49d2b087fce928294cf2cdb1df47029a288))
+
+- **deps**: Reorganize renovate package rules
+  ([`a63da64`](https://github.com/MountainGod2/cb-events/commit/a63da64de9267dd364761b990b77d13c8486fdc6))
+
+- **deps**: Tighten constraints for pylint versions
+  ([`de3a18b`](https://github.com/MountainGod2/cb-events/commit/de3a18b6356ef8824f8ecc55a030226fdeb68b29))
+
+- **deps**: Update dependency ruff to v0.14.0
+  ([`074b7cb`](https://github.com/MountainGod2/cb-events/commit/074b7cb4a7a0f8bc679c37a9cd9aebe2d7b7a115))
+
+- **deps**: Update dependency sphinx-autoapi to v3.6.1
+  ([#22](https://github.com/MountainGod2/cb-events/pull/22),
+  [`bb2d5c9`](https://github.com/MountainGod2/cb-events/commit/bb2d5c981b1df1ef759c2b74802e5f0bb447c753))
+
+- **deps**: Update pre-commit
+  ([`0151055`](https://github.com/MountainGod2/cb-events/commit/0151055968e0372333f50e6e9326eddf4ea16148))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.14.0
+  ([`6c3cca5`](https://github.com/MountainGod2/cb-events/commit/6c3cca5640497b795389d936d57e7f5f4ef1b54a))
+
+- **deps**: Update pre-commit package rules
+  ([`cb41f5e`](https://github.com/MountainGod2/cb-events/commit/cb41f5e0068892919f19d3c4d0c0c81aef6ba3b3))
+
+- **deps**: Update pylint versioning constraints
+  ([`0d7394e`](https://github.com/MountainGod2/cb-events/commit/0d7394eaf7866f5f5242a4dbc733542cab224d52))
+
+- **deps**: Update uv dependency to version 0.9.2 in Dockerfile
+  ([`d956ee6`](https://github.com/MountainGod2/cb-events/commit/d956ee6324d915b1612018139269839a9aca3d61))
+
+### Features
+
+- Add Codecov test results action to CI workflow
+  ([`915386d`](https://github.com/MountainGod2/cb-events/commit/915386d159069129186a0418f04d357aceddfade))
+
+### Refactoring
+
+- **renovate**: Rename pre-commit group to pre-commit-hooks
+  ([`3e2f51a`](https://github.com/MountainGod2/cb-events/commit/3e2f51abadc891c510f635abb7b9d45dadd1d680))
+
+
 ## v3.0.5 (2025-10-14)
 
 ### Bug Fixes
