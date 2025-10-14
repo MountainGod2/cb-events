@@ -15,7 +15,7 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
         name: pyupgrade
@@ -71,7 +71,7 @@ repos:
         name: check readthedocs config
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.2.0
+    rev: v4.3.0
     hooks:
       - id: conventional-pre-commit
         name: conventional commit check
@@ -87,7 +87,7 @@ repos:
         files: \.rst$
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.38.0
+    rev: v1.38.1
     hooks:
       - id: typos
         name: typos spell check
