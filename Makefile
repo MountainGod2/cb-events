@@ -63,11 +63,6 @@ docs: FORCE
 	rm -rf docs/_build && rm -rf docs/api
 	uv run --group docs sphinx-build -E -T -a -b html -D language=en docs docs/_build/html
 
-# Clean documentation build artifacts
-docs-clean:
-	rm -rf docs/_build/
-	rm -rf docs/api/
-
 # Serve documentation locally for development
 docs-serve: docs
 	@echo "Serving documentation at http://localhost:8000"
@@ -96,6 +91,9 @@ clean:
 	rm -rf .pyright/
 	rm -rf dist/
 	rm -rf build/
+	rm -rf junit.xml
+	rm -rf docs/_build/
+	rm -rf docs/api/
 
 help:
 	@echo "Setup:"
@@ -109,7 +107,7 @@ help:
 	@echo "  test       test-cov  test-e2e"
 	@echo ""
 	@echo "Documentation:"
-	@echo "  docs       docs-clean docs-serve docs-linkcheck"
+	@echo "  docs       docs-serve docs-linkcheck"
 	@echo ""
 	@echo "Release:"
 	@echo "  build      ci       clean"
