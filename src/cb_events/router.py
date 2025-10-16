@@ -87,17 +87,14 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch an event to all matching registered handlers.
 
-        All registered handlers are awaited sequentially. If any handler raises
-        an exception, it is caught, logged, and re-raised as a RouterError with
-        context about the failure. The original exception is preserved via
-        exception chaining.
+        All registered handlers are awaited sequentially. If any handler
+        raises an exception, it is logged and a RouterError is raised.
 
         Args:
             event: The event to dispatch.
 
         Raises:
-            RouterError: If any handler raises an exception. The original exception
-                is preserved as the cause (__cause__) for full traceback access.
+            RouterError: If any handler raises an exception during execution.
         """
         all_handlers = [
             *self._handlers[None],
