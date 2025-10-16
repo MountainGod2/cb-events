@@ -12,11 +12,11 @@ from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventT
 
 
 @pytest.fixture(autouse=True)
-def clear_rate_limiters():
-    """Clear shared rate limiters before each test to avoid event loop reuse issues."""
-    EventClient._rate_limiters.clear()
+def reset_rate_limiter():
+    """Reset the shared rate limiter before each test for clean event loop state."""
+    EventClient._rate_limiter = None
     yield
-    EventClient._rate_limiters.clear()
+    EventClient._rate_limiter = None
 
 
 @pytest.fixture
