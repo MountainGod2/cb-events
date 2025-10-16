@@ -189,7 +189,7 @@ class Event(BaseEventModel):
         Returns:
             User object if user data is present in the event, otherwise None.
         """
-        if user_data := self.data.get("user"):
+        if (user_data := self.data.get("user")) is not None:
             return User.model_validate(user_data)
         return None
 
@@ -200,7 +200,7 @@ class Event(BaseEventModel):
         Returns:
             Tip object if this is a tip event with tip data, otherwise None.
         """
-        if self.type == EventType.TIP and (tip_data := self.data.get("tip")):
+        if self.type == EventType.TIP and (tip_data := self.data.get("tip")) is not None:
             return Tip.model_validate(tip_data)
         return None
 
@@ -212,8 +212,9 @@ class Event(BaseEventModel):
             Message object if this is a message event with message data,
             otherwise None.
         """
-        if self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE} and (
-            message_data := self.data.get("message")
+        if (
+            self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
+            and (message_data := self.data.get("message")) is not None
         ):
             return Message.model_validate(message_data)
         return None
