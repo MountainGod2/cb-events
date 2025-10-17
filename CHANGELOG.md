@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v3.1.2 (2025-10-17)
+
+### Bug Fixes
+
+- **client**: Improve error handling in _parse_response_data method to raise JSONDecodeError on
+  invalid JSON
+  ([`1679a78`](https://github.com/MountainGod2/cb-events/commit/1679a780d42a5df179c1286748acec9eaf28005c))
+
+- **router**: Enhance dispatch method error handling with context for RouterError
+  ([`e74e5c5`](https://github.com/MountainGod2/cb-events/commit/e74e5c5f01e492d46aa2d711d3a290572887ad6b))
+
+### Chores
+
+- **deps**: Update github/codeql-action digest to ee753b4
+  ([`630ff4b`](https://github.com/MountainGod2/cb-events/commit/630ff4b4b6464417a8d7b5df62f8b61469bb42dd))
+
+- **deps**: Update pre-commit hook python-jsonschema/check-jsonschema to v0.34.1
+  ([`18d1f98`](https://github.com/MountainGod2/cb-events/commit/18d1f98342ec80f6d8787fa30dfc58507d18e63f))
+
+### Refactoring
+
+- **exceptions**: Remove __repr__ methods from EventsError and RouterError classes
+  ([`1e83de3`](https://github.com/MountainGod2/cb-events/commit/1e83de32198c76d352bc3ddba2dac9671e2c16c0))
+
+- **models**: Replace @property with @cached_property for improved performance in Event class
+  ([`af3b311`](https://github.com/MountainGod2/cb-events/commit/af3b311b8b0b9f4a98481364c779d466f6864f6e))
+
+- **tests**: Remove repr tests for EventsError, AuthError, and RouterError classes
+  ([`4ebeaf1`](https://github.com/MountainGod2/cb-events/commit/4ebeaf1bafc0b5fb89e6a6cc210d833a1f57a58a))
+
+
 ## v3.1.1 (2025-10-17)
 
 ### Bug Fixes
