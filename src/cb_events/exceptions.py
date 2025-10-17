@@ -1,6 +1,5 @@
 """Exception classes for the Chaturbate Events client."""
 
-from .constants import RESPONSE_PREVIEW_LENGTH
 from .models import EventType
 
 
@@ -45,25 +44,6 @@ class EventsError(Exception):
         if self.status_code is not None:
             return f"{self.message} (HTTP {self.status_code})"
         return self.message
-
-    def __repr__(self) -> str:
-        """Return detailed string representation of the error.
-
-        Returns:
-            A string representation including the error message, status code,
-            and a preview of the response text if available.
-        """
-        parts = [f"message='{self.message}'"]
-        if self.status_code is not None:
-            parts.append(f"status_code={self.status_code}")
-        if self.response_text:
-            preview = (
-                self.response_text[:RESPONSE_PREVIEW_LENGTH] + "..."
-                if len(self.response_text) > RESPONSE_PREVIEW_LENGTH
-                else self.response_text
-            )
-            parts.append(f"response_text='{preview}'")
-        return f"{self.__class__.__name__}({', '.join(parts)})"
 
 
 class AuthError(EventsError):
@@ -128,17 +108,3 @@ class RouterError(Exception):
         if self.handler_name is not None:
             parts.append(f"handler={self.handler_name}")
         return " | ".join(parts)
-
-    def __repr__(self) -> str:
-        """Return detailed string representation of the router error.
-
-        Returns:
-            A string representation including the error message, event type,
-            and handler name if available.
-        """
-        parts = [f"message='{self.message}'"]
-        if self.event_type is not None:
-            parts.append(f"event_type={self.event_type.value}")
-        if self.handler_name is not None:
-            parts.append(f"handler_name='{self.handler_name}'")
-        return f"{self.__class__.__name__}({', '.join(parts)})"
