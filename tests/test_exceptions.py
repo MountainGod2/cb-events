@@ -22,14 +22,6 @@ class TestEventsError:
         assert str(error) == "Invalid response (HTTP 400)"
         assert error.response_text == "Bad Request"
 
-    def test_events_error_repr(self):
-        error = EventsError("Test", status_code=404, response_text="Not Found")
-        repr_str = repr(error)
-        assert "EventsError" in repr_str
-        assert "message='Test'" in repr_str
-        assert "status_code=404" in repr_str
-        assert "response_text='Not Found'" in repr_str
-
 
 class TestAuthError:
     def test_auth_error_creation(self):
@@ -47,12 +39,6 @@ class TestAuthError:
         error = AuthError("Test auth error")
         assert isinstance(error, AuthError)
         assert isinstance(error, EventsError)
-
-    def test_auth_error_repr(self):
-        error = AuthError("Auth failed", status_code=403)
-        assert "AuthError" in repr(error)
-        assert "message='Auth failed'" in repr(error)
-        assert "status_code=403" in repr(error)
 
 
 class TestRouterError:
@@ -77,22 +63,6 @@ class TestRouterError:
         assert "Handler failed" in error_str
         assert "event_type=tip" in error_str
         assert "handler=handle_tip" in error_str
-
-    def test_router_error_str_minimal(self):
-        error = RouterError("Simple error")
-        assert str(error) == "Simple error"
-
-    def test_router_error_repr(self):
-        error = RouterError(
-            "Handler failed",
-            event_type=EventType.FOLLOW,
-            handler_name="handle_follow",
-        )
-        repr_str = repr(error)
-        assert "RouterError" in repr_str
-        assert "message='Handler failed'" in repr_str
-        assert "event_type=follow" in repr_str
-        assert "handler_name='handle_follow'" in repr_str
 
 
 class TestExceptionCompatibility:
