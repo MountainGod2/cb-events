@@ -11,7 +11,7 @@ import logging
 from collections.abc import AsyncIterator
 from http import HTTPStatus
 from types import TracebackType
-from typing import Any, ClassVar, Self
+from typing import Any, Self
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
@@ -52,9 +52,6 @@ class EventClient:
         retry_client: Retry-enabled HTTP client wrapper.
     """
 
-    _rate_limiter: ClassVar[AsyncLimiter | None] = None
-    """Shared rate limiter instance for all EventClient instances."""
-
     def __init__(
         self,
         username: str,
@@ -87,6 +84,7 @@ class EventClient:
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
+        self._rate_limiter: AsyncLimiter | None = None
         self._next_url: str | None = None
         self._closed = False
         self._lock = asyncio.Lock()
@@ -154,6 +152,11 @@ class EventClient:
             self.retry_client = RetryClient(
                 client_session=self.session, retry_options=self._retry_options
             )
+        if self._rate_limiter is None:
+            self._rate_limiter = AsyncLimiter(
+                max_rate=RATE_LIMIT_MAX_RATE,
+                time_period=RATE_LIMIT_TIME_PERIOD,
+            )
         return self
 
     async def __aexit__(
@@ -217,19 +220,6 @@ class EventClient:
         )
         return events
 
-    @classmethod
-    def _get_rate_limiter(cls) -> AsyncLimiter:
-        """Get or create the rate limiter for the current event loop.
-
-        Returns:
-            The shared AsyncLimiter instance for rate limiting.
-        """
-        if cls._rate_limiter is None:
-            cls._rate_limiter = AsyncLimiter(
-                max_rate=RATE_LIMIT_MAX_RATE, time_period=RATE_LIMIT_TIME_PERIOD
-            )
-        return cls._rate_limiter
-
     async def _make_request(self, url: str) -> tuple[int, str]:
         """Make an HTTP request to the API and return status and response text.
 
@@ -242,12 +232,11 @@ class EventClient:
         Raises:
             EventsError: If the session is not initialized.
         """
-        if self.session is None or self.retry_client is None:
+        if self.session is None or self.retry_client is None or self._rate_limiter is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        rate_limiter = self._get_rate_limiter()
-        async with rate_limiter, self.retry_client.get(url) as resp:
+        async with self._rate_limiter, self.retry_client.get(url) as resp:
             text = await resp.text()
             return resp.status, text
 

@@ -11,14 +11,6 @@ from aioresponses import aioresponses
 from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
 
 
-@pytest.fixture(autouse=True)
-def reset_rate_limiter():
-    """Reset the shared rate limiter before each test for clean event loop state."""
-    EventClient._rate_limiter = None
-    yield
-    EventClient._rate_limiter = None
-
-
 @pytest.fixture
 def credentials() -> dict[str, str]:
     return {
