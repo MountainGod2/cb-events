@@ -2,6 +2,44 @@
 
 <!-- version list -->
 
+## v3.1.1 (2025-10-17)
+
+### Bug Fixes
+
+- **models**: Ensure user, tip, and message data checks are explicit for None
+  ([`81830c9`](https://github.com/MountainGod2/cb-events/commit/81830c9df7b2619df10f2c4764e08cd1a5fa7f32))
+
+- **router**: Simplify exception handling in dispatch method documentation
+  ([`47a302f`](https://github.com/MountainGod2/cb-events/commit/47a302f1ba46685dc147388bd9cac86a6c3ff5a0))
+
+### Chores
+
+- **deps**: Pin codecov/test-results-action action to 47f89e9
+  ([#27](https://github.com/MountainGod2/cb-events/pull/27),
+  [`93bc44e`](https://github.com/MountainGod2/cb-events/commit/93bc44ee14d5997dbd74d4b309a750c6e536a1c4))
+
+- **deps**: Update astral-sh/setup-uv digest to b7bf789
+  ([`6988c13`](https://github.com/MountainGod2/cb-events/commit/6988c13262b172b12a66f1d9e02e420577592104))
+
+- **deps**: Update dependency sphinx-autodoc-typehints to v3.5.1
+  ([`99f506d`](https://github.com/MountainGod2/cb-events/commit/99f506d928e4397745309f4ce3dd1b55dd949878))
+
+### Refactoring
+
+- **client**: Consolidate rate limiter management
+  ([`edd891d`](https://github.com/MountainGod2/cb-events/commit/edd891d2e755c4371568a8ff7025183809362923))
+
+- **client**: Move rate limiter initialization to instance level and remove class-level reset
+  fixture
+  ([`352c04a`](https://github.com/MountainGod2/cb-events/commit/352c04a1ea0a4958c05b748569e1255db87b88a9))
+
+- **Makefile**: Remove redundant docs-clean target
+  ([`7786698`](https://github.com/MountainGod2/cb-events/commit/7786698740385b3a5765862dad47dc41e6ea7305))
+
+- **tests**: Rename and simplify rate limiter fixture
+  ([`7c3a38a`](https://github.com/MountainGod2/cb-events/commit/7c3a38a7a6dcb3ea4a0a6fbcaa58bbe3c9ce555c))
+
+
 ## v3.1.0 (2025-10-14)
 
 ### Chores
