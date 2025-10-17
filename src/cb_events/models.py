@@ -1,6 +1,7 @@
 """Data models for the Chaturbate Events API."""
 
 from enum import StrEnum
+from functools import cached_property
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -180,9 +181,9 @@ class Event(BaseEventModel):
 
     type: EventType = Field(alias="method")
     id: str
-    data: dict[str, Any] = Field(default_factory=dict, alias="object")
+    data: dict[str, Any] = Field(default_factory=dict, alias="object", frozen=True)
 
-    @property
+    @cached_property
     def user(self) -> User | None:
         """Get user information associated with this event.
 
@@ -193,7 +194,7 @@ class Event(BaseEventModel):
             return User.model_validate(user_data)
         return None
 
-    @property
+    @cached_property
     def tip(self) -> Tip | None:
         """Get tip information for tip events.
 
@@ -204,7 +205,7 @@ class Event(BaseEventModel):
             return Tip.model_validate(tip_data)
         return None
 
-    @property
+    @cached_property
     def message(self) -> Message | None:
         """Get message information for chat and private message events.
 
@@ -219,7 +220,7 @@ class Event(BaseEventModel):
             return Message.model_validate(message_data)
         return None
 
-    @property
+    @cached_property
     def room_subject(self) -> RoomSubject | None:
         """Get room subject information for room subject change events.
 
@@ -231,7 +232,7 @@ class Event(BaseEventModel):
             return RoomSubject.model_validate({"subject": self.data["subject"]})
         return None
 
-    @property
+    @cached_property
     def broadcaster(self) -> str | None:
         """Get the broadcaster username associated with this event.
 
