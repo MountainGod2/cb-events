@@ -87,8 +87,10 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch an event to all matching registered handlers.
 
-        All registered handlers are awaited sequentially. If any handler
-        raises an exception, it is logged and a RouterError is raised.
+        All registered handlers are awaited sequentially. Handlers for the
+        specific event type are called after any handlers registered for all
+        event types. If any handler raises an exception, a RouterError is raised
+        with context about the failure.
 
         Args:
             event: The event to dispatch.
@@ -115,11 +117,6 @@ class EventRouter:
                 await handler(event)
             except Exception as e:
                 handler_name = getattr(handler, "__name__", repr(handler))
-                logger.exception(
-                    "Error in handler %s for event type %s",
-                    handler_name,
-                    event.type.value,
-                )
                 msg = f"Error in handler {handler_name} for event type {event.type.value}"
                 raise RouterError(
                     msg,
