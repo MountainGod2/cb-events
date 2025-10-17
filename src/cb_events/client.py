@@ -331,18 +331,16 @@ class EventClient:
             text: The response text containing potential error data with nextUrl.
 
         Returns:
-            The extracted nextUrl string if present in a timeout error response,
-            otherwise None.
+            The extracted nextUrl if present, otherwise None.
 
-        Note:
-            JSON parsing errors are silently ignored and return None, as this
-            method is used for error recovery and should not raise exceptions.
+        Raises:
+            json.JSONDecodeError: If the response text is not valid JSON.
         """
         try:
             error_data = json.loads(text)
         except json.JSONDecodeError:
             logger.warning("Failed to parse error response for nextUrl extraction")
-            return None
+            raise
 
         if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower():
             next_url = error_data.get("nextUrl")
