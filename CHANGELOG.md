@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v4.0.0 (2025-10-18)
+
+### Chores
+
+- **deps**: Update actions/attest-build-provenance digest to ba965ac
+  ([`ec9e112`](https://github.com/MountainGod2/cb-events/commit/ec9e1125077a9feadd01008cccda91885720a5f7))
+
+- **deps**: Update github/codeql-action digest to d88a554
+  ([`7afa34e`](https://github.com/MountainGod2/cb-events/commit/7afa34e8abde15ed461687a1a50106ed82d3ba04))
+
+### Refactoring
+
+- **python-version**: Update minimum python version to 3.12
+  ([`45a344e`](https://github.com/MountainGod2/cb-events/commit/45a344e8108f57bec9d109ef9d9e98db0a8b7185))
+
+
 ## v3.1.2 (2025-10-17)
 
 ### Bug Fixes
