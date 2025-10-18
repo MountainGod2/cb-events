@@ -9,7 +9,7 @@ description = "An asynchronous client for the Chaturbate Events API."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 maintainers = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["aiohttp==3.13.0", "aiohttp-retry==2.9.1", "aiolimiter==1.2.1", "pydantic==2.12.0"]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
@@ -19,9 +19,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries",
@@ -51,8 +51,7 @@ dev = [
     "ruff==0.14.0",
     "mypy==1.18.2",
     "pyright==1.1.406",
-    "pylint==3.3.9; python_version < '3.12'",
-    "pylint==4.0.0; python_version >= '3.12'",
+    "pylint==4.0.0",
     "pre-commit==4.3.0",
     "python-semantic-release==10.4.1",
     "pylint-pydantic==0.4.0",
@@ -108,7 +107,7 @@ patterns = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 100
 indent-width = 4
 
@@ -158,7 +157,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 disallow_untyped_defs = true
 no_implicit_optional = true
@@ -182,7 +181,7 @@ no_implicit_optional = false
 strict_optional = false
 
 [tool.pyright]
-python-version = "3.11.0"
+python-version = "3.12.0"
 
 [[tool.pyright.overrides]]
 include = ["examples/**"]

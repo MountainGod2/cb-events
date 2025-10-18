@@ -83,7 +83,7 @@ async with EventClient(username, token, config=config) as client:
 
 ## Key Details
 
-- **Python**: >=3.11 required
+- **Python**: >=3.12 required
 - **Dependencies**: aiohttp, aiohttp-retry, aiolimiter, pydantic
 - **Rate limit**: 2000 req/min built-in
 - **Security**: Token masking (last 4 chars only)

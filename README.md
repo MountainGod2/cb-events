@@ -113,7 +113,7 @@ Automatic retry on 429, 5xx, and Cloudflare error codes. No retry on authenticat
 
 ## Requirements
 
-- Python ≥3.11
+- Python ≥3.12
 - aiohttp, pydantic, aiolimiter
 
 ```bash
