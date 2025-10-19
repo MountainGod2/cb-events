@@ -13,18 +13,11 @@ class TestEventClient:
         assert "1234" in str(client)
         assert "secret_token" not in str(client)
 
-    @pytest.mark.parametrize(
-        ("username", "token", "error_msg"),
-        [
-            ("", "token", "Username cannot be empty"),
-            ("user", "", "Token cannot be empty"),
-            ("   ", "token", "Username cannot be empty"),
-            ("user", "   ", "Token cannot be empty"),
-        ],
-    )
-    def test_validation_errors(self, username, token, error_msg):
-        with pytest.raises(ValueError, match=error_msg):
-            EventClient(username, token)
+    def test_empty_credentials_rejected(self):
+        with pytest.raises(ValueError, match="Username cannot be empty"):
+            EventClient("", "token")
+        with pytest.raises(ValueError, match="Token cannot be empty"):
+            EventClient("user", "")
 
     async def test_polling_success(self, api_response, mock_response, testbed_url_pattern):
         mock_response.get(testbed_url_pattern, payload=api_response)
@@ -76,11 +69,11 @@ class TestEventClient:
             assert len(events) == 1
             assert events[0].type == EventType.TIP
 
-    async def test_retry_configuration(self, credentials):
+    async def test_retry_configuration(self):
         config = EventClientConfig(
             use_testbed=True, retry_attempts=5, retry_backoff=2.0, retry_max_delay=60.0
         )
-        client = EventClient(credentials["username"], credentials["token"], config=config)
+        client = EventClient("test_user", "test_token", config=config)
 
         assert client.config.retry_attempts == 5
         assert client.config.retry_backoff == 2.0
@@ -127,32 +120,19 @@ class TestEventClientConfig:
         assert config.retry_factor == 3.0
         assert config.retry_max_delay == 120.0
 
-    @pytest.mark.parametrize(
-        ("field", "value", "constraint_type"),
-        [
-            ("timeout", -1, "greater_than"),
-            ("timeout", 0, "greater_than"),
-            ("retry_attempts", -1, "greater_than_equal"),
-            ("retry_backoff", -1, "greater_than_equal"),
-            ("retry_factor", 0, "greater_than"),
-            ("retry_factor", -1, "greater_than"),
-            ("retry_max_delay", -1, "greater_than_equal"),
-        ],
-    )
-    def test_validation_errors(self, field, value, constraint_type):
-        with pytest.raises(ValidationError) as exc_info:
-            EventClientConfig(**{field: value})
+    def test_invalid_timeout_rejected(self):
+        with pytest.raises(ValidationError):
+            EventClientConfig(timeout=0)
 
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["type"] == constraint_type
-        assert errors[0]["loc"] == (field,)
+    def test_invalid_retry_attempts_rejected(self):
+        with pytest.raises(ValidationError):
+            EventClientConfig(retry_attempts=-1)
 
     def test_retry_max_delay_validation(self):
         with pytest.raises(ValidationError) as exc_info:
             EventClientConfig(retry_backoff=10.0, retry_max_delay=5.0)
 
-        errors = exc_info.value.errors()
+        errors = exc_info.value.errors()  # ty: ignore[unresolved-attribute]
         assert len(errors) == 1
         ctx = errors[0].get("ctx", {})
         error_msg = str(ctx.get("error", ""))

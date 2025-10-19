@@ -1,22 +1,13 @@
 """Test configuration and shared fixtures."""
 
 import re
-from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
 from aioresponses import aioresponses
 
-from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
-
-
-@pytest.fixture
-def credentials() -> dict[str, str]:
-    return {
-        "username": "test_user",
-        "token": "test_token_1234",
-    }
+from cb_events import Event, EventClientConfig, EventRouter, EventType
 
 
 @pytest.fixture
@@ -37,17 +28,7 @@ def sample_event_data() -> dict[str, Any]:
         "object": {
             "tip": {"tokens": 100},
             "user": {"username": "test_tipper"},
-            "message": {"message": "Great show!"},
         },
-    }
-
-
-@pytest.fixture
-def simple_tip_event_data() -> dict[str, Any]:
-    return {
-        "method": EventType.TIP.value,
-        "id": "test_event",
-        "object": {},
     }
 
 
@@ -65,21 +46,12 @@ def sample_event(sample_event_data: dict[str, Any]) -> Event:
 
 
 @pytest.fixture
-def simple_tip_event(simple_tip_event_data: dict[str, Any]) -> Event:
-    return Event.model_validate(simple_tip_event_data)
-
-
-@pytest.fixture
-async def client(
-    credentials: dict[str, str], testbed_config: EventClientConfig
-) -> AsyncGenerator[EventClient, None]:
-    client = EventClient(
-        username=credentials["username"],
-        token=credentials["token"],
-        config=testbed_config,
-    )
-    yield client
-    await client.close()
+def simple_tip_event() -> Event:
+    return Event.model_validate({
+        "method": EventType.TIP.value,
+        "id": "test_event",
+        "object": {},
+    })
 
 
 @pytest.fixture
