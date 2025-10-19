@@ -5,7 +5,6 @@ Events API and streaming real-time events. It includes automatic retry logic,
 rate limiting, and credential handling.
 """
 
-import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -69,15 +68,15 @@ class EventClient:
         Raises:
             ValueError: If username or token is empty or contains only whitespace.
         """
-        if not username.strip():
-            msg = "Username cannot be empty"
-            raise ValueError(msg)
-        if not token.strip():
-            msg = "Token cannot be empty"
-            raise ValueError(msg)
-
         self.username = username.strip()
         self.token = token.strip()
+
+        if not self.username:
+            msg = "Username cannot be empty"
+            raise ValueError(msg)
+        if not self.token:
+            msg = "Token cannot be empty"
+            raise ValueError(msg)
 
         self.config = config if config is not None else EventClientConfig()
         self.timeout = self.config.timeout
@@ -86,8 +85,6 @@ class EventClient:
         self.retry_client: RetryClient | None = None
         self._rate_limiter: AsyncLimiter | None = None
         self._next_url: str | None = None
-        self._closed = False
-        self._lock = asyncio.Lock()
 
         self._retry_options = ExponentialRetry(
             attempts=self.config.retry_attempts,
@@ -187,20 +184,28 @@ class EventClient:
             timeout=self.timeout,
         )
 
-    def _extract_and_update_next_url(self, text: str) -> bool:
-        """Extract nextUrl from timeout response and update internal state.
+    def _extract_next_url(self, text: str) -> str | None:
+        """Extract nextUrl from timeout error response and update internal state.
 
         Args:
             text: The response text containing potential error data with nextUrl.
 
         Returns:
-            True if nextUrl was found and updated, False otherwise.
+            The extracted nextUrl if present and updated, otherwise None.
         """
-        if next_url := self._extract_next_url(text):
+        try:
+            error_data = json.loads(text)
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse error response for nextUrl extraction")
+            return None
+
+        if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower() and (
+            next_url := error_data.get("nextUrl")
+        ):
             logger.debug("Received nextUrl from timeout response")
             self._next_url = next_url
-            return True
-        return False
+            return str(next_url)
+        return None
 
     def _parse_response_data(self, resp_data: dict[str, Any]) -> list[Event]:
         """Parse API response data into Event objects.
@@ -263,7 +268,7 @@ class EventClient:
             msg = f"Authentication failed for {self.username}"
             raise AuthError(msg)
 
-        if status == HTTPStatus.BAD_REQUEST and self._extract_and_update_next_url(text):
+        if status == HTTPStatus.BAD_REQUEST and self._extract_next_url(text):
             return False
 
         if status != HTTPStatus.OK:
@@ -323,30 +328,6 @@ class EventClient:
         data = self._parse_json_response(text)
         return self._parse_response_data(data)
 
-    @staticmethod
-    def _extract_next_url(text: str) -> str | None:
-        """Extract nextUrl from timeout error response.
-
-        Args:
-            text: The response text containing potential error data with nextUrl.
-
-        Returns:
-            The extracted nextUrl if present, otherwise None.
-
-        Raises:
-            json.JSONDecodeError: If the response text is not valid JSON.
-        """
-        try:
-            error_data = json.loads(text)
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse error response for nextUrl extraction")
-            raise
-
-        if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower():
-            next_url = error_data.get("nextUrl")
-            return next_url or None
-        return None
-
     async def _poll_continuously(self) -> AsyncIterator[Event]:
         """Continuously poll the API and yield events as they arrive.
 
@@ -376,14 +357,10 @@ class EventClient:
         Safely closes all active connections and cleans up resources.
         Can be called multiple times safely.
         """
-        async with self._lock:
-            if self._closed:
-                return
-            self._closed = True
-            if self.retry_client:
-                await self.retry_client.close()
-                self.retry_client = None
-            if self.session:
-                await self.session.close()
-                self.session = None
-            self._next_url = None
+        if self.retry_client:
+            await self.retry_client.close()
+            self.retry_client = None
+        if self.session:
+            await self.session.close()
+            self.session = None
+        self._next_url = None
