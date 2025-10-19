@@ -33,7 +33,7 @@ Use conventional commits with imperative mood and specific verbs:
 
 - `feat(module):` `fix(module):` `docs:` `test:` `chore:`
 - **Good verbs**: add, remove, replace, rename, move, extract, merge, split, convert
-- **Bad verbs**: update, improve, enhance, refine, optimize, tweak, clarity
+- **Bad verbs**: update, improve, enhance, refine, optimize, tweak, clarity, streamline
 
 Examples:
 - ✅ `fix(client): add AuthError for 401 responses`
