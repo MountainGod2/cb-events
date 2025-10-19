@@ -116,7 +116,7 @@ class EventRouter:
             try:
                 await handler(event)
             except Exception as e:
-                handler_name = getattr(handler, "__name__", repr(handler))
+                handler_name = handler.__name__ if hasattr(handler, "__name__") else repr(handler)
                 msg = f"Error in handler {handler_name} for event type {event.type.value}"
                 raise RouterError(
                     msg,
