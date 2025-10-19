@@ -129,7 +129,7 @@ class Message(BaseEventModel):
             True if this is a private message (has both from_user and to_user),
             False if this is a public chat message.
         """
-        return bool(self.from_user and self.to_user)
+        return self.from_user is not None and self.to_user is not None
 
 
 class Tip(BaseEventModel):
