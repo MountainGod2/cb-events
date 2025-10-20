@@ -77,9 +77,9 @@ try:
     async with EventClient(username, token) as client:
         async for event in client:
             await router.dispatch(event)
-except AuthError:
+except AuthError as e
     # Authentication failed (401/403)
-    pass
+    print(f"Authentication error: {e}")
 except RouterError as e:
     # Handler execution failed
     print(f"Handler '{e.handler_name}' failed on {e.event_type}")
@@ -96,7 +96,7 @@ Automatic retry on 429, 5xx, and Cloudflare error codes. No retry on authenticat
 ## Requirements
 
 - Python ≥3.12
-- aiohttp, pydantic, aiolimiter
+- aiohttp, aiohttp-retry, aiolimiter, pydantic
 
 For full list of dependencies view [pyproject.toml](./pyproject.toml#L41) or run:
 
