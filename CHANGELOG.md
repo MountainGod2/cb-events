@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v4.0.3 (2025-10-20)
+
+### Bug Fixes
+
+- Change ValueError to AuthError for empty username and token in EventClient
+  ([`d159944`](https://github.com/MountainGod2/cb-events/commit/d159944e17e0fefd88ace55c5361b7615ab96b80))
+
+- **docs**: Improve error handling for authentication in README and index
+  ([`527846c`](https://github.com/MountainGod2/cb-events/commit/527846c338af7c7a9d1f6e868526c5a2627dfe29))
+
+### Refactoring
+
+- **example**: Remove unused AuthError handling in main
+  ([`2c70673`](https://github.com/MountainGod2/cb-events/commit/2c70673ba7db0e20160744ad1ac51afd2845d588))
+
+- **example**: Reorganize example file layout
+  ([`5e379ee`](https://github.com/MountainGod2/cb-events/commit/5e379eec2ed98be0b79a8ccdd554f6d5147c060e))
+
+
 ## v4.0.2 (2025-10-20)
 
 ### Bug Fixes
