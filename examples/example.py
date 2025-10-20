@@ -5,7 +5,6 @@ import contextlib
 import os
 
 from cb_events import (
-    AuthError,
     Event,
     EventClient,
     EventClientConfig,
@@ -144,5 +143,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    with contextlib.suppress(KeyboardInterrupt, AuthError):
+    with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(main())
