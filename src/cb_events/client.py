@@ -66,17 +66,17 @@ class EventClient:
             config: Configuration object with client settings. If None, uses defaults.
 
         Raises:
-            ValueError: If username or token is empty or contains only whitespace.
+            AuthError: If username or token is empty or contains only whitespace.
         """
         self.username = username.strip()
         self.token = token.strip()
 
         if not self.username:
             msg = "Username cannot be empty"
-            raise ValueError(msg)
+            raise AuthError(msg)
         if not self.token:
             msg = "Token cannot be empty"
-            raise ValueError(msg)
+            raise AuthError(msg)
 
         self.config = config if config is not None else EventClientConfig()
         self.timeout = self.config.timeout
