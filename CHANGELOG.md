@@ -2,6 +2,51 @@
 
 <!-- version list -->
 
+## v4.0.2 (2025-10-20)
+
+### Bug Fixes
+
+- **docs**: Update linked files in README and index
+  ([`41e111c`](https://github.com/MountainGod2/cb-events/commit/41e111c53c5628818de6f853e51fc941c88486e2))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 2ddd2b9
+  ([`ece265b`](https://github.com/MountainGod2/cb-events/commit/ece265b22af2f269126f7e3aa812f2c12938386c))
+
+- **deps**: Update dependency pylint to v4.0.1
+  ([#28](https://github.com/MountainGod2/cb-events/pull/28),
+  [`b7d8dc0`](https://github.com/MountainGod2/cb-events/commit/b7d8dc035e6d67f7ce05737a7a36519071ac47ec))
+
+### Documentation
+
+- Add additional commit message guidelines
+  ([`2818125`](https://github.com/MountainGod2/cb-events/commit/2818125febda7d34c7d668f7849a64a9f5f90654))
+
+- Update Copilot instructions to align with Google Python Style Guide
+  ([`58c5eab`](https://github.com/MountainGod2/cb-events/commit/58c5eab69768fbf02fcb62a79afd3ff495f420b9))
+
+### Refactoring
+
+- **client**: Simplify username and token validation and improve nextUrl extraction
+  ([`55d8c77`](https://github.com/MountainGod2/cb-events/commit/55d8c777f064c88f3e9c5007e266a496b1d7c397))
+
+- **config**: Replace model_validator with field_validator for retry_max_delay validation
+  ([`9f1a488`](https://github.com/MountainGod2/cb-events/commit/9f1a488d945d0afad964ded12e5328b658929bdb))
+
+- **constants**: Remove outdated constant
+  ([`6c50842`](https://github.com/MountainGod2/cb-events/commit/6c50842d5b0643e68160dbb87bf98d3d5dad415a))
+
+- **models**: Improve private message check
+  ([`d89ca9f`](https://github.com/MountainGod2/cb-events/commit/d89ca9f5ffa609948327a48250874524e0163cc1))
+
+- **router**: Improve error handling in event handler dispatch
+  ([`c7b5372`](https://github.com/MountainGod2/cb-events/commit/c7b53725b63834bb57f446c772967bc7dfcdc273))
+
+- **tests**: Simplify test fixtures and remove unused parameters
+  ([`c2fe968`](https://github.com/MountainGod2/cb-events/commit/c2fe9681d32687e1fefec5187d07724060c5a648))
+
+
 ## v4.0.1 (2025-10-18)
 
 ### Bug Fixes
