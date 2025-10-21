@@ -11,7 +11,6 @@ class EventsError(Exception):
     text when available.
 
     Attributes:
-        message: The error message describing what went wrong.
         status_code: HTTP status code from the failed request, if available.
         response_text: Raw response text from the API, if available.
     """
@@ -67,7 +66,6 @@ class RouterError(Exception):
     via exception chaining.
 
     Attributes:
-        message: Description of what went wrong in the handler.
         event_type: The type of event being processed when the error occurred.
         handler_name: The name of the handler function where the error occurred.
 
