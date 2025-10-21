@@ -31,7 +31,6 @@ class EventsError(Exception):
             response_text: Raw response text from the API, if available.
         """
         super().__init__(message)
-        self.message = message
         self.status_code = status_code
         self.response_text = response_text
 
@@ -42,8 +41,8 @@ class EventsError(Exception):
             The error message, optionally including the status code.
         """
         if self.status_code is not None:
-            return f"{self.message} (HTTP {self.status_code})"
-        return self.message
+            return f"{super().__str__()} (HTTP {self.status_code})"
+        return super().__str__()
 
 
 class AuthError(EventsError):
@@ -92,7 +91,6 @@ class RouterError(Exception):
             handler_name: The name of the handler function where the error occurred.
         """
         super().__init__(message)
-        self.message = message
         self.event_type = event_type
         self.handler_name = handler_name
 
@@ -102,7 +100,7 @@ class RouterError(Exception):
         Returns:
             The error message, optionally including event type and handler name.
         """
-        parts = [self.message]
+        parts = [super().__str__()]
         if self.event_type is not None:
             parts.append(f"event_type={self.event_type.value}")
         if self.handler_name is not None:

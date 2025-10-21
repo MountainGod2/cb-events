@@ -31,7 +31,7 @@ class TestRouterError:
             handler_name="handle_tip",
         )
 
-        assert error.message == "Handler execution failed"
+        assert error.args[0] == "Handler execution failed"
         assert error.event_type == EventType.TIP
         assert error.handler_name == "handle_tip"
         assert "tip" in str(error)
