@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v4.1.0 (2025-10-21)
+
+### Bug Fixes
+
+- **client**: Mask authentication token in logs and adjust session timeout
+  ([`108b033`](https://github.com/MountainGod2/cb-events/commit/108b033b8b0ae04d0131fbafe9aff71616db1656))
+
+- **exceptions**: Remove redundant message attribute documentation from exception classes
+  ([`3a99235`](https://github.com/MountainGod2/cb-events/commit/3a992359c3ab7304efd9b8736989b08ae03c8f85))
+
+### Features
+
+- **constants**: Add SESSION_TIMEOUT_BUFFER
+  ([`e124271`](https://github.com/MountainGod2/cb-events/commit/e1242716aae4f5cdf9715da609c850af0ce5eff9))
+
+
 ## v4.0.4 (2025-10-21)
 
 ### Bug Fixes
