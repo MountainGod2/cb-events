@@ -36,6 +36,9 @@ DEFAULT_RETRY_FACTOR = 2.0
 DEFAULT_RETRY_MAX_DELAY = 30.0
 """Default maximum delay between retries in seconds."""
 
+SESSION_TIMEOUT_BUFFER = 5
+"""Additional buffer time in seconds added to session timeout to prevent premature timeouts."""
+
 AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 """HTTP status codes that indicate authentication failures."""
 
