@@ -26,6 +26,7 @@ from .constants import (
     CLOUDFLARE_ERROR_CODES,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
+    SESSION_TIMEOUT_BUFFER,
     TESTBED_URL,
     TIMEOUT_ERROR_INDICATOR,
     TOKEN_MASK_LENGTH,
@@ -154,7 +155,8 @@ class EventClient:
         Returns:
             The URL with the authentication token masked for safe logging.
         """
-        return url.replace(self.token, self._mask_token(self.token))
+        masked = self._mask_token(self.token)
+        return url.replace(self.token, masked).replace(quote(self.token, safe=""), masked)
 
     async def __aenter__(self) -> Self:
         """Initialize HTTP session for async context manager.
@@ -165,7 +167,7 @@ class EventClient:
         try:
             if self.session is None:
                 self.session = ClientSession(
-                    timeout=ClientTimeout(total=self.timeout + 5),
+                    timeout=ClientTimeout(total=self.timeout + SESSION_TIMEOUT_BUFFER),
                 )
                 self.retry_client = RetryClient(
                     client_session=self.session, retry_options=self._retry_options
@@ -243,8 +245,6 @@ class EventClient:
                 len(events),
                 extra={"event_types": [event.type.value for event in events[:3]]},
             )
-        else:
-            logger.debug("Received %d events", len(events))
         return events
 
     async def _make_request(self, url: str) -> tuple[int, str]:
