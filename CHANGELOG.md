@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v4.0.4 (2025-10-21)
+
+### Bug Fixes
+
+- Enhance error messages for empty and whitespace credentials in EventClient
+  ([`2a3544b`](https://github.com/MountainGod2/cb-events/commit/2a3544bcab1ab18c80b29a0439ae3e33dd6c1368))
+
+- Update __all__ declaration to use type hinting
+  ([`3814db5`](https://github.com/MountainGod2/cb-events/commit/3814db5a78013f99bc63ab19c99a155a51822455))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`ae45463`](https://github.com/MountainGod2/cb-events/commit/ae454636d15e8866152252b4af9fb6ff981af394))
+
+- **deps**: Update dependency sphinx-autodoc-typehints to v3.5.2
+  ([`1089d86`](https://github.com/MountainGod2/cb-events/commit/1089d86b01128a8fbda7e1b34c34cfde8c21b5c4))
+
+- **deps**: Update github/codeql-action digest to 9b0ac1c
+  ([`f1cab73`](https://github.com/MountainGod2/cb-events/commit/f1cab737b9c9f8e69a4e5633bff1e304380bba9f))
+
+### Refactoring
+
+- Adjust rate limiter and improve authentication checks in EventClient
+  ([`60ccbf8`](https://github.com/MountainGod2/cb-events/commit/60ccbf89315ff474a9bcf91e5c7ceaa162618806))
+
+- Refactor error message handling in EventsError and RouterError classes
+  ([`78b757e`](https://github.com/MountainGod2/cb-events/commit/78b757ece1270d518f42db62c1e621c6e1ee2840))
+
+- **models**: Replace cached_property with property for event model attributes
+  ([`ed0abe0`](https://github.com/MountainGod2/cb-events/commit/ed0abe029e6a3078951b85c07fcba9dc41c977a7))
+
+
 ## v4.0.3 (2025-10-20)
 
 ### Bug Fixes
