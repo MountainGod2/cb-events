@@ -5,12 +5,15 @@ Events API and streaming real-time events. It includes automatic retry logic,
 rate limiting, and credential handling.
 """
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
 from http import HTTPStatus
 from types import TracebackType
 from typing import Any, Self
+from urllib.parse import quote
+from weakref import WeakKeyDictionary
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
@@ -32,6 +35,24 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 logger = logging.getLogger(__name__)
+
+_rate_limiters: WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncLimiter] = WeakKeyDictionary()
+"""WeakKeyDictionary to hold rate limiters per event loop."""
+
+
+def _get_rate_limiter() -> AsyncLimiter:
+    """Get or create a rate limiter for the current event loop.
+
+    Returns:
+        AsyncLimiter instance for the current event loop.
+    """
+    loop = asyncio.get_running_loop()
+    if loop not in _rate_limiters:
+        _rate_limiters[loop] = AsyncLimiter(
+            max_rate=RATE_LIMIT_MAX_RATE,
+            time_period=RATE_LIMIT_TIME_PERIOD,
+        )
+    return _rate_limiters[loop]
 
 
 class EventClient:
@@ -68,22 +89,21 @@ class EventClient:
         Raises:
             AuthError: If username or token is empty or contains only whitespace.
         """
-        self.username = username.strip()
-        self.token = token.strip()
+        if not username or username != username.strip():
+            msg = "Username cannot be empty or contain leading/trailing whitespace"
+            raise AuthError(msg)
+        if not token or token != token.strip():
+            msg = "Token cannot be empty or contain leading/trailing whitespace"
+            raise AuthError(msg)
 
-        if not self.username:
-            msg = "Username cannot be empty"
-            raise AuthError(msg)
-        if not self.token:
-            msg = "Token cannot be empty"
-            raise AuthError(msg)
+        self.username = username
+        self.token = token
 
         self.config = config if config is not None else EventClientConfig()
         self.timeout = self.config.timeout
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
-        self._rate_limiter: AsyncLimiter | None = None
         self._next_url: str | None = None
 
         self._retry_options = ExponentialRetry(
@@ -142,18 +162,17 @@ class EventClient:
         Returns:
             The EventClient instance with an active HTTP session.
         """
-        if self.session is None:
-            self.session = ClientSession(
-                timeout=ClientTimeout(total=self.timeout + 5),
-            )
-            self.retry_client = RetryClient(
-                client_session=self.session, retry_options=self._retry_options
-            )
-        if self._rate_limiter is None:
-            self._rate_limiter = AsyncLimiter(
-                max_rate=RATE_LIMIT_MAX_RATE,
-                time_period=RATE_LIMIT_TIME_PERIOD,
-            )
+        try:
+            if self.session is None:
+                self.session = ClientSession(
+                    timeout=ClientTimeout(total=self.timeout + 5),
+                )
+                self.retry_client = RetryClient(
+                    client_session=self.session, retry_options=self._retry_options
+                )
+        except Exception:
+            await self.close()
+            raise
         return self
 
     async def __aexit__(
@@ -179,8 +198,8 @@ class EventClient:
         """
         return self._next_url or URL_TEMPLATE.format(
             base_url=self.base_url,
-            username=self.username,
-            token=self.token,
+            username=quote(self.username, safe=""),
+            token=quote(self.token, safe=""),
             timeout=self.timeout,
         )
 
@@ -218,11 +237,14 @@ class EventClient:
         """
         self._next_url = resp_data["nextUrl"]
         events = [Event.model_validate(item) for item in resp_data.get("events", [])]
-        logger.debug(
-            "Received %d events",
-            len(events),
-            extra={"event_types": [event.type.value for event in events[:3]]} if events else {},
-        )
+        if events:
+            logger.debug(
+                "Received %d events",
+                len(events),
+                extra={"event_types": [event.type.value for event in events[:3]]},
+            )
+        else:
+            logger.debug("Received %d events", len(events))
         return events
 
     async def _make_request(self, url: str) -> tuple[int, str]:
@@ -237,11 +259,12 @@ class EventClient:
         Raises:
             EventsError: If the session is not initialized.
         """
-        if self.session is None or self.retry_client is None or self._rate_limiter is None:
+        if self.session is None or self.retry_client is None:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        async with self._rate_limiter, self.retry_client.get(url) as resp:
+        rate_limiter = _get_rate_limiter()
+        async with rate_limiter, self.retry_client.get(url) as resp:
             text = await resp.text()
             return resp.status, text
 
