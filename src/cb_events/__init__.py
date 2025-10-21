@@ -60,7 +60,7 @@ from .models import (
 from .router import EventHandler, EventRouter
 
 __version__ = get_version("cb-events")
-__all__ = [
+__all__: list[str] = [
     "AuthError",
     "Event",
     "EventClient",
