@@ -14,10 +14,16 @@ class TestEventClient:
         assert "secret_token" not in str(client)
 
     def test_empty_credentials_rejected(self):
-        with pytest.raises(AuthError, match="Username cannot be empty"):
+        with pytest.raises(AuthError, match="Username cannot be empty or contain"):
             EventClient("", "token")
-        with pytest.raises(AuthError, match="Token cannot be empty"):
+        with pytest.raises(AuthError, match="Token cannot be empty or contain"):
             EventClient("user", "")
+
+    def test_whitespace_credentials_rejected(self):
+        with pytest.raises(AuthError, match="Username cannot be empty or contain"):
+            EventClient(" user ", "token")
+        with pytest.raises(AuthError, match="Token cannot be empty or contain"):
+            EventClient("user", " token ")
 
     async def test_polling_success(self, api_response, mock_response, testbed_url_pattern):
         mock_response.get(testbed_url_pattern, payload=api_response)
