@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v4.1.1 (2025-10-22)
+
+### Bug Fixes
+
+- **deps**: Update runtime
+  ([`38d51aa`](https://github.com/MountainGod2/cb-events/commit/38d51aadeffd064756a4be9a35201850b95eef0d))
+
+### Chores
+
+- **deps**: Update dependency ruff to v0.14.1
+  ([`39508be`](https://github.com/MountainGod2/cb-events/commit/39508be5cd44c229fd70fcbee48befc381113fa2))
+
+- **deps**: Update dependency ty to v0.0.1a23
+  ([`9a16c89`](https://github.com/MountainGod2/cb-events/commit/9a16c8980d17455cce85792f1e9273d1b00cc924))
+
+- **deps**: Update github/codeql-action digest to 0c5185d
+  ([`13c4991`](https://github.com/MountainGod2/cb-events/commit/13c4991535b65703f8561939a2fa933ca0452f23))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.14.1
+  ([`02c3529`](https://github.com/MountainGod2/cb-events/commit/02c3529e4330e9afd3011ef918ee148b4ee10bf6))
+
+
 ## v4.1.0 (2025-10-21)
 
 ### Bug Fixes
