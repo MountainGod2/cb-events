@@ -127,7 +127,7 @@ jobs:
         run: uv run semantic-release -v version --no-commit --no-tag
 
       - if: steps.version.outputs.released == 'true'
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@2d9f9cdfa99fedaddba68e9b5b5c281eca26cc63
         with:
           name: dist
           path: dist/**
@@ -135,7 +135,7 @@ jobs:
           retention-days: 2
 
       - if: steps.version.outputs.released == 'true'
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@2d9f9cdfa99fedaddba68e9b5b5c281eca26cc63
         with:
           name: uv.lock
           path: uv.lock
