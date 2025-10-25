@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
 
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+      - uses: astral-sh/setup-uv@22d500a65c34c827ebc95094040adcee254e92fa
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
 
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+      - uses: astral-sh/setup-uv@22d500a65c34c827ebc95094040adcee254e92fa
         with:
           python-version: "3.13"
           enable-cache: true
@@ -113,7 +113,7 @@ jobs:
 
       - run: git checkout -B ${{ github.ref_name }}
 
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+      - uses: astral-sh/setup-uv@22d500a65c34c827ebc95094040adcee254e92fa
         with:
           python-version: "3.13"
           enable-cache: true
@@ -162,7 +162,7 @@ jobs:
           name: dist
           path: ./dist
 
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+      - uses: astral-sh/setup-uv@22d500a65c34c827ebc95094040adcee254e92fa
         with:
           python-version: "3.13"
           enable-cache: true
@@ -200,7 +200,7 @@ jobs:
 
       - run: git reset --hard ${{ github.sha }}
 
-      - uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+      - uses: astral-sh/setup-uv@22d500a65c34c827ebc95094040adcee254e92fa
         with:
           python-version: "3.13"
           enable-cache: true
