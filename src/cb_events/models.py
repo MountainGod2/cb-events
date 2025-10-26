@@ -14,6 +14,12 @@ class BaseEventModel(BaseModel):
     Provides common Pydantic configuration including automatic snake_case
     conversion from API camelCase, frozen instances for immutability, and
     extra field ignoring for forward compatibility.
+
+    Note:
+        The `extra="ignore"` configuration allows the library to handle new fields
+        added to the API without breaking. However, this also means typos in field
+        names will be silently ignored during development. Always verify field names
+        against the API documentation.
     """
 
     model_config = ConfigDict(
@@ -171,6 +177,12 @@ class Event(BaseEventModel):
     The raw event data is stored in the data dictionary and parsed on-demand
     through properties, ensuring type safety while maintaining flexibility for
     future API changes.
+
+    Important:
+        Event properties return `None` when accessed on incompatible event types.
+        For example, `event.tip` returns `None` for non-TIP events. Always check
+        the event type or verify the property is not `None` before accessing its
+        attributes.
 
     Attributes:
         type: The type of event (e.g., TIP, CHAT_MESSAGE, USER_ENTER).
