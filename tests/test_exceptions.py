@@ -15,6 +15,21 @@ class TestEventsError:
         assert str(error) == "Request failed (HTTP 500)"
         assert error.status_code == 500
 
+    def test_error_repr(self):
+        error = EventsError("Test error", status_code=404, response_text="Not found response")
+        repr_str = repr(error)
+        assert "EventsError" in repr_str
+        assert "Test error" in repr_str
+        assert "status_code=404" in repr_str
+        assert "response_text=" in repr_str
+
+    def test_error_repr_without_optional_fields(self):
+        error = EventsError("Simple error")
+        repr_str = repr(error)
+        assert "EventsError" in repr_str
+        assert "Simple error" in repr_str
+        assert "status_code" not in repr_str
+
 
 class TestAuthError:
     def test_auth_error_inherits_events_error(self):
@@ -36,3 +51,21 @@ class TestRouterError:
         assert error.handler_name == "handle_tip"
         assert "tip" in str(error)
         assert "handle_tip" in str(error)
+
+    def test_router_error_repr(self):
+        error = RouterError(
+            "Handler failed",
+            event_type=EventType.FOLLOW,
+            handler_name="my_handler",
+        )
+        repr_str = repr(error)
+        assert "RouterError" in repr_str
+        assert "Handler failed" in repr_str
+        assert "event_type=" in repr_str
+        assert "handler_name=" in repr_str
+
+    def test_router_error_repr_without_optional_fields(self):
+        error = RouterError("Generic error")
+        repr_str = repr(error)
+        assert "RouterError" in repr_str
+        assert "Generic error" in repr_str
