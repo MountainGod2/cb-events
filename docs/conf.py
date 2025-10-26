@@ -49,6 +49,9 @@ html_theme_options = {
     "announcement": None,
 }
 
+# Copy files to the build output without adding them to toctree
+html_extra_path: list[str] = ["../LICENSE", "../pyproject.toml"]
+
 # Napoleon extension configuration
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
