@@ -43,6 +43,11 @@ class EventClient:
     and secure credential handling. Use as an async context manager or iterate
     directly for continuous event streaming.
 
+    Rate Limiting:
+        Each client instance has its own rate limiter (2000 requests per 60 seconds)
+        by default. To share rate limiting across multiple clients, pass the same
+        AsyncLimiter instance to the `rate_limiter` parameter.
+
     Attributes:
         username: Chaturbate username for authentication.
         token: Authentication token with Events API scope.
