@@ -2,20 +2,36 @@
 
 import logging
 from collections import defaultdict
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
+from typing import Protocol
 
 from .exceptions import RouterError
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
 
-EventHandler = Callable[[Event], Awaitable[None]]
-"""Type alias for async event handler functions.
 
-Event handlers are async functions that accept an Event and return None.
-They are registered using the EventRouter.on() or EventRouter.on_any()
-decorators and are called sequentially when events are dispatched.
-"""
+class EventHandler(Protocol):  # pylint: disable=too-few-public-methods
+    """Protocol for async event handler functions.
+
+    Event handlers are async callables that accept an Event and return None.
+    They are registered using the EventRouter.on() or EventRouter.on_any()
+    decorators and are called sequentially when events are dispatched.
+
+    Example:
+        .. code-block:: python
+
+            async def my_handler(event: Event) -> None:
+                print(f"Received event: {event.type}")
+    """
+
+    async def __call__(self, event: Event) -> None:
+        """Handle an event.
+
+        Args:
+            event: The event to handle.
+        """
+        ...  # pylint: disable=unnecessary-ellipsis
 
 
 class EventRouter:
@@ -116,7 +132,7 @@ class EventRouter:
             try:
                 await handler(event)
             except Exception as e:
-                handler_name = handler.__name__ if hasattr(handler, "__name__") else repr(handler)
+                handler_name = getattr(handler, "__name__", repr(handler))
                 msg = f"Error in handler {handler_name} for event type {event.type.value}"
                 raise RouterError(
                     msg,
