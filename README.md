@@ -1,6 +1,6 @@
 # CB Events
 
-Async Python client for the Chaturbate Events API with real-time event streaming.
+Async Python client for the Chaturbate Events API.
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
