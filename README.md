@@ -9,13 +9,13 @@ Async Python client for the Chaturbate Events API with real-time event streaming
 ## Installation
 
 ```bash
-$ uv pip install cb-events
+uv pip install cb-events
 ```
 
-## Usage
+## Quick Start
+
 ```python
 import asyncio
-
 from cb_events import EventClient, EventRouter, EventType, Event
 
 router = EventRouter()
@@ -24,11 +24,6 @@ router = EventRouter()
 async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-
-@router.on(EventType.CHAT_MESSAGE)
-async def handle_chat(event: Event) -> None:
-    if event.user and event.message:
-        print(f"{event.user.username}: {event.message.message}")
 
 async def main():
     async with EventClient(username, token) as client:
@@ -40,33 +35,50 @@ asyncio.run(main())
 
 ## Event Types
 
-- `TIP`, `FANCLUB_JOIN`, `MEDIA_PURCHASE`
-- `CHAT_MESSAGE`, `PRIVATE_MESSAGE`
-- `USER_ENTER`, `USER_LEAVE`, `FOLLOW`, `UNFOLLOW`
-- `BROADCAST_START`, `BROADCAST_STOP`, `ROOM_SUBJECT_CHANGE`
+`TIP` · `FANCLUB_JOIN` · `MEDIA_PURCHASE` · `CHAT_MESSAGE` · `PRIVATE_MESSAGE` · `USER_ENTER` · `USER_LEAVE` · `FOLLOW` · `UNFOLLOW` · `BROADCAST_START` · `BROADCAST_STOP` · `ROOM_SUBJECT_CHANGE`
 
 ## Configuration
 
-Configuration options (defaults shown):
-
 ```python
-from cb_events import EventClient, EventClientConfig
+from cb_events import EventClientConfig
 
-client = EventClient(
-    "your_username",
-    "your_api_token",
-    config=EventClientConfig(
-        timeout=10,              # Timeout for API requests in seconds
-        use_testbed=False,       # Use testbed API endpoint (`events.testbed.cb.dev`)
-        retry_attempts=8,        # Maximum retry attempts for failed requests
-        retry_backoff=1.0,       # Initial backoff time in seconds
-        retry_factor=2.0,        # Exponential backoff multiplier
-        retry_max_delay=30.0,    # Maximum delay between retries in seconds
-    )
+config = EventClientConfig(
+    timeout=10,              # Request timeout (seconds)
+    use_testbed=False,       # Use testbed endpoint
+    retry_attempts=8,        # Max retry attempts
+    retry_backoff=1.0,       # Initial backoff (seconds)
+    retry_factor=2.0,        # Backoff multiplier
+    retry_max_delay=30.0,    # Max retry delay (seconds)
 )
+
+client = EventClient(username, token, config=config)
 ```
 
-Note: The `config` parameter must be passed as a keyword argument.
+**Note:** Config is immutable after creation. `config` parameter must be passed as keyword argument.
+
+## Rate Limiting
+
+Default: 2000 requests/60s per client. Share rate limiter across clients:
+
+```python
+from aiolimiter import AsyncLimiter
+
+limiter = AsyncLimiter(max_rate=2000, time_period=60)
+client1 = EventClient(username1, token1, rate_limiter=limiter)
+client2 = EventClient(username2, token2, rate_limiter=limiter)
+```
+
+## Event Properties
+
+Properties return `None` on incompatible event types:
+
+```python
+event.user          # User object (most events)
+event.tip           # Tip object (TIP only)
+event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
+event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
+event.broadcaster   # Broadcaster username string
+```
 
 ## Error Handling
 
@@ -77,37 +89,37 @@ try:
     async with EventClient(username, token) as client:
         async for event in client:
             await router.dispatch(event)
-except AuthError as e
+except AuthError:
     # Authentication failed (401/403)
-    print(f"Authentication error: {e}")
+    pass
 except RouterError as e:
-    # Handler execution failed
-    print(f"Handler '{e.handler_name}' failed on {e.event_type}")
+    # Handler failed - e.handler_name, e.event_type
+    pass
 except EventsError as e:
-    # API errors (HTTP errors, network issues)
-    if e.status_code:
-        print(f"API error {e.status_code}: {e.message}")
+    # API/network errors - e.status_code, e.response_text
+    pass
 ```
 
-Handler exceptions are caught and re-raised as `RouterError` with context.
+**Retries:** Automatic on 429, 5xx, Cloudflare errors. No retry on auth errors.
 
-Automatic retry on 429, 5xx, and Cloudflare error codes. No retry on authentication errors.
+**Handlers:** All handlers execute sequentially even if one fails. Failures logged and raised as `RouterError`.
+
+## Logging
+
+```python
+import logging
+
+logging.getLogger('cb_events').setLevel(logging.DEBUG)
+```
 
 ## Requirements
 
-- Python ≥3.12
-- aiohttp, aiohttp-retry, aiolimiter, pydantic
-
-For full list of dependencies view [pyproject.toml](./pyproject.toml#L41) or run:
-
-```bash
-$ uv pip compile pyproject.toml -o requirements.txt
-```
+Python ≥3.12 - [Dependencies](./pyproject.toml#L41)
 
 ## License
 
-MIT licensed. See [LICENSE](./LICENSE).
+MIT - See [LICENSE](./LICENSE)
 
-## Disclaimer
+---
 
 Not affiliated with Chaturbate.
