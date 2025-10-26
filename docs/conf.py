@@ -36,21 +36,18 @@ exclude_patterns: list[str] = [
 
 # HTML output configuration
 html_theme = "furo"
-html_title = "CB Events API Client Library"
+html_title = "cb_events API Client Library"
 html_show_sourcelink = False
 html_copy_source = False
 
 html_theme_options = {
-    "source_repository": "https://github.com/MountainGod2/chaturbate-events/",
+    "source_repository": "https://github.com/MountainGod2/cb-events/",
     "source_branch": "main",
     "source_directory": "docs/",
     "navigation_with_keys": True,
     "top_of_page_button": "edit",
     "announcement": None,
 }
-
-# Copy files to the build output without adding them to toctree
-html_extra_path: list[str] = ["../LICENSE", "../pyproject.toml"]
 
 # Napoleon extension configuration
 napoleon_google_docstring = True
