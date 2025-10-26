@@ -2,6 +2,45 @@
 
 <!-- version list -->
 
+## v4.2.0 (2025-10-26)
+
+### Chores
+
+- **deps**: Update actions/download-artifact digest to 018cc2c
+  ([`e6d54b3`](https://github.com/MountainGod2/cb-events/commit/e6d54b3e77a24821377db6c04080e3264128dd7e))
+
+- **deps**: Update actions/upload-artifact digest to 2d9f9cd
+  ([`8c3a852`](https://github.com/MountainGod2/cb-events/commit/8c3a8527508092a0bd201418c4d479bdd1cd3593))
+
+- **deps**: Update actions/upload-artifact digest to 330a01c
+  ([`3f3df1a`](https://github.com/MountainGod2/cb-events/commit/3f3df1a1eb076dd324e94d3d7eb0968fc8cde419))
+
+- **deps**: Update astral-sh/setup-uv digest to 22d500a
+  ([`8b4c262`](https://github.com/MountainGod2/cb-events/commit/8b4c262682b56bd05076f4d664f181ddd9b6418f))
+
+- **deps**: Update dependency pylint to v4.0.2
+  ([`8ffa0d1`](https://github.com/MountainGod2/cb-events/commit/8ffa0d12d0c28ab89d6c66e8713cb0507f230ba1))
+
+- **deps**: Update github/codeql-action digest to 4264208
+  ([`c246f1c`](https://github.com/MountainGod2/cb-events/commit/c246f1ca0ea97bc43284e7af414b482ef89d4310))
+
+- **deps**: Update github/codeql-action digest to 9625890
+  ([`bb6693c`](https://github.com/MountainGod2/cb-events/commit/bb6693cf2017170da05932792d7656d35b8832e0))
+
+- **deps**: Update github/codeql-action digest to ae78991
+  ([`3fda5e2`](https://github.com/MountainGod2/cb-events/commit/3fda5e2d8f0c69270adade323ab815e4738a2c7d))
+
+### Features
+
+- **client**: Remove global rate limiter and use instance-based limiter
+  ([`b20b42c`](https://github.com/MountainGod2/cb-events/commit/b20b42cbeab6cf12254b074c7218a773491f373f))
+
+### Refactoring
+
+- **router**: Replace EventHandler type alias with Protocol for better type safety
+  ([`73faf5c`](https://github.com/MountainGod2/cb-events/commit/73faf5cd9a62e0caf14ddc45671bad68b2264a67))
+
+
 ## v4.1.1 (2025-10-22)
 
 ### Bug Fixes
