@@ -105,14 +105,17 @@ class EventRouter:
 
         All registered handlers are awaited sequentially. Handlers for the
         specific event type are called after any handlers registered for all
-        event types. If any handler raises an exception, a RouterError is raised
-        with context about the failure.
+        event types. All handlers are attempted even if one fails. If any
+        handlers raise exceptions, a RouterError is raised after all handlers
+        have been attempted.
 
         Args:
             event: The event to dispatch.
 
         Raises:
             RouterError: If any handler raises an exception during execution.
+                The first exception is included as the cause, and details of all
+                failed handlers are logged.
         """
         all_handlers = [
             *self._handlers[None],
@@ -128,14 +131,31 @@ class EventRouter:
             len(all_handlers),
         )
 
+        errors: list[tuple[str, Exception]] = []
         for handler in all_handlers:
             try:
                 await handler(event)
             except Exception as e:
                 handler_name = getattr(handler, "__name__", repr(handler))
-                msg = f"Error in handler {handler_name} for event type {event.type.value}"
-                raise RouterError(
-                    msg,
-                    event_type=event.type,
-                    handler_name=handler_name,
-                ) from e
+                errors.append((handler_name, e))
+                logger.exception(
+                    "Handler %s failed for event type %s",
+                    handler_name,
+                    event.type.value,
+                )
+
+        if errors:
+            first_handler_name, first_error = errors[0]
+            if len(errors) == 1:
+                msg = f"Error in handler {first_handler_name} for event type {event.type.value}"
+            else:
+                failed_handlers = ", ".join(name for name, _ in errors)
+                msg = (
+                    f"{len(errors)} handlers failed for event type {event.type.value}: "
+                    f"{failed_handlers}"
+                )
+            raise RouterError(
+                msg,
+                event_type=event.type,
+                handler_name=first_handler_name,
+            ) from first_error

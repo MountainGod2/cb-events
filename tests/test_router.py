@@ -71,6 +71,30 @@ class TestEventRouter:
         assert exc_info.value.handler_name == "failing_handler"  # ty: ignore[unresolved-attribute]
         assert isinstance(exc_info.value.__cause__, ValueError)
 
+    async def test_all_handlers_run_despite_errors(self, router, simple_tip_event):
+        """Test that all handlers execute even if one fails."""
+        handler1 = AsyncMock(side_effect=ValueError("Handler 1 failed"))
+        handler2 = AsyncMock()
+        handler3 = AsyncMock(side_effect=RuntimeError("Handler 3 failed"))
+        handler4 = AsyncMock()
+
+        router.on(EventType.TIP)(handler1)
+        router.on(EventType.TIP)(handler2)
+        router.on(EventType.TIP)(handler3)
+        router.on(EventType.TIP)(handler4)
+
+        with pytest.raises(RouterError) as exc_info:
+            await router.dispatch(simple_tip_event)
+
+        handler1.assert_called_once_with(simple_tip_event)
+        handler2.assert_called_once_with(simple_tip_event)
+        handler3.assert_called_once_with(simple_tip_event)
+        handler4.assert_called_once_with(simple_tip_event)
+
+        error_str = str(exc_info.value)
+        assert "2 handlers failed" in error_str
+        assert exc_info.value.event_type == EventType.TIP  # ty: ignore[unresolved-attribute]
+
     async def test_system_exit_not_caught(self, router, simple_tip_event):
         async def exit_handler(event):  # noqa: RUF029
             raise SystemExit(1)
