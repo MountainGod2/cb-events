@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v4.4.1 (2025-10-26)
+
+### Bug Fixes
+
+- **docs**: Update links and titles for consistency
+  ([`623fb25`](https://github.com/MountainGod2/cb-events/commit/623fb25d7fd832105e66d7ead110523c5de961fe))
+
+
 ## v4.4.0 (2025-10-26)
 
 ### Bug Fixes
