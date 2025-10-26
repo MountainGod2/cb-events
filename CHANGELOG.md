@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v4.3.0 (2025-10-26)
+
+### Bug Fixes
+
+- **client**: Raise EventsError on session initialization failure
+  ([`449e1e8`](https://github.com/MountainGod2/cb-events/commit/449e1e89d7ebd59ced164c9d76adc26001384162))
+
+### Features
+
+- **exceptions**: Add detailed __repr__ methods for EventsError and RouterError
+  ([`3852ccd`](https://github.com/MountainGod2/cb-events/commit/3852ccd3dfd7f8f80e75d3764f05d1053fcc35cf))
+
+### Testing
+
+- **exceptions**: Add tests for __repr__ methods in EventsError and RouterError
+  ([`67a1572`](https://github.com/MountainGod2/cb-events/commit/67a157284d9f8075f15561d07c80aad6856ed257))
+
+
 ## v4.2.1 (2025-10-26)
 
 ### Bug Fixes
