@@ -43,6 +43,19 @@ class EventsError(Exception):
             return f"{super().__str__()} (HTTP {self.status_code})"
         return super().__str__()
 
+    def __repr__(self) -> str:
+        """Return detailed string representation for debugging.
+
+        Returns:
+            A string showing the class name and all error attributes.
+        """
+        parts = [f"message={self.args[0]!r}"]
+        if self.status_code is not None:
+            parts.append(f"status_code={self.status_code}")
+        if self.response_text is not None:
+            parts.append(f"response_text={self.response_text[:50]!r}...")
+        return f"{self.__class__.__name__}({', '.join(parts)})"
+
 
 class AuthError(EventsError):
     """Authentication or authorization failure with the Events API.
@@ -104,3 +117,16 @@ class RouterError(Exception):
         if self.handler_name is not None:
             parts.append(f"handler={self.handler_name}")
         return " | ".join(parts)
+
+    def __repr__(self) -> str:
+        """Return detailed string representation for debugging.
+
+        Returns:
+            A string showing the class name and all error attributes.
+        """
+        parts = [f"message={self.args[0]!r}"]
+        if self.event_type is not None:
+            parts.append(f"event_type={self.event_type!r}")
+        if self.handler_name is not None:
+            parts.append(f"handler_name={self.handler_name!r}")
+        return f"{self.__class__.__name__}({', '.join(parts)})"
