@@ -155,6 +155,9 @@ class EventClient:
 
         Returns:
             The EventClient instance with an active HTTP session.
+
+        Raises:
+            EventsError: If session initialization fails.
         """
         try:
             if self.session is None:
@@ -164,9 +167,10 @@ class EventClient:
                 self.retry_client = RetryClient(
                     client_session=self.session, retry_options=self._retry_options
                 )
-        except Exception:
+        except Exception as e:
             await self.close()
-            raise
+            msg = "Failed to initialize HTTP session"
+            raise EventsError(msg) from e
         return self
 
     async def __aexit__(
