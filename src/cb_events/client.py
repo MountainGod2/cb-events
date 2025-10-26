@@ -5,7 +5,6 @@ Events API and streaming real-time events. It includes automatic retry logic,
 rate limiting, and credential handling.
 """
 
-import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -13,7 +12,6 @@ from http import HTTPStatus
 from types import TracebackType
 from typing import Any, Self
 from urllib.parse import quote
-from weakref import WeakKeyDictionary
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp_retry import ExponentialRetry, RetryClient
@@ -36,24 +34,6 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 logger = logging.getLogger(__name__)
-
-_rate_limiters: WeakKeyDictionary[asyncio.AbstractEventLoop, AsyncLimiter] = WeakKeyDictionary()
-"""WeakKeyDictionary to hold rate limiters per event loop."""
-
-
-def _get_rate_limiter() -> AsyncLimiter:
-    """Get or create a rate limiter for the current event loop.
-
-    Returns:
-        AsyncLimiter instance for the current event loop.
-    """
-    loop = asyncio.get_running_loop()
-    if loop not in _rate_limiters:
-        _rate_limiters[loop] = AsyncLimiter(
-            max_rate=RATE_LIMIT_MAX_RATE,
-            time_period=RATE_LIMIT_TIME_PERIOD,
-        )
-    return _rate_limiters[loop]
 
 
 class EventClient:
@@ -79,6 +59,7 @@ class EventClient:
         token: str,
         *,
         config: EventClientConfig | None = None,
+        rate_limiter: AsyncLimiter | None = None,
     ) -> None:
         """Initialize the EventClient with credentials and connection settings.
 
@@ -86,6 +67,8 @@ class EventClient:
             username: Chaturbate username for authentication.
             token: Authentication token with Events API scope.
             config: Configuration object with client settings. If None, uses defaults.
+            rate_limiter: Optional AsyncLimiter instance for rate limiting. If None,
+                creates a new limiter with default settings (2000 requests per 60 seconds).
 
         Raises:
             AuthError: If username or token is empty or contains only whitespace.
@@ -106,6 +89,10 @@ class EventClient:
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
+        self._rate_limiter = rate_limiter or AsyncLimiter(
+            max_rate=RATE_LIMIT_MAX_RATE,
+            time_period=RATE_LIMIT_TIME_PERIOD,
+        )
 
         self._retry_options = ExponentialRetry(
             attempts=self.config.retry_attempts,
@@ -263,8 +250,7 @@ class EventClient:
             msg = "Session not initialized - use async context manager"
             raise EventsError(msg)
 
-        rate_limiter = _get_rate_limiter()
-        async with rate_limiter, self.retry_client.get(url) as resp:
+        async with self._rate_limiter, self.retry_client.get(url) as resp:
             text = await resp.text()
             return resp.status, text
 
