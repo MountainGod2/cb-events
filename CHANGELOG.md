@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v4.2.1 (2025-10-26)
+
+### Bug Fixes
+
+- **router**: Log exceptions in event handlers to improve error tracking
+  ([`8c1aa7a`](https://github.com/MountainGod2/cb-events/commit/8c1aa7a8a5616b3daacf82d2729fb74220b610ba))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 8585678
+  ([`dd7bbb5`](https://github.com/MountainGod2/cb-events/commit/dd7bbb5134ab780aa438ec44ef15a5b9132eb54d))
+
+### Documentation
+
+- **client**: Enhance docstring to clarify rate limiting behavior
+  ([`ff0d0aa`](https://github.com/MountainGod2/cb-events/commit/ff0d0aacfd06e1570602e5606b84f903a2b8c2c7))
+
+- **config**: Clarify immutability and improve error message in validation
+  ([`8042e1b`](https://github.com/MountainGod2/cb-events/commit/8042e1b6a48855a3f91a8c55f477860ecd71d926))
+
+- **models**: Enhance documentation for BaseEventModel and Event classes
+  ([`2121499`](https://github.com/MountainGod2/cb-events/commit/2121499d90071007292d8cc1eaaaeb2678f2cb52))
+
+- **README**: Update installation, usage, and configuration sections
+  ([`be5631e`](https://github.com/MountainGod2/cb-events/commit/be5631eab49c1ee6d543e9afd2ca65a382723412))
+
+- **router**: Update dispatch logic to ensure all handlers run despite errors
+  ([`b846d1c`](https://github.com/MountainGod2/cb-events/commit/b846d1c88c1995b8ba59fc13301fdf33097b07c3))
+
+
 ## v4.2.0 (2025-10-26)
 
 ### Chores
