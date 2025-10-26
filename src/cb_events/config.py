@@ -14,6 +14,9 @@ from .constants import (
 class EventClientConfig(BaseModel):
     """Configuration for the Chaturbate Events API client.
 
+    This configuration is immutable (frozen) after creation. To change settings,
+    create a new configuration instance and a new client.
+
     Attributes:
         timeout: Timeout for API requests in seconds.
         use_testbed: Whether to use the testbed API endpoint instead of production.
@@ -45,6 +48,6 @@ class EventClientConfig(BaseModel):
         """
         retry_backoff = info.data.get("retry_backoff", DEFAULT_RETRY_BACKOFF)
         if v < retry_backoff:
-            msg = "Retry max delay must be >= retry backoff"
+            msg = f"Retry max delay ({v}s) must be >= retry backoff ({retry_backoff}s)"
             raise ValueError(msg)
         return v

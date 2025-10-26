@@ -142,4 +142,4 @@ class TestEventClientConfig:
         assert len(errors) == 1
         ctx = errors[0].get("ctx", {})
         error_msg = str(ctx.get("error", ""))
-        assert "Retry max delay must be >= retry backoff" in error_msg
+        assert "must be >=" in error_msg or "Retry max delay" in error_msg
