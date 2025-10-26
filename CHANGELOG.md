@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v4.4.0 (2025-10-26)
+
+### Bug Fixes
+
+- **docs**: Update description in README and pyproject.toml for consistency
+  ([`03fc31d`](https://github.com/MountainGod2/cb-events/commit/03fc31d4dc23bbbc5d8b16bf99889e3851be6e6b))
+
+### Documentation
+
+- Update index.md to include README content and remove outdated sections
+  ([`3aeb9d5`](https://github.com/MountainGod2/cb-events/commit/3aeb9d5d25216f595dd41b7bc060f668c2dafa5e))
+
+### Features
+
+- **docs**: Add html_extra_path to include LICENSE and pyproject.toml in build output
+  ([`8da1ac6`](https://github.com/MountainGod2/cb-events/commit/8da1ac60bf378415284e56c8747f1e4c8d930cba))
+
+
 ## v4.3.0 (2025-10-26)
 
 ### Bug Fixes
