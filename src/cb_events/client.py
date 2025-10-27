@@ -5,6 +5,7 @@ Events API and streaming real-time events. It includes automatic retry logic,
 rate limiting, and credential handling.
 """
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -42,6 +43,12 @@ class EventClient:
     Provides real-time event streaming with automatic retry logic, rate limiting,
     and secure credential handling. Use as an async context manager or iterate
     directly for continuous event streaming.
+
+    Thread Safety:
+        The client uses an internal lock to protect polling state, making the
+        `poll()` method safe to call from multiple async tasks. However, for
+        optimal performance, it is recommended to use a single polling task
+        per client instance.
 
     Rate Limiting:
         Each client instance has its own rate limiter (2000 requests per 60 seconds)
@@ -94,6 +101,7 @@ class EventClient:
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
+        self._polling_lock = asyncio.Lock()
         self._rate_limiter = rate_limiter or AsyncLimiter(
             max_rate=RATE_LIMIT_MAX_RATE,
             time_period=RATE_LIMIT_TIME_PERIOD,
@@ -331,20 +339,25 @@ class EventClient:
         Event objects. Handles authentication errors, timeouts, and maintains
         the polling state with nextUrl for subsequent requests.
 
+        This method is thread-safe and can be called concurrently from multiple
+        async tasks. The internal polling state is protected by a lock to prevent
+        race conditions.
+
         Returns:
             A list of Event objects parsed from the API response. May be empty
             if no events are available or on timeout.
         """
-        url = self._build_poll_url()
-        logger.debug("Polling events from %s", self._mask_url(url))
+        async with self._polling_lock:
+            url = self._build_poll_url()
+            logger.debug("Polling events from %s", self._mask_url(url))
 
-        status, text = await self._make_request(url)
+            status, text = await self._make_request(url)
 
-        if not self._handle_response_status(status, text):
-            return []  # Timeout handled
+            if not self._handle_response_status(status, text):
+                return []  # Timeout handled
 
-        data = self._parse_json_response(text)
-        return self._parse_response_data(data)
+            data = self._parse_json_response(text)
+            return self._parse_response_data(data)
 
     async def _poll_continuously(self) -> AsyncIterator[Event]:
         """Continuously poll the API and yield events as they arrive.
