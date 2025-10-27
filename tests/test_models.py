@@ -7,6 +7,8 @@ from cb_events.models import Message, RoomSubject, Tip, User
 
 
 class TestEvent:
+    """Test Event model and type handling."""
+
     @pytest.mark.parametrize(
         ("method", "expected_type"),
         [
@@ -21,11 +23,14 @@ class TestEvent:
         ],
     )
     def test_event_type_mapping(self, method, expected_type):
+        """Event method strings should map to correct EventType enum."""
         event_data = {"method": method, "id": "test_id", "object": {}}
         event = Event.model_validate(event_data)
+
         assert event.type == expected_type
 
-    def test_event_properties(self):
+    def test_event_properties_parsed(self):
+        """Event should parse and provide access to nested data via properties."""
         event_data = {
             "method": "tip",
             "id": "event_123",
@@ -46,7 +51,10 @@ class TestEvent:
 
 
 class TestUser:
-    def test_user_creation(self):
+    """Test User model parsing and field mapping."""
+
+    def test_user_field_mapping(self):
+        """User should correctly map camelCase API fields to snake_case."""
         user_data = {
             "username": "testuser",
             "colorGroup": "purple",
@@ -67,7 +75,10 @@ class TestUser:
 
 
 class TestMessage:
+    """Test Message model and is_private property."""
+
     def test_public_message(self):
+        """Message without from/to users should not be private."""
         message_data = {"message": "Hello everyone!"}
         message = Message.model_validate(message_data)
 
@@ -75,6 +86,7 @@ class TestMessage:
         assert not message.is_private
 
     def test_private_message(self):
+        """Message with from/to users should be identified as private."""
         message_data = {
             "message": "Private hello",
             "fromUser": "sender",
@@ -90,7 +102,10 @@ class TestMessage:
 
 
 class TestTip:
-    def test_tip_creation(self):
+    """Test Tip model parsing."""
+
+    def test_tip_fields(self):
+        """Tip should parse all fields correctly."""
         tip_data = {"tokens": 100, "isAnon": False, "message": "Great show!"}
         tip = Tip.model_validate(tip_data)
 
@@ -100,7 +115,11 @@ class TestTip:
 
 
 class TestRoomSubject:
-    def test_room_subject_creation(self):
+    """Test RoomSubject model parsing."""
+
+    def test_room_subject_field(self):
+        """RoomSubject should parse subject field."""
         subject_data = {"subject": "Welcome to my room!"}
         room_subject = RoomSubject.model_validate(subject_data)
+
         assert room_subject.subject == "Welcome to my room!"

@@ -7,10 +7,10 @@ from cb_events import AuthError, EventClient, EventRouter, EventType
 
 @pytest.mark.e2e
 class TestIntegration:
-    async def test_client_router_integration(
-        self, mock_response, testbed_url_pattern, testbed_config
-    ):
-        """Test complete workflow from client polling to router dispatch."""
+    """End-to-end integration tests."""
+
+    async def test_client_router_workflow(self, mock_response, testbed_url_pattern, testbed_config):
+        """Complete workflow from client polling to router dispatch."""
         router = EventRouter()
         events_received = []
 
@@ -29,7 +29,6 @@ class TestIntegration:
             ],
             "nextUrl": None,
         }
-
         mock_response.get(testbed_url_pattern, payload=event_data)
 
         async with EventClient("test_user", "test_token", config=testbed_config) as client:
@@ -42,23 +41,20 @@ class TestIntegration:
         assert events_received[1].type == EventType.TIP
         assert events_received[2] == "any:follow"
 
-    async def test_client_lifecycle(self):
-        """Test proper client resource management."""
+    async def test_client_context_manager_lifecycle(self):
+        """Client should properly manage session lifecycle."""
         client = EventClient("test_user", "test_token")
         assert client.session is None
 
-        # Test that we can enter and exit the context manager
         async with client:
             assert client.session is not None
 
-    async def test_error_propagation(self, mock_response, testbed_url_pattern, testbed_config):
-        """Test that errors propagate correctly through the stack."""
+    async def test_authentication_error_propagation(
+        self, mock_response, testbed_url_pattern, testbed_config
+    ):
+        """Authentication errors should propagate correctly."""
         mock_response.get(testbed_url_pattern, status=401)
 
         async with EventClient("test_user", "bad_token", config=testbed_config) as client:
             with pytest.raises(AuthError):
                 await client.poll()
-
-    def test_package_imports(self):
-        """Test that all public APIs are importable."""
-        assert True
