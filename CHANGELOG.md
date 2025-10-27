@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v4.4.2 (2025-10-27)
+
+### Bug Fixes
+
+- **client**: Add thread safety with asyncio lock for polling method
+  ([`212b8d1`](https://github.com/MountainGod2/cb-events/commit/212b8d1c187ec7a4a4d992ac6c7015ff97579a7e))
+
+- **config**: Update validation method for retry delays in EventClientConfig
+  ([`e9bbe8d`](https://github.com/MountainGod2/cb-events/commit/e9bbe8d6d3af3b04a01dbbec5ca4ac5a278f1c3d))
+
+### Chores
+
+- **deps**: Update github/codeql-action digest to 8d77149
+  ([`fc79cb1`](https://github.com/MountainGod2/cb-events/commit/fc79cb1d479d2e424e9a96f7c27bcb76ea0df709))
+
+### Refactoring
+
+- **tests**: Enhance test descriptions and structure
+  ([`fb88608`](https://github.com/MountainGod2/cb-events/commit/fb88608baa2297564fd59b682f0a2410094fd4e8))
+
+
 ## v4.4.1 (2025-10-26)
 
 ### Bug Fixes
