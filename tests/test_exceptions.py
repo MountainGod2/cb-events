@@ -1,7 +1,6 @@
-"""Tests for exception classes and error handling."""
+"""Tests for exception classes."""
 
-from cb_events import AuthError, EventsError, RouterError
-from cb_events.models import EventType
+from cb_events import AuthError, EventsError
 
 
 class TestEventsError:
@@ -50,43 +49,3 @@ class TestAuthError:
 
         assert isinstance(error, EventsError)
         assert str(error) == "Authentication failed"
-
-
-class TestRouterError:
-    """Test RouterError exception class."""
-
-    def test_error_with_context(self):
-        """Error should store event type and handler name."""
-        error = RouterError(
-            "Handler execution failed",
-            event_type=EventType.TIP,
-            handler_name="handle_tip",
-        )
-
-        assert error.args[0] == "Handler execution failed"
-        assert error.event_type == EventType.TIP
-        assert error.handler_name == "handle_tip"
-        assert "tip" in str(error)
-        assert "handle_tip" in str(error)
-
-    def test_repr_with_context(self):
-        """Repr should include event type and handler name."""
-        error = RouterError(
-            "Handler failed",
-            event_type=EventType.FOLLOW,
-            handler_name="my_handler",
-        )
-        repr_str = repr(error)
-
-        assert "RouterError" in repr_str
-        assert "Handler failed" in repr_str
-        assert "event_type=" in repr_str
-        assert "handler_name=" in repr_str
-
-    def test_repr_without_context(self):
-        """Repr should work without optional fields."""
-        error = RouterError("Generic error")
-        repr_str = repr(error)
-
-        assert "RouterError" in repr_str
-        assert "Generic error" in repr_str

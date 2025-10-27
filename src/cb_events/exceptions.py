@@ -1,7 +1,5 @@
 """Exception classes for the Chaturbate Events client."""
 
-from .models import EventType
-
 
 class EventsError(Exception):
     """Base exception for all Chaturbate Events API failures.
@@ -68,65 +66,3 @@ class AuthError(EventsError):
         >>> raise AuthError("Invalid API token")
         >>> raise AuthError("Authentication failed", status_code=401)
     """
-
-
-class RouterError(Exception):
-    """Error occurring in event handlers during dispatch.
-
-    This exception wraps errors that occur while processing events through
-    registered handlers, providing context about which handler failed and
-    what event type was being processed. The original exception is preserved
-    via exception chaining.
-
-    Attributes:
-        event_type: The type of event being processed when the error occurred.
-        handler_name: The name of the handler function where the error occurred.
-
-    Note:
-        This exception is always raised with exception chaining (`from` clause)
-        to preserve the original exception traceback.
-    """
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        event_type: EventType | None = None,
-        handler_name: str | None = None,
-    ) -> None:
-        """Initialize RouterError with context about the handler failure.
-
-        Args:
-            message: Description of what went wrong in the handler.
-            event_type: The type of event being processed when the error occurred.
-            handler_name: The name of the handler function where the error occurred.
-        """
-        super().__init__(message)
-        self.event_type = event_type
-        self.handler_name = handler_name
-
-    def __str__(self) -> str:
-        """Return user-friendly string representation of the error.
-
-        Returns:
-            The error message, optionally including event type and handler name.
-        """
-        parts = [super().__str__()]
-        if self.event_type is not None:
-            parts.append(f"event_type={self.event_type.value}")
-        if self.handler_name is not None:
-            parts.append(f"handler={self.handler_name}")
-        return " | ".join(parts)
-
-    def __repr__(self) -> str:
-        """Return detailed string representation for debugging.
-
-        Returns:
-            A string showing the class name and all error attributes.
-        """
-        parts = [f"message={self.args[0]!r}"]
-        if self.event_type is not None:
-            parts.append(f"event_type={self.event_type!r}")
-        if self.handler_name is not None:
-            parts.append(f"handler_name={self.handler_name!r}")
-        return f"{self.__class__.__name__}({', '.join(parts)})"

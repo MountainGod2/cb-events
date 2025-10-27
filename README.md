@@ -83,7 +83,7 @@ event.broadcaster   # Broadcaster username string
 ## Error Handling
 
 ```python
-from cb_events import AuthError, EventsError, RouterError
+from cb_events import AuthError, EventsError
 
 try:
     async with EventClient(username, token) as client:
@@ -92,8 +92,33 @@ try:
 except AuthError:
     # Authentication failed (401/403)
     pass
-except RouterError as e:
-    # Handler failed - e.handler_name, e.event_type
+except EventsError as e:
+    # API/network errors - e.status_code, e.response_text
+    pass
+```
+
+**Retries:** Automatic on 429, 5xx, Cloudflare errors. No retry on auth errors.
+
+**Handlers:** Execute sequentially. If a handler raises an exception, it propagates immediately and stops subsequent handlers.
+
+## Logging
+
+```python
+import logging
+```
+```
+
+## Error Handling
+
+```python
+from cb_events import AuthError, EventsError
+
+try:
+    async with EventClient(username, token) as client:
+        async for event in client:
+            await router.dispatch(event)
+except AuthError:
+    # Authentication failed (401/403)
     pass
 except EventsError as e:
     # API/network errors - e.status_code, e.response_text
@@ -102,7 +127,7 @@ except EventsError as e:
 
 **Retries:** Automatic on 429, 5xx, Cloudflare errors. No retry on auth errors.
 
-**Handlers:** All handlers execute sequentially even if one fails. Failures logged and raised as `RouterError`.
+**Handlers:** Execute sequentially. If a handler raises an exception, it propagates immediately and stops subsequent handlers.
 
 ## Logging
 
