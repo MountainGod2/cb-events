@@ -219,23 +219,11 @@ filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
 source = ["src/"]
 branch = true
 parallel = true
-omit = ["**/__init__.py", "examples/*", "tests/*"]
 
 [tool.coverage.report]
-exclude_lines = [
-    "if TYPE_CHECKING:",
-    "if __name__ == '__main__':",
-    "if typing.TYPE_CHECKING:",
-    "pragma: no cover",
-    "raise NotImplementedError",
-    "raise AssertionError",
-    "@abstractmethod",
-    "def __repr__",
-    "def __str__",
-]
 show_missing = true
 skip_covered = true
-precision = 2
+precision = 0
 fail_under = 80
 
 [tool.coverage.html]
