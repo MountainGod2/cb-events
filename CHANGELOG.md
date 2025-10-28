@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v4.5.0 (2025-10-28)
+
+### Features
+
+- **pyproject**: Add fancy-pypi-readme metadata hooks for README processing
+  ([`50da09d`](https://github.com/MountainGod2/cb-events/commit/50da09df0c10b57a5c153e5b959cddd4bd055702))
+
+
 ## v4.4.3 (2025-10-28)
 
 ### Bug Fixes
