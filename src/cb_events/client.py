@@ -101,7 +101,7 @@ class EventClient:
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
-        self._polling_lock = asyncio.Lock()
+        self._polling_lock: asyncio.Lock | None = None
         self._rate_limiter = rate_limiter or AsyncLimiter(
             max_rate=RATE_LIMIT_MAX_RATE,
             time_period=RATE_LIMIT_TIME_PERIOD,
@@ -168,6 +168,8 @@ class EventClient:
             EventsError: If session initialization fails.
         """
         try:
+            if self._polling_lock is None:
+                self._polling_lock = asyncio.Lock()
             if self.session is None:
                 self.session = ClientSession(
                     timeout=ClientTimeout(total=self.timeout + SESSION_TIMEOUT_BUFFER),
@@ -346,7 +348,14 @@ class EventClient:
         Returns:
             A list of Event objects parsed from the API response. May be empty
             if no events are available or on timeout.
+
+        Raises:
+            EventsError: If the client has not been initialized with async context manager.
         """
+        if self._polling_lock is None:
+            msg = "Client not initialized - use async context manager"
+            raise EventsError(msg)
+
         async with self._polling_lock:
             url = self._build_poll_url()
             logger.debug("Polling events from %s", self._mask_url(url))
@@ -395,3 +404,4 @@ class EventClient:
             await self.session.close()
             self.session = None
         self._next_url = None
+        self._polling_lock = None
