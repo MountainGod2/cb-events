@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v4.5.1 (2025-10-28)
+
+### Bug Fixes
+
+- **pyproject**: Update documentation URL to point to Read the Docs
+  ([`8d2a5bc`](https://github.com/MountainGod2/cb-events/commit/8d2a5bc2bb436a116eca964d18b9c1cb75b6cdb3))
+
+
 ## v4.5.0 (2025-10-28)
 
 ### Features
