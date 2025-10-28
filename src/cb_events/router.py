@@ -1,4 +1,4 @@
-"""Event routing system with decorator-based handler registration."""
+"""Event routing with decorator-based handler registration."""
 
 import logging
 from collections import defaultdict
@@ -11,11 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class EventHandler(Protocol):  # pylint: disable=too-few-public-methods
-    """Protocol for async event handler functions.
+    """Protocol for async event handlers.
 
-    Event handlers are async callables that accept an Event and return None.
-    They are registered using the EventRouter.on() or EventRouter.on_any()
-    decorators and are called sequentially when events are dispatched.
+    Handlers are async callables that accept an Event and return None.
+    Registered via EventRouter.on() or EventRouter.on_any() decorators.
 
     Example:
         .. code-block:: python
@@ -28,37 +27,34 @@ class EventHandler(Protocol):  # pylint: disable=too-few-public-methods
         """Handle an event.
 
         Args:
-            event: The event to handle.
+            event: Event to handle.
         """
 
 
 class EventRouter:
-    """Routes events to registered handlers based on event type.
+    """Routes events to registered handlers.
 
-    Provides decorator-based registration of async event handlers for specific
-    event types or all events. Handlers are called in registration order when
-    events are dispatched, allowing multiple handlers per event type.
+    Decorator-based registration for specific event types or all events.
+    Handlers are called in registration order.
     """
 
     __slots__ = ("_handlers",)
 
     def __init__(self) -> None:
-        """Initialize the event router with unified handler registry."""
+        """Initialize the router."""
         self._handlers: dict[EventType | None, list[EventHandler]] = defaultdict(list)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
-        """Register a handler for a specific event type.
+        """Register handler for specific event type.
 
-        Decorator that registers an async handler function to be called when
-        events of the specified type are dispatched. Multiple handlers can be
-        registered for the same event type.
+        Decorator for registering async handlers for specific event types.
+        Multiple handlers can be registered for the same type.
 
         Args:
-            event_type: The event type to handle.
+            event_type: Event type to handle.
 
         Returns:
-            A decorator function that registers the handler for the specified
-            event type and returns the original handler function.
+            Decorator that registers and returns the handler.
 
         Example:
             .. code-block:: python
@@ -75,14 +71,12 @@ class EventRouter:
         return decorator
 
     def on_any(self) -> Callable[[EventHandler], EventHandler]:
-        """Register a handler for all event types.
+        """Register handler for all event types.
 
-        Decorator that registers an async handler function to be called for
-        every event dispatched through this router, regardless of type.
+        Decorator for registering handlers called for every event.
 
         Returns:
-            A decorator function that registers the handler for all event types
-            and returns the original handler function.
+            Decorator that registers and returns the handler.
 
         Example:
             .. code-block:: python
@@ -99,14 +93,20 @@ class EventRouter:
         return decorator
 
     async def dispatch(self, event: Event) -> None:
-        """Dispatch an event to all matching registered handlers.
+        """Dispatch event to matching handlers.
 
-        All registered handlers are awaited sequentially. Handlers for the
-        specific event type are called after any handlers registered for all
-        event types.
+        Handlers are awaited sequentially. Handlers for all events run first,
+        then handlers for the specific event type.
+
+        Important:
+            If a handler raises an exception, it propagates immediately and stops
+            subsequent handlers. Handle exceptions in your handlers if needed.
 
         Args:
-            event: The event to dispatch.
+            event: Event to dispatch.
+
+        Raises:
+            Any exception raised by a handler.
         """
         all_handlers = [
             *self._handlers[None],

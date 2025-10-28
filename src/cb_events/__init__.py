@@ -1,23 +1,20 @@
-"""Asynchronous Python wrapper for the Chaturbate Events API.
+"""Async client for the Chaturbate Events API.
 
-This package provides a complete async client for streaming real-time events
-from the Chaturbate Events API. It includes automatic retry logic, rate limiting,
-secure credential handling, and type-safe event routing.
+Stream real-time events from Chaturbate with automatic retries, rate limiting,
+and type-safe event handling.
 
-Main Components:
-    EventClient: Async HTTP client for polling and streaming events.
-    EventRouter: Decorator-based event handler registration and dispatch.
-    Event: Type-safe event model with property-based data access.
-    EventType: Enumeration of all supported event types.
-    EventClientConfig: Configuration for client behavior and retry logic.
+Main components:
+    EventClient: HTTP client for polling events
+    EventRouter: Decorator-based event handler registration
+    Event: Type-safe event model with property access
+    EventType: Enum of supported event types
+    EventClientConfig: Client configuration and retry settings
 
-Exception Classes:
-    EventsError: Base exception for all API-related errors.
-    AuthError: Authentication and authorization failures.
+Exceptions:
+    EventsError: Base exception for API errors
+    AuthError: Authentication failures
 
 Example:
-    Basic usage with async context manager and event router:
-
     .. code-block:: python
 
         import asyncio
@@ -38,10 +35,7 @@ Example:
         asyncio.run(main())
 
 Note:
-    The `config` parameter in EventClient must be passed as a keyword argument.
-
-See individual module docstrings and the project README for detailed usage
-examples and API documentation.
+    The config parameter must be passed as a keyword argument.
 """
 
 from importlib.metadata import version as get_version

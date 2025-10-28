@@ -1,4 +1,4 @@
-"""Configuration classes for the Chaturbate Events API client."""
+"""Configuration for the Chaturbate Events API client."""
 
 from typing import Self
 
@@ -14,17 +14,18 @@ from .constants import (
 
 
 class EventClientConfig(BaseModel):
-    """Configuration for the Chaturbate Events API client.
+    """Client configuration settings.
 
-    This configuration is immutable (frozen) after creation. To change settings,
-    create a new configuration instance and a new client.
+    Immutable after creation. To change settings, create a new config and client.
 
     Attributes:
-        timeout: Timeout for API requests in seconds.
-        use_testbed: Whether to use the testbed API endpoint instead of production.
-        retry_attempts: Number of retry attempts for failed requests.
-        retry_backoff: Initial backoff time in seconds for exponential retry.
-        retry_factor: Base multiplier for exponential backoff calculation.
+        timeout: Request timeout in seconds.
+        use_testbed: Use testbed API (https://testbed.cb.dev/) instead of production.
+            Testbed provides 100k free tokens, all accounts verified/online, and a
+            developer-only environment.
+        retry_attempts: Number of retry attempts.
+        retry_backoff: Initial backoff time in seconds.
+        retry_factor: Exponential backoff multiplier.
         retry_max_delay: Maximum delay between retries in seconds.
     """
 
@@ -39,13 +40,13 @@ class EventClientConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_retry_delays(self) -> Self:
-        """Validate that retry_max_delay is at least as large as retry_backoff.
+        """Validate retry_max_delay >= retry_backoff.
 
         Returns:
-            The validated model instance.
+            Validated model instance.
 
         Raises:
-            ValueError: If retry_max_delay is less than retry_backoff.
+            ValueError: If retry_max_delay < retry_backoff.
         """
         if self.retry_max_delay < self.retry_backoff:
             msg = (

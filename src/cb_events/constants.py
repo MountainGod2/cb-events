@@ -1,4 +1,4 @@
-"""Constants and configuration values for the Chaturbate Events API client."""
+"""Constants for the Chaturbate Events API client."""
 
 from enum import IntEnum
 from http import HTTPStatus
@@ -7,47 +7,49 @@ BASE_URL = "https://eventsapi.chaturbate.com/events"
 """Production API base URL."""
 
 TESTBED_URL = "https://events.testbed.cb.dev/events"
-"""Testbed API base URL for development and testing."""
+"""Testbed API endpoint with free tokens for development."""
 
 URL_TEMPLATE = "{base_url}/{username}/{token}/?timeout={timeout}"
-"""URL template for constructing API polling endpoints."""
+"""URL template for API polling endpoints."""
 
 DEFAULT_TIMEOUT = 10
-"""Default timeout for API requests in seconds."""
+"""Default request timeout in seconds."""
 
 TOKEN_MASK_LENGTH = 4
-"""Number of characters to show at the end of masked tokens."""
+"""Characters to show at end of masked tokens."""
+
+LOG_TEXT_TRUNCATE_LENGTH = 200
+"""Max response text length in log messages."""
 
 RATE_LIMIT_MAX_RATE = 2000
-"""Maximum number of requests allowed per time period."""
+"""Max requests per time period."""
 
 RATE_LIMIT_TIME_PERIOD = 60
-"""Time period in seconds for rate limiting."""
+"""Rate limit time period in seconds."""
 
 DEFAULT_RETRY_ATTEMPTS = 8
-"""Default number of retry attempts for failed requests."""
+"""Default retry attempts for failed requests."""
 
 DEFAULT_RETRY_BACKOFF = 1.0
-"""Default initial backoff time in seconds for exponential retry."""
+"""Initial backoff time for exponential retry in seconds."""
 
 DEFAULT_RETRY_FACTOR = 2.0
-"""Default multiplier for exponential backoff calculation."""
+"""Exponential backoff multiplier."""
 
 DEFAULT_RETRY_MAX_DELAY = 30.0
-"""Default maximum delay between retries in seconds."""
+"""Max delay between retries in seconds."""
 
 SESSION_TIMEOUT_BUFFER = 5
-"""Additional buffer time in seconds added to session timeout to prevent premature timeouts."""
+"""Buffer time added to session timeout to prevent early timeouts."""
 
 AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
-"""HTTP status codes that indicate authentication failures."""
+"""HTTP status codes indicating auth failures."""
 
 
 class CloudflareErrorCode(IntEnum):
-    """Cloudflare-specific error codes for retry handling.
+    """Cloudflare error codes for retry handling.
 
-    These HTTP status codes are returned by Cloudflare when there are
-    issues connecting to or communicating with the origin server.
+    Status codes returned by Cloudflare for origin server issues.
     """
 
     WEB_SERVER_DOWN = 521
@@ -64,7 +66,7 @@ class CloudflareErrorCode(IntEnum):
 
 
 CLOUDFLARE_ERROR_CODES = {code.value for code in CloudflareErrorCode}
-"""Set of Cloudflare error status codes for retry logic."""
+"""Cloudflare error status codes for retry logic."""
 
 TIMEOUT_ERROR_INDICATOR = "waited too long"
-"""String indicator in API response for timeout errors."""
+"""Timeout error indicator in API responses."""

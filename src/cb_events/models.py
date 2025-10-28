@@ -9,17 +9,14 @@ from pydantic.config import ConfigDict
 
 
 class BaseEventModel(BaseModel):
-    """Base model with shared configuration for all event-related models.
+    """Base model for event-related models.
 
-    Provides common Pydantic configuration including automatic snake_case
-    conversion from API camelCase, frozen instances for immutability, and
-    extra field ignoring for forward compatibility.
+    Converts API camelCase to snake_case, freezes instances for immutability,
+    and ignores extra fields for forward compatibility.
 
     Note:
-        The `extra="ignore"` configuration allows the library to handle new fields
-        added to the API without breaking. However, this also means typos in field
-        names will be silently ignored during development. Always verify field names
-        against the API documentation.
+        extra="ignore" allows new API fields without breaking, but also silently
+        ignores typos. Verify field names against API docs.
     """
 
     model_config = ConfigDict(
@@ -31,11 +28,9 @@ class BaseEventModel(BaseModel):
 
 
 class EventType(StrEnum):
-    """Supported event types from the Chaturbate Events API.
+    """Event types from the Chaturbate Events API.
 
-    Defines string constants for all event types that can be received from the
-    API. Use these constants for type-safe event type checking and event handler
-    registration with the EventRouter.
+    String constants for type-safe event checking and router registration.
     """
 
     BROADCAST_START = "broadcastStart"
@@ -55,31 +50,29 @@ class EventType(StrEnum):
 
 
 class User(BaseEventModel):
-    """User information from Chaturbate events.
+    """User information from events.
 
-    Represents user data associated with various event types including
-    authentication status, permissions, display preferences, and user state.
-    All boolean fields default to False, and string fields default to empty
-    strings to handle optional data from the API.
+    User data including auth status, permissions, display preferences, and state.
+    Booleans default to False, strings to empty.
 
     Attributes:
-        username: The user's Chaturbate username.
-        color_group: User's color group for chat display.
-        fc_auto_renew: Whether the user has fanclub auto-renewal enabled.
-        gender: User's gender identity.
-        has_darkmode: Whether the user has dark mode enabled.
-        has_tokens: Whether the user currently has tokens.
-        in_fanclub: Whether the user is a fanclub member.
-        in_private_show: Whether the user is currently in a private show.
-        is_broadcasting: Whether the user is currently broadcasting.
-        is_follower: Whether the user is following the broadcaster.
-        is_mod: Whether the user is a room moderator.
-        is_owner: Whether the user is the room owner/broadcaster.
-        is_silenced: Whether the user is silenced in chat.
-        is_spying: Whether the user is spying on a private show.
-        language: User's preferred language code.
-        recent_tips: String representation of the user's recent tips.
-        subgender: User's subgender identity.
+        username: Chaturbate username.
+        color_group: Chat display color group.
+        fc_auto_renew: Fanclub auto-renewal enabled.
+        gender: Gender identity.
+        has_darkmode: Dark mode enabled.
+        has_tokens: Currently has tokens.
+        in_fanclub: Fanclub member.
+        in_private_show: Currently in private show.
+        is_broadcasting: Currently broadcasting.
+        is_follower: Following the broadcaster.
+        is_mod: Room moderator.
+        is_owner: Room owner/broadcaster.
+        is_silenced: Silenced in chat.
+        is_spying: Spying on private show.
+        language: Preferred language code.
+        recent_tips: Recent tips representation.
+        subgender: Subgender identity.
     """
 
     username: str
@@ -102,20 +95,19 @@ class User(BaseEventModel):
 
 
 class Message(BaseEventModel):
-    """Chat message content and metadata from message events.
+    """Message content and metadata.
 
-    Contains the message text along with formatting options and routing information
-    for both public chat messages and private messages. The is_private property
-    can be used to distinguish between chat and private message types.
+    Chat message text with formatting and routing info for public and private
+    messages. Use is_private to distinguish message types.
 
     Attributes:
-        message: The message text content.
-        bg_color: Background color for the message (optional).
-        color: Text color for the message.
-        font: Font style for the message (defaults to 'default').
-        orig: Original message text before processing (optional).
-        from_user: Username of the sender for private messages (optional).
-        to_user: Username of the recipient for private messages (optional).
+        message: Message text.
+        bg_color: Background color (optional).
+        color: Text color.
+        font: Font style.
+        orig: Original text before processing (optional).
+        from_user: Sender username for private messages (optional).
+        to_user: Recipient username for private messages (optional).
     """
 
     message: str
@@ -128,25 +120,23 @@ class Message(BaseEventModel):
 
     @property
     def is_private(self) -> bool:
-        """Check if this message is a private message.
+        """Check if message is private.
 
         Returns:
-            True if this is a private message (has both from_user and to_user),
-            False if this is a public chat message.
+            True if private message (has both from_user and to_user).
         """
         return self.from_user is not None and self.to_user is not None
 
 
 class Tip(BaseEventModel):
-    """Tip transaction details from tip events.
+    """Tip transaction details.
 
-    Contains the token amount and metadata for tip transactions including
-    anonymous tip status and optional tip messages that accompany the tip.
+    Token amount and metadata including anonymous status and optional message.
 
     Attributes:
-        tokens: Number of tokens tipped.
-        is_anon: Whether the tip was sent anonymously.
-        message: Optional message sent with the tip.
+        tokens: Tokens tipped.
+        is_anon: Sent anonymously.
+        message: Optional tip message.
     """
 
     tokens: int
@@ -155,13 +145,12 @@ class Tip(BaseEventModel):
 
 
 class RoomSubject(BaseEventModel):
-    """Room subject information from subject change events.
+    """Room subject from subject change events.
 
-    Contains the updated room subject/title when a broadcaster changes their
-    room description. This is typically displayed at the top of the chat room.
+    Updated room subject/title displayed at the top of the chat room.
 
     Attributes:
-        subject: The new room subject text.
+        subject: New room subject text.
     """
 
     subject: str
@@ -170,24 +159,18 @@ class RoomSubject(BaseEventModel):
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
-    Represents a single event with type-safe access to associated data through
-    properties. Event data is dynamically parsed based on the event type, providing
-    strongly-typed access to user, tip, message, and room subject information.
-
-    The raw event data is stored in the data dictionary and parsed on-demand
-    through properties, ensuring type safety while maintaining flexibility for
-    future API changes.
+    Type-safe access to event data through properties. Raw data is parsed
+    on-demand, ensuring type safety while staying flexible for API changes.
 
     Important:
-        Event properties return `None` when accessed on incompatible event types.
-        For example, `event.tip` returns `None` for non-TIP events. Always check
-        the event type or verify the property is not `None` before accessing its
-        attributes.
+        Properties return None for incompatible event types. For example,
+        event.tip returns None for non-TIP events. Check the event type or
+        verify the property is not None before accessing attributes.
 
     Attributes:
-        type: The type of event (e.g., TIP, CHAT_MESSAGE, USER_ENTER).
-        id: Unique identifier for this event.
-        data: Raw event data dictionary containing type-specific information.
+        type: Event type (e.g., TIP, CHAT_MESSAGE, USER_ENTER).
+        id: Unique event identifier.
+        data: Raw event data dictionary.
     """
 
     type: EventType = Field(alias="method")
@@ -196,10 +179,13 @@ class Event(BaseEventModel):
 
     @property
     def user(self) -> User | None:
-        """Get user information associated with this event.
+        """Get user info from this event.
 
         Returns:
-            User object if user data is present in the event, otherwise None.
+            User object if user data present, otherwise None.
+
+        Note:
+            May raise ValidationError if user data is malformed.
         """
         if (user_data := self.data.get("user")) is not None:
             return User.model_validate(user_data)
@@ -207,10 +193,13 @@ class Event(BaseEventModel):
 
     @property
     def tip(self) -> Tip | None:
-        """Get tip information for tip events.
+        """Get tip info for tip events.
 
         Returns:
-            Tip object if this is a tip event with tip data, otherwise None.
+            Tip object for tip events with tip data, otherwise None.
+
+        Note:
+            May raise ValidationError if tip data is malformed.
         """
         if self.type == EventType.TIP and (tip_data := self.data.get("tip")) is not None:
             return Tip.model_validate(tip_data)
@@ -218,11 +207,13 @@ class Event(BaseEventModel):
 
     @property
     def message(self) -> Message | None:
-        """Get message information for chat and private message events.
+        """Get message info for chat and private message events.
 
         Returns:
-            Message object if this is a message event with message data,
-            otherwise None.
+            Message object for message events with message data, otherwise None.
+
+        Note:
+            May raise ValidationError if message data is malformed.
         """
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
@@ -233,11 +224,13 @@ class Event(BaseEventModel):
 
     @property
     def room_subject(self) -> RoomSubject | None:
-        """Get room subject information for room subject change events.
+        """Get room subject for subject change events.
 
         Returns:
-            RoomSubject object if this is a room subject change event,
-            otherwise None.
+            RoomSubject object for subject change events, otherwise None.
+
+        Note:
+            May raise ValidationError if room subject data is malformed.
         """
         if self.type == EventType.ROOM_SUBJECT_CHANGE and "subject" in self.data:
             return RoomSubject.model_validate({"subject": self.data["subject"]})
@@ -245,9 +238,9 @@ class Event(BaseEventModel):
 
     @property
     def broadcaster(self) -> str | None:
-        """Get the broadcaster username associated with this event.
+        """Get broadcaster username from this event.
 
         Returns:
-            The broadcaster username if present in the event data, otherwise None.
+            Broadcaster username if present, otherwise None.
         """
         return self.data.get("broadcaster")

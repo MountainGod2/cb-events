@@ -1,16 +1,17 @@
-"""Exception classes for the Chaturbate Events client."""
+"""Exceptions for the Chaturbate Events client."""
+
+_REPR_TEXT_LENGTH = 50
+"""Maximum length of response text to include in exception repr."""
 
 
 class EventsError(Exception):
-    """Base exception for all Chaturbate Events API failures.
+    """Base exception for API failures.
 
-    This exception serves as the base class for all API-related errors and
-    includes enhanced error information such as HTTP status codes and response
-    text when available.
+    Includes HTTP status and response text when available.
 
     Attributes:
-        status_code: HTTP status code from the failed request, if available.
-        response_text: Raw response text from the API, if available.
+        status_code: HTTP status code, if available.
+        response_text: Raw API response text, if available.
     """
 
     def __init__(
@@ -20,47 +21,46 @@ class EventsError(Exception):
         status_code: int | None = None,
         response_text: str | None = None,
     ) -> None:
-        """Initialize EventsError with enhanced error information.
+        """Initialize with error details.
 
         Args:
-            message: The error message describing what went wrong.
-            status_code: HTTP status code from the failed request, if available.
-            response_text: Raw response text from the API, if available.
+            message: Error description.
+            status_code: HTTP status code, if available.
+            response_text: Raw API response, if available.
         """
         super().__init__(message)
         self.status_code = status_code
         self.response_text = response_text
 
     def __str__(self) -> str:
-        """Return user-friendly string representation of the error.
+        """Return string representation.
 
         Returns:
-            The error message, optionally including the status code.
+            Error message with status code if available.
         """
         if self.status_code is not None:
             return f"{super().__str__()} (HTTP {self.status_code})"
         return super().__str__()
 
     def __repr__(self) -> str:
-        """Return detailed string representation for debugging.
+        """Return detailed representation for debugging.
 
         Returns:
-            A string showing the class name and all error attributes.
+            String with class name and all error attributes.
         """
         parts = [f"message={self.args[0]!r}"]
         if self.status_code is not None:
             parts.append(f"status_code={self.status_code}")
         if self.response_text is not None:
-            parts.append(f"response_text={self.response_text[:50]!r}...")
+            parts.append(f"response_text={self.response_text[:_REPR_TEXT_LENGTH]!r}...")
         return f"{self.__class__.__name__}({', '.join(parts)})"
 
 
 class AuthError(EventsError):
-    """Authentication or authorization failure with the Events API.
+    """Authentication or authorization failure.
 
-    Raised when API credentials are invalid, missing, expired, or when the user
-    lacks sufficient permissions for the requested operation. This typically
-    occurs with HTTP 401 (Unauthorized) or 403 (Forbidden) responses.
+    Raised for invalid, missing, or expired credentials, or insufficient permissions.
+    Typically triggered by HTTP 401 or 403 responses.
 
     Examples:
         >>> raise AuthError("Invalid API token")
