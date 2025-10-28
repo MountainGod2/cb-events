@@ -33,7 +33,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/MountainGod2/cb-events"
-Documentation = "https://github.com/MountainGod2/cb-events#readme"
+Documentation = "https://cb-events.readthedocs.io/latest/"
 Repository = "https://github.com/MountainGod2/cb-events.git"
 Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/MountainGod2/cb-events/issues"
