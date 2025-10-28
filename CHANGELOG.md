@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v4.4.3 (2025-10-28)
+
+### Bug Fixes
+
+- **Dockerfile**: Update uv package version to 0.9.5
+  ([`b9bb24d`](https://github.com/MountainGod2/cb-events/commit/b9bb24d27f98324531c7f769ecb6c59896c1d2c4))
+
+### Refactoring
+
+- **pyproject**: Remove unused dependencies and clean up metadata hooks
+  ([`28bb948`](https://github.com/MountainGod2/cb-events/commit/28bb9481750dcf5ca50361a9b91f790ac2946b7d))
+
+- **router**: Remove RouterError and update error handling in tests and documentation
+  ([`cfa3510`](https://github.com/MountainGod2/cb-events/commit/cfa3510ca80d58bb142c36d3266c540a79c9d390))
+
+
 ## v4.4.2 (2025-10-27)
 
 ### Bug Fixes
