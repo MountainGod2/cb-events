@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v4.5.2 (2025-10-28)
+
+### Bug Fixes
+
+- **client**: Ensure polling lock is initialized and handle uninitialized state
+  ([`7216340`](https://github.com/MountainGod2/cb-events/commit/72163403ea123da786d8d89d029c8f0484489c95))
+
+- **coverage**: Remove omitted files from coverage report
+  ([`646e481`](https://github.com/MountainGod2/cb-events/commit/646e48161e50b5bdbac173eb571f213527398ebe))
+
+### Chores
+
+- **deps**: Update dependency ruff to v0.14.2
+  ([`28f42da`](https://github.com/MountainGod2/cb-events/commit/28f42da752c74c3e7266f91a17f5ac55e7d6a575))
+
+- **deps**: Update dependency ty to v0.0.1a24
+  ([`4ab277c`](https://github.com/MountainGod2/cb-events/commit/4ab277cfb5a8e324013c66e90e235e9f096416bf))
+
+- **deps**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.14.2
+  ([`2c953d8`](https://github.com/MountainGod2/cb-events/commit/2c953d8fe500465903a3f588ef0961d773847e9d))
+
+### Refactoring
+
+- **docs**: Update module docstrings
+  ([`d8189d1`](https://github.com/MountainGod2/cb-events/commit/d8189d1f36e56244c19891dc5f0906a4a3e93ae3))
+
+
 ## v4.5.1 (2025-10-28)
 
 ### Bug Fixes
