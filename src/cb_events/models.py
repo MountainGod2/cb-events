@@ -3,7 +3,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
@@ -182,13 +182,13 @@ class Event(BaseEventModel):
         """Get user info from this event.
 
         Returns:
-            User object if user data present, otherwise None.
-
-        Note:
-            May raise ValidationError if user data is malformed.
+            User object if user data present and valid, otherwise None.
         """
         if (user_data := self.data.get("user")) is not None:
-            return User.model_validate(user_data)
+            try:
+                return User.model_validate(user_data)
+            except ValidationError:
+                return None
         return None
 
     @property
@@ -196,13 +196,13 @@ class Event(BaseEventModel):
         """Get tip info for tip events.
 
         Returns:
-            Tip object for tip events with tip data, otherwise None.
-
-        Note:
-            May raise ValidationError if tip data is malformed.
+            Tip object for tip events with valid tip data, otherwise None.
         """
         if self.type == EventType.TIP and (tip_data := self.data.get("tip")) is not None:
-            return Tip.model_validate(tip_data)
+            try:
+                return Tip.model_validate(tip_data)
+            except ValidationError:
+                return None
         return None
 
     @property
@@ -210,16 +210,16 @@ class Event(BaseEventModel):
         """Get message info for chat and private message events.
 
         Returns:
-            Message object for message events with message data, otherwise None.
-
-        Note:
-            May raise ValidationError if message data is malformed.
+            Message object for message events with valid message data, otherwise None.
         """
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
             and (message_data := self.data.get("message")) is not None
         ):
-            return Message.model_validate(message_data)
+            try:
+                return Message.model_validate(message_data)
+            except ValidationError:
+                return None
         return None
 
     @property
@@ -227,13 +227,13 @@ class Event(BaseEventModel):
         """Get room subject for subject change events.
 
         Returns:
-            RoomSubject object for subject change events, otherwise None.
-
-        Note:
-            May raise ValidationError if room subject data is malformed.
+            RoomSubject object for subject change events with valid data, otherwise None.
         """
         if self.type == EventType.ROOM_SUBJECT_CHANGE and "subject" in self.data:
-            return RoomSubject.model_validate({"subject": self.data["subject"]})
+            try:
+                return RoomSubject.model_validate({"subject": self.data["subject"]})
+            except ValidationError:
+                return None
         return None
 
     @property
