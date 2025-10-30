@@ -65,7 +65,7 @@ class CloudflareErrorCode(IntEnum):
     """Origin server timeout occurred."""
 
 
-CLOUDFLARE_ERROR_CODES = {code.value for code in CloudflareErrorCode}
+CLOUDFLARE_ERROR_CODES = set(CloudflareErrorCode)
 """Cloudflare error status codes for retry logic."""
 
 TIMEOUT_ERROR_INDICATOR = "waited too long"
