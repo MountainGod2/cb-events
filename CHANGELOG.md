@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v4.6.0 (2025-10-30)
+
+### Bug Fixes
+
+- **docs**: Exclude autoapi templates from doc8 rst check
+  ([`f1b423e`](https://github.com/MountainGod2/cb-events/commit/f1b423e4494a2dcae1b91b32d76eaacb7f8f4ea9))
+
+### Chores
+
+- **deps**: Update dependency pyright to v1.1.407
+  ([`8b8a73b`](https://github.com/MountainGod2/cb-events/commit/8b8a73b287503e4913cefe2eb4dbf6d4d8663aae))
+
+- **deps**: Update github/codeql-action digest to ac9aeee
+  ([`8ecac5f`](https://github.com/MountainGod2/cb-events/commit/8ecac5f6bbac3777d8656c707fe39bbd6402919f))
+
+### Features
+
+- **docs**: Add autoapi template for class documentation and update Sphinx configuration
+  ([`21422fb`](https://github.com/MountainGod2/cb-events/commit/21422fb5a4df0a0362295c0a9701e55f14ae13e5))
+
+
 ## v4.5.2 (2025-10-28)
 
 ### Bug Fixes
