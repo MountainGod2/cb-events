@@ -52,7 +52,9 @@ class EventsError(Exception):
         if self.status_code is not None:
             parts.append(f"status_code={self.status_code}")
         if self.response_text is not None:
-            parts.append(f"response_text={self.response_text[:_REPR_TEXT_LENGTH]!r}...")
+            truncated = self.response_text[:_REPR_TEXT_LENGTH]
+            ellipsis = "..." if len(self.response_text) > _REPR_TEXT_LENGTH else ""
+            parts.append(f"response_text={truncated!r}{ellipsis}")
         return f"{self.__class__.__name__}({', '.join(parts)})"
 
 
