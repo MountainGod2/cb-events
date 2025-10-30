@@ -18,6 +18,7 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
+from pydantic import ValidationError
 
 from .config import EventClientConfig
 from .constants import (
@@ -244,23 +245,28 @@ class EventClient:
             text: Response text with potential nextUrl.
 
         Returns:
-            Extracted nextUrl or None.
+            Extracted nextUrl or None if not found or parsing fails.
         """
         try:
             error_data = json.loads(text)
-        except json.JSONDecodeError:
-            logger.warning(
-                "Failed to parse error response for nextUrl extraction: %s",
+        except json.JSONDecodeError as e:
+            logger.debug(
+                "Response is not JSON (expected for non-timeout errors): %s",
                 text[:LOG_TEXT_TRUNCATE_LENGTH],
+                exc_info=e,
             )
             return None
 
-        if TIMEOUT_ERROR_INDICATOR in error_data.get(FIELD_STATUS, "").lower() and (
-            next_url := error_data.get(FIELD_NEXT_URL)
-        ):
-            logger.debug("Received nextUrl from timeout response")
-            self._next_url = next_url
-            return str(next_url)
+        status_msg = error_data.get(FIELD_STATUS, "")
+        if not isinstance(status_msg, str):
+            return None
+
+        if TIMEOUT_ERROR_INDICATOR in status_msg.lower():
+            next_url = error_data.get(FIELD_NEXT_URL)
+            if next_url:
+                logger.debug("Received nextUrl from timeout response")
+                self._next_url = next_url
+                return str(next_url)
         return None
 
     def _parse_response_data(self, resp_data: dict[str, Any]) -> list[Event]:
@@ -270,17 +276,37 @@ class EventClient:
             resp_data: Parsed JSON response.
 
         Returns:
-            List of Event objects.
+            List of Event objects. Invalid events are skipped if
+            strict_validation is False.
 
         Raises:
             EventsError: If nextUrl field is missing.
+
+        Note:
+            ValidationError: If strict_validation is True and event validation fails.
         """
         if FIELD_NEXT_URL not in resp_data:
             msg = "Invalid API response: missing 'nextUrl' field"
             raise EventsError(msg, response_text=str(resp_data))
 
         self._next_url = resp_data[FIELD_NEXT_URL]
-        events = [Event.model_validate(item) for item in resp_data.get(FIELD_EVENTS, [])]
+        raw_events = resp_data.get(FIELD_EVENTS, [])
+
+        events: list[Event]
+        if self.config.strict_validation:
+            events = [Event.model_validate(item) for item in raw_events]
+        else:
+            events = []
+            for item in raw_events:
+                try:
+                    events.append(Event.model_validate(item))
+                except (ValidationError, ValueError, TypeError) as e:
+                    logger.warning(
+                        "Skipping invalid event (strict_validation=False): %s",
+                        e,
+                        exc_info=True,
+                    )
+
         if events:
             logger.debug(
                 "Received %d events",

@@ -13,6 +13,14 @@ Main components:
 Exceptions:
     EventsError: Base exception for API errors
     AuthError: Authentication failures
+    ValidationError: Invalid event data (from pydantic)
+
+Important:
+    Event properties (user, tip, message, room_subject) raise ValidationError
+    if data is present but invalid. Set strict_validation=False in config to
+    skip invalid events instead.
+
+    Models use extra="forbid" - unknown fields cause ValidationError.
 
 Example:
     .. code-block:: python

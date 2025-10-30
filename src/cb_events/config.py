@@ -23,6 +23,9 @@ class EventClientConfig(BaseModel):
         use_testbed: Use testbed API (https://testbed.cb.dev/) instead of production.
             Testbed provides 100k free tokens, all accounts verified/online, and a
             developer-only environment.
+        strict_validation: Fail fast on invalid events. If True, ValidationError
+            propagates immediately when an event fails validation. If False, invalid
+            events are logged and skipped.
         retry_attempts: Number of retry attempts.
         retry_backoff: Initial backoff time in seconds.
         retry_factor: Exponential backoff multiplier.
@@ -33,6 +36,7 @@ class EventClientConfig(BaseModel):
 
     timeout: int = Field(default=DEFAULT_TIMEOUT, gt=0)
     use_testbed: bool = False
+    strict_validation: bool = True
     retry_attempts: int = Field(default=DEFAULT_RETRY_ATTEMPTS, ge=0)
     retry_backoff: float = Field(default=DEFAULT_RETRY_BACKOFF, ge=0)
     retry_factor: float = Field(default=DEFAULT_RETRY_FACTOR, gt=0)

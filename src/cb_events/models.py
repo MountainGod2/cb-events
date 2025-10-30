@@ -4,7 +4,7 @@ import logging
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
@@ -24,17 +24,18 @@ class BaseEventModel(BaseModel):
     """Base model for event-related models.
 
     Converts API camelCase to snake_case, freezes instances for immutability,
-    and ignores extra fields for forward compatibility.
+    and forbids extra fields to catch API changes and typos.
 
     Note:
-        extra="ignore" allows new API fields without breaking, but also silently
-        ignores typos. Verify field names against API docs.
+        extra="forbid" will raise ValidationError if the API returns unexpected
+        fields. This helps catch API changes early but requires updates when
+        new fields are added.
     """
 
     model_config = ConfigDict(
         alias_generator=to_snake,
         populate_by_name=True,
-        extra="ignore",
+        extra="forbid",
         frozen=True,
     )
 
@@ -194,14 +195,13 @@ class Event(BaseEventModel):
         """Get user info from this event.
 
         Returns:
-            User object if user data present and valid, otherwise None.
+            User object if user data present and valid.
+
+        Note:
+            ValidationError: If user data present but invalid.
         """
         if (user_data := self.data.get(FIELD_USER)) is not None:
-            try:
-                return User.model_validate(user_data)
-            except ValidationError as e:
-                logger.warning("Failed to validate user data: %s", e)
-                return None
+            return User.model_validate(user_data)
         return None
 
     @property
@@ -209,14 +209,13 @@ class Event(BaseEventModel):
         """Get tip info for tip events.
 
         Returns:
-            Tip object for tip events with valid tip data, otherwise None.
+            Tip object for tip events with valid tip data.
+
+        Note:
+            ValidationError: If user data present but invalid.
         """
         if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
-            try:
-                return Tip.model_validate(tip_data)
-            except ValidationError as e:
-                logger.warning("Failed to validate tip data: %s", e)
-                return None
+            return Tip.model_validate(tip_data)
         return None
 
     @property
@@ -224,17 +223,16 @@ class Event(BaseEventModel):
         """Get message info for chat and private message events.
 
         Returns:
-            Message object for message events with valid message data, otherwise None.
+            Message object for message events with valid message data.
+
+        Note:
+            ValidationError: If user data present but invalid.
         """
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
             and (message_data := self.data.get(FIELD_MESSAGE)) is not None
         ):
-            try:
-                return Message.model_validate(message_data)
-            except ValidationError as e:
-                logger.warning("Failed to validate message data: %s", e)
-                return None
+            return Message.model_validate(message_data)
         return None
 
     @property
@@ -242,14 +240,13 @@ class Event(BaseEventModel):
         """Get room subject for subject change events.
 
         Returns:
-            RoomSubject object for subject change events with valid data, otherwise None.
+            RoomSubject object for subject change events with valid data.
+
+        Note:
+            ValidationError: If user data present but invalid.
         """
         if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
-            try:
-                return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
-            except ValidationError as e:
-                logger.warning("Failed to validate room subject data: %s", e)
-                return None
+            return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
         return None
 
     @property
