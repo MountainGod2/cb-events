@@ -37,6 +37,7 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 logger = logging.getLogger(__name__)
+"""Logger for EventClient."""
 
 
 class ResponseStatus(Enum):

@@ -8,6 +8,7 @@ from typing import Protocol
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
+"""Logger for EventRouter."""
 
 
 class EventHandler(Protocol):  # pylint: disable=too-few-public-methods
