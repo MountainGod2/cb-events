@@ -2,34 +2,15 @@
 
 import logging
 from collections import defaultdict
-from collections.abc import Callable
-from typing import Protocol
+from collections.abc import Awaitable, Callable
 
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
-"""Logger for EventRouter."""
+"""Logger for router module."""
 
 
-class EventHandler(Protocol):  # pylint: disable=too-few-public-methods
-    """Protocol for async event handlers.
-
-    Handlers are async callables that accept an Event and return None.
-    Registered via EventRouter.on() or EventRouter.on_any() decorators.
-
-    Example:
-        .. code-block:: python
-
-            async def my_handler(event: Event) -> None:
-                print(f"Received event: {event.type}")
-    """
-
-    async def __call__(self, event: Event) -> None:
-        """Handle an event.
-
-        Args:
-            event: Event to handle.
-        """
+type EventHandler = Callable[[Event], Awaitable[None]]
 
 
 class EventRouter:

@@ -24,6 +24,9 @@ from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
     CLOUDFLARE_ERROR_CODES,
+    FIELD_EVENTS,
+    FIELD_NEXT_URL,
+    FIELD_STATUS,
     LOG_TEXT_TRUNCATE_LENGTH,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
@@ -37,7 +40,7 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 logger = logging.getLogger(__name__)
-"""Logger for EventClient."""
+"""Logger for client module."""
 
 
 class ResponseStatus(Enum):
@@ -252,8 +255,8 @@ class EventClient:
             )
             return None
 
-        if TIMEOUT_ERROR_INDICATOR in error_data.get("status", "").lower() and (
-            next_url := error_data.get("nextUrl")
+        if TIMEOUT_ERROR_INDICATOR in error_data.get(FIELD_STATUS, "").lower() and (
+            next_url := error_data.get(FIELD_NEXT_URL)
         ):
             logger.debug("Received nextUrl from timeout response")
             self._next_url = next_url
@@ -272,12 +275,12 @@ class EventClient:
         Raises:
             EventsError: If nextUrl field is missing.
         """
-        if "nextUrl" not in resp_data:
+        if FIELD_NEXT_URL not in resp_data:
             msg = "Invalid API response: missing 'nextUrl' field"
             raise EventsError(msg, response_text=str(resp_data))
 
-        self._next_url = resp_data["nextUrl"]
-        events = [Event.model_validate(item) for item in resp_data.get("events", [])]
+        self._next_url = resp_data[FIELD_NEXT_URL]
+        events = [Event.model_validate(item) for item in resp_data.get(FIELD_EVENTS, [])]
         if events:
             logger.debug(
                 "Received %d events",

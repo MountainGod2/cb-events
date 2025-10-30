@@ -1,11 +1,23 @@
 """Data models for the Chaturbate Events API."""
 
+import logging
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
+
+from .constants import (
+    FIELD_BROADCASTER,
+    FIELD_MESSAGE,
+    FIELD_SUBJECT,
+    FIELD_TIP,
+    FIELD_USER,
+)
+
+logger = logging.getLogger(__name__)
+"""Logger for models module."""
 
 
 class BaseEventModel(BaseModel):
@@ -184,10 +196,11 @@ class Event(BaseEventModel):
         Returns:
             User object if user data present and valid, otherwise None.
         """
-        if (user_data := self.data.get("user")) is not None:
+        if (user_data := self.data.get(FIELD_USER)) is not None:
             try:
                 return User.model_validate(user_data)
-            except ValidationError:
+            except ValidationError as e:
+                logger.warning("Failed to validate user data: %s", e)
                 return None
         return None
 
@@ -198,10 +211,11 @@ class Event(BaseEventModel):
         Returns:
             Tip object for tip events with valid tip data, otherwise None.
         """
-        if self.type == EventType.TIP and (tip_data := self.data.get("tip")) is not None:
+        if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
             try:
                 return Tip.model_validate(tip_data)
-            except ValidationError:
+            except ValidationError as e:
+                logger.warning("Failed to validate tip data: %s", e)
                 return None
         return None
 
@@ -214,11 +228,12 @@ class Event(BaseEventModel):
         """
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
-            and (message_data := self.data.get("message")) is not None
+            and (message_data := self.data.get(FIELD_MESSAGE)) is not None
         ):
             try:
                 return Message.model_validate(message_data)
-            except ValidationError:
+            except ValidationError as e:
+                logger.warning("Failed to validate message data: %s", e)
                 return None
         return None
 
@@ -229,10 +244,11 @@ class Event(BaseEventModel):
         Returns:
             RoomSubject object for subject change events with valid data, otherwise None.
         """
-        if self.type == EventType.ROOM_SUBJECT_CHANGE and "subject" in self.data:
+        if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
             try:
-                return RoomSubject.model_validate({"subject": self.data["subject"]})
-            except ValidationError:
+                return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
+            except ValidationError as e:
+                logger.warning("Failed to validate room subject data: %s", e)
                 return None
         return None
 
@@ -243,4 +259,4 @@ class Event(BaseEventModel):
         Returns:
             Broadcaster username if present, otherwise None.
         """
-        return self.data.get("broadcaster")
+        return self.data.get(FIELD_BROADCASTER)

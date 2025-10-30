@@ -70,3 +70,27 @@ CLOUDFLARE_ERROR_CODES = set(CloudflareErrorCode)
 
 TIMEOUT_ERROR_INDICATOR = "waited too long"
 """Timeout error indicator in API responses."""
+
+FIELD_NEXT_URL = "nextUrl"
+"""API response field for next polling URL."""
+
+FIELD_EVENTS = "events"
+"""API response field for event list."""
+
+FIELD_STATUS = "status"
+"""API response field for status message."""
+
+FIELD_USER = "user"
+"""Event data field for user information."""
+
+FIELD_TIP = "tip"
+"""Event data field for tip information."""
+
+FIELD_MESSAGE = "message"
+"""Event data field for message content."""
+
+FIELD_SUBJECT = "subject"
+"""Event data field for room subject."""
+
+FIELD_BROADCASTER = "broadcaster"
+"""Event data field for broadcaster username."""
