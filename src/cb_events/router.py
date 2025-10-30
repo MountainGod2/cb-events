@@ -43,7 +43,7 @@ class EventRouter:
 
     def __init__(self) -> None:
         """Initialize the router."""
-        self._handlers: dict[EventType | None, list[EventHandler]] = defaultdict(list)
+        self._handlers: defaultdict[EventType | None, list[EventHandler]] = defaultdict(list)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
         """Register handler for specific event type.
