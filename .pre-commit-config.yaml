@@ -85,6 +85,7 @@ repos:
         name: doc8 rst check
         args: [--max-line-length=88]
         files: \.rst$
+        exclude: ^docs/_templates/autoapi/
 
   - repo: https://github.com/adhtruong/mirrors-typos
     rev: v1.38.1
