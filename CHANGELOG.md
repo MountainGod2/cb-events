@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v4.6.1 (2025-10-30)
+
+### Bug Fixes
+
+- **constants**: Correct initialization of CLOUDFLARE_ERROR_CODES set
+  ([`3120e80`](https://github.com/MountainGod2/cb-events/commit/3120e804ed876b68144ed3af6b9fc7ccb5bb3d54))
+
+- **event**: Handle ValidationError when retrieving user, tip, message, and room subject data
+  ([`27a1c9d`](https://github.com/MountainGod2/cb-events/commit/27a1c9dfb20c715f1bd424cc56bf921a932003c6))
+
+- **router**: Correct type hint for _handlers in EventRouter initialization
+  ([`0e6dcc5`](https://github.com/MountainGod2/cb-events/commit/0e6dcc50dc3d234967d3ed12cd725bb6501858f3))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 8491d1d
+  ([`8aa4870`](https://github.com/MountainGod2/cb-events/commit/8aa4870e5be2531545f3a0b1029a952eb3592077))
+
+- **deps**: Update github/codeql-action digest to 9bd8638
+  ([`d5ff4f1`](https://github.com/MountainGod2/cb-events/commit/d5ff4f1ea345467bdf74c55f0290e4cd02024548))
+
+- **docs**: Add logger documentation for EventClient and EventRouter
+  ([`e932a7b`](https://github.com/MountainGod2/cb-events/commit/e932a7b9212581d92658fe0ce13aa89c944a7b4e))
+
+### Refactoring
+
+- **exceptions**: Improve response_text representation in EventsError
+  ([`5309193`](https://github.com/MountainGod2/cb-events/commit/53091931b11e82215a2d921e157b2d2840b254f9))
+
+
 ## v4.6.0 (2025-10-30)
 
 ### Bug Fixes
