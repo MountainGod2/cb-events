@@ -4,7 +4,7 @@ import logging
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
@@ -24,12 +24,11 @@ class BaseEventModel(BaseModel):
     """Base model for event-related models.
 
     Converts API camelCase to snake_case, freezes instances for immutability,
-    and forbids extra fields to catch API changes and typos.
+    and forbids extra fields.
 
     Note:
         extra="forbid" will raise ValidationError if the API returns unexpected
-        fields. This helps catch API changes early but requires updates when
-        new fields are added.
+        fields.
     """
 
     model_config = ConfigDict(
@@ -172,8 +171,7 @@ class RoomSubject(BaseEventModel):
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
-    Type-safe access to event data through properties. Raw data is parsed
-    on-demand, ensuring type safety while staying flexible for API changes.
+    Type-safe access to event data through properties.
 
     Important:
         Properties return None for incompatible event types. For example,
@@ -195,13 +193,14 @@ class Event(BaseEventModel):
         """Get user info from this event.
 
         Returns:
-            User object if user data present and valid.
-
-        Note:
-            ValidationError: If user data present but invalid.
+            User object if user data present and valid, None otherwise.
         """
         if (user_data := self.data.get(FIELD_USER)) is not None:
-            return User.model_validate(user_data)
+            try:
+                return User.model_validate(user_data)
+            except ValidationError as e:
+                logger.warning("Invalid user data in event %s: %s", self.id, e)
+                return None
         return None
 
     @property
@@ -209,13 +208,14 @@ class Event(BaseEventModel):
         """Get tip info for tip events.
 
         Returns:
-            Tip object for tip events with valid tip data.
-
-        Note:
-            ValidationError: If user data present but invalid.
+            Tip object for tip events with valid tip data, None otherwise.
         """
         if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
-            return Tip.model_validate(tip_data)
+            try:
+                return Tip.model_validate(tip_data)
+            except ValidationError as e:
+                logger.warning("Invalid tip data in event %s: %s", self.id, e)
+                return None
         return None
 
     @property
@@ -223,16 +223,17 @@ class Event(BaseEventModel):
         """Get message info for chat and private message events.
 
         Returns:
-            Message object for message events with valid message data.
-
-        Note:
-            ValidationError: If user data present but invalid.
+            Message object for message events with valid message data, None otherwise.
         """
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
             and (message_data := self.data.get(FIELD_MESSAGE)) is not None
         ):
-            return Message.model_validate(message_data)
+            try:
+                return Message.model_validate(message_data)
+            except ValidationError as e:
+                logger.warning("Invalid message data in event %s: %s", self.id, e)
+                return None
         return None
 
     @property
@@ -240,13 +241,14 @@ class Event(BaseEventModel):
         """Get room subject for subject change events.
 
         Returns:
-            RoomSubject object for subject change events with valid data.
-
-        Note:
-            ValidationError: If user data present but invalid.
+            RoomSubject object for subject change events with valid data, None otherwise.
         """
         if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
-            return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
+            try:
+                return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
+            except ValidationError as e:
+                logger.warning("Invalid room subject data in event %s: %s", self.id, e)
+                return None
         return None
 
     @property
