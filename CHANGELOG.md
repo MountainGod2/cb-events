@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v4.7.0 (2025-10-31)
+
+### Features
+
+- **validation**: Introduce strict validation for event data and update error handling
+  ([`ef2fe99`](https://github.com/MountainGod2/cb-events/commit/ef2fe995d10b406aa6b69ab26c73cb1a7f75b700))
+
+### Refactoring
+
+- Improve field handling and logging
+  ([`455099e`](https://github.com/MountainGod2/cb-events/commit/455099e35bb19f0a284d6965e2f94f6833135cab))
+
+- **pyproject**: Remove unused pyright configuration
+  ([`de12bb2`](https://github.com/MountainGod2/cb-events/commit/de12bb2699793af2f5578b0f39b527e00d72b753))
+
+
 ## v4.6.1 (2025-10-30)
 
 ### Bug Fixes
