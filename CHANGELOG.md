@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v4.7.1 (2025-10-31)
+
+### Bug Fixes
+
+- **docs**: Clarify behavior of event properties and update version import
+  ([`35df062`](https://github.com/MountainGod2/cb-events/commit/35df062181ed21c5d764107a6b2fd17b07f2da5a))
+
+- **models**: Enhance error handling for data validation
+  ([`d24bd84`](https://github.com/MountainGod2/cb-events/commit/d24bd84f2a2d89dacfd3f45648fa32db14415214))
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 0d20755
+  ([`b7e8fa2`](https://github.com/MountainGod2/cb-events/commit/b7e8fa28f4ee2802fb5bc67f10ea8384fd7e8b65))
+
+- **deps**: Update dependency pylint-pydantic to v0.4.1
+  ([`79c9314`](https://github.com/MountainGod2/cb-events/commit/79c9314180332536c7e47235e85f47449e4efa5b))
+
+### Refactoring
+
+- **client**: Remove unused ResponseStatus enum and simplify response handling
+  ([`05cfec5`](https://github.com/MountainGod2/cb-events/commit/05cfec573a0bf13b74cba4a4301c504a7c91f062))
+
+- **constants**: Simplify Cloudflare error handling
+  ([`f650ce8`](https://github.com/MountainGod2/cb-events/commit/f650ce84b52f8bb9afec5d8dae241610abf5836c))
+
+
 ## v4.7.0 (2025-10-31)
 
 ### Features
