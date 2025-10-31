@@ -1,6 +1,5 @@
 """Constants for the Chaturbate Events API client."""
 
-from enum import IntEnum
 from http import HTTPStatus
 
 BASE_URL = "https://eventsapi.chaturbate.com/events"
@@ -45,28 +44,15 @@ SESSION_TIMEOUT_BUFFER = 5
 AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 """HTTP status codes indicating auth failures."""
 
+CLOUDFLARE_ERROR_CODES = {521, 522, 523, 524}
+"""Cloudflare error status codes for retry logic.
 
-class CloudflareErrorCode(IntEnum):
-    """Cloudflare error codes for retry handling.
-
-    Status codes returned by Cloudflare for origin server issues.
-    """
-
-    WEB_SERVER_DOWN = 521
-    """Origin server refused the connection."""
-
-    CONNECTION_TIMEOUT = 522
-    """Connection to origin server timed out."""
-
-    ORIGIN_UNREACHABLE = 523
-    """Origin server is unreachable."""
-
-    TIMEOUT_OCCURRED = 524
-    """Origin server timeout occurred."""
-
-
-CLOUDFLARE_ERROR_CODES = set(CloudflareErrorCode)
-"""Cloudflare error status codes for retry logic."""
+Status codes:
+    521: Web server is down (origin server refused connection)
+    522: Connection timed out (connection to origin server timed out)
+    523: Origin is unreachable (origin server is unreachable)
+    524: A timeout occurred (origin server timeout occurred)
+"""
 
 TIMEOUT_ERROR_INDICATOR = "waited too long"
 """Timeout error indicator in API responses."""
