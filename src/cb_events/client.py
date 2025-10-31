@@ -8,7 +8,6 @@ import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
-from enum import Enum, auto
 from http import HTTPStatus
 from types import TracebackType
 from typing import Any, Self
@@ -42,16 +41,6 @@ from .models import Event
 
 logger = logging.getLogger(__name__)
 """Logger for client module."""
-
-
-class ResponseStatus(Enum):
-    """Response handling status."""
-
-    CONTINUE = auto()
-    """Continue with event parsing."""
-
-    TIMEOUT_HANDLED = auto()
-    """Timeout handled, skip event parsing."""
 
 
 class EventClient:
@@ -129,7 +118,7 @@ class EventClient:
         self.session: ClientSession | None = None
         self.retry_client: RetryClient | None = None
         self._next_url: str | None = None
-        self._polling_lock: asyncio.Lock | None = None
+        self._polling_lock = asyncio.Lock()
         self._rate_limiter = rate_limiter or AsyncLimiter(
             max_rate=RATE_LIMIT_MAX_RATE,
             time_period=RATE_LIMIT_TIME_PERIOD,
@@ -195,8 +184,6 @@ class EventClient:
             EventsError: If session initialization fails.
         """
         try:
-            if self._polling_lock is None:
-                self._polling_lock = asyncio.Lock()
             if self.session is None:
                 self.session = ClientSession(
                     timeout=ClientTimeout(total=self.timeout + SESSION_TIMEOUT_BUFFER),
@@ -249,12 +236,7 @@ class EventClient:
         """
         try:
             error_data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.debug(
-                "Response is not JSON (expected for non-timeout errors): %s",
-                text[:LOG_TEXT_TRUNCATE_LENGTH],
-                exc_info=e,
-            )
+        except json.JSONDecodeError:
             return None
 
         status_msg = error_data.get(FIELD_STATUS, "")
@@ -300,7 +282,7 @@ class EventClient:
             for item in raw_events:
                 try:
                     events.append(Event.model_validate(item))
-                except (ValidationError, ValueError, TypeError) as e:
+                except ValidationError as e:
                     logger.warning(
                         "Skipping invalid event (strict_validation=False): %s",
                         e,
@@ -335,7 +317,7 @@ class EventClient:
             text = await resp.text()
             return resp.status, text
 
-    def _handle_response_status(self, status: int, text: str) -> ResponseStatus:
+    def _handle_response_status(self, status: int, text: str) -> bool:
         """Handle response status codes.
 
         Args:
@@ -343,7 +325,7 @@ class EventClient:
             text: Response text.
 
         Returns:
-            Status indicating next action.
+            True if timeout was handled and parsing should be skipped, False otherwise.
 
         Raises:
             AuthError: For auth failures.
@@ -359,7 +341,7 @@ class EventClient:
             raise AuthError(msg)
 
         if status == HTTPStatus.BAD_REQUEST and self._extract_next_url(text):
-            return ResponseStatus.TIMEOUT_HANDLED
+            return True
 
         if status != HTTPStatus.OK:
             logger.error("HTTP error %d: %s", status, text[:LOG_TEXT_TRUNCATE_LENGTH])
@@ -370,7 +352,7 @@ class EventClient:
                 response_text=text,
             )
 
-        return ResponseStatus.CONTINUE
+        return False
 
     @staticmethod
     def _parse_json_response(text: str) -> dict[str, Any]:
@@ -406,14 +388,7 @@ class EventClient:
 
         Returns:
             List of Event objects. Empty if no events or timeout.
-
-        Raises:
-            EventsError: If client not initialized via context manager.
         """
-        if self._polling_lock is None:
-            msg = "Client not initialized - use async context manager"
-            raise EventsError(msg)
-
         async with self._polling_lock:
             url = self._build_poll_url()
             if logger.isEnabledFor(logging.DEBUG):
@@ -421,9 +396,9 @@ class EventClient:
 
             status, text = await self._make_request(url)
 
-            response_status = self._handle_response_status(status, text)
-            if response_status == ResponseStatus.TIMEOUT_HANDLED:
-                return []  # Timeout handled
+            timeout_handled = self._handle_response_status(status, text)
+            if timeout_handled:
+                return []
 
             data = self._parse_json_response(text)
             return self._parse_response_data(data)
@@ -454,11 +429,18 @@ class EventClient:
 
         Idempotent - safe to call multiple times.
         """
-        if self.retry_client:
-            await self.retry_client.close()
-            self.retry_client = None
-        if self.session:
-            await self.session.close()
-            self.session = None
+        try:
+            if self.retry_client:
+                await self.retry_client.close()
+                self.retry_client = None
+        except (ClientError, OSError, RuntimeError) as e:
+            logger.warning("Error closing retry client: %s", e, exc_info=True)
+
+        try:
+            if self.session:
+                await self.session.close()
+                self.session = None
+        except (ClientError, OSError, RuntimeError) as e:
+            logger.warning("Error closing session: %s", e, exc_info=True)
+
         self._next_url = None
-        self._polling_lock = None
