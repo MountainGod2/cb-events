@@ -16,9 +16,9 @@ Exceptions:
     ValidationError: Invalid event data (from pydantic)
 
 Important:
-    Event properties (user, tip, message, room_subject) raise ValidationError
-    if data is present but invalid. Set strict_validation=False in config to
-    skip invalid events instead.
+    Event properties (user, tip, message, room_subject) return None if data
+    is present but invalid. Set strict_validation=False in config to skip
+    invalid events during polling instead of raising ValidationError.
 
     Models use extra="forbid" - unknown fields cause ValidationError.
 
@@ -46,7 +46,7 @@ Note:
     The config parameter must be passed as a keyword argument.
 """
 
-from importlib.metadata import version as get_version
+from importlib.metadata import version
 
 from .client import EventClient
 from .config import EventClientConfig
@@ -61,7 +61,7 @@ from .models import (
 )
 from .router import EventHandler, EventRouter
 
-__version__ = get_version("cb-events")
+__version__ = version("cb-events")
 __all__: list[str] = [
     "AuthError",
     "Event",
