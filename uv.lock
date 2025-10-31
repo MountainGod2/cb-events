@@ -292,7 +292,7 @@ dev = [
     { name = "mypy", specifier = "==1.18.2" },
     { name = "pre-commit", specifier = "==4.3.0" },
     { name = "pylint", specifier = "==4.0.2" },
-    { name = "pylint-pydantic", specifier = "==0.4.0" },
+    { name = "pylint-pydantic", specifier = "==0.4.1" },
     { name = "pyright", specifier = "==1.1.407" },
     { name = "pytest", specifier = "==8.4.2" },
     { name = "pytest-aiohttp", specifier = "==1.1.0" },
@@ -1745,7 +1745,7 @@ wheels = [
 
 [[package]]
 name = "pylint-pydantic"
-version = "0.4.0"
+version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
@@ -1753,7 +1753,7 @@ dependencies = [
     { name = "pylint-plugin-utils" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/86/e3151c9bfcbb518dfff06b5c3e05b47df487414cc8cd9279f61547075f77/pylint_pydantic-0.4.0-py3-none-any.whl", hash = "sha256:0527427bf0a0369941ba64c3b25e06c02a10c186ec7e32e69569077d17db6442", size = 16152, upload-time = "2025-10-14T06:35:54.318Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/ac/5de3c91c7f9354444af251f053cc9953c89cce1defa74b907f67be4f770a/pylint_pydantic-0.4.1-py3-none-any.whl", hash = "sha256:d1b937abe5c346d38de69ee1ada80c93d38ee2356addbabb687e2eb44036ac93", size = 16161, upload-time = "2025-10-27T08:03:33.641Z" },
 ]
 
 [[package]]
