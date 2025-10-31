@@ -1,8 +1,10 @@
 """Integration tests for cb-events package."""
 
+from importlib.metadata import version
+
 import pytest
 
-from cb_events import AuthError, EventClient, EventRouter, EventType
+from cb_events import AuthError, EventClient, EventRouter, EventType, __version__
 
 
 @pytest.mark.e2e
@@ -58,3 +60,9 @@ class TestIntegration:
         async with EventClient("test_user", "bad_token", config=testbed_config) as client:
             with pytest.raises(AuthError):
                 await client.poll()
+
+    async def test_version_attribute(self):
+        """Package should have a __version__ attribute."""
+
+        assert isinstance(__version__, str)
+        assert version("cb-events") == __version__
