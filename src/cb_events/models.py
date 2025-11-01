@@ -1,8 +1,9 @@
 """Data models for the Chaturbate Events API."""
 
 import logging
+from collections.abc import Callable
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
@@ -168,6 +169,9 @@ class RoomSubject(BaseEventModel):
     subject: str
 
 
+T = TypeVar("T")
+
+
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
@@ -188,6 +192,15 @@ class Event(BaseEventModel):
     id: str
     data: dict[str, Any] = Field(default_factory=dict, alias="object")
 
+    def _get_cached_value(self, attr: str, factory: Callable[[], T]) -> T:
+        cache = cast("dict[str, Any]", self.__dict__.setdefault("_cache", {}))
+        if attr in cache:
+            return cast("T", cache[attr])
+
+        value = factory()
+        cache[attr] = value
+        return value
+
     @property
     def user(self) -> User | None:
         """Get user info from this event.
@@ -195,12 +208,14 @@ class Event(BaseEventModel):
         Returns:
             User object if user data present and valid, None otherwise.
         """
+        return self._get_cached_value("_cached_user", self._build_user)
+
+    def _build_user(self) -> User | None:
         if (user_data := self.data.get(FIELD_USER)) is not None:
             try:
                 return User.model_validate(user_data)
             except ValidationError as e:
                 logger.warning("Invalid user data in event %s: %s", self.id, e)
-                return None
         return None
 
     @property
@@ -210,12 +225,14 @@ class Event(BaseEventModel):
         Returns:
             Tip object for tip events with valid tip data, None otherwise.
         """
+        return self._get_cached_value("_cached_tip", self._build_tip)
+
+    def _build_tip(self) -> Tip | None:
         if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
             try:
                 return Tip.model_validate(tip_data)
             except ValidationError as e:
                 logger.warning("Invalid tip data in event %s: %s", self.id, e)
-                return None
         return None
 
     @property
@@ -225,6 +242,9 @@ class Event(BaseEventModel):
         Returns:
             Message object for message events with valid message data, None otherwise.
         """
+        return self._get_cached_value("_cached_message", self._build_message)
+
+    def _build_message(self) -> Message | None:
         if (
             self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
             and (message_data := self.data.get(FIELD_MESSAGE)) is not None
@@ -233,7 +253,6 @@ class Event(BaseEventModel):
                 return Message.model_validate(message_data)
             except ValidationError as e:
                 logger.warning("Invalid message data in event %s: %s", self.id, e)
-                return None
         return None
 
     @property
@@ -243,12 +262,14 @@ class Event(BaseEventModel):
         Returns:
             RoomSubject object for subject change events with valid data, None otherwise.
         """
+        return self._get_cached_value("_cached_room_subject", self._build_room_subject)
+
+    def _build_room_subject(self) -> RoomSubject | None:
         if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
             try:
                 return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
             except ValidationError as e:
                 logger.warning("Invalid room subject data in event %s: %s", self.id, e)
-                return None
         return None
 
     @property
