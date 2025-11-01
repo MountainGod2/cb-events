@@ -145,3 +145,4 @@ async def main() -> None:
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(main())
+    print("\nExiting.")
