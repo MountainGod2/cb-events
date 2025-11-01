@@ -1,21 +1,14 @@
 """Data models for the Chaturbate Events API."""
 
 import logging
-from collections.abc import Callable
 from enum import StrEnum
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
-from .constants import (
-    FIELD_BROADCASTER,
-    FIELD_MESSAGE,
-    FIELD_SUBJECT,
-    FIELD_TIP,
-    FIELD_USER,
-)
+from .constants import FIELD_BROADCASTER, FIELD_MESSAGE, FIELD_SUBJECT, FIELD_TIP, FIELD_USER
 
 logger = logging.getLogger(__name__)
 """Logger for models module."""
@@ -169,7 +162,22 @@ class RoomSubject(BaseEventModel):
     subject: str
 
 
-T = TypeVar("T")
+_UNSET = ...
+
+
+def _format_error_locations(error: ValidationError) -> str:
+    """Create comma-separated list of error locations.
+
+    Args:
+        error: Validation error raised while parsing payload data.
+
+    Returns:
+        Comma-separated dotted paths where validation failed.
+    """
+    locations = {
+        ".".join(str(item) for item in entry.get("loc", ())) or "<root>" for entry in error.errors()
+    }
+    return ", ".join(sorted(locations))
 
 
 class Event(BaseEventModel):
@@ -192,14 +200,10 @@ class Event(BaseEventModel):
     id: str
     data: dict[str, Any] = Field(default_factory=dict, alias="object")
 
-    def _get_cached_value(self, attr: str, factory: Callable[[], T]) -> T:
-        cache = cast("dict[str, Any]", self.__dict__.setdefault("_cache", {}))
-        if attr in cache:
-            return cast("T", cache[attr])
-
-        value = factory()
-        cache[attr] = value
-        return value
+    _user_cache: object | User | None = PrivateAttr(default_factory=lambda: _UNSET)
+    _tip_cache: object | Tip | None = PrivateAttr(default_factory=lambda: _UNSET)
+    _message_cache: object | Message | None = PrivateAttr(default_factory=lambda: _UNSET)
+    _room_subject_cache: object | RoomSubject | None = PrivateAttr(default_factory=lambda: _UNSET)
 
     @property
     def user(self) -> User | None:
@@ -208,14 +212,16 @@ class Event(BaseEventModel):
         Returns:
             User object if user data present and valid, None otherwise.
         """
-        return self._get_cached_value("_cached_user", self._build_user)
+        if self._user_cache is _UNSET:
+            self._user_cache = self._build_user()
+        return cast("User | None", self._user_cache)
 
     def _build_user(self) -> User | None:
         if (user_data := self.data.get(FIELD_USER)) is not None:
             try:
                 return User.model_validate(user_data)
             except ValidationError as e:
-                logger.warning("Invalid user data in event %s: %s", self.id, e)
+                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
         return None
 
     @property
@@ -225,14 +231,16 @@ class Event(BaseEventModel):
         Returns:
             Tip object for tip events with valid tip data, None otherwise.
         """
-        return self._get_cached_value("_cached_tip", self._build_tip)
+        if self._tip_cache is _UNSET:
+            self._tip_cache = self._build_tip()
+        return cast("Tip | None", self._tip_cache)
 
     def _build_tip(self) -> Tip | None:
         if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
             try:
                 return Tip.model_validate(tip_data)
             except ValidationError as e:
-                logger.warning("Invalid tip data in event %s: %s", self.id, e)
+                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
         return None
 
     @property
@@ -242,7 +250,9 @@ class Event(BaseEventModel):
         Returns:
             Message object for message events with valid message data, None otherwise.
         """
-        return self._get_cached_value("_cached_message", self._build_message)
+        if self._message_cache is _UNSET:
+            self._message_cache = self._build_message()
+        return cast("Message | None", self._message_cache)
 
     def _build_message(self) -> Message | None:
         if (
@@ -252,7 +262,7 @@ class Event(BaseEventModel):
             try:
                 return Message.model_validate(message_data)
             except ValidationError as e:
-                logger.warning("Invalid message data in event %s: %s", self.id, e)
+                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
         return None
 
     @property
@@ -262,14 +272,16 @@ class Event(BaseEventModel):
         Returns:
             RoomSubject object for subject change events with valid data, None otherwise.
         """
-        return self._get_cached_value("_cached_room_subject", self._build_room_subject)
+        if self._room_subject_cache is _UNSET:
+            self._room_subject_cache = self._build_room_subject()
+        return cast("RoomSubject | None", self._room_subject_cache)
 
     def _build_room_subject(self) -> RoomSubject | None:
         if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
             try:
                 return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
             except ValidationError as e:
-                logger.warning("Invalid room subject data in event %s: %s", self.id, e)
+                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
         return None
 
     @property
