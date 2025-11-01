@@ -43,6 +43,21 @@ logger = logging.getLogger(__name__)
 """Logger for client module."""
 
 
+def _format_error_locations(error: ValidationError) -> str:
+    """Create comma-separated list of validation error locations.
+
+    Args:
+        error: Validation error raised while parsing event payloads.
+
+    Returns:
+        Comma-separated dotted paths where validation failed.
+    """
+    locations = {
+        ".".join(str(item) for item in entry.get("loc", ())) or "<root>" for entry in error.errors()
+    }
+    return ", ".join(sorted(locations))
+
+
 class EventClient:
     """HTTP client for polling the Chaturbate Events API.
 
@@ -283,9 +298,11 @@ class EventClient:
                 try:
                     events.append(Event.model_validate(item))
                 except ValidationError as e:
+                    event_id = str(item.get("id", "<unknown>"))
                     logger.warning(
-                        "Skipping invalid event (strict_validation=False): %s",
-                        e,
+                        "event_id=%s locations=%s",
+                        event_id,
+                        _format_error_locations(e),
                     )
 
         if events:
