@@ -286,7 +286,6 @@ class EventClient:
                     logger.warning(
                         "Skipping invalid event (strict_validation=False): %s",
                         e,
-                        exc_info=True,
                     )
 
         if events:
@@ -313,9 +312,14 @@ class EventClient:
             msg = "Client not initialized - use async context manager"
             raise EventsError(msg)
 
-        async with self._rate_limiter, self.retry_client.get(url) as resp:
-            text = await resp.text()
-            return resp.status, text
+        try:
+            async with self._rate_limiter, self.retry_client.get(url) as resp:
+                text = await resp.text()
+                return resp.status, text
+        except (ClientError, TimeoutError, OSError) as exc:
+            logger.exception("Request to %s failed", self._mask_url(url))
+            msg = "Failed to fetch events from API"
+            raise EventsError(msg) from exc
 
     def _handle_response_status(self, status: int, text: str) -> bool:
         """Handle response status codes.
