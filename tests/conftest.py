@@ -1,13 +1,28 @@
 """Test configuration and shared fixtures."""
 
 import re
-from typing import Any
+from collections.abc import AsyncIterator, Iterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from typing import Any, Protocol
 from unittest.mock import AsyncMock
 
 import pytest
+import pytest_asyncio
 from aioresponses import aioresponses
 
-from cb_events import Event, EventClientConfig, EventRouter, EventType
+from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
+
+
+class EventClientFactory(Protocol):
+    def __call__(
+        self,
+        *,
+        username_override: str | None = ...,
+        token_override: str | None = ...,
+        config: EventClientConfig | None = ...,
+        use_testbed: bool = ...,
+        **config_overrides: Any,
+    ) -> AbstractAsyncContextManager[EventClient]: ...
 
 
 @pytest.fixture
@@ -16,7 +31,12 @@ def testbed_config() -> EventClientConfig:
 
 
 @pytest.fixture
-def testbed_url_pattern():
+def credentials() -> tuple[str, str]:
+    return "test_user", "test_token"
+
+
+@pytest.fixture
+def testbed_url_pattern() -> re.Pattern[str]:
     return re.compile(r"https://events\.testbed\.cb\.dev/events/.*/.*")
 
 
@@ -65,6 +85,46 @@ def mock_handler() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_response():
-    with aioresponses() as m:
-        yield m
+def mock_response() -> Iterator[aioresponses]:
+    with aioresponses() as mock:
+        yield mock
+
+
+@pytest_asyncio.fixture
+async def event_client(
+    credentials: tuple[str, str],
+    testbed_config: EventClientConfig,
+) -> AsyncIterator[EventClient]:
+    username, token = credentials
+    async with EventClient(username, token, config=testbed_config) as client:
+        yield client
+
+
+@pytest.fixture
+def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
+    username, token = credentials
+
+    @asynccontextmanager
+    async def _factory(
+        *,
+        username_override: str | None = None,
+        token_override: str | None = None,
+        config: EventClientConfig | None = None,
+        use_testbed: bool = True,
+        **config_overrides: Any,
+    ) -> AsyncIterator[EventClient]:
+        if config is not None and config_overrides:
+            msg = "Provide either `config` or keyword overrides, not both."
+            raise ValueError(msg)
+
+        client_username = username_override or username
+        client_token = token_override or token
+
+        if config is None:
+            config_kwargs = {"use_testbed": use_testbed, **config_overrides}
+            config = EventClientConfig(**config_kwargs)
+
+        async with EventClient(client_username, client_token, config=config) as client:
+            yield client
+
+    return _factory
