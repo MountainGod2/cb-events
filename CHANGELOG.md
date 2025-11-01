@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v4.8.0 (2025-11-01)
+
+### Bug Fixes
+
+- **client**: Improve error handling for API requests
+  ([`9799bc6`](https://github.com/MountainGod2/cb-events/commit/9799bc60cfea295ea46a94be27132711ff4306e7))
+
+### Chores
+
+- **deps**: Update github/codeql-action digest to 338146c
+  ([`70d8c22`](https://github.com/MountainGod2/cb-events/commit/70d8c2205395d68d0c8d18aa83591cab024f200c))
+
+### Features
+
+- **models**: Implement caching for event data retrieval
+  ([`1e9ccaa`](https://github.com/MountainGod2/cb-events/commit/1e9ccaae491696f53326c748bda0a35244ff322e))
+
+### Refactoring
+
+- **tests**: Enhance type hints and improve test function signatures
+  ([`395c29b`](https://github.com/MountainGod2/cb-events/commit/395c29b3a510920879e65e89aacefe61b77f692d))
+
+
 ## v4.7.1 (2025-10-31)
 
 ### Bug Fixes
