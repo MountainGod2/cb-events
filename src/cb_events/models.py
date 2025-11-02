@@ -1,9 +1,11 @@
 """Data models for the Chaturbate Events API."""
 
+from __future__ import annotations
+
 import logging
 from enum import StrEnum
 from functools import cached_property
-from typing import Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
@@ -11,6 +13,10 @@ from pydantic.config import ConfigDict
 
 from ._utils import format_validation_error_locations
 from .constants import FIELD_BROADCASTER, FIELD_MESSAGE, FIELD_SUBJECT, FIELD_TIP, FIELD_USER
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 logger = logging.getLogger(__name__)
 """Logger for models module."""
@@ -33,6 +39,9 @@ class BaseEventModel(BaseModel):
         extra="forbid",
         frozen=True,
     )
+
+
+_ModelT = TypeVar("_ModelT", bound="BaseEventModel")
 
 
 class EventType(StrEnum):
@@ -186,23 +195,7 @@ class Event(BaseEventModel):
         return self._build_user()
 
     def _build_user(self) -> User | None:
-        """Parse the embedded user payload if present.
-
-        Returns:
-            Validated :class:`User` model or ``None`` when parsing fails.
-        """
-        user_data = self.data.get(FIELD_USER)
-        if user_data is None:
-            return None
-        try:
-            return User.model_validate(user_data)
-        except ValidationError as exc:
-            logger.warning(
-                "event_id=%s locations=%s",
-                self.id,
-                format_validation_error_locations(exc),
-            )
-            return None
+        return self._extract_model(key=FIELD_USER, loader=User.model_validate)
 
     @cached_property
     def tip(self) -> Tip | None:
@@ -214,25 +207,11 @@ class Event(BaseEventModel):
         return self._build_tip()
 
     def _build_tip(self) -> Tip | None:
-        """Parse tip payload for tip events.
-
-        Returns:
-            Validated :class:`Tip` model or ``None`` when parsing fails.
-        """
-        if self.type != EventType.TIP:
-            return None
-        tip_data = self.data.get(FIELD_TIP)
-        if tip_data is None:
-            return None
-        try:
-            return Tip.model_validate(tip_data)
-        except ValidationError as exc:
-            logger.warning(
-                "event_id=%s locations=%s",
-                self.id,
-                format_validation_error_locations(exc),
-            )
-            return None
+        return self._extract_model(
+            key=FIELD_TIP,
+            loader=Tip.model_validate,
+            allowed_types=(EventType.TIP,),
+        )
 
     @cached_property
     def message(self) -> Message | None:
@@ -244,25 +223,11 @@ class Event(BaseEventModel):
         return self._build_message()
 
     def _build_message(self) -> Message | None:
-        """Parse message payload for chat or private message events.
-
-        Returns:
-            Validated :class:`Message` model or ``None`` when parsing fails.
-        """
-        if self.type not in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}:
-            return None
-        message_data = self.data.get(FIELD_MESSAGE)
-        if message_data is None:
-            return None
-        try:
-            return Message.model_validate(message_data)
-        except ValidationError as exc:
-            logger.warning(
-                "event_id=%s locations=%s",
-                self.id,
-                format_validation_error_locations(exc),
-            )
-            return None
+        return self._extract_model(
+            key=FIELD_MESSAGE,
+            loader=Message.model_validate,
+            allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
+        )
 
     @cached_property
     def room_subject(self) -> RoomSubject | None:
@@ -274,24 +239,12 @@ class Event(BaseEventModel):
         return self._build_room_subject()
 
     def _build_room_subject(self) -> RoomSubject | None:
-        """Parse room subject payload for subject change events.
-
-        Returns:
-            Validated :class:`RoomSubject` model or ``None`` when parsing fails.
-        """
-        if self.type != EventType.ROOM_SUBJECT_CHANGE:
-            return None
-        if FIELD_SUBJECT not in self.data:
-            return None
-        try:
-            return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
-        except ValidationError as exc:
-            logger.warning(
-                "event_id=%s locations=%s",
-                self.id,
-                format_validation_error_locations(exc),
-            )
-            return None
+        return self._extract_model(
+            key=FIELD_SUBJECT,
+            loader=RoomSubject.model_validate,
+            allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
+            transform=lambda value: {FIELD_SUBJECT: value},
+        )
 
     @cached_property
     def broadcaster(self) -> str | None:
@@ -302,3 +255,50 @@ class Event(BaseEventModel):
         """
         value = self.data.get(FIELD_BROADCASTER)
         return value if isinstance(value, str) and value else None
+
+    def _extract_model(
+        self,
+        *,
+        key: str,
+        loader: Callable[[object], _ModelT],
+        allowed_types: tuple[EventType, ...] | None = None,
+        transform: Callable[[object], object] | None = None,
+    ) -> _ModelT | None:
+        """Shared loader for optional payload fragments.
+
+        Args:
+            key: Field name to look up within ``self.data``.
+            loader: Callable that validates the payload into a pydantic model.
+            allowed_types: Optional whitelist of event types that expose the payload.
+            transform: Optional callable to massage the value before validation.
+
+        Returns:
+            Parsed model instance when present and valid, otherwise ``None``.
+        """
+        if allowed_types and self.type not in allowed_types:
+            return None
+
+        if key not in self.data:
+            return None
+
+        payload = self.data[key]
+        if payload is None:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                key,
+            )
+            return None
+
+        if transform is not None:
+            payload = transform(payload)
+
+        try:
+            return loader(payload)
+        except ValidationError as exc:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                format_validation_error_locations(exc),
+            )
+            return None
