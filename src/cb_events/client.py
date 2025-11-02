@@ -19,6 +19,12 @@ from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
 
+from ._utils import (
+    format_validation_error_locations,
+    mask_secret,
+    mask_secret_in_url,
+    trim_for_log,
+)
 from .config import EventClientConfig
 from .constants import (
     AUTH_ERROR_STATUSES,
@@ -27,13 +33,11 @@ from .constants import (
     FIELD_EVENTS,
     FIELD_NEXT_URL,
     FIELD_STATUS,
-    LOG_TEXT_TRUNCATE_LENGTH,
     RATE_LIMIT_MAX_RATE,
     RATE_LIMIT_TIME_PERIOD,
     SESSION_TIMEOUT_BUFFER,
     TESTBED_URL,
     TIMEOUT_ERROR_INDICATOR,
-    TOKEN_MASK_LENGTH,
     URL_TEMPLATE,
 )
 from .exceptions import AuthError, EventsError
@@ -41,21 +45,6 @@ from .models import Event
 
 logger = logging.getLogger(__name__)
 """Logger for client module."""
-
-
-def _format_error_locations(error: ValidationError) -> str:
-    """Create comma-separated list of validation error locations.
-
-    Args:
-        error: Validation error raised while parsing event payloads.
-
-    Returns:
-        Comma-separated dotted paths where validation failed.
-    """
-    locations = {
-        ".".join(str(item) for item in entry.get("loc", ())) or "<root>" for entry in error.errors()
-    }
-    return ", ".join(sorted(locations))
 
 
 class EventClient:
@@ -160,22 +149,8 @@ class EventClient:
         Returns:
             String showing username and masked token.
         """
-        masked_token = self._mask_token(self.token)
+        masked_token = mask_secret(self.token)
         return f"EventClient(username='{self.username}', token='{masked_token}')"
-
-    @staticmethod
-    def _mask_token(token: str) -> str:
-        """Mask token, showing only last 4 characters.
-
-        Args:
-            token: Token to mask.
-
-        Returns:
-            Masked token with asterisks.
-        """
-        if len(token) <= TOKEN_MASK_LENGTH:
-            return "*" * len(token)
-        return "*" * (len(token) - TOKEN_MASK_LENGTH) + token[-TOKEN_MASK_LENGTH:]
 
     def _mask_url(self, url: str) -> str:
         """Mask token in URL for logging.
@@ -186,8 +161,7 @@ class EventClient:
         Returns:
             URL with masked token.
         """
-        masked = self._mask_token(self.token)
-        return url.replace(self.token, masked).replace(quote(self.token, safe=""), masked)
+        return mask_secret_in_url(url, self.token)
 
     async def __aenter__(self) -> Self:
         """Initialize HTTP session.
@@ -302,7 +276,7 @@ class EventClient:
                     logger.warning(
                         "event_id=%s locations=%s",
                         event_id,
-                        _format_error_locations(e),
+                        format_validation_error_locations(e),
                     )
 
         if events:
@@ -365,8 +339,9 @@ class EventClient:
             return True
 
         if status != HTTPStatus.OK:
-            logger.error("HTTP error %d: %s", status, text[:LOG_TEXT_TRUNCATE_LENGTH])
-            msg = f"HTTP {status}: {text[:LOG_TEXT_TRUNCATE_LENGTH]}"
+            trimmed = trim_for_log(text)
+            logger.error("HTTP error %d: %s", status, trimmed)
+            msg = f"HTTP {status}: {trimmed}"
             raise EventsError(
                 msg,
                 status_code=status,
@@ -392,7 +367,7 @@ class EventClient:
             data: dict[str, Any] = json.loads(text)
         except json.JSONDecodeError as e:
             msg = f"Invalid JSON response: {e.msg}"
-            logger.exception("Failed to parse JSON response: %s", text[:LOG_TEXT_TRUNCATE_LENGTH])
+            logger.exception("Failed to parse JSON response: %s", trim_for_log(text))
             raise EventsError(
                 msg,
                 response_text=text,

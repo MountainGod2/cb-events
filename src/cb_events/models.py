@@ -2,12 +2,14 @@
 
 import logging
 from enum import StrEnum
-from typing import Any, cast
+from functools import cached_property
+from typing import Any
 
-from pydantic import BaseModel, Field, PrivateAttr, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
+from ._utils import format_validation_error_locations
 from .constants import FIELD_BROADCASTER, FIELD_MESSAGE, FIELD_SUBJECT, FIELD_TIP, FIELD_USER
 
 logger = logging.getLogger(__name__)
@@ -162,133 +164,141 @@ class RoomSubject(BaseEventModel):
     subject: str
 
 
-_UNSET = ...
-
-
-def _format_error_locations(error: ValidationError) -> str:
-    """Create comma-separated list of error locations.
-
-    Args:
-        error: Validation error raised while parsing payload data.
-
-    Returns:
-        Comma-separated dotted paths where validation failed.
-    """
-    locations = {
-        ".".join(str(item) for item in entry.get("loc", ())) or "<root>" for entry in error.errors()
-    }
-    return ", ".join(sorted(locations))
-
-
 class Event(BaseEventModel):
-    """Event from the Chaturbate Events API.
+    """Normalized event payload from the Chaturbate Events API.
 
-    Type-safe access to event data through properties.
-
-    Important:
-        Properties return None for incompatible event types. For example,
-        event.tip returns None for non-TIP events. Check the event type or
-        verify the property is not None before accessing attributes.
-
-    Attributes:
-        type: Event type (e.g., TIP, CHAT_MESSAGE, USER_ENTER).
-        id: Unique event identifier.
-        data: Raw event data dictionary.
+    Provides typed helpers for optional payload fragments such as user, tip, and
+    subject data. Accessors return ``None`` when the data is missing or fails
+    validation.
     """
 
     type: EventType = Field(alias="method")
     id: str
     data: dict[str, Any] = Field(default_factory=dict, alias="object")
 
-    _user_cache: object | User | None = PrivateAttr(default_factory=lambda: _UNSET)
-    _tip_cache: object | Tip | None = PrivateAttr(default_factory=lambda: _UNSET)
-    _message_cache: object | Message | None = PrivateAttr(default_factory=lambda: _UNSET)
-    _room_subject_cache: object | RoomSubject | None = PrivateAttr(default_factory=lambda: _UNSET)
-
-    @property
+    @cached_property
     def user(self) -> User | None:
-        """Get user info from this event.
+        """Attached user payload if present and valid.
 
         Returns:
-            User object if user data present and valid, None otherwise.
+            Parsed :class:`User` payload or ``None`` when missing or invalid.
         """
-        if self._user_cache is _UNSET:
-            self._user_cache = self._build_user()
-        return cast("User | None", self._user_cache)
+        return self._build_user()
 
     def _build_user(self) -> User | None:
-        if (user_data := self.data.get(FIELD_USER)) is not None:
-            try:
-                return User.model_validate(user_data)
-            except ValidationError as e:
-                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
-        return None
-
-    @property
-    def tip(self) -> Tip | None:
-        """Get tip info for tip events.
+        """Parse the embedded user payload if present.
 
         Returns:
-            Tip object for tip events with valid tip data, None otherwise.
+            Validated :class:`User` model or ``None`` when parsing fails.
         """
-        if self._tip_cache is _UNSET:
-            self._tip_cache = self._build_tip()
-        return cast("Tip | None", self._tip_cache)
+        user_data = self.data.get(FIELD_USER)
+        if user_data is None:
+            return None
+        try:
+            return User.model_validate(user_data)
+        except ValidationError as exc:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                format_validation_error_locations(exc),
+            )
+            return None
+
+    @cached_property
+    def tip(self) -> Tip | None:
+        """Tip payload for tip events.
+
+        Returns:
+            Parsed :class:`Tip` payload or ``None`` when missing or invalid.
+        """
+        return self._build_tip()
 
     def _build_tip(self) -> Tip | None:
-        if self.type == EventType.TIP and (tip_data := self.data.get(FIELD_TIP)) is not None:
-            try:
-                return Tip.model_validate(tip_data)
-            except ValidationError as e:
-                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
-        return None
-
-    @property
-    def message(self) -> Message | None:
-        """Get message info for chat and private message events.
+        """Parse tip payload for tip events.
 
         Returns:
-            Message object for message events with valid message data, None otherwise.
+            Validated :class:`Tip` model or ``None`` when parsing fails.
         """
-        if self._message_cache is _UNSET:
-            self._message_cache = self._build_message()
-        return cast("Message | None", self._message_cache)
+        if self.type != EventType.TIP:
+            return None
+        tip_data = self.data.get(FIELD_TIP)
+        if tip_data is None:
+            return None
+        try:
+            return Tip.model_validate(tip_data)
+        except ValidationError as exc:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                format_validation_error_locations(exc),
+            )
+            return None
+
+    @cached_property
+    def message(self) -> Message | None:
+        """Chat or private message payload if available.
+
+        Returns:
+            Parsed :class:`Message` payload or ``None`` when unavailable.
+        """
+        return self._build_message()
 
     def _build_message(self) -> Message | None:
-        if (
-            self.type in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}
-            and (message_data := self.data.get(FIELD_MESSAGE)) is not None
-        ):
-            try:
-                return Message.model_validate(message_data)
-            except ValidationError as e:
-                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
-        return None
-
-    @property
-    def room_subject(self) -> RoomSubject | None:
-        """Get room subject for subject change events.
+        """Parse message payload for chat or private message events.
 
         Returns:
-            RoomSubject object for subject change events with valid data, None otherwise.
+            Validated :class:`Message` model or ``None`` when parsing fails.
         """
-        if self._room_subject_cache is _UNSET:
-            self._room_subject_cache = self._build_room_subject()
-        return cast("RoomSubject | None", self._room_subject_cache)
+        if self.type not in {EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE}:
+            return None
+        message_data = self.data.get(FIELD_MESSAGE)
+        if message_data is None:
+            return None
+        try:
+            return Message.model_validate(message_data)
+        except ValidationError as exc:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                format_validation_error_locations(exc),
+            )
+            return None
+
+    @cached_property
+    def room_subject(self) -> RoomSubject | None:
+        """Room subject payload for subject change events.
+
+        Returns:
+            Parsed :class:`RoomSubject` payload or ``None`` when unavailable.
+        """
+        return self._build_room_subject()
 
     def _build_room_subject(self) -> RoomSubject | None:
-        if self.type == EventType.ROOM_SUBJECT_CHANGE and FIELD_SUBJECT in self.data:
-            try:
-                return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
-            except ValidationError as e:
-                logger.warning("event_id=%s locations=%s", self.id, _format_error_locations(e))
-        return None
-
-    @property
-    def broadcaster(self) -> str | None:
-        """Get broadcaster username from this event.
+        """Parse room subject payload for subject change events.
 
         Returns:
-            Broadcaster username if present, otherwise None.
+            Validated :class:`RoomSubject` model or ``None`` when parsing fails.
         """
-        return self.data.get(FIELD_BROADCASTER)
+        if self.type != EventType.ROOM_SUBJECT_CHANGE:
+            return None
+        if FIELD_SUBJECT not in self.data:
+            return None
+        try:
+            return RoomSubject.model_validate({FIELD_SUBJECT: self.data[FIELD_SUBJECT]})
+        except ValidationError as exc:
+            logger.warning(
+                "event_id=%s locations=%s",
+                self.id,
+                format_validation_error_locations(exc),
+            )
+            return None
+
+    @cached_property
+    def broadcaster(self) -> str | None:
+        """Broadcaster username when present in the payload.
+
+        Returns:
+            Broadcaster username or ``None`` when absent or empty.
+        """
+        value = self.data.get(FIELD_BROADCASTER)
+        return value if isinstance(value, str) and value else None
