@@ -1,4 +1,4 @@
-"""Utilities for turning raw API responses into typed event batches."""
+"""Parse raw API responses into typed event batches."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class _RawEventBatch(BaseModel):
-    """Shape of the payload returned by the Events API."""
+    """Raw payload shape from the Events API."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
@@ -27,7 +27,7 @@ class _RawEventBatch(BaseModel):
 
 @dataclass(slots=True)
 class EventBatch:
-    """Validated collection of events plus the next polling URL."""
+    """Validated events and next polling URL."""
 
     next_url: str | None
     events: list[Event]
@@ -39,21 +39,18 @@ def build_event_batch(
     strict_validation: bool,
     raw_text: str | None = None,
 ) -> EventBatch:
-    """Validate the API payload and turn it into an :class:`EventBatch`.
+    """Validate API payload and build an EventBatch.
 
     Args:
-        payload: Raw dictionary obtained from decoding the HTTP response body.
-        strict_validation: When ``True`` every event must validate successfully and
-            a :class:`ValidationError` will bubble up. When ``False`` invalid events
-            are logged and skipped.
-        raw_text: Original response text for richer error messages.
+        payload: Decoded HTTP response body.
+        strict_validation: If True, raise on any invalid event. If False, log and skip.
+        raw_text: Original response text for error messages.
 
     Returns:
-        EventBatch with the parsed events and ``next_url`` value.
+        EventBatch with parsed events and next_url.
 
     Raises:
-        EventsError: If the payload is missing required fields or contains invalid
-            objects.
+        EventsError: If payload structure is invalid.
     """
     try:
         raw_batch = _RawEventBatch.model_validate(payload)
@@ -70,18 +67,17 @@ def _validate_events(
     *,
     strict_validation: bool,
 ) -> list[Event]:
-    """Turn raw event dictionaries into :class:`Event` models.
+    """Parse raw event dictionaries into Event models.
 
     Args:
-        raw_events: Raw event payloads from the Events API.
-        strict_validation: When ``True`` every invalid event raises immediately.
+        raw_events: Raw event payloads.
+        strict_validation: If True, raise on invalid events. If False, skip them.
 
     Returns:
-        List of successfully parsed :class:`Event` models.
+        List of validated Event models.
 
     Raises:
-        ValidationError: Propagated when ``strict_validation`` is ``True`` and an
-            event fails validation.
+        ValidationError: If strict_validation=True and an event fails validation.
     """
     events: list[Event] = []
     for item in raw_events:
@@ -92,9 +88,5 @@ def _validate_events(
                 raise
             event_id = str(item.get("id", "<unknown>"))
             locations = format_validation_error_locations(exc)
-            logger.warning(
-                "event_id=%s locations=%s",
-                event_id,
-                locations,
-            )
+            logger.warning("event_id=%s locations=%s", event_id, locations)
     return events

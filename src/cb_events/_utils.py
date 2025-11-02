@@ -1,4 +1,4 @@
-"""Internal helpers shared across the library."""
+"""Internal utilities."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from .constants import LOG_TEXT_TRUNCATE_LENGTH, TOKEN_MASK_LENGTH
 
-if TYPE_CHECKING:  # pragma: no cover - imported for type checkers only
+if TYPE_CHECKING:
     from pydantic import ValidationError
 
 
@@ -19,11 +19,9 @@ def mask_secret(secret: str, *, visible: int = TOKEN_MASK_LENGTH) -> str:
         visible: Number of trailing characters to leave unobscured.
 
     Returns:
-        Secret with all but the trailing ``visible`` characters replaced by ``*``.
+        Secret with all but the trailing characters replaced by asterisks.
     """
-    if visible <= 0:
-        return "*" * len(secret)
-    if len(secret) <= visible:
+    if visible <= 0 or len(secret) <= visible:
         return "*" * len(secret)
     hidden = "*" * (len(secret) - visible)
     return f"{hidden}{secret[-visible:]}"
@@ -44,13 +42,13 @@ def mask_secret_in_url(url: str, secret: str) -> str:
 
 
 def format_validation_error_locations(error: ValidationError) -> str:
-    """Render validation error locations as a sorted, comma-separated string.
+    """Format validation error locations as a sorted, comma-separated string.
 
     Args:
-        error: Pydantic validation error raised while parsing API payloads.
+        error: Pydantic validation error.
 
     Returns:
-        Comma-separated dotted paths that indicate failing fields.
+        Comma-separated dotted paths indicating failing fields.
     """
     locations = {
         ".".join(str(entry) for entry in detail.get("loc", ())) or "<root>"
@@ -60,15 +58,14 @@ def format_validation_error_locations(error: ValidationError) -> str:
 
 
 def trim_for_log(text: str, *, limit: int = LOG_TEXT_TRUNCATE_LENGTH) -> str:
-    """Shorten log output while signalling truncation.
+    """Truncate text for logging.
 
     Args:
-        text: Raw text destined for logs.
-        limit: Maximum desired length of the returned string.
+        text: Raw text to truncate.
+        limit: Maximum length of returned string.
 
     Returns:
-        Original text if already within the limit, otherwise a truncated version
-        suffixed with an ellipsis.
+        Original text if within limit, otherwise truncated with ellipsis.
     """
     if len(text) <= limit:
         return text

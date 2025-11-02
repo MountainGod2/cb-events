@@ -14,18 +14,12 @@ from .constants import (
 
 
 class EventClientConfig(BaseModel):
-    """Client configuration settings.
-
-    Immutable after creation. To change settings, create a new config and client.
+    """Client configuration (immutable after creation).
 
     Attributes:
         timeout: Request timeout in seconds.
-        use_testbed: Use testbed API (https://testbed.cb.dev/) instead of production.
-            Testbed provides 100k free tokens, all accounts verified/online, and a
-            developer-only environment.
-        strict_validation: Fail fast on invalid events. If True, ValidationError
-            propagates immediately when an event fails validation. If False, invalid
-            events are logged and skipped.
+        use_testbed: Use testbed API (https://testbed.cb.dev/) with free tokens.
+        strict_validation: Raise ValidationError on invalid events instead of skipping.
         retry_attempts: Number of retry attempts.
         retry_backoff: Initial backoff time in seconds.
         retry_factor: Exponential backoff multiplier.
@@ -44,10 +38,10 @@ class EventClientConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_retry_delays(self) -> Self:
-        """Validate retry_max_delay >= retry_backoff.
+        """Ensure retry_max_delay >= retry_backoff.
 
         Returns:
-            Validated model instance.
+            Self after validation.
 
         Raises:
             ValueError: If retry_max_delay < retry_backoff.

@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Callable
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
-"""Logger for router module."""
 
 
 type EventHandler = Callable[[Event], Awaitable[None]]
@@ -16,8 +15,8 @@ type EventHandler = Callable[[Event], Awaitable[None]]
 class EventRouter:
     """Routes events to registered handlers.
 
-    Decorator-based registration for specific event types or all events.
-    Handlers are called in registration order.
+    Handlers are called in registration order. Use decorators to register handlers
+    for specific event types or all events.
     """
 
     __slots__ = ("_handlers",)
@@ -27,23 +26,13 @@ class EventRouter:
         self._handlers: defaultdict[EventType | None, list[EventHandler]] = defaultdict(list)
 
     def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
-        """Register handler for specific event type.
-
-        Decorator for registering async handlers for specific event types.
-        Multiple handlers can be registered for the same type.
+        """Register handler for a specific event type.
 
         Args:
             event_type: Event type to handle.
 
         Returns:
             Decorator that registers and returns the handler.
-
-        Example:
-            .. code-block:: python
-
-                @router.on(EventType.TIP)
-                async def handle_tip(event: Event) -> None:
-                    print(f"Received tip: {event.tip.tokens} tokens")
         """
 
         def decorator(func: EventHandler) -> EventHandler:
@@ -55,17 +44,8 @@ class EventRouter:
     def on_any(self) -> Callable[[EventHandler], EventHandler]:
         """Register handler for all event types.
 
-        Decorator for registering handlers called for every event.
-
         Returns:
             Decorator that registers and returns the handler.
-
-        Example:
-            .. code-block:: python
-
-                @router.on_any()
-                async def log_all_events(event: Event) -> None:
-                    print(f"Event: {event.type.value}")
         """
 
         def decorator(func: EventHandler) -> EventHandler:
@@ -77,12 +57,8 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch event to matching handlers.
 
-        Handlers are awaited sequentially. Handlers for all events run first,
-        then handlers for the specific event type.
-
-        Important:
-            If a handler raises an exception, it propagates immediately and stops
-            subsequent handlers. Handle exceptions in your handlers if needed.
+        Handlers for all events run first, then handlers for the specific type.
+        If a handler raises an exception, it stops subsequent handlers.
 
         Args:
             event: Event to dispatch.

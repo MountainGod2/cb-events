@@ -1,17 +1,14 @@
 """Exceptions for the Chaturbate Events client."""
 
 _REPR_TEXT_LENGTH = 50
-"""Maximum length of response text to include in exception repr."""
 
 
 class EventsError(Exception):
     """Base exception for API failures.
 
-    Includes HTTP status and response text when available.
-
     Attributes:
-        status_code: HTTP status code, if available.
-        response_text: Raw API response text, if available.
+        status_code: HTTP status code if available.
+        response_text: Raw API response if available.
     """
 
     def __init__(
@@ -25,29 +22,21 @@ class EventsError(Exception):
 
         Args:
             message: Error description.
-            status_code: HTTP status code, if available.
-            response_text: Raw API response, if available.
+            status_code: HTTP status code if available.
+            response_text: Raw API response if available.
         """
         super().__init__(message)
         self.status_code = status_code
         self.response_text = response_text
 
     def __str__(self) -> str:
-        """Return string representation.
-
-        Returns:
-            Error message with status code if available.
-        """
+        """Return error message with status code if available."""
         if self.status_code is not None:
             return f"{super().__str__()} (HTTP {self.status_code})"
         return super().__str__()
 
     def __repr__(self) -> str:
-        """Return detailed representation for debugging.
-
-        Returns:
-            String with class name and all error attributes.
-        """
+        """Return detailed representation for debugging."""
         parts = [f"message={self.args[0]!r}"]
         if self.status_code is not None:
             parts.append(f"status_code={self.status_code}")
@@ -59,12 +48,4 @@ class EventsError(Exception):
 
 
 class AuthError(EventsError):
-    """Authentication or authorization failure.
-
-    Raised for invalid, missing, or expired credentials, or insufficient permissions.
-    Typically triggered by HTTP 401 or 403 responses.
-
-    Examples:
-        >>> raise AuthError("Invalid API token")
-        >>> raise AuthError("Authentication failed", status_code=401)
-    """
+    """Authentication or authorization failure (401/403)."""

@@ -19,18 +19,12 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-"""Logger for models module."""
 
 
 class BaseEventModel(BaseModel):
-    """Base model for event-related models.
+    """Base for all event models.
 
-    Converts API camelCase to snake_case, freezes instances for immutability,
-    and forbids extra fields.
-
-    Note:
-        extra="forbid" will raise ValidationError if the API returns unexpected
-        fields.
+    Converts camelCase to snake_case, immutable, forbids extra fields.
     """
 
     model_config = ConfigDict(
@@ -41,14 +35,11 @@ class BaseEventModel(BaseModel):
     )
 
 
-_ModelT = TypeVar("_ModelT", bound="BaseEventModel")
+_ModelT = TypeVar("_ModelT", bound=BaseEventModel)
 
 
 class EventType(StrEnum):
-    """Event types from the Chaturbate Events API.
-
-    String constants for type-safe event checking and router registration.
-    """
+    """Event types from the Chaturbate Events API."""
 
     BROADCAST_START = "broadcastStart"
     BROADCAST_STOP = "broadcastStop"
@@ -67,30 +58,7 @@ class EventType(StrEnum):
 
 
 class User(BaseEventModel):
-    """User information from events.
-
-    User data including auth status, permissions, display preferences, and state.
-    Booleans default to False, strings to empty.
-
-    Attributes:
-        username: Chaturbate username.
-        color_group: Chat display color group.
-        fc_auto_renew: Fanclub auto-renewal enabled.
-        gender: Gender identity.
-        has_darkmode: Dark mode enabled.
-        has_tokens: Currently has tokens.
-        in_fanclub: Fanclub member.
-        in_private_show: Currently in private show.
-        is_broadcasting: Currently broadcasting.
-        is_follower: Following the broadcaster.
-        is_mod: Room moderator.
-        is_owner: Room owner/broadcaster.
-        is_silenced: Silenced in chat.
-        is_spying: Spying on private show.
-        language: Preferred language code.
-        recent_tips: Recent tips representation.
-        subgender: Subgender identity.
-    """
+    """User information attached to events."""
 
     username: str
     color_group: str = Field(default="", alias="colorGroup")
@@ -112,20 +80,7 @@ class User(BaseEventModel):
 
 
 class Message(BaseEventModel):
-    """Message content and metadata.
-
-    Chat message text with formatting and routing info for public and private
-    messages. Use is_private to distinguish message types.
-
-    Attributes:
-        message: Message text.
-        bg_color: Background color (optional).
-        color: Text color.
-        font: Font style.
-        orig: Original text before processing (optional).
-        from_user: Sender username for private messages (optional).
-        to_user: Recipient username for private messages (optional).
-    """
+    """Chat or private message content."""
 
     message: str
     bg_color: str | None = Field(default=None, alias="bgColor")
@@ -137,24 +92,12 @@ class Message(BaseEventModel):
 
     @property
     def is_private(self) -> bool:
-        """Check if message is private.
-
-        Returns:
-            True if private message (has both from_user and to_user).
-        """
+        """True if this is a private message (has sender and recipient)."""
         return self.from_user is not None and self.to_user is not None
 
 
 class Tip(BaseEventModel):
-    """Tip transaction details.
-
-    Token amount and metadata including anonymous status and optional message.
-
-    Attributes:
-        tokens: Tokens tipped.
-        is_anon: Sent anonymously.
-        message: Optional tip message.
-    """
+    """Tip transaction details."""
 
     tokens: int
     is_anon: bool = Field(default=False, alias="isAnon")
@@ -162,23 +105,16 @@ class Tip(BaseEventModel):
 
 
 class RoomSubject(BaseEventModel):
-    """Room subject from subject change events.
-
-    Updated room subject/title displayed at the top of the chat room.
-
-    Attributes:
-        subject: New room subject text.
-    """
+    """Room subject/title text."""
 
     subject: str
 
 
 class Event(BaseEventModel):
-    """Normalized event payload from the Chaturbate Events API.
+    """Event from the Chaturbate Events API.
 
-    Provides typed helpers for optional payload fragments such as user, tip, and
-    subject data. Accessors return ``None`` when the data is missing or fails
-    validation.
+    Properties like user, tip, message, and room_subject return None if the data
+    is missing or invalid.
     """
 
     type: EventType = Field(alias="method")
@@ -187,26 +123,12 @@ class Event(BaseEventModel):
 
     @cached_property
     def user(self) -> User | None:
-        """Attached user payload if present and valid.
-
-        Returns:
-            Parsed :class:`User` payload or ``None`` when missing or invalid.
-        """
-        return self._build_user()
-
-    def _build_user(self) -> User | None:
+        """User data if present and valid."""
         return self._extract_model(key=FIELD_USER, loader=User.model_validate)
 
     @cached_property
     def tip(self) -> Tip | None:
-        """Tip payload for tip events.
-
-        Returns:
-            Parsed :class:`Tip` payload or ``None`` when missing or invalid.
-        """
-        return self._build_tip()
-
-    def _build_tip(self) -> Tip | None:
+        """Tip data if present and valid (TIP events only)."""
         return self._extract_model(
             key=FIELD_TIP,
             loader=Tip.model_validate,
@@ -215,14 +137,7 @@ class Event(BaseEventModel):
 
     @cached_property
     def message(self) -> Message | None:
-        """Chat or private message payload if available.
-
-        Returns:
-            Parsed :class:`Message` payload or ``None`` when unavailable.
-        """
-        return self._build_message()
-
-    def _build_message(self) -> Message | None:
+        """Message data if present and valid (CHAT_MESSAGE/PRIVATE_MESSAGE only)."""
         return self._extract_model(
             key=FIELD_MESSAGE,
             loader=Message.model_validate,
@@ -231,14 +146,7 @@ class Event(BaseEventModel):
 
     @cached_property
     def room_subject(self) -> RoomSubject | None:
-        """Room subject payload for subject change events.
-
-        Returns:
-            Parsed :class:`RoomSubject` payload or ``None`` when unavailable.
-        """
-        return self._build_room_subject()
-
-    def _build_room_subject(self) -> RoomSubject | None:
+        """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._extract_model(
             key=FIELD_SUBJECT,
             loader=RoomSubject.model_validate,
@@ -248,11 +156,7 @@ class Event(BaseEventModel):
 
     @cached_property
     def broadcaster(self) -> str | None:
-        """Broadcaster username when present in the payload.
-
-        Returns:
-            Broadcaster username or ``None`` when absent or empty.
-        """
+        """Broadcaster username if present."""
         value = self.data.get(FIELD_BROADCASTER)
         return value if isinstance(value, str) and value else None
 
@@ -264,16 +168,10 @@ class Event(BaseEventModel):
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
     ) -> _ModelT | None:
-        """Shared loader for optional payload fragments.
-
-        Args:
-            key: Field name to look up within ``self.data``.
-            loader: Callable that validates the payload into a pydantic model.
-            allowed_types: Optional whitelist of event types that expose the payload.
-            transform: Optional callable to massage the value before validation.
+        """Extract and validate a model from event data.
 
         Returns:
-            Parsed model instance when present and valid, otherwise ``None``.
+            Validated model or None if type doesn't match, data missing, or validation fails.
         """
         if allowed_types and self.type not in allowed_types:
             return None
@@ -283,11 +181,7 @@ class Event(BaseEventModel):
 
         payload = self.data[key]
         if payload is None:
-            logger.warning(
-                "event_id=%s locations=%s",
-                self.id,
-                key,
-            )
+            logger.warning("event_id=%s locations=%s", self.id, key)
             return None
 
         if transform is not None:
