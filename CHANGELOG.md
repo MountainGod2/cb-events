@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v4.9.0 (2025-11-02)
+
+### Bug Fixes
+
+- **init**: Handle PackageNotFoundError when retrieving package version
+  ([`b247e14`](https://github.com/MountainGod2/cb-events/commit/b247e148ca83e1d44bb11a69f5c4af6e5864c8ed))
+
+### Features
+
+- **tests**: Reorganize suites with typed fixtures
+  ([`1ab68fd`](https://github.com/MountainGod2/cb-events/commit/1ab68fd7efc619ef2182655aeffc1b8bd597f35d))
+
+### Refactoring
+
+- **client**: Enhance error logging for validation failures
+  ([`7bb07ae`](https://github.com/MountainGod2/cb-events/commit/7bb07ae62e9fec68559e28f3150ad54adaa334cc))
+
+- **example**: Add exit message to main script
+  ([`a11cd66`](https://github.com/MountainGod2/cb-events/commit/a11cd6646e01704e092cc50c38f9fa126c560af6))
+
+- **models**: Improve error logging for validation failures and optimize caching
+  ([`092dce2`](https://github.com/MountainGod2/cb-events/commit/092dce2105c98ee2f0fe2bc98ebd8ab52ebeaea8))
+
+### Testing
+
+- **models**: Add tests for error handling and logging
+  ([`1207c25`](https://github.com/MountainGod2/cb-events/commit/1207c255e5af5770bdafe7e9684955b54607d3e6))
+
+
 ## v4.8.0 (2025-11-01)
 
 ### Bug Fixes
