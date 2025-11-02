@@ -17,20 +17,14 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiohttp_retry import ExponentialRetry, RetryClient
 from aiolimiter import AsyncLimiter
-from pydantic import ValidationError
 
-from ._utils import (
-    format_validation_error_locations,
-    mask_secret,
-    mask_secret_in_url,
-    trim_for_log,
-)
+from ._parsing import EventBatch, build_event_batch
+from ._utils import mask_secret, mask_secret_in_url, trim_for_log
 from .config import EventClientConfig
 from .constants import (
     AUTH_ERROR_STATUSES,
     BASE_URL,
     CLOUDFLARE_ERROR_CODES,
-    FIELD_EVENTS,
     FIELD_NEXT_URL,
     FIELD_STATUS,
     RATE_LIMIT_MAX_RATE,
@@ -240,53 +234,6 @@ class EventClient:
                 return str(next_url)
         return None
 
-    def _parse_response_data(self, resp_data: dict[str, Any]) -> list[Event]:
-        """Parse response data into Event objects.
-
-        Args:
-            resp_data: Parsed JSON response.
-
-        Returns:
-            List of Event objects. Invalid events are skipped if
-            strict_validation is False.
-
-        Raises:
-            EventsError: If nextUrl field is missing.
-
-        Note:
-            ValidationError: If strict_validation is True and event validation fails.
-        """
-        if FIELD_NEXT_URL not in resp_data:
-            msg = "Invalid API response: missing 'nextUrl' field"
-            raise EventsError(msg, response_text=str(resp_data))
-
-        self._next_url = resp_data[FIELD_NEXT_URL]
-        raw_events = resp_data.get(FIELD_EVENTS, [])
-
-        events: list[Event]
-        if self.config.strict_validation:
-            events = [Event.model_validate(item) for item in raw_events]
-        else:
-            events = []
-            for item in raw_events:
-                try:
-                    events.append(Event.model_validate(item))
-                except ValidationError as e:
-                    event_id = str(item.get("id", "<unknown>"))
-                    logger.warning(
-                        "event_id=%s locations=%s",
-                        event_id,
-                        format_validation_error_locations(e),
-                    )
-
-        if events:
-            logger.debug(
-                "Received %d events",
-                len(events),
-                extra={"event_types": [event.type.value for event in events[:3]]},
-            )
-        return events
-
     async def _make_request(self, url: str) -> tuple[int, str]:
         """Make HTTP request to the API.
 
@@ -351,28 +298,55 @@ class EventClient:
         return False
 
     @staticmethod
-    def _parse_json_response(text: str) -> dict[str, Any]:
-        """Parse JSON response.
+    def _decode_payload(text: str) -> dict[str, Any]:
+        """Parse raw response text into a dictionary.
 
         Args:
-            text: Response text.
+            text: HTTP response body received from the Events API.
 
         Returns:
-            Parsed JSON data.
+            Dictionary representation of the JSON payload.
 
         Raises:
-            EventsError: If response is invalid JSON.
+            EventsError: If the payload cannot be decoded as JSON.
         """
         try:
-            data: dict[str, Any] = json.loads(text)
-        except json.JSONDecodeError as e:
-            msg = f"Invalid JSON response: {e.msg}"
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            msg = f"Invalid JSON response: {exc.msg}"
             logger.exception("Failed to parse JSON response: %s", trim_for_log(text))
-            raise EventsError(
-                msg,
-                response_text=text,
-            ) from e
+            raise EventsError(msg, response_text=text) from exc
+        if not isinstance(data, dict):
+            msg = "Invalid JSON response: expected an object"
+            raise EventsError(msg, response_text=text)
         return data
+
+    def _build_event_batch(self, payload: dict[str, Any], *, raw_text: str) -> EventBatch:
+        """Validate the API payload and log diagnostics for event batches.
+
+        Args:
+            payload: Parsed JSON payload from the Events API.
+            raw_text: Original response body, used when surfacing validation errors.
+
+        Returns:
+            EventBatch containing the next polling URL and validated events.
+        """
+        batch = build_event_batch(
+            payload,
+            strict_validation=self.config.strict_validation,
+            raw_text=raw_text,
+        )
+
+        self._next_url = batch.next_url
+
+        if batch.events:
+            logger.debug(
+                "Received %d events",
+                len(batch.events),
+                extra={"event_types": [event.type.value for event in batch.events[:3]]},
+            )
+
+        return batch
 
     async def poll(self) -> list[Event]:
         """Poll for events from the API.
@@ -396,8 +370,9 @@ class EventClient:
             if timeout_handled:
                 return []
 
-            data = self._parse_json_response(text)
-            return self._parse_response_data(data)
+            payload = self._decode_payload(text)
+            batch = self._build_event_batch(payload, raw_text=text)
+            return batch.events
 
     async def _poll_continuously(self) -> AsyncIterator[Event]:
         """Continuously poll and yield events.
