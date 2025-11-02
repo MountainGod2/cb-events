@@ -101,33 +101,6 @@ except EventsError as e:
 
 **Handlers:** Execute sequentially. If a handler raises an exception, it propagates immediately and stops subsequent handlers.
 
-## Logging
-
-```python
-import logging
-```
-```
-
-## Error Handling
-
-```python
-from cb_events import AuthError, EventsError
-
-try:
-    async with EventClient(username, token) as client:
-        async for event in client:
-            await router.dispatch(event)
-except AuthError:
-    # Authentication failed (401/403)
-    pass
-except EventsError as e:
-    # API/network errors - e.status_code, e.response_text
-    pass
-```
-
-**Retries:** Automatic on 429, 5xx, Cloudflare errors. No retry on auth errors.
-
-**Handlers:** Execute sequentially. If a handler raises an exception, it propagates immediately and stops subsequent handlers.
 
 ## Logging
 
@@ -139,7 +112,11 @@ logging.getLogger('cb_events').setLevel(logging.DEBUG)
 
 ## Requirements
 
-Python ≥3.12 - [Dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml#L41)
+Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml#L13), or run:
+
+```bash
+uv pip compile pyproject.toml -o requirements.txt
+```
 
 ## License
 
