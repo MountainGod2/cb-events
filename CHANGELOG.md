@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v4.9.2 (2025-11-02)
+
+### Bug Fixes
+
+- **docs**: Add new template for Python type documentation
+  ([`1d34bd5`](https://github.com/MountainGod2/cb-events/commit/1d34bd5cf8f0c9dfb86d1f4f162e4135a26b9d02))
+
+### Refactoring
+
+- **docs**: Remove redundant error handling section and update dependencies note
+  ([`9ea989f`](https://github.com/MountainGod2/cb-events/commit/9ea989f0f8c3fd01998a750c2e0191db1905c6bf))
+
+
 ## v4.9.1 (2025-11-02)
 
 ### Bug Fixes
