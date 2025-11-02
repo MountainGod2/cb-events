@@ -6,6 +6,8 @@
 
 """Model validation tests for :mod:`cb_events.models`."""
 
+import logging
+
 import pytest
 
 from cb_events import Event, EventType
@@ -119,3 +121,67 @@ def test_room_subject_field() -> None:
     room_subject = RoomSubject.model_validate(subject_data)
 
     assert room_subject.subject == "Welcome to my room!"
+
+
+def test_event_user_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+    """Invalid user payloads should be skipped with logged details."""
+    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-user",
+        "object": {"user": {"username": None}},
+    })
+
+    assert event.user is None
+    assert event.user is None  # cached value should remain None
+    assert "event_id=evt-user" in caplog.text
+
+
+def test_event_tip_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+    """Tip events with invalid tip data should log and return None."""
+    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-tip",
+        "object": {"tip": {"message": "missing tokens"}},
+    })
+
+    assert event.tip is None
+    assert "event_id=evt-tip" in caplog.text
+
+
+def test_event_message_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+    """Message events with invalid payloads should be ignored."""
+    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    event = Event.model_validate({
+        "method": "chatMessage",
+        "id": "evt-msg",
+        "object": {"message": {}},
+    })
+
+    assert event.message is None
+    assert "event_id=evt-msg" in caplog.text
+
+
+def test_event_room_subject_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+    """Room subject events should handle invalid payloads gracefully."""
+    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    event = Event.model_validate({
+        "method": "roomSubjectChange",
+        "id": "evt-subject",
+        "object": {"subject": None},
+    })
+
+    assert event.room_subject is None
+    assert "event_id=evt-subject" in caplog.text
+
+
+def test_event_broadcaster_property() -> None:
+    """Broadcaster property should return the configured username."""
+    event = Event.model_validate({
+        "method": "broadcastStart",
+        "id": "evt-bcaster",
+        "object": {"broadcaster": "streamer"},
+    })
+
+    assert event.broadcaster == "streamer"
