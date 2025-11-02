@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v4.9.1 (2025-11-02)
+
+### Bug Fixes
+
+- **deps**: Update dependency aiohttp to v3.13.2
+  ([`b88e635`](https://github.com/MountainGod2/cb-events/commit/b88e6352c52d2d344d93dbfe9e9dcdcdd6eae2d2))
+
+
 ## v4.9.0 (2025-11-02)
 
 ### Bug Fixes
