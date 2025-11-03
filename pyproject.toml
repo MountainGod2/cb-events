@@ -108,7 +108,7 @@ patterns = [
 
 [tool.ruff]
 target-version = "py312"
-line-length = 100
+line-length = 80
 indent-width = 4
 
 [tool.ruff.lint]
@@ -187,7 +187,7 @@ load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 max-attributes = 12
 
 [tool.pylint.format]
-max-line-length = 100
+max-line-length = 80
 
 [tool.pytest.ini_options]
 minversion = "8.0"
