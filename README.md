@@ -27,7 +27,7 @@ async def handle_tip(event: Event) -> None:
 
 async def main():
     async with EventClient(username, token) as client:
-        async for event in client:
+        async for event in client.stream():
             await router.dispatch(event)
 
 asyncio.run(main())
@@ -45,7 +45,7 @@ from cb_events import EventClientConfig
 config = EventClientConfig(
     timeout=10,              # Request timeout (seconds)
     use_testbed=False,       # Use testbed endpoint
-    retry_attempts=8,        # Max retry attempts
+    retry_attempts=8,        # Total attempts (initial + retries)
     retry_backoff=1.0,       # Initial backoff (seconds)
     retry_factor=2.0,        # Backoff multiplier
     retry_max_delay=30.0,    # Max retry delay (seconds)
@@ -87,7 +87,7 @@ from cb_events import AuthError, EventsError
 
 try:
     async with EventClient(username, token) as client:
-        async for event in client:
+        async for event in client.stream():
             await router.dispatch(event)
 except AuthError:
     # Authentication failed (401/403)
