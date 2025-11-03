@@ -127,3 +127,20 @@ async def test_first_handler_failure_stops_execution(
     handler_one.assert_called_once_with(simple_tip_event)
     handler_two.assert_not_called()
     handler_three.assert_not_called()
+
+
+async def test_sync_handler_supported(
+    router: EventRouter,
+    simple_tip_event: Event,
+) -> None:
+    """Synchronous handlers should be wrapped and awaited transparently."""
+    calls: list[str] = []
+
+    def sync_handler(event: Event) -> None:
+        calls.append(event.id)
+
+    router.on(EventType.TIP)(sync_handler)
+
+    await router.dispatch(simple_tip_event)
+
+    assert calls == [simple_tip_event.id]
