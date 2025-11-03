@@ -7,6 +7,7 @@
 """Polling behaviour tests for :class:`cb_events.EventClient`."""
 
 import re
+from contextlib import aclosing
 from typing import Any
 
 import pytest
@@ -94,6 +95,24 @@ async def test_async_iteration_yields_events(
 
     assert len(events) == 1
     assert events[0].type is EventType.TIP
+
+
+async def test_stream_method_yields_events(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """``stream`` should expose the same async iterator as ``__aiter__``."""
+    response: dict[str, Any] = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+    mock_response.get(testbed_url_pattern, payload=response)
+
+    async with event_client_factory() as client, aclosing(client.stream()) as stream:
+        event = await anext(stream)
+
+    assert event.type is EventType.TIP
 
 
 async def test_rate_limit_error(
