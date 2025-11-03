@@ -5,7 +5,6 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from functools import wraps
 from inspect import isawaitable
-from typing import TypeVar
 
 from .models import Event, EventType
 
@@ -14,17 +13,16 @@ logger = logging.getLogger(__name__)
 
 type EventCallback = Callable[[Event], Awaitable[None] | None]
 type EventHandler = Callable[[Event], Awaitable[None]]
-_CallbackT = TypeVar("_CallbackT", bound=EventCallback)
 
 
 def _normalize_handler(func: EventCallback) -> EventHandler:
-    """Wrap a callable so that sync and async handlers share a common signature.
+    """Wrap callable so sync and async handlers share a common signature.
 
     Args:
-        func: Handler provided by the user.
+        func: Handler from user.
 
     Returns:
-        An awaitable handler that delegates to ``func``.
+        Async handler.
     """
 
     @wraps(func)
@@ -39,17 +37,20 @@ def _normalize_handler(func: EventCallback) -> EventHandler:
 class EventRouter:
     """Routes events to registered handlers.
 
-    Handlers are called in registration order. Use decorators to register handlers
-    for specific event types or all events.
+    Handlers are called in registration order.
     """
 
     __slots__ = ("_handlers",)
 
     def __init__(self) -> None:
         """Initialize the router."""
-        self._handlers: defaultdict[EventType | None, list[EventHandler]] = defaultdict(list)
+        self._handlers: defaultdict[EventType | None, list[EventHandler]] = (
+            defaultdict(list)
+        )
 
-    def on(self, event_type: EventType) -> Callable[[_CallbackT], _CallbackT]:
+    def on(
+        self, event_type: EventType
+    ) -> Callable[[EventCallback], EventCallback]:
         """Register handler for a specific event type.
 
         Args:
@@ -59,20 +60,20 @@ class EventRouter:
             Decorator that registers and returns the handler.
         """
 
-        def decorator(func: _CallbackT) -> _CallbackT:
+        def decorator(func: EventCallback) -> EventCallback:
             self._handlers[event_type].append(_normalize_handler(func))
             return func
 
         return decorator
 
-    def on_any(self) -> Callable[[_CallbackT], _CallbackT]:
+    def on_any(self) -> Callable[[EventCallback], EventCallback]:
         """Register handler for all event types.
 
         Returns:
             Decorator that registers and returns the handler.
         """
 
-        def decorator(func: _CallbackT) -> _CallbackT:
+        def decorator(func: EventCallback) -> EventCallback:
             self._handlers[None].append(_normalize_handler(func))
             return func
 
@@ -81,8 +82,8 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch event to matching handlers.
 
-        Handlers for all events run first, then handlers for the specific type.
-        If a handler raises an exception, it stops subsequent handlers.
+        Handlers for all events run first, then type-specific handlers.
+        If a handler raises an exception, subsequent handlers don't run.
 
         Args:
             event: Event to dispatch.
