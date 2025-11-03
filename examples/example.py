@@ -1,4 +1,4 @@
-"""An example script that demonstrates handling various events from Chatubate."""
+"""Example script demonstrating event handling from Chaturbate."""
 
 import asyncio
 import contextlib
@@ -69,7 +69,9 @@ async def handle_fanclub_join(event: Event) -> None:
 async def handle_chat_message(event: Event) -> None:
     """Handle chat message events."""
     if event.user and event.message:
-        print(f"{event.user.username} sent chat message: {event.message.message}")
+        print(
+            f"{event.user.username} sent chat message: {event.message.message}"
+        )
 
 
 @router.on(EventType.PRIVATE_MESSAGE)
@@ -87,7 +89,9 @@ async def handle_tip(event: Event) -> None:
     """Handle tip events."""
     if event.user and event.tip:
         anon_text = "anonymously " if event.tip.is_anon else ""
-        clean_message = event.tip.message.removeprefix("| ") if event.tip.message else ""
+        clean_message = (
+            event.tip.message.removeprefix("| ") if event.tip.message else ""
+        )
         message_text = f"with message: {clean_message}" if clean_message else ""
         print(
             f"{event.user.username} sent {event.tip.tokens} tokens "
@@ -107,7 +111,10 @@ async def handle_media_purchase(event: Event) -> None:
     """Handle media purchase events."""
     if event.user and "media" in event.data:
         media = event.data["media"]
-        print(f"{event.user.username} purchased {media['type']} set: {media['name']}")
+        print(
+            f"{event.user.username} purchased {media['type']} "
+            f"set: {media['name']}"
+        )
 
 
 @router.on_any()
