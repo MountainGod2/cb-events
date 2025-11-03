@@ -20,8 +20,8 @@ class EventClientConfig(BaseModel):
         timeout: Request timeout in seconds.
         use_testbed: Use testbed API (https://testbed.cb.dev/) with free tokens.
         strict_validation: Raise ValidationError on invalid events instead of skipping.
-        retry_attempts: Number of retry attempts.
-        retry_backoff: Initial backoff time in seconds.
+        retry_attempts: Total number of request attempts (initial try + retries).
+        retry_backoff: Initial backoff time before the first retry in seconds.
         retry_factor: Exponential backoff multiplier.
         retry_max_delay: Maximum delay between retries in seconds.
     """
