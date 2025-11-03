@@ -224,7 +224,7 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "4.9.2"
+version = "4.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

@@ -2,6 +2,63 @@
 
 <!-- version list -->
 
+## v4.10.0 (2025-11-03)
+
+### Bug Fixes
+
+- **README**: Update event streaming method in examples and improve retry attempts description
+  ([`028d287`](https://github.com/MountainGod2/cb-events/commit/028d2874f51d03be75f35ffeba7cec1802be72a2))
+
+### Chores
+
+- **deps**: Remove aiohttp-retry dependency from project configuration
+  ([`9623026`](https://github.com/MountainGod2/cb-events/commit/962302695ce49d2de9fa046b13e61d7a35cb9ecb))
+
+- **deps**: Update dependency ty to v0.0.1a25
+  ([`1b749b2`](https://github.com/MountainGod2/cb-events/commit/1b749b262e6b8ca05d93bf4e18f7f0da8b86b647))
+
+### Documentation
+
+- **config**: Clarify retry attempts and backoff descriptions in EventClientConfig
+  ([`0a87160`](https://github.com/MountainGod2/cb-events/commit/0a87160a869b0bf0d9d0a1ee8e2a59f71ae9d73b))
+
+### Features
+
+- Add utility functions for masking secrets and formatting validation errors
+  ([`4e7d88e`](https://github.com/MountainGod2/cb-events/commit/4e7d88e4582107f51520df93fdf9aab0795bd387))
+
+- Implement event batch processing utilities with validation
+  ([`de985e1`](https://github.com/MountainGod2/cb-events/commit/de985e1fb163dcf18a6db1467c2e1abe9a415f03))
+
+### Refactoring
+
+- Enhance event handling with improved validation and retry logic
+  ([`56d20fe`](https://github.com/MountainGod2/cb-events/commit/56d20fe55089026bd2589dd1b162905e91a0db1b))
+
+- Improve documentation and streamline comments across modules
+  ([`88fd231`](https://github.com/MountainGod2/cb-events/commit/88fd231b7f061320627eee1544965bc99ca5ca73))
+
+- Remove unused event parsing module
+  ([`50ab429`](https://github.com/MountainGod2/cb-events/commit/50ab429173824f55cc4f87f40f4595763cc18d40))
+
+- Simplify event model parsing with shared extraction method
+  ([`bb0cac7`](https://github.com/MountainGod2/cb-events/commit/bb0cac7077f5dae84b3a25698485d190d66a6625))
+
+- Streamline event parsing and response handling in EventClient
+  ([`e768170`](https://github.com/MountainGod2/cb-events/commit/e768170ed8202093f1be5797c8be9c6be5b3dd5c))
+
+- **router**: Enhance event handler registration with normalization for sync and async support
+  ([`eb4245b`](https://github.com/MountainGod2/cb-events/commit/eb4245b28709b09291342f3fde3bb1c4d19566a6))
+
+### Testing
+
+- **router**: Add support for synchronous handlers in event dispatching
+  ([`241c441`](https://github.com/MountainGod2/cb-events/commit/241c44195c7140a2e04df995b7f44ef0b98050f5))
+
+- **stream**: Add test for stream method yielding events
+  ([`8566d92`](https://github.com/MountainGod2/cb-events/commit/8566d9218c39c40e7d70d5a07fd5f60ed379a499))
+
+
 ## v4.9.2 (2025-11-02)
 
 ### Bug Fixes
