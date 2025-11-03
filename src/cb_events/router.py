@@ -3,13 +3,37 @@
 import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
+from functools import wraps
+from inspect import isawaitable
+from typing import TypeVar
 
 from .models import Event, EventType
 
 logger = logging.getLogger(__name__)
 
 
+type EventCallback = Callable[[Event], Awaitable[None] | None]
 type EventHandler = Callable[[Event], Awaitable[None]]
+_CallbackT = TypeVar("_CallbackT", bound=EventCallback)
+
+
+def _normalize_handler(func: EventCallback) -> EventHandler:
+    """Wrap a callable so that sync and async handlers share a common signature.
+
+    Args:
+        func: Handler provided by the user.
+
+    Returns:
+        An awaitable handler that delegates to ``func``.
+    """
+
+    @wraps(func)
+    async def wrapper(event: Event) -> None:
+        result = func(event)
+        if isawaitable(result):
+            await result
+
+    return wrapper
 
 
 class EventRouter:
@@ -25,7 +49,7 @@ class EventRouter:
         """Initialize the router."""
         self._handlers: defaultdict[EventType | None, list[EventHandler]] = defaultdict(list)
 
-    def on(self, event_type: EventType) -> Callable[[EventHandler], EventHandler]:
+    def on(self, event_type: EventType) -> Callable[[_CallbackT], _CallbackT]:
         """Register handler for a specific event type.
 
         Args:
@@ -35,21 +59,21 @@ class EventRouter:
             Decorator that registers and returns the handler.
         """
 
-        def decorator(func: EventHandler) -> EventHandler:
-            self._handlers[event_type].append(func)
+        def decorator(func: _CallbackT) -> _CallbackT:
+            self._handlers[event_type].append(_normalize_handler(func))
             return func
 
         return decorator
 
-    def on_any(self) -> Callable[[EventHandler], EventHandler]:
+    def on_any(self) -> Callable[[_CallbackT], _CallbackT]:
         """Register handler for all event types.
 
         Returns:
             Decorator that registers and returns the handler.
         """
 
-        def decorator(func: EventHandler) -> EventHandler:
-            self._handlers[None].append(func)
+        def decorator(func: _CallbackT) -> _CallbackT:
+            self._handlers[None].append(_normalize_handler(func))
             return func
 
         return decorator
