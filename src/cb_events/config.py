@@ -18,10 +18,11 @@ class EventClientConfig(BaseModel):
 
     Attributes:
         timeout: Request timeout in seconds.
-        use_testbed: Use testbed API (https://testbed.cb.dev/) with free tokens.
-        strict_validation: Raise ValidationError on invalid events instead of skipping.
-        retry_attempts: Total number of request attempts (initial try + retries).
-        retry_backoff: Initial backoff time before the first retry in seconds.
+        use_testbed: Use testbed API with free tokens.
+        strict_validation: Raise ValidationError on invalid events
+            instead of skipping.
+        retry_attempts: Total number of request attempts (initial + retries).
+        retry_backoff: Initial backoff before first retry in seconds.
         retry_factor: Exponential backoff multiplier.
         retry_max_delay: Maximum delay between retries in seconds.
     """
@@ -48,8 +49,8 @@ class EventClientConfig(BaseModel):
         """
         if self.retry_max_delay < self.retry_backoff:
             msg = (
-                f"Retry max delay ({self.retry_max_delay}s) must be >= "
-                f"retry backoff ({self.retry_backoff}s)"
+                f"retry_max_delay ({self.retry_max_delay}s) must be >= "
+                f"retry_backoff ({self.retry_backoff}s)"
             )
             raise ValueError(msg)
         return self
