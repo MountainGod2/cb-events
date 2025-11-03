@@ -27,15 +27,8 @@ from importlib.metadata import PackageNotFoundError, version
 from .client import EventClient
 from .config import EventClientConfig
 from .exceptions import AuthError, EventsError
-from .models import (
-    Event,
-    EventType,
-    Message,
-    RoomSubject,
-    Tip,
-    User,
-)
-from .router import EventHandler, EventRouter
+from .models import Event, EventType, Message, RoomSubject, Tip, User
+from .router import EventCallback, EventHandler, EventRouter
 
 try:
     __version__ = version("cb-events")
@@ -45,6 +38,7 @@ except PackageNotFoundError:
 __all__: list[str] = [
     "AuthError",
     "Event",
+    "EventCallback",
     "EventClient",
     "EventClientConfig",
     "EventHandler",
