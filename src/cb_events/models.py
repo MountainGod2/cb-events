@@ -11,14 +11,27 @@ from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_snake
 from pydantic.config import ConfigDict
 
-from ._utils import format_validation_error_locations
-from .constants import FIELD_BROADCASTER, FIELD_MESSAGE, FIELD_SUBJECT, FIELD_TIP, FIELD_USER
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
 logger = logging.getLogger(__name__)
+
+
+def _format_validation_errors(error: ValidationError) -> str:
+    """Format validation error locations as a comma-separated string.
+
+    Args:
+        error: Validation error from Pydantic.
+
+    Returns:
+        Comma-separated field paths.
+    """
+    locations = {
+        ".".join(str(part) for part in err.get("loc", ())) or "<root>"
+        for err in error.errors()
+    }
+    return ", ".join(sorted(locations))
 
 
 class BaseEventModel(BaseModel):
@@ -124,22 +137,25 @@ class Event(BaseEventModel):
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
-        return self._extract_model(key=FIELD_USER, loader=User.model_validate)
+        return self._extract_model(key="user", loader=User.model_validate)
 
     @cached_property
     def tip(self) -> Tip | None:
         """Tip data if present and valid (TIP events only)."""
         return self._extract_model(
-            key=FIELD_TIP,
+            key="tip",
             loader=Tip.model_validate,
             allowed_types=(EventType.TIP,),
         )
 
     @cached_property
     def message(self) -> Message | None:
-        """Message data if present and valid (CHAT_MESSAGE/PRIVATE_MESSAGE only)."""
+        """Message data if present and valid.
+
+        Only for CHAT_MESSAGE/PRIVATE_MESSAGE events.
+        """
         return self._extract_model(
-            key=FIELD_MESSAGE,
+            key="message",
             loader=Message.model_validate,
             allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
         )
@@ -148,16 +164,16 @@ class Event(BaseEventModel):
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._extract_model(
-            key=FIELD_SUBJECT,
+            key="subject",
             loader=RoomSubject.model_validate,
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-            transform=lambda value: {FIELD_SUBJECT: value},
+            transform=lambda value: {"subject": value},
         )
 
     @cached_property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
-        value = self.data.get(FIELD_BROADCASTER)
+        value = self.data.get("broadcaster")
         return value if isinstance(value, str) and value else None
 
     def _extract_model(
@@ -171,7 +187,8 @@ class Event(BaseEventModel):
         """Extract and validate a model from event data.
 
         Returns:
-            Validated model or None if type doesn't match, data missing, or validation fails.
+            Validated model or None if type doesn't match, data missing,
+            or validation fails.
         """
         if allowed_types and self.type not in allowed_types:
             return None
@@ -193,6 +210,6 @@ class Event(BaseEventModel):
             logger.warning(
                 "event_id=%s locations=%s",
                 self.id,
-                format_validation_error_locations(exc),
+                _format_validation_errors(exc),
             )
             return None
