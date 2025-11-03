@@ -29,7 +29,9 @@ def test_token_masking_in_repr() -> None:
         ("user", " token ", "Token cannot be empty or contain"),
     ],
 )
-def test_reject_invalid_credentials(username: str, token: str, message: str) -> None:
+def test_reject_invalid_credentials(
+    username: str, token: str, message: str
+) -> None:
     """Invalid credentials should raise an ``AuthError`` with guidance."""
     with pytest.raises(AuthError, match=message):
         EventClient(username, token)

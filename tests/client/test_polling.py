@@ -109,7 +109,10 @@ async def test_stream_method_yields_events(
     }
     mock_response.get(testbed_url_pattern, payload=response)
 
-    async with event_client_factory() as client, aclosing(client.stream()) as stream:
+    async with (
+        event_client_factory() as client,
+        aclosing(client.stream()) as stream,
+    ):
         event = await anext(stream)
 
     assert event.type is EventType.TIP
@@ -121,8 +124,12 @@ async def test_rate_limit_error(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """HTTP 429 responses should surface as :class:`EventsError`."""
-    mock_response.get(testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded")
-    config = EventClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
+    mock_response.get(
+        testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded"
+    )
+    config = EventClientConfig(
+        use_testbed=True, retry_attempts=1, retry_backoff=0.0
+    )
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match="HTTP 429: Rate limit exceeded"):
@@ -148,7 +155,9 @@ async def test_network_error_wrapped(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Transport errors are wrapped inside :class:`EventsError`."""
-    mock_response.get(testbed_url_pattern, exception=ClientError("network down"))
+    mock_response.get(
+        testbed_url_pattern, exception=ClientError("network down")
+    )
     config = EventClientConfig(use_testbed=True, retry_attempts=0)
 
     async with event_client_factory(config=config) as client:

@@ -14,7 +14,14 @@ from typing import Any
 import pytest
 from aioresponses import aioresponses
 
-from cb_events import AuthError, Event, EventClient, EventRouter, EventType, __version__
+from cb_events import (
+    AuthError,
+    Event,
+    EventClient,
+    EventRouter,
+    EventType,
+    __version__,
+)
 from tests.conftest import EventClientFactory
 
 pytestmark = [pytest.mark.e2e, pytest.mark.asyncio]

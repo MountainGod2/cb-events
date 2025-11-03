@@ -10,7 +10,13 @@ import pytest
 import pytest_asyncio
 from aioresponses import aioresponses
 
-from cb_events import Event, EventClient, EventClientConfig, EventRouter, EventType
+from cb_events import (
+    Event,
+    EventClient,
+    EventClientConfig,
+    EventRouter,
+    EventType,
+)
 
 
 class EventClientFactory(Protocol):
@@ -124,7 +130,9 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
             config_kwargs = {"use_testbed": use_testbed, **config_overrides}
             config = EventClientConfig(**config_kwargs)
 
-        async with EventClient(client_username, client_token, config=config) as client:
+        async with EventClient(
+            client_username, client_token, config=config
+        ) as client:
             yield client
 
     return _factory

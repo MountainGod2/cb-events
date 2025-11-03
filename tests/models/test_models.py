@@ -150,7 +150,9 @@ def test_event_tip_validation_error(caplog: pytest.LogCaptureFixture) -> None:
     assert "event_id=evt-tip" in caplog.text
 
 
-def test_event_message_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+def test_event_message_validation_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Message events with invalid payloads should be ignored."""
     caplog.set_level(logging.WARNING, logger="cb_events.models")
     event = Event.model_validate({
@@ -163,7 +165,9 @@ def test_event_message_validation_error(caplog: pytest.LogCaptureFixture) -> Non
     assert "event_id=evt-msg" in caplog.text
 
 
-def test_event_room_subject_validation_error(caplog: pytest.LogCaptureFixture) -> None:
+def test_event_room_subject_validation_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Room subject events should handle invalid payloads gracefully."""
     caplog.set_level(logging.WARNING, logger="cb_events.models")
     event = Event.model_validate({

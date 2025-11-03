@@ -34,7 +34,7 @@ async def test_dispatch_to_any_handler(
     mock_handler: AsyncMock,
     sample_event: Event,
 ) -> None:
-    """Handlers registered via ``on_any`` should receive events irrespective of type."""
+    """Handlers via ``on_any`` receive events regardless of type."""
     router.on_any()(mock_handler)
 
     await router.dispatch(sample_event)
