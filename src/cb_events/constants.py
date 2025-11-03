@@ -25,6 +25,15 @@ AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 # Cloudflare error codes: 521 (down), 522 (timeout), 523 (unreachable), 524 (timeout occurred)
 CLOUDFLARE_ERROR_CODES = {521, 522, 523, 524}
 
+RETRY_STATUS_CODES = {
+    HTTPStatus.INTERNAL_SERVER_ERROR.value,
+    HTTPStatus.BAD_GATEWAY.value,
+    HTTPStatus.SERVICE_UNAVAILABLE.value,
+    HTTPStatus.GATEWAY_TIMEOUT.value,
+    HTTPStatus.TOO_MANY_REQUESTS.value,
+    *CLOUDFLARE_ERROR_CODES,
+}
+
 TIMEOUT_ERROR_INDICATOR = "waited too long"
 
 # API response field names
