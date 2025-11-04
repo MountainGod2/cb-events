@@ -16,53 +16,92 @@ from pydantic import BaseModel, Field, ValidationError
 from pydantic.config import ConfigDict
 
 from .config import EventClientConfig
-from .constants import (
-    AUTH_ERROR_STATUSES,
-    BASE_URL,
-    RATE_LIMIT_MAX_RATE,
-    RATE_LIMIT_TIME_PERIOD,
-    RETRY_STATUS_CODES,
-    SESSION_TIMEOUT_BUFFER,
-    TESTBED_URL,
-    URL_TEMPLATE,
-)
 from .exceptions import AuthError, EventsError
-from .models import Event, _format_validation_errors
+from .models import Event
+
+# API endpoints
+BASE_URL = "https://eventsapi.chaturbate.com/events"
+TESTBED_URL = "https://events.testbed.cb.dev/events"
+URL_TEMPLATE = "{base_url}/{username}/{token}/?timeout={timeout}"
+
+# Client defaults
+DEFAULT_TIMEOUT = 10
+DEFAULT_RETRY_ATTEMPTS = 8
+DEFAULT_RETRY_BACKOFF = 1.0
+DEFAULT_RETRY_FACTOR = 2.0
+DEFAULT_RETRY_MAX_DELAY = 30.0
+
+# Rate limiting
+RATE_LIMIT_MAX_RATE = 2000
+RATE_LIMIT_TIME_PERIOD = 60
+
+# HTTP handling
+SESSION_TIMEOUT_BUFFER = 5
+TOKEN_MASK_VISIBLE = 4
+RESPONSE_TRUNCATE_LENGTH = 200
+AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
+RETRY_STATUS_CODES = {
+    HTTPStatus.INTERNAL_SERVER_ERROR.value,
+    HTTPStatus.BAD_GATEWAY.value,
+    HTTPStatus.SERVICE_UNAVAILABLE.value,
+    HTTPStatus.GATEWAY_TIMEOUT.value,
+    HTTPStatus.TOO_MANY_REQUESTS.value,
+    521,  # Cloudflare: origin down
+    522,  # Cloudflare: connection timeout
+    523,  # Cloudflare: origin unreachable
+    524,  # Cloudflare: timeout occurred
+}
 
 logger = logging.getLogger(__name__)
 
 
-def _mask_token(token: str, visible: int = 4) -> str:
-    """Mask a token while keeping the last few characters visible.
+def _format_validation_errors(error: ValidationError) -> str:
+    """Format validation error locations as comma-separated string.
+
+    Args:
+        error: Validation error from Pydantic.
+
+    Returns:
+        Comma-separated field paths.
+    """
+    locations = {
+        ".".join(str(part) for part in err.get("loc", ())) or "<root>"
+        for err in error.errors()
+    }
+    return ", ".join(sorted(locations))
+
+
+def _mask_token(token: str) -> str:
+    """Mask a token keeping only the last few characters visible.
 
     Args:
         token: Token to mask.
-        visible: Number of trailing characters to show.
 
     Returns:
         Masked token.
     """
-    if visible <= 0 or len(token) <= visible:
+    if TOKEN_MASK_VISIBLE <= 0 or len(token) <= TOKEN_MASK_VISIBLE:
         return "*" * len(token)
-    return f"{'*' * (len(token) - visible)}{token[-visible:]}"
+    masked = "*" * (len(token) - TOKEN_MASK_VISIBLE)
+    return f"{masked}{token[-TOKEN_MASK_VISIBLE:]}"
 
 
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
 
     Args:
-        url: URL that may contain the token.
+        url: URL containing the token.
         token: Token to mask.
 
     Returns:
-        URL with token masked.
+        URL with masked token.
     """
     masked = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-class _EventBatch(BaseModel):
-    """API response payload."""
+class _ResponseBatch(BaseModel):
+    """API response wrapper."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
@@ -70,25 +109,21 @@ class _EventBatch(BaseModel):
     events: list[dict[str, Any]] = Field(default_factory=list)
 
 
-def _validate_events(
-    raw_events: list[dict[str, Any]],
-    *,
-    strict: bool,
-) -> list[Event]:
+def _parse_events(raw: list[dict[str, Any]], *, strict: bool) -> list[Event]:
     """Convert raw event dicts to Event models.
 
     Args:
-        raw_events: Raw event payloads.
+        raw: Raw event payloads from API.
         strict: Whether to raise on validation failures.
 
     Returns:
-        List of validated Event instances.
+        Validated Event instances.
 
     Raises:
         ValidationError: If strict=True and a payload is invalid.
     """
     events: list[Event] = []
-    for item in raw_events:
+    for item in raw:
         try:
             events.append(Event.model_validate(item))
         except ValidationError as exc:
@@ -96,7 +131,7 @@ def _validate_events(
                 raise
             event_id = str(item.get("id", "<unknown>"))
             logger.warning(
-                "event_id=%s locations=%s",
+                "Skipping invalid event %s: %s",
                 event_id,
                 _format_validation_errors(exc),
             )
@@ -104,12 +139,12 @@ def _validate_events(
 
 
 class EventClient:
-    """HTTP client for polling the Chaturbate Events API.
+    """Async client for polling the Chaturbate Events API.
 
     Streams events with automatic retries, rate limiting, and credential
-    handling.
+    handling. Use as an async context manager or iterator.
 
-    Share a rate limiter across clients to pool rate limits:
+    Share rate limiters across clients to pool request limits:
         >>> limiter = AsyncLimiter(max_rate=2000, time_period=60)
         >>> async with (
         ...     EventClient("user1", "token1", rate_limiter=limiter) as c1,
@@ -131,21 +166,18 @@ class EventClient:
         Args:
             username: Chaturbate username.
             token: Events API token.
-            config: Client settings (defaults to EventClientConfig()).
-            rate_limiter: Rate limiter to share across clients
-                (defaults to 2000 req/60s).
+            config: Client settings (uses defaults if not provided).
+            rate_limiter: Rate limiter shared across clients
+                (defaults to 2000 req/60s per instance).
 
         Raises:
             AuthError: If username or token is empty or has whitespace.
         """
         if not username or username != username.strip():
-            msg = (
-                "Username cannot be empty or contain "
-                "leading/trailing whitespace"
-            )
+            msg = "Username must not be empty or contain whitespace"
             raise AuthError(msg)
         if not token or token != token.strip():
-            msg = "Token cannot be empty or contain leading/trailing whitespace"
+            msg = "Token must not be empty or contain whitespace"
             raise AuthError(msg)
 
         self.username = username
@@ -176,7 +208,7 @@ class EventClient:
             Client instance with active session.
 
         Raises:
-            EventsError: If session initialization fails.
+            EventsError: If session creation fails.
         """
         try:
             if self.session is None:
@@ -187,7 +219,7 @@ class EventClient:
                 )
         except (ClientError, OSError, TimeoutError) as e:
             await self.close()
-            msg = "Failed to initialize HTTP session"
+            msg = "Failed to create HTTP session"
             raise EventsError(msg) from e
         return self
 
@@ -302,21 +334,21 @@ class EventClient:
             return status, text
 
     def _handle_response_status(self, status: int, text: str) -> bool:
-        """Handle response status codes.
+        """Process HTTP response status codes.
 
         Args:
             status: HTTP status code.
-            text: Response text.
+            text: Response body.
 
         Returns:
-            True if timeout was handled and parsing should be skipped.
+            True if timeout response was handled (skip parsing).
 
         Raises:
-            AuthError: For auth failures.
-            EventsError: For other HTTP errors.
+            AuthError: For 401/403 responses.
+            EventsError: For other non-200 responses.
         """
         if status in AUTH_ERROR_STATUSES:
-            logger.warning("Authentication failed for user %s", self.username)
+            logger.warning("Auth failed for user %s", self.username)
             msg = f"Authentication failed for {self.username}"
             raise AuthError(msg)
 
@@ -324,16 +356,18 @@ class EventClient:
             return True
 
         if status != HTTPStatus.OK:
-            trimmed = text[:200] if len(text) > HTTPStatus.OK else text
-            logger.error("HTTP error %d: %s", status, trimmed)
-            msg = f"HTTP {status}: {trimmed}"
+            snippet = text[:RESPONSE_TRUNCATE_LENGTH]
+            if len(text) > RESPONSE_TRUNCATE_LENGTH:
+                snippet += "..."
+            logger.error("HTTP %d: %s", status, snippet)
+            msg = f"HTTP {status}: {snippet}"
             raise EventsError(msg, status_code=status, response_text=text)
 
         return False
 
     @staticmethod
     def _decode_json(text: str) -> dict[str, Any]:
-        """Parse response text as JSON.
+        """Parse response as JSON.
 
         Args:
             text: HTTP response body.
@@ -347,14 +381,14 @@ class EventClient:
         try:
             data = json.loads(text)
         except json.JSONDecodeError as exc:
-            logger.exception(
-                "Failed to parse JSON: %s",
-                text[:200] if len(text) > HTTPStatus.OK else text,
-            )
+            snippet = text[:RESPONSE_TRUNCATE_LENGTH]
+            if len(text) > RESPONSE_TRUNCATE_LENGTH:
+                snippet += "..."
+            logger.exception("Failed to parse JSON: %s", snippet)
             msg = f"Invalid JSON response: {exc.msg}"
             raise EventsError(msg, response_text=text) from exc
         if not isinstance(data, dict):
-            msg = "Invalid JSON response: expected an object"
+            msg = "Invalid JSON response: expected object"
             raise EventsError(msg, response_text=text)
         return data
 
@@ -374,13 +408,14 @@ class EventClient:
             EventsError: If payload validation fails.
         """
         try:
-            batch = _EventBatch.model_validate(payload)
+            batch = _ResponseBatch.model_validate(payload)
         except ValidationError as exc:
             msg = "Invalid API response"
             raise EventsError(msg, response_text=raw_text) from exc
 
-        events = _validate_events(
-            batch.events, strict=self.config.strict_validation
+        events = _parse_events(
+            batch.events,
+            strict=self.config.strict_validation,
         )
         self._next_url = batch.next_url
 
@@ -390,17 +425,17 @@ class EventClient:
         return batch.next_url, events
 
     async def poll(self) -> list[Event]:
-        """Poll for events from the API.
+        """Poll the API for new events.
 
-        Thread-safe for concurrent calls.
+        Safe for concurrent calls (uses internal lock).
 
         Returns:
-            List of Event objects (empty if no events or timeout).
+            Events received (empty list if timeout or no events).
         """
         async with self._polling_lock:
             url = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug("Polling: %s", _mask_url(url, self.token))
+                logger.debug("Polling %s", _mask_url(url, self.token))
 
             status, text = await self._make_request(url)
 
@@ -411,32 +446,27 @@ class EventClient:
             _, events = self._parse_batch(payload, raw_text=text)
             return events
 
-    async def _poll_continuously(self) -> AsyncGenerator[Event]:
-        """Continuously poll and yield events.
+    def __aiter__(self) -> AsyncIterator[Event]:
+        """Stream events continuously as an async iterator.
+
+        Yields events as they arrive from the API. Safe to iterate
+        multiple times (each iteration polls independently).
+
+        Returns:
+            Async iterator yielding Event objects.
+        """
+        return self._stream()
+
+    async def _stream(self) -> AsyncGenerator[Event]:
+        """Internal generator for continuous event streaming.
 
         Yields:
-            Event objects as received.
+            Event objects from the API.
         """
         while True:
             events = await self.poll()
             for event in events:
                 yield event
-
-    def stream(self) -> AsyncGenerator[Event]:
-        """Return async iterator that streams events.
-
-        Returns:
-            Async generator yielding events.
-        """
-        return self._poll_continuously()
-
-    def __aiter__(self) -> AsyncIterator[Event]:
-        """Enable async iteration for continuous streaming.
-
-        Returns:
-            Async iterator yielding events.
-        """
-        return self.stream()
 
     async def close(self) -> None:
         """Close session and reset state (idempotent)."""
