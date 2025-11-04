@@ -58,6 +58,7 @@ dev = [
     "bandit==1.8.6",
     "bandit-sarif-formatter==1.1.1",
     "ty==0.0.1a25",
+    "pyrefly==0.40.0",
 ]
 
 docs = [
@@ -223,3 +224,9 @@ directory = "htmlcov"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
+
+[tool.pyrefly]
+python-version = "3.12.0"
+project-includes = [
+    "src/"
+]
