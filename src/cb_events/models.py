@@ -1,4 +1,4 @@
-"""Data models for the Chaturbate Events API."""
+"""Data models for Chaturbate Events API."""
 
 from __future__ import annotations
 
@@ -18,27 +18,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _format_validation_errors(error: ValidationError) -> str:
-    """Format validation error locations as a comma-separated string.
-
-    Args:
-        error: Validation error from Pydantic.
-
-    Returns:
-        Comma-separated field paths.
-    """
-    locations = {
-        ".".join(str(part) for part in err.get("loc", ())) or "<root>"
-        for err in error.errors()
-    }
-    return ", ".join(sorted(locations))
-
-
 class BaseEventModel(BaseModel):
-    """Base for all event models.
-
-    Converts camelCase to snake_case, immutable, forbids extra fields.
-    """
+    """Base for all event models with snake_case conversion."""
 
     model_config = ConfigDict(
         alias_generator=to_snake,
@@ -71,12 +52,12 @@ class EventType(StrEnum):
 
 
 class User(BaseEventModel):
-    """User information attached to events."""
+    """User information from events."""
 
     username: str
-    color_group: str = Field(default="", alias="colorGroup")
+    color_group: str | None = Field(default=None, alias="colorGroup")
     fc_auto_renew: bool = Field(default=False, alias="fcAutoRenew")
-    gender: str = Field(default="")
+    gender: str | None = Field(default=None)
     has_darkmode: bool = Field(default=False, alias="hasDarkmode")
     has_tokens: bool = Field(default=False, alias="hasTokens")
     in_fanclub: bool = Field(default=False, alias="inFanclub")
@@ -87,18 +68,18 @@ class User(BaseEventModel):
     is_owner: bool = Field(default=False, alias="isOwner")
     is_silenced: bool = Field(default=False, alias="isSilenced")
     is_spying: bool = Field(default=False, alias="isSpying")
-    language: str = Field(default="")
-    recent_tips: str = Field(default="", alias="recentTips")
-    subgender: str = Field(default="")
+    language: str | None = Field(default=None)
+    recent_tips: str | None = Field(default=None, alias="recentTips")
+    subgender: str | None = Field(default=None)
 
 
 class Message(BaseEventModel):
-    """Chat or private message content."""
+    """Chat or private message."""
 
     message: str
     bg_color: str | None = Field(default=None, alias="bgColor")
-    color: str = Field(default="")
-    font: str = Field(default="default")
+    color: str | None = Field(default=None)
+    font: str | None = Field(default=None)
     orig: str | None = Field(default=None)
     from_user: str | None = Field(default=None, alias="fromUser")
     to_user: str | None = Field(default=None, alias="toUser")
@@ -110,15 +91,15 @@ class Message(BaseEventModel):
 
 
 class Tip(BaseEventModel):
-    """Tip transaction details."""
+    """Tip transaction."""
 
     tokens: int
     is_anon: bool = Field(default=False, alias="isAnon")
-    message: str = Field(default="")
+    message: str | None = Field(default=None)
 
 
 class RoomSubject(BaseEventModel):
-    """Room subject/title text."""
+    """Room subject/title."""
 
     subject: str
 
@@ -126,8 +107,8 @@ class RoomSubject(BaseEventModel):
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
-    Properties like user, tip, message, and room_subject return None if the data
-    is missing or invalid.
+    Use properties (user, tip, message, room_subject) to access nested data.
+    Properties return None if data is missing or invalid for the event type.
     """
 
     type: EventType = Field(alias="method")
@@ -184,21 +165,22 @@ class Event(BaseEventModel):
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
     ) -> _ModelT | None:
-        """Extract and validate a model from event data.
+        """Extract and validate a nested model from event data.
+
+        Args:
+            key: Field name in event data.
+            loader: Model validator function.
+            allowed_types: Event types allowed to have this field.
+            transform: Transform raw data before validation.
 
         Returns:
-            Validated model or None if type doesn't match, data missing,
-            or validation fails.
+            Validated model or None if unavailable/invalid.
         """
         if allowed_types and self.type not in allowed_types:
             return None
 
-        if key not in self.data:
-            return None
-
-        payload = self.data[key]
+        payload = self.data.get(key)
         if payload is None:
-            logger.warning("event_id=%s locations=%s", self.id, key)
             return None
 
         if transform is not None:
@@ -207,9 +189,14 @@ class Event(BaseEventModel):
         try:
             return loader(payload)
         except ValidationError as exc:
+            locations = {
+                ".".join(str(p) for p in e.get("loc", ())) or key
+                for e in exc.errors()
+            }
             logger.warning(
-                "event_id=%s locations=%s",
+                "Invalid %s in event %s: %s",
+                key,
                 self.id,
-                _format_validation_errors(exc),
+                ", ".join(sorted(locations)),
             )
             return None
