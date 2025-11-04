@@ -2,6 +2,82 @@
 
 <!-- version list -->
 
+## v4.10.1 (2025-11-04)
+
+### Bug Fixes
+
+- **router**: Improve handler registration and error logging in event dispatching
+  ([`e42fa37`](https://github.com/MountainGod2/cb-events/commit/e42fa3778e4729695370197f5553c54f5ca13448))
+
+- **router**: Log exceptions with handler names during event dispatching
+  ([`9e37659`](https://github.com/MountainGod2/cb-events/commit/9e37659a0754abee05bc749dec774d8335526852))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`b1e873c`](https://github.com/MountainGod2/cb-events/commit/b1e873cfa82b66c1efe05fd9b832b51717e98459))
+
+- **deps**: Update actions/download-artifact digest to f093f21
+  ([`e2d249d`](https://github.com/MountainGod2/cb-events/commit/e2d249dc8afc98883d74e6e2d18e123f5d4dcdb8))
+
+### Documentation
+
+- **README**: Update event handling and configuration details
+  ([`b594faf`](https://github.com/MountainGod2/cb-events/commit/b594faf4429e4892cff499d2c8746467a5b2ea1b))
+
+### Refactoring
+
+- **client**: Improve token masking
+  ([`0cc0d9b`](https://github.com/MountainGod2/cb-events/commit/0cc0d9b107eb0c21e35d106a836ad320181a40e5))
+
+- **client**: Remove unused client default configurations
+  ([`91aaeb5`](https://github.com/MountainGod2/cb-events/commit/91aaeb565ec512cd0ce8a9c696ca497ffbb00f55))
+
+- **client**: Reorganize constants and improve function documentation
+  ([`488a21e`](https://github.com/MountainGod2/cb-events/commit/488a21ecefa58d1e833f08e5d4ae8030e4685636))
+
+- **config**: Improve attribute descriptions
+  ([`26a2188`](https://github.com/MountainGod2/cb-events/commit/26a2188793e8fcf38c58c02a4e60c9682c79b78c))
+
+- **config**: Move default configuration values into the config file
+  ([`33d4123`](https://github.com/MountainGod2/cb-events/commit/33d4123af2decf533242c8d55080dd93e29a3d56))
+
+- **constants**: Remove obsolete constants file
+  ([`d136d42`](https://github.com/MountainGod2/cb-events/commit/d136d42aeacbf65bcd81c8b17dabf53abdb057de))
+
+- **constants**: Remove unused variables
+  ([`b3434a6`](https://github.com/MountainGod2/cb-events/commit/b3434a6b89192574b2d194015465ac1c9549ce15))
+
+- **example**: Format print statements for better readability
+  ([`e7ace63`](https://github.com/MountainGod2/cb-events/commit/e7ace637c32449d358688e894de2426bd439d25f))
+
+- **exceptions**: Remove unused repr method
+  ([`25aab94`](https://github.com/MountainGod2/cb-events/commit/25aab940249b3fd41bef5e26afb98e4273a858e4))
+
+- **init**: Add EventCallback to __all__
+  ([`978e262`](https://github.com/MountainGod2/cb-events/commit/978e262325d53234cd2450f4e663ba12e7859788))
+
+- **models**: Improve docstrings and update field types
+  ([`068cca8`](https://github.com/MountainGod2/cb-events/commit/068cca84854c5064b4969a188bce6139c7ecb084))
+
+- **models**: Improve key handling in Event class
+  ([`78ee61a`](https://github.com/MountainGod2/cb-events/commit/78ee61a4d130cf7e4ba760af55b1c02e48cdad65))
+
+- **router**: Simplify type annotations and improve docstrings
+  ([`e8c0d19`](https://github.com/MountainGod2/cb-events/commit/e8c0d1946c44c3bca8288f8a5f6f4babf69a05bd))
+
+- **style**: Reduce line length to 80
+  ([`e1de966`](https://github.com/MountainGod2/cb-events/commit/e1de9668f25ecd72de35a3d006f7a79c351a3309))
+
+- **utils**: Remove unused utility functions
+  ([`73719c4`](https://github.com/MountainGod2/cb-events/commit/73719c45fb580899ad4718d8e2e7812ee692fa1c))
+
+### Testing
+
+- Improve error messages and logging
+  ([`1ac15dc`](https://github.com/MountainGod2/cb-events/commit/1ac15dc27b89246b6a8be0f2931d426a15f7f618))
+
+
 ## v4.10.0 (2025-11-03)
 
 ### Bug Fixes
