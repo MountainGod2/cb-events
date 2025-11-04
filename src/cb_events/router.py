@@ -5,10 +5,11 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from functools import wraps
 from inspect import isawaitable
+from logging import Logger
 
 from .models import Event, EventType
 
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)
 
 
 type EventCallback = Callable[[Event], Awaitable[None] | None]
@@ -27,7 +28,7 @@ def _make_async(func: EventCallback) -> EventHandler:
 
     @wraps(func)
     async def wrapper(event: Event) -> None:
-        result = func(event)
+        result: Awaitable[None] | None = func(event)
         if isawaitable(result):
             await result
 
@@ -90,7 +91,7 @@ class EventRouter:
         Args:
             event: Event to dispatch.
         """
-        all_handlers = [
+        all_handlers: list[EventHandler] = [
             *self._handlers[None],
             *self._handlers[event.type],
         ]
