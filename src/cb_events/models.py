@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from enum import StrEnum
 from functools import cached_property
+from logging import Logger
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)
 
 
 class BaseEventModel(BaseModel):
@@ -154,7 +155,7 @@ class Event(BaseEventModel):
     @cached_property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
-        value = self.data.get("broadcaster")
+        value: Any | None = self.data.get("broadcaster")
         return value if isinstance(value, str) and value else None
 
     def _extract_model(
@@ -189,7 +190,7 @@ class Event(BaseEventModel):
         try:
             return loader(payload)
         except ValidationError as exc:
-            locations = {
+            locations: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key
                 for e in exc.errors()
             }
