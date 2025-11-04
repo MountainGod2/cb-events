@@ -92,11 +92,12 @@ async def test_any_handlers_called_before_specific(
     any_handler.assert_any_call(follow_event)
 
 
-async def test_handler_exception_propagates(
+async def test_handler_exception_logged(
     router: EventRouter,
     simple_tip_event: Event,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Handler exceptions should surface."""
+    """Handler exceptions should be logged without stopping dispatch."""
 
     async def failing_handler(event: Event) -> None:
         await asyncio.sleep(0)
@@ -105,15 +106,16 @@ async def test_handler_exception_propagates(
 
     router.on(EventType.TIP)(failing_handler)
 
-    with pytest.raises(ValueError, match="Handler failed"):
-        await router.dispatch(simple_tip_event)
+    await router.dispatch(simple_tip_event)
+    assert "Handler failed" in caplog.text
+    assert "failing_handler" in caplog.text
 
 
-async def test_first_handler_failure_stops_execution(
+async def test_handler_failure_does_not_stop_execution(
     router: EventRouter,
     simple_tip_event: Event,
 ) -> None:
-    """Handlers queued after a failing one should not run."""
+    """Handlers after a failing one should still run."""
     handler_one = AsyncMock(side_effect=ValueError("Handler 1 failed"))
     handler_two = AsyncMock()
     handler_three = AsyncMock()
@@ -121,12 +123,11 @@ async def test_first_handler_failure_stops_execution(
     router.on(EventType.TIP)(handler_two)
     router.on(EventType.TIP)(handler_three)
 
-    with pytest.raises(ValueError, match="Handler 1 failed"):
-        await router.dispatch(simple_tip_event)
+    await router.dispatch(simple_tip_event)
 
     handler_one.assert_called_once_with(simple_tip_event)
-    handler_two.assert_not_called()
-    handler_three.assert_not_called()
+    handler_two.assert_called_once_with(simple_tip_event)
+    handler_three.assert_called_once_with(simple_tip_event)
 
 
 async def test_sync_handler_supported(

@@ -134,7 +134,7 @@ def test_event_user_validation_error(caplog: pytest.LogCaptureFixture) -> None:
 
     assert event.user is None
     assert event.user is None  # cached value should remain None
-    assert "event_id=evt-user" in caplog.text
+    assert "Invalid user in event evt-user" in caplog.text
 
 
 def test_event_tip_validation_error(caplog: pytest.LogCaptureFixture) -> None:
@@ -147,7 +147,7 @@ def test_event_tip_validation_error(caplog: pytest.LogCaptureFixture) -> None:
     })
 
     assert event.tip is None
-    assert "event_id=evt-tip" in caplog.text
+    assert "Invalid tip in event evt-tip" in caplog.text
 
 
 def test_event_message_validation_error(
@@ -162,7 +162,7 @@ def test_event_message_validation_error(
     })
 
     assert event.message is None
-    assert "event_id=evt-msg" in caplog.text
+    assert "Invalid message in event evt-msg" in caplog.text
 
 
 def test_event_room_subject_validation_error(
@@ -173,11 +173,11 @@ def test_event_room_subject_validation_error(
     event = Event.model_validate({
         "method": "roomSubjectChange",
         "id": "evt-subject",
-        "object": {"subject": None},
+        "object": {"subject": 123},  # Invalid type
     })
 
     assert event.room_subject is None
-    assert "event_id=evt-subject" in caplog.text
+    assert "Invalid subject in event evt-subject" in caplog.text
 
 
 def test_event_broadcaster_property() -> None:

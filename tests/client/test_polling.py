@@ -4,18 +4,18 @@
 # pyright: reportUnknownMemberType=false
 # pyright: reportUnknownVariableType=false
 
-"""Polling behaviour tests for :class:`cb_events.EventClient`."""
+"""Tests for EventClient polling and iteration."""
 
 import re
-from contextlib import aclosing
 from typing import Any
 
 import pytest
 from aiohttp.client_exceptions import ClientError
 from aioresponses import aioresponses
 
-from cb_events import EventClientConfig, EventType
+from cb_events.config import EventClientConfig
 from cb_events.exceptions import AuthError, EventsError
+from cb_events.models import EventType
 from tests.conftest import EventClientFactory
 
 pytestmark = pytest.mark.asyncio
@@ -97,23 +97,20 @@ async def test_async_iteration_yields_events(
     assert events[0].type is EventType.TIP
 
 
-async def test_stream_method_yields_events(
+async def test_aiter_yields_events(
     event_client_factory: EventClientFactory,
     mock_response: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """``stream`` should expose the same async iterator as ``__aiter__``."""
+    """``__aiter__`` should yield events continuously."""
     response: dict[str, Any] = {
         "events": [{"method": "tip", "id": "1", "object": {}}],
         "nextUrl": None,
     }
     mock_response.get(testbed_url_pattern, payload=response)
 
-    async with (
-        event_client_factory() as client,
-        aclosing(client.stream()) as stream,
-    ):
-        event = await anext(stream)
+    async with event_client_factory() as client:
+        event = await anext(aiter(client))
 
     assert event.type is EventType.TIP
 

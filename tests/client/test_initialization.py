@@ -23,10 +23,10 @@ def test_token_masking_in_repr() -> None:
 @pytest.mark.parametrize(
     ("username", "token", "message"),
     [
-        ("", "token", "Username cannot be empty or contain"),
-        (" user ", "token", "Username cannot be empty or contain"),
-        ("user", "", "Token cannot be empty or contain"),
-        ("user", " token ", "Token cannot be empty or contain"),
+        ("", "token", "Username must not be empty or contain"),
+        (" user ", "token", "Username must not be empty or contain"),
+        ("user", "", "Token must not be empty or contain"),
+        ("user", " token ", "Token must not be empty or contain"),
     ],
 )
 def test_reject_invalid_credentials(
