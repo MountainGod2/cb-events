@@ -5,8 +5,9 @@ import json
 import logging
 from collections.abc import AsyncGenerator, AsyncIterator
 from http import HTTPStatus
+from logging import Logger
 from types import TracebackType
-from typing import Any, Self
+from typing import Any, LiteralString, Self
 from urllib.parse import quote
 
 from aiohttp import ClientSession, ClientTimeout
@@ -32,8 +33,11 @@ RATE_LIMIT_TIME_PERIOD = 60
 SESSION_TIMEOUT_BUFFER = 5
 TOKEN_MASK_VISIBLE = 4
 RESPONSE_TRUNCATE_LENGTH = 200
-AUTH_ERROR_STATUSES = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
-RETRY_STATUS_CODES = {
+AUTH_ERROR_STATUSES: set[HTTPStatus] = {
+    HTTPStatus.UNAUTHORIZED,
+    HTTPStatus.FORBIDDEN,
+}
+RETRY_STATUS_CODES: set[int] = {
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
     HTTPStatus.SERVICE_UNAVAILABLE.value,
@@ -45,7 +49,7 @@ RETRY_STATUS_CODES = {
     524,  # Cloudflare: timeout occurred
 }
 
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)
 
 
 def _format_validation_errors(error: ValidationError) -> str:
@@ -57,7 +61,7 @@ def _format_validation_errors(error: ValidationError) -> str:
     Returns:
         Comma-separated field paths.
     """
-    locations = {
+    locations: set[str] = {
         ".".join(str(part) for part in err.get("loc", ())) or "<root>"
         for err in error.errors()
     }
@@ -75,7 +79,7 @@ def _mask_token(token: str) -> str:
     """
     if TOKEN_MASK_VISIBLE <= 0 or len(token) <= TOKEN_MASK_VISIBLE:
         return "*" * len(token)
-    masked = "*" * (len(token) - TOKEN_MASK_VISIBLE)
+    masked: LiteralString = "*" * (len(token) - TOKEN_MASK_VISIBLE)
     return f"{masked}{token[-TOKEN_MASK_VISIBLE:]}"
 
 
@@ -89,7 +93,7 @@ def _mask_url(url: str, token: str) -> str:
     Returns:
         URL with masked token.
     """
-    masked = _mask_token(token)
+    masked: str = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
@@ -248,13 +252,13 @@ class EventClient:
             Extracted nextUrl or None.
         """
         try:
-            data = json.loads(text)
+            data: Any = json.loads(text)
         except json.JSONDecodeError:
             return None
 
-        status = data.get("status", "")
+        status: str = data.get("status", "")
         if isinstance(status, str) and "waited too long" in status.lower():
-            next_url = data.get("nextUrl")
+            next_url: str | None = data.get("nextUrl")
             if next_url:
                 logger.debug("Received nextUrl from timeout response")
                 self._next_url = next_url
@@ -277,7 +281,7 @@ class EventClient:
             msg = "Client not initialized - use async context manager"
             raise EventsError(msg)
 
-        max_attempts = max(1, self.config.retry_attempts)
+        max_attempts: int = max(1, self.config.retry_attempts)
         delay = self.config.retry_backoff
         attempt = 0
 
@@ -288,8 +292,8 @@ class EventClient:
                     self._rate_limiter,
                     self.session.get(url) as response,
                 ):
-                    text = await response.text()
-                    status = response.status
+                    text: str = await response.text()
+                    status: int = response.status
             except (ClientError, TimeoutError, OSError) as exc:
                 if attempt >= max_attempts:
                     logger.exception(
@@ -349,7 +353,7 @@ class EventClient:
             return True
 
         if status != HTTPStatus.OK:
-            snippet = text[:RESPONSE_TRUNCATE_LENGTH]
+            snippet: str = text[:RESPONSE_TRUNCATE_LENGTH]
             if len(text) > RESPONSE_TRUNCATE_LENGTH:
                 snippet += "..."
             logger.error("HTTP %d: %s", status, snippet)
@@ -372,13 +376,13 @@ class EventClient:
             EventsError: If JSON is invalid.
         """
         try:
-            data = json.loads(text)
+            data: Any = json.loads(text)
         except json.JSONDecodeError as exc:
-            snippet = text[:RESPONSE_TRUNCATE_LENGTH]
+            snippet: str = text[:RESPONSE_TRUNCATE_LENGTH]
             if len(text) > RESPONSE_TRUNCATE_LENGTH:
                 snippet += "..."
             logger.exception("Failed to parse JSON: %s", snippet)
-            msg = f"Invalid JSON response: {exc.msg}"
+            msg: str = f"Invalid JSON response: {exc.msg}"
             raise EventsError(msg, response_text=text) from exc
         if not isinstance(data, dict):
             msg = "Invalid JSON response: expected object"
@@ -401,12 +405,12 @@ class EventClient:
             EventsError: If payload validation fails.
         """
         try:
-            batch = _ResponseBatch.model_validate(payload)
+            batch: _ResponseBatch = _ResponseBatch.model_validate(payload)
         except ValidationError as exc:
             msg = "Invalid API response"
             raise EventsError(msg, response_text=raw_text) from exc
 
-        events = _parse_events(
+        events: list[Event] = _parse_events(
             batch.events,
             strict=self.config.strict_validation,
         )
@@ -426,7 +430,7 @@ class EventClient:
             Events received (empty list if timeout or no events).
         """
         async with self._polling_lock:
-            url = self._build_url()
+            url: str = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Polling %s", _mask_url(url, self.token))
 
@@ -435,7 +439,7 @@ class EventClient:
             if self._handle_response_status(status, text):
                 return []
 
-            payload = self._decode_json(text)
+            payload: dict[str, Any] = self._decode_json(text)
             _, events = self._parse_batch(payload, raw_text=text)
             return events
 
@@ -457,7 +461,7 @@ class EventClient:
             Event objects from the API.
         """
         while True:
-            events = await self.poll()
+            events: list[Event] = await self.poll()
             for event in events:
                 yield event
 
