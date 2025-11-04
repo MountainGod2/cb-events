@@ -47,7 +47,7 @@ class EventClientConfig(BaseModel):
             ValueError: If retry_max_delay < retry_backoff.
         """
         if self.retry_max_delay < self.retry_backoff:
-            msg = (
+            msg: str = (
                 f"retry_max_delay ({self.retry_max_delay}s) must be >= "
                 f"retry_backoff ({self.retry_backoff}s)"
             )
