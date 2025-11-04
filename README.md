@@ -27,7 +27,7 @@ async def handle_tip(event: Event) -> None:
 
 async def main():
     async with EventClient(username, token) as client:
-        async for event in client.stream():
+        async for event in client:
             await router.dispatch(event)
 
 asyncio.run(main())
@@ -44,7 +44,8 @@ from cb_events import EventClientConfig
 
 config = EventClientConfig(
     timeout=10,              # Request timeout (seconds)
-    use_testbed=False,       # Use testbed endpoint
+    use_testbed=False,       # Use testbed endpoint with test tokens
+    strict_validation=True,  # Raise on invalid events vs. skip
     retry_attempts=8,        # Total attempts (initial + retries)
     retry_backoff=1.0,       # Initial backoff (seconds)
     retry_factor=2.0,        # Backoff multiplier
@@ -54,11 +55,11 @@ config = EventClientConfig(
 client = EventClient(username, token, config=config)
 ```
 
-**Note:** Config is immutable after creation. `config` parameter must be passed as keyword argument.
+**Note:** Config is immutable. Pass `config` as a keyword argument.
 
 ## Rate Limiting
 
-Default: 2000 requests/60s per client. Share rate limiter across clients:
+Default: 2000 requests per 60 seconds per client. Share a rate limiter across multiple clients:
 
 ```python
 from aiolimiter import AsyncLimiter
@@ -70,7 +71,7 @@ client2 = EventClient(username2, token2, rate_limiter=limiter)
 
 ## Event Properties
 
-Properties return `None` on incompatible event types:
+Properties return `None` for incompatible event types or invalid data:
 
 ```python
 event.user          # User object (most events)
@@ -87,20 +88,19 @@ from cb_events import AuthError, EventsError
 
 try:
     async with EventClient(username, token) as client:
-        async for event in client.stream():
+        async for event in client:
             await router.dispatch(event)
 except AuthError:
     # Authentication failed (401/403)
     pass
 except EventsError as e:
-    # API/network errors - e.status_code, e.response_text
+    # API/network errors - check e.status_code, e.response_text
     pass
 ```
 
-**Retries:** Automatic on 429, 5xx, Cloudflare errors. No retry on auth errors.
+**Retries:** Automatic on 429, 5xx, and Cloudflare errors. Auth errors don't retry.
 
-**Handlers:** Execute sequentially. If a handler raises an exception, it propagates immediately and stops subsequent handlers.
-
+**Handlers:** Run sequentially. Handler errors are logged but don't stop other handlers.
 
 ## Logging
 
@@ -112,11 +112,7 @@ logging.getLogger('cb_events').setLevel(logging.DEBUG)
 
 ## Requirements
 
-Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml#L13), or run:
-
-```bash
-uv pip compile pyproject.toml -o requirements.txt
-```
+Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml#L13).
 
 ## License
 
