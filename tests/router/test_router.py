@@ -1,9 +1,3 @@
-# pyright: reportMissingParameterType=false
-# pyright: reportUnknownParameterType=false
-# pyright: reportUnknownArgumentType=false
-# pyright: reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
-
 """Dispatch tests for :class:`cb_events.EventRouter`."""
 
 import asyncio

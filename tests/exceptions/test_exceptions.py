@@ -1,9 +1,3 @@
-# pyright: reportMissingParameterType=false
-# pyright: reportUnknownParameterType=false
-# pyright: reportUnknownArgumentType=false
-# pyright: reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
-
 """Tests for exception hierarchy and messaging."""
 
 from cb_events import AuthError, EventsError

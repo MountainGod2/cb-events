@@ -1,9 +1,3 @@
-# pyright: reportMissingParameterType=false
-# pyright: reportUnknownParameterType=false
-# pyright: reportUnknownArgumentType=false
-# pyright: reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
-
 """Model validation tests for :mod:`cb_events.models`."""
 
 import logging

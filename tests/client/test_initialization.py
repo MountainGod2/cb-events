@@ -1,8 +1,3 @@
-# pyright: reportMissingParameterType=false
-# pyright: reportUnknownParameterType=false
-# pyright: reportUnknownArgumentType=false
-# pyright: reportUnknownMemberType=false
-
 """Initialization tests for :class:`cb_events.EventClient`."""
 
 import pytest
