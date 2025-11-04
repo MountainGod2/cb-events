@@ -107,7 +107,7 @@ class EventRouter:
         for handler in all_handlers:
             try:
                 await handler(event)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     "Handler %s failed for event %s",
                     handler.__name__,
