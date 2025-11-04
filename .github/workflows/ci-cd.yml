@@ -20,7 +20,7 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
 
       - uses: astral-sh/setup-uv@0d20755a2389f8ddbd3ad4f8a536309a4db22de9
         with:
@@ -59,7 +59,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
 
       - uses: astral-sh/setup-uv@0d20755a2389f8ddbd3ad4f8a536309a4db22de9
         with:
@@ -106,7 +106,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
@@ -150,7 +150,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
@@ -193,7 +193,7 @@ jobs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
     steps:
-      - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
