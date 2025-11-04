@@ -4,13 +4,12 @@ from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
 
-from .constants import (
-    DEFAULT_RETRY_ATTEMPTS,
-    DEFAULT_RETRY_BACKOFF,
-    DEFAULT_RETRY_FACTOR,
-    DEFAULT_RETRY_MAX_DELAY,
-    DEFAULT_TIMEOUT,
-)
+# Default configuration values
+DEFAULT_TIMEOUT = 10
+DEFAULT_RETRY_ATTEMPTS = 8
+DEFAULT_RETRY_BACKOFF = 1.0
+DEFAULT_RETRY_FACTOR = 2.0
+DEFAULT_RETRY_MAX_DELAY = 30.0
 
 
 class EventClientConfig(BaseModel):
@@ -18,10 +17,10 @@ class EventClientConfig(BaseModel):
 
     Attributes:
         timeout: Request timeout in seconds.
-        use_testbed: Use testbed API with free tokens.
-        strict_validation: Raise ValidationError on invalid events
-            instead of skipping.
-        retry_attempts: Total number of request attempts (initial + retries).
+        use_testbed: Use testbed API with free test tokens.
+        strict_validation: Raise ValidationError on invalid events instead
+            of logging and skipping them.
+        retry_attempts: Total request attempts (initial + retries).
         retry_backoff: Initial backoff before first retry in seconds.
         retry_factor: Exponential backoff multiplier.
         retry_max_delay: Maximum delay between retries in seconds.
