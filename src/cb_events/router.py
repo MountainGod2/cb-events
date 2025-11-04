@@ -15,11 +15,11 @@ type EventCallback = Callable[[Event], Awaitable[None] | None]
 type EventHandler = Callable[[Event], Awaitable[None]]
 
 
-def _normalize_handler(func: EventCallback) -> EventHandler:
-    """Wrap callable so sync and async handlers share a common signature.
+def _make_async(func: EventCallback) -> EventHandler:
+    """Convert sync or async callback to async handler.
 
     Args:
-        func: Handler from user.
+        func: User-provided callback (sync or async).
 
     Returns:
         Async handler.
@@ -37,7 +37,8 @@ def _normalize_handler(func: EventCallback) -> EventHandler:
 class EventRouter:
     """Routes events to registered handlers.
 
-    Handlers are called in registration order.
+    Handlers run in registration order. If a handler fails, the error
+    is logged and remaining handlers still execute.
     """
 
     __slots__ = ("_handlers",)
@@ -61,7 +62,7 @@ class EventRouter:
         """
 
         def decorator(func: EventCallback) -> EventCallback:
-            self._handlers[event_type].append(_normalize_handler(func))
+            self._handlers[event_type].append(_make_async(func))
             return func
 
         return decorator
@@ -74,7 +75,7 @@ class EventRouter:
         """
 
         def decorator(func: EventCallback) -> EventCallback:
-            self._handlers[None].append(_normalize_handler(func))
+            self._handlers[None].append(_make_async(func))
             return func
 
         return decorator
@@ -82,14 +83,12 @@ class EventRouter:
     async def dispatch(self, event: Event) -> None:
         """Dispatch event to matching handlers.
 
-        Handlers for all events run first, then type-specific handlers.
-        If a handler raises an exception, subsequent handlers don't run.
+        Wildcard handlers (registered with on_any) run first, then
+        type-specific handlers. Handler errors are logged but don't
+        prevent other handlers from running.
 
         Args:
             event: Event to dispatch.
-
-        Raises:
-            Any exception raised by a handler.
         """
         all_handlers = [
             *self._handlers[None],
@@ -100,10 +99,17 @@ class EventRouter:
             return
 
         logger.debug(
-            "Dispatching %s event to %d handlers",
+            "Dispatching %s to %d handlers",
             event.type.value,
             len(all_handlers),
         )
 
         for handler in all_handlers:
-            await handler(event)
+            try:
+                await handler(event)
+            except Exception:
+                logger.exception(
+                    "Handler %s failed for event %s",
+                    handler.__name__,
+                    event.id,
+                )
