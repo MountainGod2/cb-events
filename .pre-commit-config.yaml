@@ -22,7 +22,7 @@ repos:
         args: [--py311-plus]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.14.3
     hooks:
       - id: ruff
         name: ruff lint
@@ -88,7 +88,7 @@ repos:
         exclude: ^docs/_templates/autoapi/
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.38.1
+    rev: v1.39.0
     hooks:
       - id: typos
         name: typos spell check
