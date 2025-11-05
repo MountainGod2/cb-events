@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v5.0.0 (2025-11-05)
+
+### Chores
+
+- **deps**: Update actions/checkout digest to 71cf226
+  ([`765fba5`](https://github.com/MountainGod2/cb-events/commit/765fba5df802b299eced0820c609e47d858ab9db))
+
+- **deps**: Update astral-sh/setup-uv digest to 30ce38e
+  ([`92d8488`](https://github.com/MountainGod2/cb-events/commit/92d84882f95a51753be8c8b33562bf3db0075330))
+
+- **deps**: Update dependency ruff to v0.14.3
+  ([`47e8173`](https://github.com/MountainGod2/cb-events/commit/47e817331575b9e222273c1b320de38b1d4e651b))
+
+- **deps**: Update github/codeql-action digest to 95b1867
+  ([`3048986`](https://github.com/MountainGod2/cb-events/commit/3048986282bc5be64fbf1effd5add17cf6cf5050))
+
+### Refactoring
+
+- **client**: Enhance type annotations
+  ([`8c8d189`](https://github.com/MountainGod2/cb-events/commit/8c8d1890677c3fafd68d639272a25823ea0c5248))
+
+- **config**: Add type annotation for message variable in validation method
+  ([`1d1da0f`](https://github.com/MountainGod2/cb-events/commit/1d1da0f5abd1e46d52c30d436a4300e4d2e76440))
+
+- **config, router**: Rename EventClientConfig to ClientConfig and EventRouter to Router
+  ([`5de0bc2`](https://github.com/MountainGod2/cb-events/commit/5de0bc26b18560c3914e77e0cd1abe6199bbaf3c))
+
+- **dependencies**: Add pyrefly package to dev dependencies and update uv.lock
+  ([`a208108`](https://github.com/MountainGod2/cb-events/commit/a20810851f23f98e29dd7eaf14e3a6c907a32110))
+
+- **docs**: Update README and example to use ClientConfig and Router
+  ([`f9b59d3`](https://github.com/MountainGod2/cb-events/commit/f9b59d324d9b24795a939499332da4401dd916a2))
+
+- **exceptions**: Clarify response_text documentation
+  ([`ced8d33`](https://github.com/MountainGod2/cb-events/commit/ced8d33ef76275c015efa58640acb153df7d5b8e))
+
+- **models**: Enhance type annotations for logger and value variables
+  ([`525a19f`](https://github.com/MountainGod2/cb-events/commit/525a19fd99182a6c92c76de4b9e264d1f673e60c))
+
+- **models**: Update field aliases
+  ([`36ae5d9`](https://github.com/MountainGod2/cb-events/commit/36ae5d94ca0fd50f743190b5b085ca1d06d0f7a7))
+
+- **router**: Enhance type annotations for logger and handlers
+  ([`f058bc6`](https://github.com/MountainGod2/cb-events/commit/f058bc64c927bf647211ab520e1648aae7525de3))
+
+- **tests**: Remove unused pyright type checking comments
+  ([`7553b72`](https://github.com/MountainGod2/cb-events/commit/7553b722251689b541c683799f0d57d32d7085ab))
+
+- **tests**: Replace EventClientConfig with ClientConfig
+  ([`41aee7c`](https://github.com/MountainGod2/cb-events/commit/41aee7c7cd4105b626a66148b865e6de7daaeafc))
+
+- **vscode**: Update extension recommendations
+  ([`6b02686`](https://github.com/MountainGod2/cb-events/commit/6b02686f65653caaae9d2f81c47f30e12ca133b2))
+
+
 ## v4.10.1 (2025-11-04)
 
 ### Bug Fixes
