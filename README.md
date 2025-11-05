@@ -16,9 +16,9 @@ uv pip install cb-events
 
 ```python
 import asyncio
-from cb_events import EventClient, EventRouter, EventType, Event
+from cb_events import EventClient, Router, EventType, Event
 
-router = EventRouter()
+router = Router()
 
 @router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None:
@@ -40,9 +40,9 @@ asyncio.run(main())
 ## Configuration
 
 ```python
-from cb_events import EventClientConfig
+from cb_events import ClientConfig
 
-config = EventClientConfig(
+config = ClientConfig(
     timeout=10,              # Request timeout (seconds)
     use_testbed=False,       # Use testbed endpoint with test tokens
     strict_validation=True,  # Raise on invalid events vs. skip

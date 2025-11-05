@@ -5,17 +5,17 @@ import contextlib
 import os
 
 from cb_events import (
+    ClientConfig,
     Event,
     EventClient,
-    EventClientConfig,
-    EventRouter,
     EventType,
+    Router,
 )
 
 username = os.getenv("CB_USERNAME", "")
 token = os.getenv("CB_TOKEN", "")
 
-router = EventRouter()
+router = Router()
 
 
 @router.on(EventType.BROADCAST_START)
@@ -140,7 +140,7 @@ async def handle_unknown_event(event: Event) -> None:
 
 async def main() -> None:
     """Set up event handlers and start listening for events."""
-    config = EventClientConfig(use_testbed=True)
+    config = ClientConfig(use_testbed=True)
 
     async with EventClient(username, token, config=config) as client:
         print("Listening for events... (Ctrl+C to stop)")
