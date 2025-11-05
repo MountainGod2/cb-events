@@ -1,6 +1,7 @@
 """Dispatch tests for :class:`cb_events.Router`."""
 
 import asyncio
+from functools import partial
 from unittest.mock import AsyncMock
 
 import pytest
@@ -140,3 +141,53 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
         @router.on_any()  # pyright: ignore[reportArgumentType]
         def sync_handler(event: Event) -> None:
             pass
+
+
+async def test_accept_partial_async_handler(
+    router: Router,
+    simple_tip_event: Event,
+) -> None:
+    """Async handlers wrapped in functools.partial should register."""
+    seen: list[str] = []
+
+    async def handler(event: Event, *, results: list[str]) -> None:  # noqa: RUF029
+        results.append(event.id)
+
+    router.on(EventType.TIP)(partial(handler, results=seen))
+
+    await router.dispatch(simple_tip_event)
+
+    assert seen == [simple_tip_event.id]
+
+
+async def test_accept_async_callable_object(
+    router: Router,
+    simple_tip_event: Event,
+) -> None:
+    """Callable objects with async __call__ should register."""
+    seen: list[str] = []
+
+    class AsyncCallable:
+        async def __call__(self, event: Event) -> None:
+            seen.append(event.id)
+
+    router.on(EventType.TIP)(AsyncCallable())
+
+    await router.dispatch(simple_tip_event)
+
+    assert seen == [simple_tip_event.id]
+
+
+async def test_cancelled_error_propagates(
+    router: Router,
+    simple_tip_event: Event,
+) -> None:
+    """Dispatch should not swallow CancelledError from handlers."""
+
+    async def cancel_handler(event: Event) -> None:  # noqa: RUF029
+        raise asyncio.CancelledError
+
+    router.on(EventType.TIP)(cancel_handler)
+
+    with pytest.raises(asyncio.CancelledError):
+        await router.dispatch(simple_tip_event)
