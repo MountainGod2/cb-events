@@ -7,7 +7,7 @@ import pytest
 from aiohttp.client_exceptions import ClientError
 from aioresponses import aioresponses
 
-from cb_events.config import EventClientConfig
+from cb_events.config import ClientConfig
 from cb_events.exceptions import AuthError, EventsError
 from cb_events.models import EventType
 from tests.conftest import EventClientFactory
@@ -118,9 +118,7 @@ async def test_rate_limit_error(
     mock_response.get(
         testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded"
     )
-    config = EventClientConfig(
-        use_testbed=True, retry_attempts=1, retry_backoff=0.0
-    )
+    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match="HTTP 429: Rate limit exceeded"):
@@ -149,7 +147,7 @@ async def test_network_error_wrapped(
     mock_response.get(
         testbed_url_pattern, exception=ClientError("network down")
     )
-    config = EventClientConfig(use_testbed=True, retry_attempts=0)
+    config = ClientConfig(use_testbed=True, retry_attempts=0)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match="Failed to fetch events"):

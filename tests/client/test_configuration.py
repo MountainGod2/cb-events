@@ -1,23 +1,23 @@
-"""Validation tests for :class:`cb_events.EventClientConfig`."""
+"""Validation tests for :class:`cb_events.ClientConfig`."""
 
 import pytest
-from pydantic_core import ValidationError
+from pydantic import ValidationError
 
-from cb_events import EventClientConfig
+from cb_events import ClientConfig
 
 
-def test_default_values() -> None:
-    """Config should expose the documented defaults."""
-    config = EventClientConfig()
+def test_default_configuration() -> None:
+    """Default config should have sensible retry and timeout values."""
+    config = ClientConfig()
 
     assert config.use_testbed is False
     assert config.timeout == 10
     assert config.retry_attempts == 8
 
 
-def test_custom_values_round_trip() -> None:
-    """Custom values should be preserved verbatim."""
-    config = EventClientConfig(
+def test_custom_configuration() -> None:
+    """Config should accept custom values for all parameters."""
+    config = ClientConfig(
         use_testbed=True,
         timeout=60,
         retry_attempts=5,
@@ -37,21 +37,21 @@ def test_custom_values_round_trip() -> None:
 @pytest.mark.parametrize("timeout", [0, -1])
 def test_reject_non_positive_timeout(timeout: int) -> None:
     """Timeout must be strictly positive."""
-    with pytest.raises(ValidationError):
-        EventClientConfig(timeout=timeout)
+    with pytest.raises(ValidationError, match="greater than 0"):
+        ClientConfig(timeout=timeout)
 
 
 @pytest.mark.parametrize("attempts", [-1, -5])
 def test_reject_negative_retry_attempts(attempts: int) -> None:
     """Retry attempts cannot be negative."""
     with pytest.raises(ValidationError):
-        EventClientConfig(retry_attempts=attempts)
+        ClientConfig(retry_attempts=attempts)
 
 
 def test_reject_max_delay_less_than_backoff() -> None:
     """Max delay must be greater than or equal to backoff."""
     with pytest.raises(ValidationError) as exc_info:
-        EventClientConfig(retry_backoff=10.0, retry_max_delay=5.0)
+        ClientConfig(retry_backoff=10.0, retry_max_delay=5.0)
 
     errors = exc_info.value.errors()
     assert errors
@@ -61,7 +61,8 @@ def test_reject_max_delay_less_than_backoff() -> None:
 
 def test_allow_max_delay_equal_to_backoff() -> None:
     """Equal backoff and max delay should be accepted."""
-    config = EventClientConfig(retry_backoff=5.0, retry_max_delay=5.0)
+    """Backoff equal to max delay is acceptable (no scaling)."""
+    config = ClientConfig(retry_backoff=5.0, retry_max_delay=5.0)
 
     assert config.retry_backoff == 5.0
     assert config.retry_max_delay == 5.0

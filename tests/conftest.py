@@ -11,11 +11,11 @@ import pytest_asyncio
 from aioresponses import aioresponses
 
 from cb_events import (
+    ClientConfig,
     Event,
     EventClient,
-    EventClientConfig,
-    EventRouter,
     EventType,
+    Router,
 )
 
 
@@ -25,15 +25,15 @@ class EventClientFactory(Protocol):
         *,
         username_override: str | None = ...,
         token_override: str | None = ...,
-        config: EventClientConfig | None = ...,
+        config: ClientConfig | None = ...,
         use_testbed: bool = ...,
         **config_overrides: Any,
     ) -> AbstractAsyncContextManager[EventClient]: ...
 
 
 @pytest.fixture
-def testbed_config() -> EventClientConfig:
-    return EventClientConfig(use_testbed=True)
+def testbed_config() -> ClientConfig:
+    return ClientConfig(use_testbed=True)
 
 
 @pytest.fixture
@@ -81,8 +81,8 @@ def simple_tip_event() -> Event:
 
 
 @pytest.fixture
-def router() -> EventRouter:
-    return EventRouter()
+def router() -> Router:
+    return Router()
 
 
 @pytest.fixture
@@ -97,9 +97,10 @@ def mock_response() -> Iterator[aioresponses]:
 
 
 @pytest_asyncio.fixture
-async def event_client(
+async def setup_mock_client(
+    mock_response: aioresponses,
+    testbed_config: ClientConfig,
     credentials: tuple[str, str],
-    testbed_config: EventClientConfig,
 ) -> AsyncIterator[EventClient]:
     username, token = credentials
     async with EventClient(username, token, config=testbed_config) as client:
@@ -115,7 +116,7 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
         *,
         username_override: str | None = None,
         token_override: str | None = None,
-        config: EventClientConfig | None = None,
+        config: ClientConfig | None = None,
         use_testbed: bool = True,
         **config_overrides: Any,
     ) -> AsyncIterator[EventClient]:
@@ -128,7 +129,7 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
 
         if config is None:
             config_kwargs = {"use_testbed": use_testbed, **config_overrides}
-            config = EventClientConfig(**config_kwargs)
+            config = ClientConfig(**config_kwargs)
 
         async with EventClient(
             client_username, client_token, config=config

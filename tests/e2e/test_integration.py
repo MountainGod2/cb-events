@@ -12,8 +12,8 @@ from cb_events import (
     AuthError,
     Event,
     EventClient,
-    EventRouter,
     EventType,
+    Router,
     __version__,
 )
 from tests.conftest import EventClientFactory
@@ -27,7 +27,7 @@ async def test_client_router_workflow(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Sanity check that polling feeds into the router dispatch pipeline."""
-    router = EventRouter()
+    router = Router()
     events_received: list[Any] = []
 
     @router.on(EventType.TIP)

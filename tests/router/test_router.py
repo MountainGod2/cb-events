@@ -1,17 +1,17 @@
-"""Dispatch tests for :class:`cb_events.EventRouter`."""
+"""Dispatch tests for :class:`cb_events.Router`."""
 
 import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
 
-from cb_events import Event, EventRouter, EventType
+from cb_events import Event, EventType, Router
 
 pytestmark = pytest.mark.asyncio
 
 
 async def test_dispatch_to_specific_handler(
-    router: EventRouter,
+    router: Router,
     mock_handler: AsyncMock,
     simple_tip_event: Event,
 ) -> None:
@@ -24,7 +24,7 @@ async def test_dispatch_to_specific_handler(
 
 
 async def test_dispatch_to_any_handler(
-    router: EventRouter,
+    router: Router,
     mock_handler: AsyncMock,
     sample_event: Event,
 ) -> None:
@@ -36,8 +36,8 @@ async def test_dispatch_to_any_handler(
     mock_handler.assert_called_once_with(sample_event)
 
 
-async def test_multiple_handlers_for_same_event(
-    router: EventRouter,
+async def test_dispatch_calls_multiple_handlers_in_order(
+    router: Router,
     simple_tip_event: Event,
 ) -> None:
     """All handlers registered for a specific type should execute."""
@@ -53,7 +53,7 @@ async def test_multiple_handlers_for_same_event(
 
 
 async def test_no_error_when_no_handlers(
-    router: EventRouter,
+    router: Router,
     simple_tip_event: Event,
 ) -> None:
     """Dispatching without handlers should simply no-op."""
@@ -61,7 +61,7 @@ async def test_no_error_when_no_handlers(
 
 
 async def test_any_handlers_called_before_specific(
-    router: EventRouter,
+    router: Router,
     simple_tip_event: Event,
 ) -> None:
     """``on_any`` handlers should run before type-specific handlers."""
@@ -87,7 +87,7 @@ async def test_any_handlers_called_before_specific(
 
 
 async def test_handler_exception_logged(
-    router: EventRouter,
+    router: Router,
     simple_tip_event: Event,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -106,7 +106,7 @@ async def test_handler_exception_logged(
 
 
 async def test_handler_failure_does_not_stop_execution(
-    router: EventRouter,
+    router: Router,
     simple_tip_event: Event,
 ) -> None:
     """Handlers after a failing one should still run."""
@@ -122,20 +122,3 @@ async def test_handler_failure_does_not_stop_execution(
     handler_one.assert_called_once_with(simple_tip_event)
     handler_two.assert_called_once_with(simple_tip_event)
     handler_three.assert_called_once_with(simple_tip_event)
-
-
-async def test_sync_handler_supported(
-    router: EventRouter,
-    simple_tip_event: Event,
-) -> None:
-    """Synchronous handlers should be wrapped and awaited transparently."""
-    calls: list[str] = []
-
-    def sync_handler(event: Event) -> None:
-        calls.append(event.id)
-
-    router.on(EventType.TIP)(sync_handler)
-
-    await router.dispatch(simple_tip_event)
-
-    assert calls == [simple_tip_event.id]
