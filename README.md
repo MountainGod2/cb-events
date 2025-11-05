@@ -25,6 +25,9 @@ async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
+# Any async callable (functions, functools.partial wrappers, async callable objects)
+# can be registered with the router.
+
 async def main():
     async with EventClient(username, token) as client:
         async for event in client:
@@ -100,7 +103,7 @@ except EventsError as e:
 
 **Retries:** Automatic on 429, 5xx, and Cloudflare errors. Auth errors don't retry.
 
-**Handlers:** Run sequentially. Handler errors are logged but don't stop other handlers.
+**Handlers:** Run sequentially. Non-cancellation errors are logged but don't stop other handlers; cancellations propagate.
 
 ## Logging
 
