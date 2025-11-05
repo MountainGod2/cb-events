@@ -5,25 +5,24 @@ from __future__ import annotations
 import logging
 from enum import StrEnum
 from functools import cached_property
-from logging import Logger
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
-from pydantic.alias_generators import to_snake
+from pydantic.alias_generators import to_camel
 from pydantic.config import ConfigDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-logger: Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class BaseEventModel(BaseModel):
     """Base for all event models with snake_case conversion."""
 
     model_config = ConfigDict(
-        alias_generator=to_snake,
+        alias_generator=to_camel,
         populate_by_name=True,
         extra="forbid",
         frozen=True,
@@ -39,13 +38,11 @@ class EventType(StrEnum):
     BROADCAST_START = "broadcastStart"
     BROADCAST_STOP = "broadcastStop"
     ROOM_SUBJECT_CHANGE = "roomSubjectChange"
-
     USER_ENTER = "userEnter"
     USER_LEAVE = "userLeave"
     FOLLOW = "follow"
     UNFOLLOW = "unfollow"
     FANCLUB_JOIN = "fanclubJoin"
-
     CHAT_MESSAGE = "chatMessage"
     PRIVATE_MESSAGE = "privateMessage"
     TIP = "tip"
@@ -56,38 +53,38 @@ class User(BaseEventModel):
     """User information from events."""
 
     username: str
-    color_group: str | None = Field(default=None, alias="colorGroup")
-    fc_auto_renew: bool = Field(default=False, alias="fcAutoRenew")
-    gender: str | None = Field(default=None)
-    has_darkmode: bool = Field(default=False, alias="hasDarkmode")
-    has_tokens: bool = Field(default=False, alias="hasTokens")
-    in_fanclub: bool = Field(default=False, alias="inFanclub")
-    in_private_show: bool = Field(default=False, alias="inPrivateShow")
-    is_broadcasting: bool = Field(default=False, alias="isBroadcasting")
-    is_follower: bool = Field(default=False, alias="isFollower")
-    is_mod: bool = Field(default=False, alias="isMod")
-    is_owner: bool = Field(default=False, alias="isOwner")
-    is_silenced: bool = Field(default=False, alias="isSilenced")
-    is_spying: bool = Field(default=False, alias="isSpying")
-    language: str | None = Field(default=None)
-    recent_tips: str | None = Field(default=None, alias="recentTips")
-    subgender: str | None = Field(default=None)
+    color_group: str | None = None
+    fc_auto_renew: bool = False
+    gender: str | None = None
+    has_darkmode: bool = False
+    has_tokens: bool = False
+    in_fanclub: bool = False
+    in_private_show: bool = False
+    is_broadcasting: bool = False
+    is_follower: bool = False
+    is_mod: bool = False
+    is_owner: bool = False
+    is_silenced: bool = False
+    is_spying: bool = False
+    language: str | None = None
+    recent_tips: str | None = None
+    subgender: str | None = None
 
 
 class Message(BaseEventModel):
     """Chat or private message."""
 
     message: str
-    bg_color: str | None = Field(default=None, alias="bgColor")
-    color: str | None = Field(default=None)
-    font: str | None = Field(default=None)
-    orig: str | None = Field(default=None)
-    from_user: str | None = Field(default=None, alias="fromUser")
-    to_user: str | None = Field(default=None, alias="toUser")
+    bg_color: str | None = None
+    color: str | None = None
+    font: str | None = None
+    orig: str | None = None
+    from_user: str | None = None
+    to_user: str | None = None
 
     @property
     def is_private(self) -> bool:
-        """True if this is a private message (has sender and recipient)."""
+        """True if this is a private message."""
         return self.from_user is not None and self.to_user is not None
 
 
@@ -95,8 +92,8 @@ class Tip(BaseEventModel):
     """Tip transaction."""
 
     tokens: int
-    is_anon: bool = Field(default=False, alias="isAnon")
-    message: str | None = Field(default=None)
+    is_anon: bool = False
+    message: str | None = None
 
 
 class RoomSubject(BaseEventModel):
@@ -108,8 +105,8 @@ class RoomSubject(BaseEventModel):
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
-    Use properties (user, tip, message, room_subject) to access nested data.
-    Properties return None if data is missing or invalid for the event type.
+    Use properties to access nested data. Properties return None if
+    data is missing or invalid for the event type.
     """
 
     type: EventType = Field(alias="method")
@@ -119,37 +116,34 @@ class Event(BaseEventModel):
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
-        return self._extract_model(key="user", loader=User.model_validate)
+        return self._extract("user", User.model_validate)
 
     @cached_property
     def tip(self) -> Tip | None:
         """Tip data if present and valid (TIP events only)."""
-        return self._extract_model(
-            key="tip",
-            loader=Tip.model_validate,
+        return self._extract(
+            "tip",
+            Tip.model_validate,
             allowed_types=(EventType.TIP,),
         )
 
     @cached_property
     def message(self) -> Message | None:
-        """Message data if present and valid.
-
-        Only for CHAT_MESSAGE/PRIVATE_MESSAGE events.
-        """
-        return self._extract_model(
-            key="message",
-            loader=Message.model_validate,
+        """Message data if present and valid."""
+        return self._extract(
+            "message",
+            Message.model_validate,
             allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
         )
 
     @cached_property
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
-        return self._extract_model(
-            key="subject",
-            loader=RoomSubject.model_validate,
+        return self._extract(
+            "subject",
+            RoomSubject.model_validate,
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-            transform=lambda value: {"subject": value},
+            transform=lambda v: {"subject": v},
         )
 
     @cached_property
@@ -158,39 +152,33 @@ class Event(BaseEventModel):
         value: Any | None = self.data.get("broadcaster")
         return value if isinstance(value, str) and value else None
 
-    def _extract_model(
+    def _extract(
         self,
-        *,
         key: str,
         loader: Callable[[object], _ModelT],
+        *,
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
     ) -> _ModelT | None:
-        """Extract and validate a nested model from event data.
-
-        Args:
-            key: Field name in event data.
-            loader: Model validator function.
-            allowed_types: Event types allowed to have this field.
-            transform: Transform raw data before validation.
+        """Extract and validate nested model from event data.
 
         Returns:
-            Validated model or None if unavailable/invalid.
+            Validated model instance or None if unavailable/invalid.
         """
         if allowed_types and self.type not in allowed_types:
             return None
 
-        payload = self.data.get(key)
+        payload: Any | None = self.data.get(key)
         if payload is None:
             return None
 
-        if transform is not None:
+        if transform:
             payload = transform(payload)
 
         try:
             return loader(payload)
         except ValidationError as exc:
-            locations: set[str] = {
+            fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key
                 for e in exc.errors()
             }
@@ -198,6 +186,6 @@ class Event(BaseEventModel):
                 "Invalid %s in event %s: %s",
                 key,
                 self.id,
-                ", ".join(sorted(locations)),
+                ", ".join(sorted(fields)),
             )
             return None
