@@ -124,10 +124,17 @@ class EventClient:
             AuthError: If username or token is invalid.
         """
         if not username or username != username.strip():
-            msg = "Username must not be empty or contain whitespace"
+            msg = (
+                "Username must not be empty or contain leading/trailing "
+                "whitespace. Provide a valid Chaturbate username."
+            )
             raise AuthError(msg)
         if not token or token != token.strip():
-            msg = "Token must not be empty or contain whitespace"
+            msg = (
+                "Token must not be empty or contain leading/trailing "
+                "whitespace. Generate a valid token at "
+                "https://chaturbate.com/statsapi/authtoken/"
+            )
             raise AuthError(msg)
 
         self.username = username
@@ -168,7 +175,11 @@ class EventClient:
                 )
         except (ClientError, OSError, TimeoutError) as e:
             await self.close()
-            msg = "Failed to create HTTP session"
+            msg = (
+                "Failed to create HTTP session. Check system resources, "
+                "network configuration, and ensure aiohttp is properly "
+                "installed."
+            )
             raise EventsError(msg) from e
         return self
 
@@ -204,7 +215,10 @@ class EventClient:
             EventsError: If request fails after all retries.
         """
         if self.session is None:
-            msg = "Client not initialized - use async context manager"
+            msg = (
+                "Client not initialized - use 'async with EventClient(...)' "
+                "context manager to properly initialize the session"
+            )
             raise EventsError(msg)
 
         max_attempts: int = max(1, self.config.retry_attempts)
@@ -227,7 +241,12 @@ class EventClient:
                         attempt,
                         _mask_url(url, self.token),
                     )
-                    msg = "Failed to fetch events from API"
+                    msg = (
+                        f"Failed to fetch events after {max_attempts} "
+                        "attempts. Check network connectivity, firewall "
+                        "settings, and Chaturbate API status at "
+                        "https://status.chaturbate.com"
+                    )
                     raise EventsError(msg) from exc
 
                 logger.warning(
@@ -272,8 +291,13 @@ class EventClient:
         # Handle authentication errors
         if status in AUTH_ERRORS:
             logger.warning("Auth failed for user %s", self.username)
-            msg: str = f"Authentication failed for {self.username}"
-            raise AuthError(msg)
+            msg: str = (
+                f"Authentication failed for '{self.username}'. "
+                "Verify your username and token are correct. "
+                "Generate a new token at "
+                "https://chaturbate.com/statsapi/authtoken/"
+            )
+            raise AuthError(msg, status_code=status, response_text=text)
 
         # Check for timeout response with nextUrl
         if status == HTTPStatus.BAD_REQUEST and self._try_extract_next_url(
@@ -287,7 +311,22 @@ class EventClient:
             if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
             logger.error("HTTP %d: %s", status, snippet)
-            msg = f"HTTP {status}: {snippet}"
+
+            # Provide status-specific guidance
+            if status == HTTPStatus.TOO_MANY_REQUESTS:
+                guidance = (
+                    " Rate limit exceeded. Reduce request frequency or "
+                    "share a rate limiter across multiple clients."
+                )
+            elif status >= HTTPStatus.INTERNAL_SERVER_ERROR:
+                guidance = (
+                    " Server error. Check https://status.chaturbate.com "
+                    "for API status or retry later."
+                )
+            else:
+                guidance = ""
+
+            msg = f"HTTP {status}: {snippet}{guidance}"
             raise EventsError(
                 msg,
                 status_code=status,
@@ -335,14 +374,24 @@ class EventClient:
             if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
             logger.exception("Failed to parse JSON: %s", snippet)
-            msg: str = f"Invalid JSON response: {exc.msg}"
+            msg: str = (
+                f"Invalid JSON response from API: {exc.msg}. "
+                "This may indicate an API outage or unexpected response "
+                "format. Check https://status.chaturbate.com for service "
+                "status."
+            )
             raise EventsError(
                 msg,
                 response_text=text,
             ) from exc
 
         if not isinstance(data, dict):
-            msg = "Invalid JSON response: expected object"
+            msg = (
+                "Invalid API response format: expected JSON object, got "
+                f"{type(data).__name__}. The API may be returning an "
+                "unexpected response. Check https://status.chaturbate.com "
+                "for service status."
+            )
             raise EventsError(
                 msg,
                 response_text=text,
