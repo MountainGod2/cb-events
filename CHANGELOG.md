@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v5.1.0 (2025-11-05)
+
+### Bug Fixes
+
+- **auth**: Improve error messages for username and token validation
+  ([`a6ea8e7`](https://github.com/MountainGod2/cb-events/commit/a6ea8e703ffd36f9beb3ce6c37d756daaa1bf11b))
+
+### Documentation
+
+- **readme**: Clarify async handler registration and error handling
+  ([`c5b254a`](https://github.com/MountainGod2/cb-events/commit/c5b254ac82d75775f58f9a849eb5fc2a4425e977))
+
+### Features
+
+- **router**: Enhance async handler registration and error handling
+  ([`35dbe52`](https://github.com/MountainGod2/cb-events/commit/35dbe5217e521f4422fde4aa7940c2114564cfc4))
+
+### Testing
+
+- **polling**: Add tests for session creation and network errors
+  ([`541e0e3`](https://github.com/MountainGod2/cb-events/commit/541e0e360f6219a7fce5bee1bb6ccd7f5a792b48))
+
+- **router**: Add tests for non-async handler rejection
+  ([`8fc7939`](https://github.com/MountainGod2/cb-events/commit/8fc7939ccfe5635f40926d357619186275d0236a))
+
+
 ## v5.0.0 (2025-11-05)
 
 ### Chores
