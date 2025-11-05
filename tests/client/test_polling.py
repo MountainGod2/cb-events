@@ -2,11 +2,13 @@
 
 import re
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from aiohttp.client_exceptions import ClientError
 from aioresponses import aioresponses
 
+from cb_events import EventClient
 from cb_events.config import ClientConfig
 from cb_events.exceptions import AuthError, EventsError
 from cb_events.models import EventType
@@ -151,4 +153,114 @@ async def test_network_error_wrapped(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match="Failed to fetch events"):
+            await client.poll()
+
+
+async def test_session_creation_fails(
+    credentials: tuple[str, str],
+) -> None:
+    """Session creation failure should raise EventsError with guidance."""
+    username, token = credentials
+    config = ClientConfig(use_testbed=True)
+    client = EventClient(username, token, config=config)
+
+    with (
+        patch(
+            "cb_events.client.ClientSession",
+            side_effect=OSError("Mock error"),
+        ),
+        pytest.raises(
+            EventsError,
+            match=r"Failed to create HTTP session.*network configuration",
+        ),
+    ):
+        async with client:
+            pass
+
+    assert client.session is None
+
+
+async def test_timeout_with_next_url(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Timeout responses with nextUrl should be handled gracefully."""
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": "https://events.testbed.cb.dev/events/next_batch_token",
+        "events": [],
+    }
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+
+    next_url_pattern = re.compile(
+        r"https://events\.testbed\.cb\.dev/events/next_batch_token"
+    )
+    success_response = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+    mock_response.get(next_url_pattern, payload=success_response)
+
+    async with event_client_factory() as client:
+        events = await client.poll()
+        assert len(events) == 0  # Timeout returns empty list
+
+        events = await client.poll()
+        assert len(events) == 1
+        assert events[0].type is EventType.TIP
+
+
+async def test_network_errors_exhaust_retries(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Different network error types should exhaust retries properly."""
+    mock_response.get(
+        testbed_url_pattern,
+        exception=TimeoutError("Connection timeout"),
+        repeat=True,
+    )
+    config = ClientConfig(
+        use_testbed=True,
+        retry_attempts=2,
+        retry_backoff=0.01,
+        retry_factor=1.0,
+    )
+
+    async with event_client_factory(config=config) as client:
+        with pytest.raises(
+            EventsError,
+            match=(
+                r"Failed to fetch events after 2 attempts.*"
+                r"network connectivity"
+            ),
+        ):
+            await client.poll()
+
+
+async def test_network_errors_with_oserror(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """OSError during requests should be retried and eventually raise."""
+    mock_response.get(
+        testbed_url_pattern,
+        exception=OSError("Network unreachable"),
+        repeat=True,
+    )
+    config = ClientConfig(
+        use_testbed=True,
+        retry_attempts=3,
+        retry_backoff=0.01,
+        retry_factor=1.5,
+    )
+
+    async with event_client_factory(config=config) as client:
+        with pytest.raises(
+            EventsError,
+            match=r"Failed to fetch events after 3 attempts",
+        ):
             await client.poll()
