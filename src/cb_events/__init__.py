@@ -5,9 +5,9 @@ and type-safe event handling.
 
 Example:
     >>> import asyncio
-    >>> from cb_events import EventClient, EventRouter, EventType, Event
+    >>> from cb_events import EventClient, Router, EventType, Event
     >>>
-    >>> router = EventRouter()
+    >>> router = Router()
     >>>
     >>> @router.on(EventType.TIP)
     >>> async def handle_tip(event: Event) -> None:
@@ -25,28 +25,27 @@ Example:
 from importlib.metadata import PackageNotFoundError, version
 
 from .client import EventClient
-from .config import EventClientConfig
+from .config import ClientConfig
 from .exceptions import AuthError, EventsError
 from .models import Event, EventType, Message, RoomSubject, Tip, User
-from .router import EventCallback, EventHandler, EventRouter
+from .router import HandlerFunc, Router
 
 try:
-    __version__ = version("cb-events")
+    __version__: str = version("cb-events")
 except PackageNotFoundError:
     __version__ = "0.0.0"
 
 __all__: list[str] = [
     "AuthError",
+    "ClientConfig",
     "Event",
-    "EventCallback",
     "EventClient",
-    "EventClientConfig",
-    "EventHandler",
-    "EventRouter",
     "EventType",
     "EventsError",
+    "HandlerFunc",
     "Message",
     "RoomSubject",
+    "Router",
     "Tip",
     "User",
 ]

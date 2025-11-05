@@ -4,52 +4,36 @@ from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
 
-# Default configuration values
-DEFAULT_TIMEOUT = 10
-DEFAULT_RETRY_ATTEMPTS = 8
-DEFAULT_RETRY_BACKOFF = 1.0
-DEFAULT_RETRY_FACTOR = 2.0
-DEFAULT_RETRY_MAX_DELAY = 30.0
 
-
-class EventClientConfig(BaseModel):
-    """Client configuration (immutable after creation).
+class ClientConfig(BaseModel):
+    """Client configuration.
 
     Attributes:
         timeout: Request timeout in seconds.
-        use_testbed: Use testbed API with free test tokens.
-        strict_validation: Raise ValidationError on invalid events instead
-            of logging and skipping them.
-        retry_attempts: Total request attempts (initial + retries).
-        retry_backoff: Initial backoff before first retry in seconds.
-        retry_factor: Exponential backoff multiplier.
-        retry_max_delay: Maximum delay between retries in seconds.
+        use_testbed: Use testbed API instead of production.
+        strict_validation: Raise on invalid events vs. skip and log.
+        retry_attempts: Total attempts including initial request.
+        retry_backoff: Initial retry delay in seconds.
+        retry_factor: Backoff multiplier per retry.
+        retry_max_delay: Maximum delay between retries.
     """
 
     model_config = {"frozen": True}
 
-    timeout: int = Field(default=DEFAULT_TIMEOUT, gt=0)
+    timeout: int = Field(default=10, gt=0)
     use_testbed: bool = False
     strict_validation: bool = True
-    retry_attempts: int = Field(default=DEFAULT_RETRY_ATTEMPTS, ge=0)
-    retry_backoff: float = Field(default=DEFAULT_RETRY_BACKOFF, ge=0)
-    retry_factor: float = Field(default=DEFAULT_RETRY_FACTOR, gt=0)
-    retry_max_delay: float = Field(default=DEFAULT_RETRY_MAX_DELAY, ge=0)
+    retry_attempts: int = Field(default=8, ge=0)
+    retry_backoff: float = Field(default=1.0, ge=0)
+    retry_factor: float = Field(default=2.0, gt=0)
+    retry_max_delay: float = Field(default=30.0, ge=0)
 
     @model_validator(mode="after")
-    def validate_retry_delays(self) -> Self:
-        """Ensure retry_max_delay >= retry_backoff.
-
-        Returns:
-            Self after validation.
-
-        Raises:
-            ValueError: If retry_max_delay < retry_backoff.
-        """
+    def _check_delays(self) -> Self:
         if self.retry_max_delay < self.retry_backoff:
             msg: str = (
-                f"retry_max_delay ({self.retry_max_delay}s) must be >= "
-                f"retry_backoff ({self.retry_backoff}s)"
+                f"retry_max_delay ({self.retry_max_delay}) must be >= "
+                f"retry_backoff ({self.retry_backoff})"
             )
             raise ValueError(msg)
         return self

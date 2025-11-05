@@ -5,38 +5,32 @@ import json
 import logging
 from collections.abc import AsyncGenerator, AsyncIterator
 from http import HTTPStatus
-from logging import Logger
 from types import TracebackType
-from typing import Any, LiteralString, Self
+from typing import Any, Self
 from urllib.parse import quote
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
-from pydantic import BaseModel, Field, ValidationError
-from pydantic.config import ConfigDict
+from pydantic import ValidationError
 
-from .config import EventClientConfig
+from .config import ClientConfig
 from .exceptions import AuthError, EventsError
 from .models import Event
 
 # API endpoints
 BASE_URL = "https://eventsapi.chaturbate.com/events"
 TESTBED_URL = "https://events.testbed.cb.dev/events"
-URL_TEMPLATE = "{base_url}/{username}/{token}/?timeout={timeout}"
 
-# Rate limiting
-RATE_LIMIT_MAX_RATE = 2000
-RATE_LIMIT_TIME_PERIOD = 60
+# Default rate limiting (per client instance)
+DEFAULT_MAX_RATE = 2000
+DEFAULT_TIME_PERIOD = 60
 
-# HTTP handling
+# HTTP configuration
 SESSION_TIMEOUT_BUFFER = 5
-TOKEN_MASK_VISIBLE = 4
-RESPONSE_TRUNCATE_LENGTH = 200
-AUTH_ERROR_STATUSES: set[HTTPStatus] = {
-    HTTPStatus.UNAUTHORIZED,
-    HTTPStatus.FORBIDDEN,
-}
+TOKEN_VISIBLE_CHARS = 4
+TRUNCATE_LENGTH = 200
+AUTH_ERRORS: set[HTTPStatus] = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 RETRY_STATUS_CODES: set[int] = {
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
@@ -49,46 +43,22 @@ RETRY_STATUS_CODES: set[int] = {
     524,  # Cloudflare: timeout occurred
 }
 
-logger: Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
-def _format_validation_errors(error: ValidationError) -> str:
-    """Format validation error locations as comma-separated string.
-
-    Args:
-        error: Validation error from Pydantic.
+def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
+    """Mask token for logging.
 
     Returns:
-        Comma-separated field paths.
+        Masked token with only last few characters visible.
     """
-    locations: set[str] = {
-        ".".join(str(part) for part in err.get("loc", ())) or "<root>"
-        for err in error.errors()
-    }
-    return ", ".join(sorted(locations))
-
-
-def _mask_token(token: str) -> str:
-    """Mask a token keeping only the last few characters visible.
-
-    Args:
-        token: Token to mask.
-
-    Returns:
-        Masked token.
-    """
-    if TOKEN_MASK_VISIBLE <= 0 or len(token) <= TOKEN_MASK_VISIBLE:
+    if visible <= 0 or len(token) <= visible:
         return "*" * len(token)
-    masked: LiteralString = "*" * (len(token) - TOKEN_MASK_VISIBLE)
-    return f"{masked}{token[-TOKEN_MASK_VISIBLE:]}"
+    return f"{'*' * (len(token) - visible)}{token[-visible:]}"
 
 
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
-
-    Args:
-        url: URL containing the token.
-        token: Token to mask.
 
     Returns:
         URL with masked token.
@@ -97,27 +67,14 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-class _ResponseBatch(BaseModel):
-    """API response wrapper."""
-
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-
-    next_url: str | None = Field(alias="nextUrl")
-    events: list[dict[str, Any]] = Field(default_factory=list)
-
-
 def _parse_events(raw: list[dict[str, Any]], *, strict: bool) -> list[Event]:
-    """Convert raw event dicts to Event models.
-
-    Args:
-        raw: Raw event payloads from API.
-        strict: Whether to raise on validation failures.
+    """Parse raw event dictionaries into Event models.
 
     Returns:
-        Validated Event instances.
+        List of validated Event instances.
 
     Raises:
-        ValidationError: If strict=True and a payload is invalid.
+        ValidationError: If strict=True and validation fails.
     """
     events: list[Event] = []
     for item in raw:
@@ -126,11 +83,14 @@ def _parse_events(raw: list[dict[str, Any]], *, strict: bool) -> list[Event]:
         except ValidationError as exc:
             if strict:
                 raise
-            event_id = str(item.get("id", "<unknown>"))
+            event_id: Any = item.get("id", "<unknown>")
+            fields: set[str] = {
+                ".".join(str(p) for p in e.get("loc", ())) for e in exc.errors()
+            }
             logger.warning(
                 "Skipping invalid event %s: %s",
                 event_id,
-                _format_validation_errors(exc),
+                ", ".join(sorted(fields)),
             )
     return events
 
@@ -155,20 +115,13 @@ class EventClient:
         username: str,
         token: str,
         *,
-        config: EventClientConfig | None = None,
+        config: ClientConfig | None = None,
         rate_limiter: AsyncLimiter | None = None,
     ) -> None:
-        """Initialize the client.
-
-        Args:
-            username: Chaturbate username.
-            token: Events API token.
-            config: Client settings (uses defaults if not provided).
-            rate_limiter: Rate limiter shared across clients
-                (defaults to 2000 req/60s per instance).
+        """Initialize event client with credentials and configuration.
 
         Raises:
-            AuthError: If username or token is empty or has whitespace.
+            AuthError: If username or token is invalid.
         """
         if not username or username != username.strip():
             msg = "Username must not be empty or contain whitespace"
@@ -179,16 +132,15 @@ class EventClient:
 
         self.username = username
         self.token = token
-
-        self.config = config or EventClientConfig()
+        self.config = config or ClientConfig()
         self.timeout = self.config.timeout
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
         self.session: ClientSession | None = None
         self._next_url: str | None = None
         self._polling_lock = asyncio.Lock()
         self._rate_limiter = rate_limiter or AsyncLimiter(
-            max_rate=RATE_LIMIT_MAX_RATE,
-            time_period=RATE_LIMIT_TIME_PERIOD,
+            max_rate=DEFAULT_MAX_RATE,
+            time_period=DEFAULT_TIME_PERIOD,
         )
 
     def __repr__(self) -> str:
@@ -199,10 +151,10 @@ class EventClient:
         )
 
     async def __aenter__(self) -> Self:
-        """Initialize HTTP session.
+        """Initialize HTTP session on context entry.
 
         Returns:
-            Client instance with active session.
+            The client instance.
 
         Raises:
             EventsError: If session creation fails.
@@ -226,63 +178,37 @@ class EventClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Clean up session and resources."""
+        """Clean up session on context exit."""
         await self.close()
 
     def _build_url(self) -> str:
         """Build URL for next poll request.
 
         Returns:
-            URL for next poll.
+            URL for the next API request.
         """
-        return self._next_url or URL_TEMPLATE.format(
-            base_url=self.base_url,
-            username=quote(self.username, safe=""),
-            token=quote(self.token, safe=""),
-            timeout=self.timeout,
+        if self._next_url:
+            return self._next_url
+        return (
+            f"{self.base_url}/{quote(self.username, safe='')}/"
+            f"{quote(self.token, safe='')}/?timeout={self.timeout}"
         )
 
-    def _extract_next_url(self, text: str) -> str | None:
-        """Extract nextUrl from timeout error response.
-
-        Args:
-            text: Response text.
-
-        Returns:
-            Extracted nextUrl or None.
-        """
-        try:
-            data: Any = json.loads(text)
-        except json.JSONDecodeError:
-            return None
-
-        status: str = data.get("status", "")
-        if isinstance(status, str) and "waited too long" in status.lower():
-            next_url: str | None = data.get("nextUrl")
-            if next_url:
-                logger.debug("Received nextUrl from timeout response")
-                self._next_url = next_url
-                return str(next_url)
-        return None
-
-    async def _make_request(self, url: str) -> tuple[int, str]:
-        """Fetch response from the Events API.
-
-        Args:
-            url: Request URL.
+    async def _request(self, url: str) -> tuple[int, str]:
+        """Make HTTP request with retries.
 
         Returns:
             Tuple of (status_code, response_text).
 
         Raises:
-            EventsError: If request fails after retries.
+            EventsError: If request fails after all retries.
         """
         if self.session is None:
             msg = "Client not initialized - use async context manager"
             raise EventsError(msg)
 
         max_attempts: int = max(1, self.config.retry_attempts)
-        delay = self.config.retry_backoff
+        delay: float = self.config.retry_backoff
         attempt = 0
 
         while True:
@@ -292,8 +218,8 @@ class EventClient:
                     self._rate_limiter,
                     self.session.get(url) as response,
                 ):
-                    text: str = await response.text()
                     status: int = response.status
+                    text: str = await response.text()
             except (ClientError, TimeoutError, OSError) as exc:
                 if attempt >= max_attempts:
                     logger.exception(
@@ -305,7 +231,10 @@ class EventClient:
                     raise EventsError(msg) from exc
 
                 logger.warning(
-                    "Attempt %d/%d failed: %s", attempt, max_attempts, exc
+                    "Attempt %d/%d failed: %s",
+                    attempt,
+                    max_attempts,
+                    exc,
                 )
                 await asyncio.sleep(delay)
                 delay = min(
@@ -316,7 +245,7 @@ class EventClient:
 
             if status in RETRY_STATUS_CODES and attempt < max_attempts:
                 logger.debug(
-                    "Retrying due to status %s (attempt %d/%d)",
+                    "Retrying due to status %d (attempt %d/%d)",
                     status,
                     attempt,
                     max_attempts,
@@ -330,96 +259,106 @@ class EventClient:
 
             return status, text
 
-    def _handle_response_status(self, status: int, text: str) -> bool:
-        """Process HTTP response status codes.
-
-        Args:
-            status: HTTP status code.
-            text: Response body.
+    def _process_response(self, status: int, text: str) -> list[Event]:
+        """Process HTTP response and extract events.
 
         Returns:
-            True if timeout response was handled (skip parsing).
+            List of parsed Event instances.
 
         Raises:
             AuthError: For 401/403 responses.
-            EventsError: For other non-200 responses.
+            EventsError: For other non-OK responses.
         """
-        if status in AUTH_ERROR_STATUSES:
+        # Handle authentication errors
+        if status in AUTH_ERRORS:
             logger.warning("Auth failed for user %s", self.username)
-            msg = f"Authentication failed for {self.username}"
+            msg: str = f"Authentication failed for {self.username}"
             raise AuthError(msg)
 
-        if status == HTTPStatus.BAD_REQUEST and self._extract_next_url(text):
-            return True
+        # Check for timeout response with nextUrl
+        if status == HTTPStatus.BAD_REQUEST and self._try_extract_next_url(
+            text
+        ):
+            return []
 
+        # Handle non-OK responses
         if status != HTTPStatus.OK:
-            snippet: str = text[:RESPONSE_TRUNCATE_LENGTH]
-            if len(text) > RESPONSE_TRUNCATE_LENGTH:
+            snippet: str = text[:TRUNCATE_LENGTH]
+            if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
             logger.error("HTTP %d: %s", status, snippet)
             msg = f"HTTP {status}: {snippet}"
-            raise EventsError(msg, status_code=status, response_text=text)
+            raise EventsError(
+                msg,
+                status_code=status,
+                response_text=text,
+            )
 
-        return False
+        return self._parse_json_response(text)
 
-    @staticmethod
-    def _decode_json(text: str) -> dict[str, Any]:
-        """Parse response as JSON.
-
-        Args:
-            text: HTTP response body.
+    def _try_extract_next_url(self, text: str) -> bool:
+        """Try to extract nextUrl from timeout response.
 
         Returns:
-            Parsed JSON dictionary.
+            True if nextUrl was found and extracted.
+        """
+        try:
+            data: Any = json.loads(text)
+            status_msg = data.get("status", "")
+            is_timeout: bool = (
+                isinstance(status_msg, str)
+                and "waited too long" in status_msg.lower()
+            )
+            if is_timeout:
+                next_url = data.get("nextUrl")
+                if next_url:
+                    logger.debug("Received nextUrl from timeout response")
+                    self._next_url = next_url
+                    return True
+        except (json.JSONDecodeError, KeyError):
+            pass
+        return False
+
+    def _parse_json_response(self, text: str) -> list[Event]:
+        """Parse JSON response and extract events.
+
+        Returns:
+            List of parsed Event instances.
 
         Raises:
-            EventsError: If JSON is invalid.
+            EventsError: If JSON is invalid or response format is wrong.
         """
         try:
             data: Any = json.loads(text)
         except json.JSONDecodeError as exc:
-            snippet: str = text[:RESPONSE_TRUNCATE_LENGTH]
-            if len(text) > RESPONSE_TRUNCATE_LENGTH:
+            snippet: str = text[:TRUNCATE_LENGTH]
+            if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
             logger.exception("Failed to parse JSON: %s", snippet)
             msg: str = f"Invalid JSON response: {exc.msg}"
-            raise EventsError(msg, response_text=text) from exc
+            raise EventsError(
+                msg,
+                response_text=text,
+            ) from exc
+
         if not isinstance(data, dict):
             msg = "Invalid JSON response: expected object"
-            raise EventsError(msg, response_text=text)
-        return data
+            raise EventsError(
+                msg,
+                response_text=text,
+            )
 
-    def _parse_batch(
-        self, payload: dict[str, Any], *, raw_text: str
-    ) -> tuple[str | None, list[Event]]:
-        """Validate API payload and extract events.
-
-        Args:
-            payload: Parsed JSON response.
-            raw_text: Original response for error messages.
-
-        Returns:
-            Tuple of (next_url, events).
-
-        Raises:
-            EventsError: If payload validation fails.
-        """
-        try:
-            batch: _ResponseBatch = _ResponseBatch.model_validate(payload)
-        except ValidationError as exc:
-            msg = "Invalid API response"
-            raise EventsError(msg, response_text=raw_text) from exc
-
+        # Extract events and nextUrl
+        self._next_url = data.get("nextUrl")
+        raw_events = data.get("events", [])
         events: list[Event] = _parse_events(
-            batch.events,
-            strict=self.config.strict_validation,
+            raw_events, strict=self.config.strict_validation
         )
-        self._next_url = batch.next_url
 
         if events:
             logger.debug("Received %d events", len(events))
 
-        return batch.next_url, events
+        return events
 
     async def poll(self) -> list[Event]:
         """Poll the API for new events.
@@ -427,27 +366,18 @@ class EventClient:
         Safe for concurrent calls (uses internal lock).
 
         Returns:
-            Events received (empty list if timeout or no events).
+            List of events received (empty if timeout or no events).
         """
         async with self._polling_lock:
             url: str = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Polling %s", _mask_url(url, self.token))
 
-            status, text = await self._make_request(url)
-
-            if self._handle_response_status(status, text):
-                return []
-
-            payload: dict[str, Any] = self._decode_json(text)
-            _, events = self._parse_batch(payload, raw_text=text)
-            return events
+            status, text = await self._request(url)
+            return self._process_response(status, text)
 
     def __aiter__(self) -> AsyncIterator[Event]:
         """Stream events continuously as an async iterator.
-
-        Yields events as they arrive from the API. Safe to iterate
-        multiple times (each iteration polls independently).
 
         Returns:
             Async iterator yielding Event objects.
