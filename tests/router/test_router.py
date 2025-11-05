@@ -122,3 +122,21 @@ async def test_handler_failure_does_not_stop_execution(
     handler_one.assert_called_once_with(simple_tip_event)
     handler_two.assert_called_once_with(simple_tip_event)
     handler_three.assert_called_once_with(simple_tip_event)
+
+
+def test_reject_non_async_handler_on_decorator(router: Router) -> None:
+    """Registering a non-async handler with on() should raise TypeError."""
+    with pytest.raises(TypeError, match="must be async"):
+
+        @router.on(EventType.TIP)  # pyright: ignore[reportArgumentType]
+        def sync_handler(event: Event) -> None:
+            pass
+
+
+def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
+    """Registering a non-async handler with on_any() should raise TypeError."""
+    with pytest.raises(TypeError, match="must be async"):
+
+        @router.on_any()  # pyright: ignore[reportArgumentType]
+        def sync_handler(event: Event) -> None:
+            pass
