@@ -150,7 +150,7 @@ def test_reject_partial_sync_handler(router: Router) -> None:
         pass
 
     with pytest.raises(TypeError, match="must be async"):
-        router.on(EventType.TIP)(partial(sync_handler, flag=True))
+        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # pyright: ignore[reportArgumentType]
 
 
 async def test_accept_partial_async_handler(
