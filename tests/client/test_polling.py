@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from aiohttp.client_exceptions import ClientError
 from aioresponses import aioresponses
+from pydantic import ValidationError
 
 from cb_events import EventClient
 from cb_events.config import ClientConfig
@@ -291,3 +292,45 @@ async def test_network_errors_with_oserror(
             match=r"Failed to fetch events after 3 attempts",
         ):
             await client.poll()
+
+
+async def test_strict_validation_raises_on_invalid_event(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Strict mode should surface validation failures."""
+    response: dict[str, Any] = {
+        "events": [{"method": "tip", "object": {}}],
+        "nextUrl": None,
+    }
+    mock_response.get(testbed_url_pattern, payload=response)
+    config = ClientConfig(use_testbed=True, strict_validation=True)
+
+    async with event_client_factory(config=config) as client:
+        with pytest.raises(ValidationError):
+            await client.poll()
+
+
+async def test_lenient_validation_skips_invalid_events(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Lenient mode should skip invalid events and return the rest."""
+    response: dict[str, Any] = {
+        "events": [
+            {"method": "tip", "object": {}},
+            {"method": "follow", "id": "valid", "object": {}},
+        ],
+        "nextUrl": None,
+    }
+    mock_response.get(testbed_url_pattern, payload=response)
+    config = ClientConfig(use_testbed=True, strict_validation=False)
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+
+    assert len(events) == 1
+    assert events[0].id == "valid"
+    assert events[0].type is EventType.FOLLOW
