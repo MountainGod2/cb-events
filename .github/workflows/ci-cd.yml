@@ -71,7 +71,7 @@ jobs:
 
       - run: make bandit
 
-      - uses: github/codeql-action/upload-sarif@320a6b661b23adb447724a2e4805470acb076f83
+      - uses: github/codeql-action/upload-sarif@71d0a56d4479a74c3dd8cf7a47d5661f11752db8
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
@@ -86,7 +86,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 0
 
-      - uses: github/codeql-action/upload-sarif@320a6b661b23adb447724a2e4805470acb076f83
+      - uses: github/codeql-action/upload-sarif@71d0a56d4479a74c3dd8cf7a47d5661f11752db8
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
