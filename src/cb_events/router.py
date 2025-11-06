@@ -3,7 +3,9 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from functools import partial
 from inspect import iscoroutinefunction
+from typing import Any
 
 from .models import Event, EventType
 
@@ -28,11 +30,41 @@ def _is_async_callable(
         if call_method and iscoroutinefunction(call_method):
             return True
 
-    underlying = getattr(func, "func", None)
+    underlying: Any | None = getattr(func, "func", None)
     if underlying is not None and underlying is not func:
         return _is_async_callable(underlying)
 
     return False
+
+
+def _handler_name(handler: object) -> str:
+    """Return a safe name for logging handler failures."""
+    seen: set[int] = set()
+    current: object = handler
+
+    while id(current) not in seen:
+        seen.add(id(current))
+        name: str | None = getattr(current, "__name__", None)
+        if name:
+            return name
+
+        if isinstance(current, partial):
+            current = current.func
+            continue
+
+        wrapped: Any | None = getattr(current, "__wrapped__", None)
+        if wrapped and wrapped is not current:
+            current = wrapped
+            continue
+
+        func: Any | None = getattr(current, "func", None)
+        if func and func is not current:
+            current = func
+            continue
+
+        break
+
+    return type(current).__name__
 
 
 class Router:
@@ -107,6 +139,6 @@ class Router:
                     raise
                 logger.exception(
                     "Handler %s failed for event %s",
-                    handler.__name__,
+                    _handler_name(handler),
                     event.id,
                 )
