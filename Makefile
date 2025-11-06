@@ -23,6 +23,7 @@ fix:
 type-check:
 	uv run pyrefly check
 	uv run pyright
+	uv run ty check src
 
 # Full static analysis pipeline
 lint: check type-check
