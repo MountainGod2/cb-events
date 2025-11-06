@@ -292,7 +292,6 @@ class EventClient:
             AuthError: For 401/403 responses.
             EventsError: For other non-OK responses.
         """
-        # Handle authentication errors
         if status in AUTH_ERRORS:
             logger.warning("Auth failed for user %s", self.username)
             msg: str = (
@@ -303,20 +302,17 @@ class EventClient:
             )
             raise AuthError(msg, status_code=status, response_text=text)
 
-        # Check for timeout response with nextUrl
         if status == HTTPStatus.BAD_REQUEST and self._try_extract_next_url(
             text
         ):
             return []
 
-        # Handle non-OK responses
         if status != HTTPStatus.OK:
             snippet: str = text[:TRUNCATE_LENGTH]
             if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
             logger.error("HTTP %d: %s", status, snippet)
 
-            # Provide status-specific guidance
             if status == HTTPStatus.TOO_MANY_REQUESTS:
                 guidance = (
                     " Rate limit exceeded. Reduce request frequency or "
