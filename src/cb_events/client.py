@@ -347,19 +347,23 @@ class EventClient:
         """
         try:
             data: Any = json.loads(text)
-            status_msg = data.get("status", "")
-            is_timeout: bool = (
-                isinstance(status_msg, str)
-                and "waited too long" in status_msg.lower()
-            )
-            if is_timeout:
-                next_url = data.get("nextUrl")
-                if next_url:
-                    logger.debug("Received nextUrl from timeout response")
-                    self._next_url = next_url
-                    return True
         except (json.JSONDecodeError, KeyError):
-            pass
+            return False
+
+        if not isinstance(data, Mapping):
+            return False
+
+        status_msg = data.get("status", "")
+        is_timeout: bool = (
+            isinstance(status_msg, str)
+            and "waited too long" in status_msg.lower()
+        )
+        if is_timeout:
+            next_url = data.get("nextUrl")
+            if next_url:
+                logger.debug("Received nextUrl from timeout response")
+                self._next_url = next_url
+                return True
         return False
 
     def _parse_json_response(self, text: str) -> list[Event]:
@@ -389,7 +393,7 @@ class EventClient:
                 response_text=text,
             ) from exc
 
-        if not isinstance(data, dict):
+        if not isinstance(data, Mapping):
             msg = (
                 "Invalid API response format: expected JSON object, got "
                 f"{type(data).__name__}. The API may be returning an "
@@ -404,6 +408,17 @@ class EventClient:
         # Extract events and nextUrl
         self._next_url = data.get("nextUrl")
         raw_events = data.get("events", [])
+
+        if not isinstance(raw_events, list):
+            msg = (
+                "Invalid API response format: 'events' must be a list of "
+                "objects."
+            )
+            raise EventsError(
+                msg,
+                response_text=text,
+            )
+
         events: list[Event] = _parse_events(
             raw_events, strict=self.config.strict_validation
         )
