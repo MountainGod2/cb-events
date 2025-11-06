@@ -2,6 +2,59 @@
 
 <!-- version list -->
 
+## v5.1.1 (2025-11-06)
+
+### Bug Fixes
+
+- **client**: Handle event ID extraction for non-mapping items
+  ([`96f3945`](https://github.com/MountainGod2/cb-events/commit/96f39455b8fe0459cf40f7027d33f9b88ac28301))
+
+### Chores
+
+- **deps**: Replace mypy with pyrefly for type checks
+  ([`647ee2b`](https://github.com/MountainGod2/cb-events/commit/647ee2b6920189b35abf761ebd2926178638f6b6))
+
+- **deps**: Update github/codeql-action digest to 320a6b6
+  ([`a623144`](https://github.com/MountainGod2/cb-events/commit/a623144c09fbc9c4c772287cfe0cadf49cce2777))
+
+- **deps**: Update pre-commit-hooks
+  ([`1dda5b6`](https://github.com/MountainGod2/cb-events/commit/1dda5b6e32f5a3a200615bf6078c0c564b584b78))
+
+- **Makefile**: Add ty check to type-check target
+  ([`91e40d4`](https://github.com/MountainGod2/cb-events/commit/91e40d414aae195800b97925ba5f4d982b804483))
+
+- **pre-commit**: Remove mypy hook and add pyrefly type check
+  ([`8b793bd`](https://github.com/MountainGod2/cb-events/commit/8b793bdaf01a8f7b28bc3ac2bfc0cc70f3fd2625))
+
+### Refactoring
+
+- **client**: Improve JSON response handling and validation
+  ([`b8cc680`](https://github.com/MountainGod2/cb-events/commit/b8cc68099ef61be7ba414f9b8a9b35849353280e))
+
+- **client**: Remove redundant error handling comments
+  ([`6e404a1`](https://github.com/MountainGod2/cb-events/commit/6e404a1ffc36f264607fe1ae8edf55c09886f665))
+
+- **router**: Improve async handler error message
+  ([`d11e77f`](https://github.com/MountainGod2/cb-events/commit/d11e77f21bd2f921a9696fbbabf147d33ad94d32))
+
+- **router**: Improve handler name retrieval logic
+  ([`d7b13e3`](https://github.com/MountainGod2/cb-events/commit/d7b13e3c864232c6d8109d8c9f7206c445a0b240))
+
+### Testing
+
+- **client**: Add strict and lenient validation tests
+  ([`a81a88e`](https://github.com/MountainGod2/cb-events/commit/a81a88e6e4cf713ab109fac1baf5f52413a7e410))
+
+- **client**: Add tests for timeout and non-list event payloads
+  ([`b404e2a`](https://github.com/MountainGod2/cb-events/commit/b404e2acc6d116ab24dc4417a21c6e2113154d88))
+
+- **router**: Ignore type check for partial sync handler
+  ([`867a551`](https://github.com/MountainGod2/cb-events/commit/867a551153083b3ce411887622076034543391f8))
+
+- **router**: Reject partial sync handlers in decorator
+  ([`01c05b1`](https://github.com/MountainGod2/cb-events/commit/01c05b15f176f6af85ef97201ad99040c05ca798))
+
+
 ## v5.1.0 (2025-11-05)
 
 ### Bug Fixes
