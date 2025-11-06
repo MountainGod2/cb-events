@@ -3,7 +3,7 @@
 import asyncio
 import json
 import logging
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Mapping
 from http import HTTPStatus
 from types import TracebackType
 from typing import Any, Self
@@ -83,7 +83,11 @@ def _parse_events(raw: list[dict[str, Any]], *, strict: bool) -> list[Event]:
         except ValidationError as exc:
             if strict:
                 raise
-            event_id: Any = item.get("id", "<unknown>")
+            event_id: Any = (
+                item.get("id", "<unknown>")
+                if isinstance(item, Mapping)
+                else "<unknown>"
+            )
             fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) for e in exc.errors()
             }
