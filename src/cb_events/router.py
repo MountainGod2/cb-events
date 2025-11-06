@@ -89,7 +89,7 @@ class Router:
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
             if not _is_async_callable(func):
-                msg: str = f"Handler {func.__name__} must be async"
+                msg: str = f"Handler {_handler_name(func)} must be async"
                 raise TypeError(msg)
             self._handlers.setdefault(event_type, []).append(func)
             return func
@@ -105,7 +105,7 @@ class Router:
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
             if not _is_async_callable(func):
-                msg: str = f"Handler {func.__name__} must be async"
+                msg: str = f"Handler {_handler_name(func)} must be async"
                 raise TypeError(msg)
             self._handlers.setdefault(None, []).append(func)
             return func
