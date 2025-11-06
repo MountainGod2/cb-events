@@ -21,7 +21,7 @@ fix:
 	uv run ruff check --fix
 
 type-check:
-	uv run mypy ./
+	uv run pyrefly check
 	uv run pyright
 
 # Full static analysis pipeline
@@ -86,7 +86,6 @@ clean:
 	rm -rf coverage.xml
 	rm -rf .coverage
 	rm -rf htmlcov/
-	rm -rf .mypy_cache/
 	rm -rf .ruff_cache/
 	rm -rf .pyright/
 	rm -rf dist/

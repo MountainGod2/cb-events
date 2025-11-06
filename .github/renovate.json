@@ -100,7 +100,7 @@
         "pytest",
         "pytest-*",
         "aioresponses",
-        "mypy",
+        "pyrefly",
         "pyright",
         "pylint",
         "pylint-*",
