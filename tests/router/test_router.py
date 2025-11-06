@@ -143,6 +143,16 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
             pass
 
 
+def test_reject_partial_sync_handler(router: Router) -> None:
+    """Partial objects wrapping sync handlers should be rejected."""
+
+    def sync_handler(event: Event, *, flag: bool) -> None:
+        pass
+
+    with pytest.raises(TypeError, match="must be async"):
+        router.on(EventType.TIP)(partial(sync_handler, flag=True))
+
+
 async def test_accept_partial_async_handler(
     router: Router,
     simple_tip_event: Event,
