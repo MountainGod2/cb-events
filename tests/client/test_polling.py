@@ -140,6 +140,33 @@ async def test_invalid_json_response(
             await client.poll()
 
 
+async def test_timeout_payload_not_mapping(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Timeout payloads that are not JSON objects should raise EventsError."""
+    mock_response.get(testbed_url_pattern, status=400, payload=["unexpected"])
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match="HTTP 400"):
+            await client.poll()
+
+
+async def test_events_payload_not_list(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Responses with non-list ``events`` should raise EventsError."""
+    response: dict[str, Any] = {"events": None, "nextUrl": None}
+    mock_response.get(testbed_url_pattern, payload=response)
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match="events' must be a list"):
+            await client.poll()
+
+
 async def test_network_error_wrapped(
     event_client_factory: EventClientFactory,
     mock_response: aioresponses,
