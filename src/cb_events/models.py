@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 
 logger: logging.Logger = logging.getLogger(__name__)
+"""Logger for the cb_events.models module."""
 
 
 class BaseEventModel(BaseModel):
@@ -36,51 +37,87 @@ class EventType(StrEnum):
     """Event types from the Chaturbate Events API."""
 
     BROADCAST_START = "broadcastStart"
+    """Broadcaster has started streaming."""
     BROADCAST_STOP = "broadcastStop"
+    """Broadcaster has stopped streaming."""
     ROOM_SUBJECT_CHANGE = "roomSubjectChange"
+    """Room subject or title has changed."""
     USER_ENTER = "userEnter"
+    """User has entered the room."""
     USER_LEAVE = "userLeave"
+    """User has left the room."""
     FOLLOW = "follow"
+    """User has followed the broadcaster."""
     UNFOLLOW = "unfollow"
+    """User has unfollowed the broadcaster."""
     FANCLUB_JOIN = "fanclubJoin"
+    """User has joined the fan club."""
     CHAT_MESSAGE = "chatMessage"
+    """Chat message has been sent."""
     PRIVATE_MESSAGE = "privateMessage"
+    """Private message has been sent."""
     TIP = "tip"
+    """User has sent a tip."""
     MEDIA_PURCHASE = "mediaPurchase"
+    """User has purchased media."""
 
 
 class User(BaseEventModel):
     """User information from events."""
 
     username: str
+    """Display name of the user."""
     color_group: str | None = None
+    """Color group of the user."""
     fc_auto_renew: bool = False
+    """Whether the user has enabled fan club auto-renewal."""
     gender: str | None = None
+    """Gender of the user."""
     has_darkmode: bool = False
+    """Whether the user has dark mode enabled."""
     has_tokens: bool = False
+    """Whether the user has tokens."""
     in_fanclub: bool = False
+    """Whether the user is in the fan club."""
     in_private_show: bool = False
+    """Whether the user is in a private show."""
     is_broadcasting: bool = False
+    """Whether the user is broadcasting."""
     is_follower: bool = False
+    """Whether the user is a follower."""
     is_mod: bool = False
+    """Whether the user is a moderator."""
     is_owner: bool = False
+    """Whether the user is the room owner."""
     is_silenced: bool = False
+    """Whether the user is silenced."""
     is_spying: bool = False
+    """Whether the user is spying on a private show."""
     language: str | None = None
+    """Language preference of the user."""
     recent_tips: str | None = None
+    """Recent tips information."""
     subgender: str | None = None
+    """Subgender of the user."""
 
 
 class Message(BaseEventModel):
     """Chat or private message."""
 
     message: str
+    """Content of the message."""
     bg_color: str | None = None
+    """Background color of the message."""
     color: str | None = None
+    """Text color of the message."""
     font: str | None = None
+    """Font style of the message."""
     orig: str | None = None
+    """Original message content."""
     from_user: str | None = None
+    """Username of the sender."""
     to_user: str | None = None
+    """Username of the recipient."""
 
     @property
     def is_private(self) -> bool:
@@ -92,14 +129,18 @@ class Tip(BaseEventModel):
     """Tip transaction."""
 
     tokens: int
+    """Number of tokens tipped."""
     is_anon: bool = False
+    """Whether the tip is anonymous."""
     message: str | None = None
+    """Optional message attached to the tip."""
 
 
 class RoomSubject(BaseEventModel):
     """Room subject/title."""
 
     subject: str
+    """The room subject or title."""
 
 
 class Event(BaseEventModel):
@@ -110,8 +151,11 @@ class Event(BaseEventModel):
     """
 
     type: EventType = Field(alias="method")
+    """Type of the event."""
     id: str
+    """Unique identifier for the event."""
     data: dict[str, Any] = Field(default_factory=dict, alias="object")
+    """Event data payload."""
 
     @cached_property
     def user(self) -> User | None:
