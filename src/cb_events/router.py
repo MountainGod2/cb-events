@@ -10,6 +10,7 @@ from typing import Any
 from .models import Event, EventType
 
 logger: logging.Logger = logging.getLogger(__name__)
+"""Logger for the cb_events.router module."""
 
 
 type HandlerFunc = Callable[[Event], Awaitable[None]]
