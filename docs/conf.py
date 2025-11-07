@@ -1,61 +1,68 @@
 """Documentation configuration file for Sphinx."""  # noqa: INP001
 
-from cb_events import __version__
+import importlib.metadata
+import sys
+from pathlib import Path
 
-# Project configuration
+# Path setup
+DOCS_DIR: Path = Path(__file__).resolve().parent
+PROJECT_ROOT: Path = DOCS_DIR.parent
+SRC_DIR: Path = PROJECT_ROOT / "src"
+
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+# Project information
 project = "cb_events"
-project_copyright = "2025, MountainGod2"
 author = "MountainGod2"
-version: str = __version__
-release: str = __version__
-
-# General configuration
+project_copyright = "2025, MountainGod2"
 language = "en"
 
-# Sphinx extensions
+# Version
+try:
+    version: str = importlib.metadata.version("cb-events")
+except importlib.metadata.PackageNotFoundError:
+    from cb_events import __version__
+
+    version = __version__
+
+release: str = version
+
+# Extensions
 extensions: list[str] = [
-    "myst_nb",
-    "autoapi.extension",
     "sphinx.ext.napoleon",
-    "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.coverage",
-    "sphinx.ext.doctest",
-    "sphinx.ext.todo",
-    "sphinx.ext.githubpages",
+    "sphinx.ext.viewcode",
+    "autoapi.extension",
     "sphinx_autodoc_typehints",
+    "sphinxcontrib.autodoc_pydantic",
+    "myst_nb",
 ]
 
 # Build exclusions
 exclude_patterns: list[str] = [
     "_build",
-    "_templates",
-    "_static",
     "Thumbs.db",
     ".DS_Store",
-    "examples/",
-    "tutorials/",
     "**/.pytest_cache",
     "**/__pycache__",
-    ".jupyter_cache",
 ]
 
-# HTML output configuration
+# HTML theme configuration
 html_theme = "sphinx_rtd_theme"
 html_title = "cb_events API Client Library"
 html_show_sourcelink = False
 html_copy_source = False
+html_last_updated_fmt = "%b %d, %Y"
 
-html_theme_options = {
+html_theme_options: dict[str, bool | int] = {
     "navigation_depth": 4,
     "collapse_navigation": False,
     "sticky_navigation": True,
-    "includehidden": True,
     "titles_only": False,
-    "style_external_links": True,
 }
 
-html_context = {
+html_context: dict[str, bool | str] = {
     "display_github": True,
     "github_user": "MountainGod2",
     "github_repo": "cb-events",
@@ -63,100 +70,56 @@ html_context = {
     "conf_py_path": "/docs/",
 }
 
-# Napoleon extension configuration
+# Napoleon docstring configuration
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 # AutoAPI configuration
-autoapi_dirs: list[str] = ["../src"]
+autoapi_dirs: list[str] = [str(SRC_DIR / "cb_events")]
 autoapi_type = "python"
-autoapi_template_dir = "_templates/autoapi"
-autoapi_options = [
+autoapi_root = "api"
+autoapi_member_order = "bysource"
+autoapi_python_class_content = "class"
+autoapi_keep_files = False
+
+autoapi_options: list[str] = [
     "members",
-    "undoc-members",
     "show-inheritance",
     "show-module-summary",
-    "imported-members",
 ]
-autoapi_python_class_content = "class"
-autoapi_member_order = "groupwise"
-autoapi_root = "api"
-autoapi_keep_files = True
-autoapi_ignore = ["*/tests/*", "*/test_*", "*/__pycache__/*"]
-autoapi_generate_api_docs = True
-autoapi_add_toctree_entry = True
 
-# Intersphinx configuration
-intersphinx_mapping = {
+autoapi_ignore: list[str] = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/conftest.py",
+]
+
+# Intersphinx mapping
+intersphinx_mapping: dict[str, tuple[str, None]] = {
     "python": ("https://docs.python.org/3", None),
     "pydantic": ("https://docs.pydantic.dev/latest/", None),
     "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
 }
 
-# MyST-NB configuration
-nb_execution_timeout = 60
-nb_execution_allow_errors = False
-nb_execution_mode = "off"  # Don't execute notebooks during build
-myst_enable_extensions = [
-    "colon_fence",
-    "deflist",
-    "fieldlist",
-    "tasklist",
-]
-
 # Type hints configuration
 typehints_fully_qualified = False
+typehints_document_rtype = True
 always_document_param_types = True
 
-# Suppress warnings
-suppress_warnings = [
-    "autoapi.python_import_resolution",
-    "ref.python",
-    "autoapi.not_readable",
-    "app.add_node",
-    "app.add_directive",
-    "app.add_role",
-    "autoapi.duplicate_object",
-    "autosummary",
-    "autosectionlabel.*",
-    "autodoc",
-    "autodoc.import_object",
+# MyST-NB configuration
+nb_execution_mode = "off"
+myst_enable_extensions: list[str] = [
+    "colon_fence",
+    "deflist",
 ]
 
-# Suppress duplicate object warnings
-nitpicky = False
-
-typehints_document_rtype = True
-typehints_use_rtype = True
-
-# Coverage extension configuration
-coverage_show_missing_items = True
-
-# sphinx.ext.todo configuration
-todo_include_todos = True
-
-# Additional HTML options
-html_favicon = None  # Set to your favicon path if you have one
-html_last_updated_fmt = "%b %d, %Y"
-html_use_index = True
-html_split_index = False
-
-# Link check configuration
-linkcheck_ignore: list[str] = [
-    "https://chaturbate.com/statsapi/authtoken/",
-    r"https://github\.com/.*",
-    r"http://localhost:\d+",
-    r"file://.*",
+# Suppress warnings
+suppress_warnings: list[str] = [
+    "autoapi",
+    "ref.python",
 ]
