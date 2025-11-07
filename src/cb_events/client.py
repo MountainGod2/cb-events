@@ -44,6 +44,7 @@ RETRY_STATUS_CODES: set[int] = {
 }
 
 logger: logging.Logger = logging.getLogger(__name__)
+"""Logger for the cb_events.client module."""
 
 
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
