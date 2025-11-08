@@ -12,7 +12,7 @@ class ClientConfig(BaseModel):
         timeout: Request timeout in seconds.
         use_testbed: Use testbed API instead of production.
         strict_validation: Raise on invalid events vs. skip and log.
-        retry_attempts: Total attempts including initial request.
+    retry_attempts: Total attempts including initial request (>=1).
         retry_backoff: Initial retry delay in seconds.
         retry_factor: Backoff multiplier per retry.
         retry_max_delay: Maximum delay between retries.
@@ -23,7 +23,7 @@ class ClientConfig(BaseModel):
     timeout: int = Field(default=10, gt=0)
     use_testbed: bool = False
     strict_validation: bool = True
-    retry_attempts: int = Field(default=8, ge=0)
+    retry_attempts: int = Field(default=8, ge=1)
     retry_backoff: float = Field(default=1.0, ge=0)
     retry_factor: float = Field(default=2.0, gt=0)
     retry_max_delay: float = Field(default=30.0, ge=0)
