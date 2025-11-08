@@ -2,6 +2,60 @@
 
 <!-- version list -->
 
+## v5.2.0 (2025-11-08)
+
+### Bug Fixes
+
+- **config**: Enforce minimum value for retry_attempts
+  ([`4711e7f`](https://github.com/MountainGod2/cb-events/commit/4711e7f2e88191e41cbe1bdfdceed74c4a6302a0))
+
+### Chores
+
+- **client**: Add logger documentation comment
+  ([`f976188`](https://github.com/MountainGod2/cb-events/commit/f9761883174e03ed5eec1f29bcf5cdfffdc67969))
+
+- **deps**: Add autodoc-pydantic package
+  ([`c265839`](https://github.com/MountainGod2/cb-events/commit/c2658393d250a23ecb3ab70ff2a66350fb483876))
+
+- **deps**: Update astral-sh/setup-uv digest to b49dc9e
+  ([`8c37276`](https://github.com/MountainGod2/cb-events/commit/8c3727632163fa91d9baf89060e3cecd76000761))
+
+- **deps**: Update github/codeql-action digest to 71d0a56
+  ([`bd68e54`](https://github.com/MountainGod2/cb-events/commit/bd68e542cba3181e9b540fcbf4481dd8c975f0c4))
+
+- **docs**: Remove unused autoapi template files
+  ([`5120b1c`](https://github.com/MountainGod2/cb-events/commit/5120b1c98f8bdb2886b68f31d391917d6ef4e449))
+
+- **pre-commit**: Add renovate config validator hook
+  ([`087e998`](https://github.com/MountainGod2/cb-events/commit/087e9985ae2a9e2b9b66b919422cd056a9221020))
+
+- **router**: Add logger documentation comment
+  ([`7d68187`](https://github.com/MountainGod2/cb-events/commit/7d6818738707ee51f78ca0910ddd628faa866bcc))
+
+### Documentation
+
+- **models**: Enhance documentation for event models
+  ([`276b81b`](https://github.com/MountainGod2/cb-events/commit/276b81b6f085723c44580e1bcbc9256e35605212))
+
+### Features
+
+- **client**: Add validation for nextUrl in API responses
+  ([`1b7e9cb`](https://github.com/MountainGod2/cb-events/commit/1b7e9cb61b4e136be0533b18d67e119418388098))
+
+### Refactoring
+
+- **docs**: Improve Sphinx configuration and imports
+  ([`890a318`](https://github.com/MountainGod2/cb-events/commit/890a3185b045cf118830703fa11827f5ae518e8a))
+
+### Testing
+
+- **configuration**: Update retry attempts test
+  ([`b5afb08`](https://github.com/MountainGod2/cb-events/commit/b5afb088c3b7c6387986a09b33de4b5cd2598aa9))
+
+- **polling**: Add tests for handling invalid nextUrl values
+  ([`7ec7d5e`](https://github.com/MountainGod2/cb-events/commit/7ec7d5eb3f3a67b6d6ee6c7291b6a59ce641b8ac))
+
+
 ## v5.1.1 (2025-11-06)
 
 ### Bug Fixes
