@@ -41,9 +41,9 @@ def test_reject_non_positive_timeout(timeout: int) -> None:
         ClientConfig(timeout=timeout)
 
 
-@pytest.mark.parametrize("attempts", [-1, -5])
-def test_reject_negative_retry_attempts(attempts: int) -> None:
-    """Retry attempts cannot be negative."""
+@pytest.mark.parametrize("attempts", [0, -1, -5])
+def test_reject_non_positive_retry_attempts(attempts: int) -> None:
+    """Retry attempts must be strictly positive."""
     with pytest.raises(ValidationError):
         ClientConfig(retry_attempts=attempts)
 
