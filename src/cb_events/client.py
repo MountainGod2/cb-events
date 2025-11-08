@@ -226,7 +226,7 @@ class EventClient:
             )
             raise EventsError(msg)
 
-        max_attempts: int = max(1, self.config.retry_attempts)
+        max_attempts: int = self.config.retry_attempts
         delay: float = self.config.retry_backoff
         attempt = 0
 
@@ -336,6 +336,49 @@ class EventClient:
 
         return self._parse_json_response(text)
 
+    def _validate_next_url(
+        self,
+        next_url: object,
+        *,
+        response_text: str,
+    ) -> str | None:
+        """Validate the ``nextUrl`` value from API responses.
+
+        Args:
+            next_url: Raw ``nextUrl`` value extracted from the API response.
+            response_text: Original response body for error diagnostics.
+
+        Returns:
+            Sanitized ``nextUrl`` string or ``None`` when no follow-up poll is
+            required.
+
+        Raises:
+            EventsError: If ``nextUrl`` is present but not a non-empty string.
+        """
+        if next_url is None:
+            return None
+
+        if isinstance(next_url, str):
+            stripped: str = next_url.strip()
+            if stripped:
+                return stripped
+            logger.error(
+                "Received empty nextUrl from API for user %s",
+                self.username,
+            )
+        else:
+            logger.error(
+                "Received invalid nextUrl type %s for user %s",
+                type(next_url).__name__,
+                self.username,
+            )
+
+        msg: str = (
+            "Invalid API response: 'nextUrl' must be a non-empty string. "
+            "Check https://status.chaturbate.com for service status."
+        )
+        raise EventsError(msg, response_text=response_text)
+
     def _try_extract_next_url(self, text: str) -> bool:
         """Try to extract nextUrl from timeout response.
 
@@ -357,10 +400,21 @@ class EventClient:
         )
         if is_timeout:
             next_url = data.get("nextUrl")
-            if next_url:
-                logger.debug("Received nextUrl from timeout response")
-                self._next_url = next_url
-                return True
+            if next_url is None:
+                return False
+
+            validated = self._validate_next_url(
+                next_url,
+                response_text=text,
+            )
+            if validated is None:
+                return False
+            self._next_url = validated
+            logger.debug(
+                "Received nextUrl from timeout response: %s",
+                _mask_url(validated, self.token),
+            )
+            return True
         return False
 
     def _parse_json_response(self, text: str) -> list[Event]:
@@ -403,7 +457,10 @@ class EventClient:
             )
 
         # Extract events and nextUrl
-        self._next_url = data.get("nextUrl")
+        self._next_url = self._validate_next_url(
+            data.get("nextUrl"),
+            response_text=text,
+        )
         raw_events = data.get("events", [])
 
         if not isinstance(raw_events, list):
