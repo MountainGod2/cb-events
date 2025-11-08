@@ -177,7 +177,7 @@ async def test_network_error_wrapped(
     mock_response.get(
         testbed_url_pattern, exception=ClientError("network down")
     )
-    config = ClientConfig(use_testbed=True, retry_attempts=0)
+    config = ClientConfig(use_testbed=True, retry_attempts=1)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match="Failed to fetch events"):
@@ -237,6 +237,49 @@ async def test_timeout_with_next_url(
         events = await client.poll()
         assert len(events) == 1
         assert events[0].type is EventType.TIP
+
+
+@pytest.mark.parametrize("invalid_next_url", ["   ", {}])
+async def test_invalid_next_url_in_response(
+    invalid_next_url: Any,
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Invalid ``nextUrl`` values should raise an EventsError."""
+    response: dict[str, Any] = {
+        "events": [],
+        "nextUrl": invalid_next_url,
+    }
+    mock_response.get(testbed_url_pattern, payload=response)
+
+    async with event_client_factory() as client:
+        with pytest.raises(
+            EventsError, match=r"Invalid API response: 'nextUrl' must be"
+        ):
+            await client.poll()
+
+
+@pytest.mark.parametrize("invalid_next_url", ["   ", {}])
+async def test_timeout_invalid_next_url_raises(
+    invalid_next_url: Any,
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Timeout responses with invalid ``nextUrl`` should surface errors."""
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": invalid_next_url,
+        "events": [],
+    }
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+
+    async with event_client_factory() as client:
+        with pytest.raises(
+            EventsError, match=r"Invalid API response: 'nextUrl' must be"
+        ):
+            await client.poll()
 
 
 async def test_network_errors_exhaust_retries(
