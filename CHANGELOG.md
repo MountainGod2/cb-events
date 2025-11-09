@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v5.2.1 (2025-11-09)
+
+### Bug Fixes
+
+- **deps**: Update dependency pydantic to v2.12.4
+  ([`64c7750`](https://github.com/MountainGod2/cb-events/commit/64c7750173cf5612630aca788cf79980e44cca5d))
+
+
 ## v5.2.0 (2025-11-08)
 
 ### Bug Fixes
