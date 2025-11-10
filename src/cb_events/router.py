@@ -127,8 +127,9 @@ class Router:
             return
 
         logger.debug(
-            "Dispatching %s to %d handlers",
+            "Dispatching %s event %s to %d handlers",
             event.type.value,
+            event.id,
             len(handlers),
         )
 
@@ -139,7 +140,8 @@ class Router:
                 if isinstance(exc, asyncio.CancelledError):
                     raise
                 logger.exception(
-                    "Handler %s failed for event %s",
+                    "Handler %s failed for event %s (type: %s)",
                     _handler_name(handler),
                     event.id,
+                    event.type.value,
                 )
