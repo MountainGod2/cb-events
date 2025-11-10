@@ -109,7 +109,6 @@
         "/^pylint-.*$/",
         "/^bandit-.*$/",
         "ty",
-        "python-semantic-release",
         "bandit-sarif-formatter",
         "pylint-pydantic"
       ],
