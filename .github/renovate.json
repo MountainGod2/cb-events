@@ -92,7 +92,8 @@
       "labels": [
         "dependencies",
         "core"
-      ]
+      ],
+      "semanticCommitScope": "runtime"
     },
     {
       "description": "Development tools (testing, linting, and type checking)",
@@ -110,10 +111,15 @@
         "/^bandit-.*$/"
       ],
       "groupName": "dev",
+      "labels": [
+        "dependencies",
+        "dev"
+      ],
       "matchUpdateTypes": [
         "minor",
         "patch"
-      ]
+      ],
+      "semanticCommitScope": "dev"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
@@ -124,10 +130,15 @@
         "/^myst-.*$/"
       ],
       "groupName": "docs",
+      "labels": [
+        "dependencies",
+        "docs"
+      ],
       "matchUpdateTypes": [
         "minor",
         "patch"
-      ]
+      ],
+      "semanticCommitScope": "docs"
     },
     {
       "description": "Build and release tools",
@@ -137,10 +148,15 @@
         "/^hatch-.*$/"
       ],
       "groupName": "build",
+      "labels": [
+        "dependencies",
+        "build"
+      ],
       "matchUpdateTypes": [
         "minor",
         "patch"
-      ]
+      ],
+      "semanticCommitScope": "build"
     },
     {
       "description": "Pre-commit hooks",
@@ -148,10 +164,15 @@
         "pre-commit"
       ],
       "groupName": "pre-commit-hooks",
+      "labels": [
+        "dependencies",
+        "pre-commit"
+      ],
       "matchUpdateTypes": [
         "minor",
         "patch"
-      ]
+      ],
+      "semanticCommitScope": "pre-commit"
     }
   ],
   "pep723": {
@@ -166,6 +187,12 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "automerge": true
+    "automerge": true,
+    "labels": [
+      "security"
+    ],
+    "assignees": [
+      "MountainGod2"
+    ]
   }
 }
