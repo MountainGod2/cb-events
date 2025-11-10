@@ -93,7 +93,7 @@ def _parse_events(raw: list[dict[str, Any]], *, strict: bool) -> list[Event]:
                 ".".join(str(p) for p in e.get("loc", ())) for e in exc.errors()
             }
             logger.warning(
-                "Skipping invalid event %s: %s",
+                "Skipping invalid event %s (invalid fields: %s)",
                 event_id,
                 ", ".join(sorted(fields)),
             )
@@ -242,11 +242,11 @@ class EventClient:
             except (ClientError, TimeoutError, OSError) as exc:
                 if attempt >= max_attempts:
                     logger.exception(
-                        "Request failed after %d attempts: %s",
+                        "Request failed after %d attempts for user %s",
                         attempt,
-                        _mask_url(url, self.token),
+                        self.username,
                     )
-                    msg = (
+                    msg: str = (
                         f"Failed to fetch events after {max_attempts} "
                         "attempts. Check network connectivity, firewall "
                         "settings, and Chaturbate API status at "
@@ -255,9 +255,10 @@ class EventClient:
                     raise EventsError(msg) from exc
 
                 logger.warning(
-                    "Attempt %d/%d failed: %s",
+                    "Attempt %d/%d failed for user %s: %s",
                     attempt,
                     max_attempts,
+                    self.username,
                     exc,
                 )
                 await asyncio.sleep(delay)
@@ -269,10 +270,13 @@ class EventClient:
 
             if status in RETRY_STATUS_CODES and attempt < max_attempts:
                 logger.debug(
-                    "Retrying due to status %d (attempt %d/%d)",
+                    "Retrying due to HTTP %d for user %s (attempt %d/%d, "
+                    "delay: %.1fs)",
                     status,
+                    self.username,
                     attempt,
                     max_attempts,
+                    delay,
                 )
                 await asyncio.sleep(delay)
                 delay = min(
@@ -294,7 +298,11 @@ class EventClient:
             EventsError: For other non-OK responses.
         """
         if status in AUTH_ERRORS:
-            logger.warning("Auth failed for user %s", self.username)
+            logger.warning(
+                "Authentication failed for user %s (HTTP %d)",
+                self.username,
+                status,
+            )
             msg: str = (
                 f"Authentication failed for '{self.username}'. "
                 "Verify your username and token are correct. "
@@ -312,7 +320,12 @@ class EventClient:
             snippet: str = text[:TRUNCATE_LENGTH]
             if len(text) > TRUNCATE_LENGTH:
                 snippet += "..."
-            logger.error("HTTP %d: %s", status, snippet)
+            logger.error(
+                "HTTP %d for user %s: %s",
+                status,
+                self.username,
+                snippet,
+            )
 
             if status == HTTPStatus.TOO_MANY_REQUESTS:
                 guidance = (
@@ -403,7 +416,7 @@ class EventClient:
             if next_url is None:
                 return False
 
-            validated = self._validate_next_url(
+            validated: str | None = self._validate_next_url(
                 next_url,
                 response_text=text,
             )
@@ -478,7 +491,11 @@ class EventClient:
         )
 
         if events:
-            logger.debug("Received %d events", len(events))
+            logger.debug(
+                "Received %d events for user %s",
+                len(events),
+                self.username,
+            )
 
         return events
 
