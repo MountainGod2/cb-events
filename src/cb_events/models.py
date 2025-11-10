@@ -31,6 +31,7 @@ class BaseEventModel(BaseModel):
 
 
 _ModelT = TypeVar("_ModelT", bound=BaseEventModel)
+"""Type variable for BaseEventModel subclasses (User, Tip, Message, etc.)."""
 
 
 class EventType(StrEnum):
@@ -148,6 +149,10 @@ class Event(BaseEventModel):
 
     Use properties to access nested data. Properties return None if
     data is missing or invalid for the event type.
+
+    Note:
+        Properties are cached after first access for performance. Invalid
+        nested data is logged as a warning and returns None instead of raising.
     """
 
     type: EventType = Field(alias="method")
@@ -227,7 +232,7 @@ class Event(BaseEventModel):
                 for e in exc.errors()
             }
             logger.warning(
-                "Invalid %s in event %s: %s",
+                "Invalid %s in event %s (invalid fields: %s)",
                 key,
                 self.id,
                 ", ".join(sorted(fields)),
