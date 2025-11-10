@@ -20,7 +20,7 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
-      "before 5am on monday"
+      "before 5am"
     ],
     "automerge": true
   },
@@ -83,7 +83,6 @@
       "description": "Runtime dependencies (async HTTP and validation)",
       "matchPackageNames": [
         "aiohttp",
-        "aiohttp-retry",
         "aiolimiter",
         "pydantic",
         "/^pydantic-.*$/"
@@ -108,7 +107,11 @@
         "pre-commit",
         "/^pytest-.*$/",
         "/^pylint-.*$/",
-        "/^bandit-.*$/"
+        "/^bandit-.*$/",
+        "ty",
+        "python-semantic-release",
+        "bandit-sarif-formatter",
+        "pylint-pydantic"
       ],
       "groupName": "dev",
       "labels": [
@@ -125,9 +128,10 @@
       "description": "Documentation tools (Sphinx and extensions)",
       "matchPackageNames": [
         "sphinx",
-        "furo",
         "/^sphinx-.*$/",
-        "/^myst-.*$/"
+        "/^myst-.*$/",
+        "autodoc-pydantic",
+        "myst-nb"
       ],
       "groupName": "docs",
       "labels": [
