@@ -31,8 +31,7 @@ jobs:
       - run: uv sync --all-groups --frozen
 
       - run: |
-          make format
-          make fix
+          uv run ruff format --check
           make lint
 
       - run: make test-cov
