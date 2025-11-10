@@ -86,7 +86,7 @@
         "aiohttp-retry",
         "aiolimiter",
         "pydantic",
-        "pydantic-*"
+        "/^pydantic-.*$/"
       ],
       "groupName": "runtime",
       "labels": [
@@ -98,16 +98,16 @@
       "description": "Development tools (testing, linting, and type checking)",
       "matchPackageNames": [
         "pytest",
-        "pytest-*",
         "aioresponses",
         "pyrefly",
         "pyright",
         "pylint",
-        "pylint-*",
         "bandit",
-        "bandit-*",
         "ruff",
-        "pre-commit"
+        "pre-commit",
+        "/^pytest-.*$/",
+        "/^pylint-.*$/",
+        "/^bandit-.*$/"
       ],
       "groupName": "dev",
       "matchUpdateTypes": [
@@ -119,9 +119,9 @@
       "description": "Documentation tools (Sphinx and extensions)",
       "matchPackageNames": [
         "sphinx",
-        "sphinx-*",
         "furo",
-        "myst-*"
+        "/^sphinx-.*$/",
+        "/^myst-.*$/"
       ],
       "groupName": "docs",
       "matchUpdateTypes": [
@@ -133,8 +133,8 @@
       "description": "Build and release tools",
       "matchPackageNames": [
         "hatchling",
-        "hatch-*",
-        "python-semantic-release"
+        "python-semantic-release",
+        "/^hatch-.*$/"
       ],
       "groupName": "build",
       "matchUpdateTypes": [
@@ -157,8 +157,8 @@
   "pep723": {
     "enabled": true,
     "managerFilePatterns": [
-      "/examples/.*\\.py$/",
-      "/examples/.*\\.pyw$/"
+      "/^examples\\/.*\\.py$/",
+      "/^examples\\/.*\\.pyw$/"
     ]
   },
   "pre-commit": {
