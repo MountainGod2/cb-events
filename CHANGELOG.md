@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v5.2.2 (2025-11-10)
+
+### Bug Fixes
+
+- **renovate**: Update package name matching patterns
+  ([`a4735c5`](https://github.com/MountainGod2/cb-events/commit/a4735c5dc9fb6537646df25eb7c91486d04c3df6))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`de9caa2`](https://github.com/MountainGod2/cb-events/commit/de9caa2e6b8879254de7adee1d028496f369620a))
+
+### Documentation
+
+- **models**: Enhance docstrings
+  ([`03b155c`](https://github.com/MountainGod2/cb-events/commit/03b155c3075a632a7c13052da0bc4e1e02163742))
+
+### Refactoring
+
+- **client**: Improve logging for event processing and authentication
+  ([`835e121`](https://github.com/MountainGod2/cb-events/commit/835e121cd351ba54318ca0a9292f335cd6fa2fa3))
+
+- **config**: Improve error message for retry settings
+  ([`c64dbfc`](https://github.com/MountainGod2/cb-events/commit/c64dbfccd0079d3117de2521f142394a48166a73))
+
+- **router**: Enhance logging for event dispatching
+  ([`dcb13e2`](https://github.com/MountainGod2/cb-events/commit/dcb13e25d329ad492faed0b66d4e49073839b6ca))
+
+
 ## v5.2.1 (2025-11-09)
 
 ### Bug Fixes
