@@ -176,6 +176,18 @@
         "patch"
       ],
       "semanticCommitScope": "pre-commit"
+    },
+    {
+      "description": "GitHub Actions workflows",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions",
+      "labels": [
+        "dependencies",
+        "ci"
+      ],
+      "semanticCommitScope": "ci"
     }
   ],
   "pep723": {
