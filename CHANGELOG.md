@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v5.3.0 (2025-11-10)
+
+### Chores
+
+- **deps**: Update astral-sh/setup-uv digest to 5a7eac6
+  ([`35f45bb`](https://github.com/MountainGod2/cb-events/commit/35f45bb88ca418df9c9d88f714e0007e92e6a7f1))
+
+- **deps**: Update github/codeql-action digest to 04bd5c6
+  ([`0f31ab3`](https://github.com/MountainGod2/cb-events/commit/0f31ab3ecc8fa74f1a55ea1904abb720ff68d8b5))
+
+- **deps**: Update pypa/gh-action-pypi-publish digest to 987f11e
+  ([`599e126`](https://github.com/MountainGod2/cb-events/commit/599e1263a71fbb2fde8efcc3f50e110588918633))
+
+- **renovate**: Update schedule and package names
+  ([`a095400`](https://github.com/MountainGod2/cb-events/commit/a0954005c4d786d1c4dc781976be8cb5114b37a7))
+
+### Features
+
+- **ci**: Add grouping for GitHub Actions workflows
+  ([`37646d6`](https://github.com/MountainGod2/cb-events/commit/37646d621a439484ef9e5c898ded7ff7def6c72b))
+
+### Refactoring
+
+- **pre-commit**: Remove doc8 rst check hook
+  ([`4f2780b`](https://github.com/MountainGod2/cb-events/commit/4f2780b71ffcdfb3b2634a8e63859c8d4467512f))
+
+- **renovate**: Adjust package rules with labels and scopes
+  ([`51f690d`](https://github.com/MountainGod2/cb-events/commit/51f690db4593bf61e342d4299ffb682b3405c7ec))
+
+- **renovate**: Remove python-semantic-release from dev group
+  ([`5ad39ef`](https://github.com/MountainGod2/cb-events/commit/5ad39ef0579b691b331dbf3d750d136f7394ac7e))
+
+
 ## v5.2.2 (2025-11-10)
 
 ### Bug Fixes
