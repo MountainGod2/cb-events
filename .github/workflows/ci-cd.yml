@@ -155,7 +155,7 @@ jobs:
           fetch-depth: 1
 
       - if: needs.build.outputs.released == 'true'
-        uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         id: download
         with:
           name: dist
@@ -207,12 +207,12 @@ jobs:
 
       - run: uv sync --group build --no-default-groups --frozen
 
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: dist
           path: dist
 
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: uv.lock
 
@@ -240,7 +240,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: dist
           path: dist
@@ -252,6 +252,6 @@ jobs:
           verbose: true
           attestations: true
 
-      - uses: actions/attest-build-provenance@ba965ac88abfc6fa49344893ed19e5bf479a07d6 # v3
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: dist/*
