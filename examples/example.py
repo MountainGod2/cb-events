@@ -1,8 +1,20 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "cb-events",
+#     "python-dotenv",
+#     "rich",
+# ]
+# ///
+
 """Example script demonstrating event handling from Chaturbate."""
 
 import asyncio
 import contextlib
 import os
+
+from dotenv import load_dotenv
+from rich import print  # noqa: A004
 
 from cb_events import (
     ClientConfig,
@@ -11,6 +23,8 @@ from cb_events import (
     EventType,
     Router,
 )
+
+load_dotenv()
 
 username = os.getenv("CB_USERNAME", "")
 token = os.getenv("CB_TOKEN", "")
