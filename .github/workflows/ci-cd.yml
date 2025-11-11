@@ -20,9 +20,9 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -36,7 +36,7 @@ jobs:
 
       - run: make test-cov
 
-      - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7
+      - uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
         with:
           files: ./coverage.xml
           flags: ${{ matrix.python-version }}
@@ -58,9 +58,9 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -70,13 +70,13 @@ jobs:
 
       - run: make bandit
 
-      - uses: github/codeql-action/upload-sarif@04bd5c6aabdcaa5cccaf378a97ef5062b2061cd0
+      - uses: github/codeql-action/upload-sarif@04bd5c6aabdcaa5cccaf378a97ef5062b2061cd0 # v2
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
           category: bandit
 
-      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+      - uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
         with:
           scan-type: fs
           skip-dirs: .git,.github,.venv,docs/_build
@@ -85,7 +85,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 0
 
-      - uses: github/codeql-action/upload-sarif@04bd5c6aabdcaa5cccaf378a97ef5062b2061cd0
+      - uses: github/codeql-action/upload-sarif@04bd5c6aabdcaa5cccaf378a97ef5062b2061cd0 # v2
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
@@ -105,14 +105,14 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
       - run: git checkout -B ${{ github.ref_name }}
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -126,7 +126,7 @@ jobs:
         run: uv run semantic-release -v version --no-commit --no-tag
 
       - if: steps.version.outputs.released == 'true'
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: dist
           path: dist/**
@@ -134,7 +134,7 @@ jobs:
           retention-days: 2
 
       - if: steps.version.outputs.released == 'true'
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: uv.lock
           path: uv.lock
@@ -149,19 +149,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
 
       - if: needs.build.outputs.released == 'true'
-        uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05
+        uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
         id: download
         with:
           name: dist
           path: ./dist
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -192,14 +192,14 @@ jobs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - run: git reset --hard ${{ github.sha }}
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -207,12 +207,12 @@ jobs:
 
       - run: uv sync --group build --no-default-groups --frozen
 
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05
+      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
         with:
           name: dist
           path: dist
 
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05
+      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
         with:
           name: uv.lock
 
@@ -240,18 +240,18 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05
+      - uses: actions/download-artifact@f093f21ca4cfa7c75ccbbc2be54da76a0c7e1f05 # v6
         with:
           name: dist
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@987f11e872eb5ca67aad6a4fe531bd3089142c60
+      - uses: pypa/gh-action-pypi-publish@987f11e872eb5ca67aad6a4fe531bd3089142c60 # v1
         with:
           packages-dir: dist
           print-hash: true
           verbose: true
           attestations: true
 
-      - uses: actions/attest-build-provenance@ba965ac88abfc6fa49344893ed19e5bf479a07d6
+      - uses: actions/attest-build-provenance@ba965ac88abfc6fa49344893ed19e5bf479a07d6 # v3
         with:
           subject-path: dist/*
