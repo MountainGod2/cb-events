@@ -2,6 +2,58 @@
 
 <!-- version list -->
 
+## v5.4.0 (2025-11-12)
+
+### Chores
+
+- **ci**: Update github-actions
+  ([`6a407ff`](https://github.com/MountainGod2/cb-events/commit/6a407fff162ee96a3bbdaf9e9fd769475346a44a))
+
+- **ci**: Update github/codeql-action action to v4
+  ([#31](https://github.com/MountainGod2/cb-events/pull/31),
+  [`8286ecf`](https://github.com/MountainGod2/cb-events/commit/8286ecf2e71188963e948982c21a636453b2587a))
+
+- **ci**: Update pypa/gh-action-pypi-publish digest to 987f11e
+  ([`2ceb20c`](https://github.com/MountainGod2/cb-events/commit/2ceb20c138ea96713b63e4c5b714461486d2908b))
+
+- **ci**: Update pypa/gh-action-pypi-publish version
+  ([`4ef5464`](https://github.com/MountainGod2/cb-events/commit/4ef5464d4c0f1c622d4d34c25d237d9303d3f9c7))
+
+- **deps**: Lock file maintenance
+  ([`3e54e18`](https://github.com/MountainGod2/cb-events/commit/3e54e18207d65a3e3783baf1a92da1f75d9aaebf))
+
+- **dev**: Update dependency pyrefly to v0.40.1
+  ([`ac5c346`](https://github.com/MountainGod2/cb-events/commit/ac5c346d0ce5b91742df330481ea625d3ee79d31))
+
+- **dev**: Update dependency ruff to v0.14.4
+  ([`f49445a`](https://github.com/MountainGod2/cb-events/commit/f49445a31c1e0b8762baed848343b6560b6ade56))
+
+- **example**: Add script metadata and load dotenv
+  ([`dcb4e92`](https://github.com/MountainGod2/cb-events/commit/dcb4e925a03eda2906eb63ac4b5415cb98638621))
+
+- **pre-commit**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.14.4
+  ([`8d8c494`](https://github.com/MountainGod2/cb-events/commit/8d8c494e69198fb4a632adf73e8268276166f021))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.1.3
+  ([`b038bed`](https://github.com/MountainGod2/cb-events/commit/b038bed018f699f92db151a83f3ac6dbe03e56d5))
+
+### Continuous Integration
+
+- Update action versions in CI/CD workflow
+  ([`887cecc`](https://github.com/MountainGod2/cb-events/commit/887cecc8bbe8260b5cec0840bea0dc25104dee64))
+
+- Update command to fail if formatting is required
+  ([`a726252`](https://github.com/MountainGod2/cb-events/commit/a726252449616f38e7297e22422943dc75c9497c))
+
+- Update trivy-action version to v0
+  ([`ec0f167`](https://github.com/MountainGod2/cb-events/commit/ec0f16711613f75536559d47ad3495c8e845061f))
+
+### Features
+
+- **tests**: Add live testbed polling test with env credentials
+  ([`e66a7ba`](https://github.com/MountainGod2/cb-events/commit/e66a7ba713bb448916f66df6bb65ae3b2aab56f4))
+
+
 ## v5.3.0 (2025-11-10)
 
 ### Chores
