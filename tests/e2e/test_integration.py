@@ -1,6 +1,7 @@
 """End-to-end integration tests for the public surface."""
 
 import asyncio
+import os
 import re
 from importlib.metadata import version
 from typing import Any
@@ -10,6 +11,7 @@ from aioresponses import aioresponses
 
 from cb_events import (
     AuthError,
+    ClientConfig,
     Event,
     EventClient,
     EventType,
@@ -88,3 +90,29 @@ async def test_version_attribute() -> None:
     await asyncio.sleep(0)
     assert isinstance(__version__, str)
     assert version("cb-events") == __version__
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not (os.getenv("CB_USERNAME") and os.getenv("CB_TOKEN")),
+    reason="CB_USERNAME and CB_TOKEN must be set for live testbed test",
+)
+async def test_live_testbed_polling() -> None:
+    """Test against the live testbed using environment credentials."""
+    username = os.environ["CB_USERNAME"]
+    token = os.environ["CB_TOKEN"]
+    config = ClientConfig(
+        use_testbed=True,
+        strict_validation=False,
+        retry_attempts=3,
+        retry_backoff=1.0,
+        retry_factor=1.5,
+        retry_max_delay=5.0,
+    )
+
+    async with EventClient(username, token, config=config) as client:
+        events = await client.poll()
+
+    assert isinstance(events, list)
+    for event in events:
+        assert isinstance(event, Event)
