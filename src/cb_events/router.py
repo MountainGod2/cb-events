@@ -5,20 +5,15 @@ import logging
 from collections.abc import Awaitable, Callable
 from functools import partial
 from inspect import iscoroutinefunction
-from typing import Any
 
 from .models import Event, EventType
 
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
-
-
 type HandlerFunc = Callable[[Event], Awaitable[None]]
 
 
-def _is_async_callable(
-    func: HandlerFunc | Callable[..., Awaitable[None]],
-) -> bool:
+def _is_async_callable(func: object) -> bool:
     """Return True if func is awaitable when called once."""
     if iscoroutinefunction(func):
         return True
@@ -31,8 +26,8 @@ def _is_async_callable(
         if call_method and iscoroutinefunction(call_method):
             return True
 
-    underlying: Any | None = getattr(func, "func", None)
-    if underlying is not None and underlying is not func:
+    underlying = getattr(func, "func", None)
+    if callable(underlying) and underlying is not func:
         return _is_async_callable(underlying)
 
     return False
@@ -53,14 +48,14 @@ def _handler_name(handler: object) -> str:
             current = current.func
             continue
 
-        wrapped: Any | None = getattr(current, "__wrapped__", None)
-        if wrapped and wrapped is not current:
+        wrapped = getattr(current, "__wrapped__", None)
+        if callable(wrapped) and wrapped is not current:
             current = wrapped
             continue
 
-        func: Any | None = getattr(current, "func", None)
-        if func and func is not current:
-            current = func
+        func_attr = getattr(current, "func", None)
+        if callable(func_attr) and func_attr is not current:
+            current = func_attr
             continue
 
         break
@@ -75,7 +70,7 @@ class Router:
     prevent other handlers from running.
     """
 
-    __slots__ = ("_handlers",)
+    __slots__: tuple[str, ...] = ("_handlers",)
 
     def __init__(self) -> None:
         """Initialize router with empty handler registry."""
