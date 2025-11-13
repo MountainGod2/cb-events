@@ -1,8 +1,9 @@
 """Configuration for the Chaturbate Events API client."""
 
-from typing import Self
+from typing import ClassVar, Self
 
 from pydantic import BaseModel, Field, model_validator
+from pydantic.config import ConfigDict
 
 
 class ClientConfig(BaseModel):
@@ -18,7 +19,7 @@ class ClientConfig(BaseModel):
         retry_max_delay: Maximum delay between retries.
     """
 
-    model_config = {"frozen": True}
+    model_config: ClassVar[ConfigDict] = {"frozen": True}
 
     timeout: int = Field(default=10, gt=0)
     use_testbed: bool = False
