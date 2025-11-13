@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v5.5.0 (2025-11-13)
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`0db67b8`](https://github.com/MountainGod2/cb-events/commit/0db67b895502d30628f299ad16211838333e1716))
+
+### Features
+
+- **models**: Improve media purchase event handling
+  ([`dc5b44b`](https://github.com/MountainGod2/cb-events/commit/dc5b44ba6655ebd90a7444fe09766b458a3a027e))
+
+### Refactoring
+
+- **client**: Improve type handling and logging messages
+  ([`6088c22`](https://github.com/MountainGod2/cb-events/commit/6088c228c67b5021aa0bae89b92c3331ce0766b4))
+
+- **config**: Specify model_config type annotation
+  ([`ee59f20`](https://github.com/MountainGod2/cb-events/commit/ee59f203e182d90c2301a81878018c9d97cb2880))
+
+- **exceptions**: Enhance type annotations and override usage
+  ([`ef4d606`](https://github.com/MountainGod2/cb-events/commit/ef4d606c106b740394128b700ea0f7de8544e745))
+
+- **router**: Simplify async callable checks
+  ([`af35cdc`](https://github.com/MountainGod2/cb-events/commit/af35cdc68c58747f7a55317b02d7d09fd02370c3))
+
+
 ## v5.4.0 (2025-11-12)
 
 ### Chores
