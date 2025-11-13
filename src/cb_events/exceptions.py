@@ -1,5 +1,7 @@
 """Exceptions for the Chaturbate Events client."""
 
+from typing import override
+
 
 class EventsError(Exception):
     """Base exception for API failures.
@@ -18,9 +20,10 @@ class EventsError(Exception):
     ) -> None:
         """Initialize error with message and optional HTTP details."""
         super().__init__(message)
-        self.status_code = status_code
-        self.response_text = response_text
+        self.status_code: int | None = status_code
+        self.response_text: str | None = response_text
 
+    @override
     def __str__(self) -> str:
         """Return error message with HTTP status if available."""
         if self.status_code:
