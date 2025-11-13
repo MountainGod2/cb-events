@@ -123,11 +123,10 @@ async def handle_room_subject_change(event: Event) -> None:
 @router.on(EventType.MEDIA_PURCHASE)
 async def handle_media_purchase(event: Event) -> None:
     """Handle media purchase events."""
-    if event.user and "media" in event.data:
-        media = event.data["media"]
+    if event.user and event.media:
         print(
-            f"{event.user.username} purchased {media['type']} "
-            f"set: {media['name']}"
+            f"{event.user.username} purchased {event.media.type} "
+            f"[{event.media.name}] for {event.media.tokens} tokens"
         )
 
 

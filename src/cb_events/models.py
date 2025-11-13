@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from enum import StrEnum
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_camel
@@ -22,7 +22,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 class BaseEventModel(BaseModel):
     """Base for all event models with snake_case conversion."""
 
-    model_config = ConfigDict(
+    model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
         extra="forbid",
@@ -137,6 +137,19 @@ class Tip(BaseEventModel):
     """Optional message attached to the tip."""
 
 
+class Media(BaseEventModel):
+    """Media purchase transaction."""
+
+    id: str
+    """Identifier of the purchased media."""
+    name: str
+    """Name of the purchased media."""
+    type: Literal["video", "photos"]
+    """Type of the purchased media."""
+    tokens: int
+    """Number of tokens spent on the media purchase."""
+
+
 class RoomSubject(BaseEventModel):
     """Room subject/title."""
 
@@ -159,22 +172,13 @@ class Event(BaseEventModel):
     """Type of the event."""
     id: str
     """Unique identifier for the event."""
-    data: dict[str, Any] = Field(default_factory=dict, alias="object")
+    data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
 
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
         return self._extract("user", User.model_validate)
-
-    @cached_property
-    def tip(self) -> Tip | None:
-        """Tip data if present and valid (TIP events only)."""
-        return self._extract(
-            "tip",
-            Tip.model_validate,
-            allowed_types=(EventType.TIP,),
-        )
 
     @cached_property
     def message(self) -> Message | None:
@@ -186,6 +190,30 @@ class Event(BaseEventModel):
         )
 
     @cached_property
+    def broadcaster(self) -> str | None:
+        """Broadcaster username if present."""
+        value: object | None = self.data.get("broadcaster")
+        return value if isinstance(value, str) and value else None
+
+    @cached_property
+    def tip(self) -> Tip | None:
+        """Tip data if present and valid (TIP events only)."""
+        return self._extract(
+            "tip",
+            Tip.model_validate,
+            allowed_types=(EventType.TIP,),
+        )
+
+    @cached_property
+    def media(self) -> Media | None:
+        """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
+        return self._extract(
+            "media",
+            Media.model_validate,
+            allowed_types=(EventType.MEDIA_PURCHASE,),
+        )
+
+    @cached_property
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._extract(
@@ -194,12 +222,6 @@ class Event(BaseEventModel):
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
             transform=lambda v: {"subject": v},
         )
-
-    @cached_property
-    def broadcaster(self) -> str | None:
-        """Broadcaster username if present."""
-        value: Any | None = self.data.get("broadcaster")
-        return value if isinstance(value, str) and value else None
 
     def _extract(
         self,
@@ -217,7 +239,7 @@ class Event(BaseEventModel):
         if allowed_types and self.type not in allowed_types:
             return None
 
-        payload: Any | None = self.data.get(key)
+        payload: object | None = self.data.get(key)
         if payload is None:
             return None
 
