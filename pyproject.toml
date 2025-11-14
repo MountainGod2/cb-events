@@ -166,23 +166,23 @@ max-attributes = 12
 [tool.pylint.format]
 max-line-length = 80
 
-[tool.pytest.ini_options]
+[tool.pyright]
+include = ["src"]
+exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
+extraPaths = ["src"]
+pythonVersion = "3.12"
+
+[tool.pytest]
 minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--disable-warnings",
-    "--tb=short",
-    "--cov-report=term-missing:skip-covered",
-]
+strict = true
+addopts = ["--tb=short", "--cov-report=term-missing:skip-covered", "--cov=cb_events"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "e2e: marks tests as end-to-end tests",
 ]
-filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["src/"]
@@ -202,5 +202,5 @@ directory = "htmlcov"
 exclude_dirs = ["tests", "examples"]
 
 [tool.pyrefly]
-python-version = "3.12.0"
+python-version = "3.12"
 project-includes = ["src/"]
