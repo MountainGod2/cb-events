@@ -12,7 +12,25 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  dependency-sync:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
+
+      - run: uv sync --all-groups --frozen
+
+      - run: uv cache prune --ci
+
   test:
+    needs: dependency-sync
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -52,6 +70,7 @@ jobs:
       - run: uv cache prune --ci
 
   security:
+    needs: dependency-sync
     runs-on: ubuntu-24.04
     permissions:
       actions: read
