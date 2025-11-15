@@ -8,8 +8,6 @@ import pytest
 
 from cb_events import Event, EventType, Router
 
-pytestmark = pytest.mark.asyncio
-
 
 async def test_dispatch_to_specific_handler(
     router: Router,
