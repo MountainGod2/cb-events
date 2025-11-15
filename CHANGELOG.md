@@ -2,6 +2,64 @@
 
 <!-- version list -->
 
+## v5.5.1 (2025-11-15)
+
+### Bug Fixes
+
+- **test**: Disable coverage for end-to-end tests
+  ([`d760ef6`](https://github.com/MountainGod2/cb-events/commit/d760ef6c835d54e085f7372d5ebdbdf678e1477c))
+
+### Chores
+
+- **build**: Update dependency python-semantic-release to v10.5.0
+  ([`9be728e`](https://github.com/MountainGod2/cb-events/commit/9be728eaaca09a4ab64096afe49c8de4a7d46b7b))
+
+- **build**: Update dependency python-semantic-release to v10.5.1
+  ([`4d0140c`](https://github.com/MountainGod2/cb-events/commit/4d0140ccdcfb9952049db8d82db636247f39e244))
+
+- **build**: Update dependency python-semantic-release to v10.5.2
+  ([`c5c408f`](https://github.com/MountainGod2/cb-events/commit/c5c408f2ad222f7047c1ff8663caaf8f1f489930))
+
+- **ci**: Update github/codeql-action digest to 014f16e
+  ([`ee7ed53`](https://github.com/MountainGod2/cb-events/commit/ee7ed539c47ab52a3acbbed2939804558a14aeaf))
+
+- **config**: Update pytest configuration and add pyright
+  ([`730f48c`](https://github.com/MountainGod2/cb-events/commit/730f48c2bd2f660f275b870adfffde3cb269826c))
+
+- **deps**: Update dependency pytest to v9
+  ([#32](https://github.com/MountainGod2/cb-events/pull/32),
+  [`763184a`](https://github.com/MountainGod2/cb-events/commit/763184a4b06042d5370e2fcb16681e882c49b316))
+
+- **dev**: Update dependency pre-commit to v4.4.0
+  ([`398e218`](https://github.com/MountainGod2/cb-events/commit/398e218a71cc4dd4f9ca7d607c7221fcf4c09bfa))
+
+- **dev**: Update dependency pyrefly to v0.41.0
+  ([`bffd93c`](https://github.com/MountainGod2/cb-events/commit/bffd93ca3d9be63ba516d753422ab1cc6ee52564))
+
+- **dev**: Update dev
+  ([`34230b6`](https://github.com/MountainGod2/cb-events/commit/34230b6555fd4449d6a6ec9c858c78433821dc0c))
+
+- **example**: Update dependencies in example script
+  ([`e7401e6`](https://github.com/MountainGod2/cb-events/commit/e7401e6ec641e4dbc2b798022cbfdb5191db6253))
+
+- **pre-commit**: Update pre-commit hook asottile/pyupgrade to v3.21.1
+  ([`383a082`](https://github.com/MountainGod2/cb-events/commit/383a082abea8bb6d0503079b3f9a9a0f28bb35e7))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.2.0
+  ([`22a5be7`](https://github.com/MountainGod2/cb-events/commit/22a5be7d07c25354344cfaa46223bda7442a6530))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.5.0
+  ([`b42cd46`](https://github.com/MountainGod2/cb-events/commit/b42cd465a656e7c745fd99b737e45c4948e1d3c5))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.5.4
+  ([`067185b`](https://github.com/MountainGod2/cb-events/commit/067185b33ac23e2eea3618f5eec088b85a8b15e3))
+
+### Continuous Integration
+
+- Add dependency-sync job
+  ([`ffe2d52`](https://github.com/MountainGod2/cb-events/commit/ffe2d5257189b80845598431293d22233269b5cf))
+
+
 ## v5.5.0 (2025-11-13)
 
 ### Chores
