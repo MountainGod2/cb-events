@@ -9,7 +9,7 @@ Async Python client for the Chaturbate Events API.
 ## Installation
 
 ```bash
-uv pip install cb-events
+pip install cb-events
 ```
 
 ## Quick Start
