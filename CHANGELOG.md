@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v5.6.0 (2025-11-15)
+
+### Documentation
+
+- **readme**: Fix installation command
+  ([`aee4b0e`](https://github.com/MountainGod2/cb-events/commit/aee4b0e6c38a0ad32b9d931c9c09850f66fb0494))
+
+### Features
+
+- **config**: Add next_url_allowed_hosts to ClientConfig
+  ([`acf3f4c`](https://github.com/MountainGod2/cb-events/commit/acf3f4ce213c971b5f89a14957b9e4ee56b14ad9))
+
+### Refactoring
+
+- **config**: Fix indentation in docstring for retry_attempts
+  ([`2ec081b`](https://github.com/MountainGod2/cb-events/commit/2ec081ba9ee411d4211266d401d2887bb45a4f24))
+
+### Testing
+
+- **event**: Add tests for message and room subject parsing
+  ([`34a98fa`](https://github.com/MountainGod2/cb-events/commit/34a98faf96ee5d2d6249934dd028e52243d1b5ba))
+
+
 ## v5.5.1 (2025-11-15)
 
 ### Bug Fixes
