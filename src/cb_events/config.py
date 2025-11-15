@@ -13,7 +13,7 @@ class ClientConfig(BaseModel):
         timeout: Request timeout in seconds.
         use_testbed: Use testbed API instead of production.
         strict_validation: Raise on invalid events vs. skip and log.
-    retry_attempts: Total attempts including initial request (>=1).
+        retry_attempts: Total attempts including initial request (>=1).
         retry_backoff: Initial retry delay in seconds.
         retry_factor: Backoff multiplier per retry.
         retry_max_delay: Maximum delay between retries.
