@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
 from typing import Self, cast, override
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -171,6 +171,25 @@ class EventClient:
         )
         self.session: ClientSession | None = None
         self._next_url: str | None = None
+
+        base_hostname = urlparse(self.base_url).hostname or ""
+        raw_allowed = self.config.next_url_allowed_hosts
+        allowed_hosts: set[str] = set()
+        if raw_allowed:
+            for host in raw_allowed:
+                host_str = str(host).strip()
+                if not host_str:
+                    continue
+                parsed = urlparse(host_str)
+                if parsed.hostname:
+                    allowed_hosts.add(parsed.hostname.lower())
+                else:
+                    allowed_hosts.add(host_str.split(":", 1)[0].lower())
+
+        if base_hostname:
+            allowed_hosts.add(base_hostname.lower())
+
+        self._allowed_next_hosts: set[str] = allowed_hosts
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=DEFAULT_MAX_RATE,
@@ -401,7 +420,10 @@ class EventClient:
             required.
 
         Raises:
-            EventsError: If ``nextUrl`` is present but not a non-empty string.
+            EventsError: If ``nextUrl`` is present but not a non-empty string
+            or if the URL references a hostname not permitted by
+            ``ClientConfig.next_url_allowed_hosts`` (the base API host is
+            always permitted).
         """
         if next_url is None:
             return None
@@ -409,6 +431,24 @@ class EventClient:
         if isinstance(next_url, str):
             stripped: str = next_url.strip()
             if stripped:
+                # Verify host is permitted.
+                parsed = urlparse(stripped)
+                hostname = parsed.hostname or (parsed.netloc or None)
+                if hostname is None:
+                    # Relative URLs are allowed.
+                    return stripped
+                if hostname.lower() not in self._allowed_next_hosts:
+                    logger.error(
+                        "Received nextUrl host %s which is not allowed "
+                        "for user %s",
+                        hostname,
+                        self.username,
+                    )
+                    msg: str = _compose_message(
+                        "Invalid nextUrl host.",
+                        "Allow via ClientConfig.next_url_allowed_hosts.",
+                    )
+                    raise EventsError(msg, response_text=response_text)
                 return stripped
             logger.error(
                 "Received empty nextUrl from API for user %s",

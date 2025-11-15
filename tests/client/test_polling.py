@@ -239,6 +239,130 @@ async def test_timeout_with_next_url(
         assert events[0].type is EventType.TIP
 
 
+async def test_unallowed_next_url_host_raises(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Timeout responses with off-host nextUrl should raise an error."""
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": "https://evil.example.com/events/next_batch_token",
+        "events": [],
+    }
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match=r"Invalid nextUrl host"):
+            await client.poll()
+
+
+async def test_allowed_external_next_url_override(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Explicitly allowed external nextUrl domains should be followed."""
+    next_url = "https://evil.example.com/events/next_batch_token"
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": next_url,
+        "events": [],
+    }
+
+    success_response = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    mock_response.get(next_url, payload=success_response)
+
+    config = ClientConfig(
+        use_testbed=True, next_url_allowed_hosts=["evil.example.com"]
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+        assert len(events) == 0
+
+        events = await client.poll()
+        assert len(events) == 1
+        assert events[0].type is EventType.TIP
+
+
+async def test_allowed_external_next_url_with_scheme_override(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Hosts including a scheme in config should be normalized and allowed."""
+    next_url = "https://evil.example.com/events/next_batch_token"
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": next_url,
+        "events": [],
+    }
+
+    success_response = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    mock_response.get(next_url, payload=success_response)
+
+    config = ClientConfig(
+        use_testbed=True,
+        next_url_allowed_hosts=["https://evil.example.com"],
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+        assert len(events) == 0
+
+        events = await client.poll()
+        assert len(events) == 1
+        assert events[0].type is EventType.TIP
+
+
+async def test_allowed_hosts_always_include_base_host(
+    event_client_factory: EventClientFactory,
+    mock_response: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Even when only external hosts are configured, the base host is
+    still allowed."""
+    next_url = "https://events.testbed.cb.dev/events/next_batch_token"
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": next_url,
+        "events": [],
+    }
+
+    success_response = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+
+    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    mock_response.get(next_url, payload=success_response)
+
+    # only external host in allowed list - base should still be allowed
+    config = ClientConfig(
+        use_testbed=True,
+        next_url_allowed_hosts=["evil.example.com"],
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+        assert len(events) == 0
+
+        events = await client.poll()
+        assert len(events) == 1
+        assert events[0].type is EventType.TIP
+
+
 @pytest.mark.parametrize("invalid_next_url", ["   ", {}])
 async def test_invalid_next_url_in_response(
     invalid_next_url: Any,

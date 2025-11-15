@@ -17,6 +17,9 @@ class ClientConfig(BaseModel):
         retry_backoff: Initial retry delay in seconds.
         retry_factor: Backoff multiplier per retry.
         retry_max_delay: Maximum delay between retries.
+        next_url_allowed_hosts: Optional list of hostnames permitted for
+            'nextUrl' values returned by the API. If None, only the base API
+            host (production or testbed) will be followed.
     """
 
     model_config: ClassVar[ConfigDict] = {"frozen": True}
@@ -28,6 +31,7 @@ class ClientConfig(BaseModel):
     retry_backoff: float = Field(default=1.0, ge=0)
     retry_factor: float = Field(default=2.0, gt=0)
     retry_max_delay: float = Field(default=30.0, ge=0)
+    next_url_allowed_hosts: list[str] | None = None
 
     @model_validator(mode="after")
     def _check_delays(self) -> Self:

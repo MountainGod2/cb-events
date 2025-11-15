@@ -46,13 +46,14 @@ asyncio.run(main())
 from cb_events import ClientConfig
 
 config = ClientConfig(
-    timeout=10,              # Request timeout (seconds)
-    use_testbed=False,       # Use testbed endpoint with test tokens
-    strict_validation=True,  # Raise on invalid events vs. skip
-    retry_attempts=8,        # Total attempts (initial + retries)
-    retry_backoff=1.0,       # Initial backoff (seconds)
-    retry_factor=2.0,        # Backoff multiplier
-    retry_max_delay=30.0,    # Max retry delay (seconds)
+    timeout=10,                   # Request timeout (seconds)
+    use_testbed=False,            # Use testbed endpoint with test tokens
+    strict_validation=True,       # Raise on invalid events vs. skip
+    retry_attempts=8,             # Total attempts (initial + retries)
+    retry_backoff=1.0,            # Initial backoff (seconds)
+    retry_factor=2.0,             # Backoff multiplier
+    retry_max_delay=30.0,         # Max retry delay (seconds)
+    next_url_allowed_hosts=None,  # List of allowed hostnames
 )
 
 client = EventClient(username, token, config=config)
