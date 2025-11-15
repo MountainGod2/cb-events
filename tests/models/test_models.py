@@ -183,3 +183,37 @@ def test_event_broadcaster_property() -> None:
     })
 
     assert event.broadcaster == "streamer"
+
+
+def test_message_not_parsed_on_tip_event() -> None:
+    """Message objects should not be parsed for TIP events."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-mismatch",
+        "object": {"message": {"message": "hi"}},
+    })
+
+    assert event.message is None
+
+
+def test_room_subject_string_parsed() -> None:
+    """Room subject may be provided as a string and should parse correctly."""
+    event = Event.model_validate({
+        "method": "roomSubjectChange",
+        "id": "evt-room-sub",
+        "object": {"subject": "New title"},
+    })
+
+    assert event.room_subject is not None
+    assert event.room_subject.subject == "New title"
+
+
+def test_room_subject_not_parsed_when_other_event_type() -> None:
+    """Subject present on unrelated event types should be ignored."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-room-sub-tipping",
+        "object": {"subject": "something"},
+    })
+
+    assert event.room_subject is None
