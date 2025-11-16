@@ -32,7 +32,7 @@ from .router import HandlerFunc, Router
 
 try:
     __version__: str = version("cb-events")
-except PackageNotFoundError:
+except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 __all__: list[str] = [
