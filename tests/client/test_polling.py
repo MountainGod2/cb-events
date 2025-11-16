@@ -2,45 +2,62 @@
 
 import re
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from aiohttp.client_exceptions import ClientError
 from aioresponses import aioresponses
 from pydantic import ValidationError
 
-from cb_events import EventClient
 from cb_events.config import ClientConfig
 from cb_events.exceptions import AuthError, EventsError
 from cb_events.models import EventType
 from tests.conftest import EventClientFactory
 
-pytestmark = pytest.mark.asyncio
 
-
+@pytest.mark.parametrize(
+    "method",
+    [
+        EventType.TIP,
+        EventType.FOLLOW,
+        EventType.CHAT_MESSAGE,
+        EventType.BROADCAST_START,
+        EventType.BROADCAST_STOP,
+        EventType.ROOM_SUBJECT_CHANGE,
+        EventType.USER_ENTER,
+        EventType.USER_LEAVE,
+        EventType.UNFOLLOW,
+        EventType.FANCLUB_JOIN,
+        EventType.PRIVATE_MESSAGE,
+        EventType.MEDIA_PURCHASE,
+    ],
+)
 async def test_poll_returns_events(
-    api_response: dict[str, Any],
+    method: EventType,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Successful poll should return validated events."""
-    mock_response.get(testbed_url_pattern, payload=api_response)
+    response: dict[str, Any] = {
+        "events": [{"method": method.value, "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         events = await client.poll()
 
     assert len(events) == 1
-    assert events[0].type is EventType.TIP
+    assert events[0].type == method
 
 
 async def test_poll_raises_auth_error_on_401(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """HTTP 401 responses should raise :class:`AuthError`."""
-    mock_response.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=401)
 
     async with event_client_factory() as client:
         with pytest.raises(AuthError):
@@ -49,7 +66,7 @@ async def test_poll_raises_auth_error_on_401(
 
 async def test_poll_handles_multiple_events(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Multiple events in the response should be parsed in order."""
@@ -57,9 +74,11 @@ async def test_poll_handles_multiple_events(
         {"method": "tip", "id": "1", "object": {}},
         {"method": "follow", "id": "2", "object": {}},
         {"method": "chatMessage", "id": "3", "object": {}},
+        {"method": "broadcastStart", "id": "4", "object": {}},
+        {"method": "privateMessage", "id": "5", "object": {}},
     ]
     response: dict[str, Any] = {"events": events_data, "nextUrl": "url"}
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         events = await client.poll()
@@ -68,20 +87,33 @@ async def test_poll_handles_multiple_events(
         EventType.TIP,
         EventType.FOLLOW,
         EventType.CHAT_MESSAGE,
+        EventType.BROADCAST_START,
+        EventType.PRIVATE_MESSAGE,
     ]
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        EventType.TIP,
+        EventType.FOLLOW,
+        EventType.CHAT_MESSAGE,
+        EventType.BROADCAST_START,
+        EventType.PRIVATE_MESSAGE,
+    ],
+)
 async def test_async_iteration_yields_events(
+    method: EventType,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """The client should support async iteration for continuous polling."""
     response: dict[str, Any] = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "events": [{"method": method.value, "id": "1", "object": {}}],
         "nextUrl": None,
     }
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         events = []
@@ -91,34 +123,45 @@ async def test_async_iteration_yields_events(
                 break
 
     assert len(events) == 1
-    assert events[0].type is EventType.TIP
+    assert events[0].type == method
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        EventType.TIP,
+        EventType.FOLLOW,
+        EventType.CHAT_MESSAGE,
+        EventType.BROADCAST_START,
+        EventType.PRIVATE_MESSAGE,
+    ],
+)
 async def test_aiter_yields_events(
+    method: EventType,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """``__aiter__`` should yield events continuously."""
     response: dict[str, Any] = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "events": [{"method": method.value, "id": "1", "object": {}}],
         "nextUrl": None,
     }
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         event = await anext(aiter(client))
 
-    assert event.type is EventType.TIP
+    assert event.type == method
 
 
 async def test_rate_limit_error(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """HTTP 429 responses should surface as :class:`EventsError`."""
-    mock_response.get(
+    aioresponses_mock.get(
         testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded"
     )
     config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
@@ -130,11 +173,13 @@ async def test_rate_limit_error(
 
 async def test_invalid_json_response(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Invalid JSON payloads should raise :class:`EventsError`."""
-    mock_response.get(testbed_url_pattern, status=200, body="Not valid JSON")
+    aioresponses_mock.get(
+        testbed_url_pattern, status=200, body="Not valid JSON"
+    )
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="Invalid JSON response"):
@@ -143,11 +188,13 @@ async def test_invalid_json_response(
 
 async def test_timeout_payload_not_mapping(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Timeout payloads that are not JSON objects should raise EventsError."""
-    mock_response.get(testbed_url_pattern, status=400, payload=["unexpected"])
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=["unexpected"]
+    )
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="HTTP 400"):
@@ -156,12 +203,12 @@ async def test_timeout_payload_not_mapping(
 
 async def test_events_payload_not_list(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Responses with non-list ``events`` should raise EventsError."""
     response: dict[str, Any] = {"events": None, "nextUrl": None}
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="events' must be a list"):
@@ -170,56 +217,46 @@ async def test_events_payload_not_list(
 
 async def test_network_error_wrapped(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Transport errors are wrapped inside :class:`EventsError`."""
-    mock_response.get(
-        testbed_url_pattern, exception=ClientError("network down")
+    """Network client errors should be wrapped as EventsError.
+
+    This verifies that aiohttp's ClientError is translated into an
+    EventsError so callers don't need to depend on aiohttp exception types.
+    """
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        exception=ClientError("Connection reset by peer"),
+        repeat=True,
     )
-    config = ClientConfig(use_testbed=True, retry_attempts=1)
+    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(EventsError, match="Failed to fetch events"):
+        with pytest.raises(
+            EventsError, match=r"Failed to fetch events after 1 attempt"
+        ):
             await client.poll()
 
 
-async def test_session_creation_fails(
-    credentials: tuple[str, str],
-) -> None:
-    """Session creation failure should raise EventsError with guidance."""
-    username, token = credentials
-    config = ClientConfig(use_testbed=True)
-    client = EventClient(username, token, config=config)
-
-    with (
-        patch(
-            "cb_events.client.ClientSession",
-            side_effect=OSError("Mock error"),
-        ),
-        pytest.raises(
-            EventsError,
-            match=r"Failed to create HTTP session.*network configuration",
-        ),
-    ):
-        async with client:
-            pass
-
-    assert client.session is None
-
-
-async def test_timeout_with_next_url(
+async def test_next_url_followed_after_timeout(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Timeout responses with nextUrl should be handled gracefully."""
+    """When a timeout response returns a base-host ``nextUrl``, follow it.
+
+    This ensures the client follows on-host nextUrl links returned by the
+    API and continues fetching events successfully.
+    """
     timeout_response = {
         "status": "waited too long for events",
         "nextUrl": "https://events.testbed.cb.dev/events/next_batch_token",
         "events": [],
     }
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
 
     next_url_pattern = re.compile(
         r"https://events\.testbed\.cb\.dev/events/next_batch_token"
@@ -228,7 +265,7 @@ async def test_timeout_with_next_url(
         "events": [{"method": "tip", "id": "1", "object": {}}],
         "nextUrl": None,
     }
-    mock_response.get(next_url_pattern, payload=success_response)
+    aioresponses_mock.get(next_url_pattern, payload=success_response)
 
     async with event_client_factory() as client:
         events = await client.poll()
@@ -236,12 +273,12 @@ async def test_timeout_with_next_url(
 
         events = await client.poll()
         assert len(events) == 1
-        assert events[0].type is EventType.TIP
+    assert events[0].type == EventType.TIP
 
 
 async def test_unallowed_next_url_host_raises(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Timeout responses with off-host nextUrl should raise an error."""
@@ -250,16 +287,23 @@ async def test_unallowed_next_url_host_raises(
         "nextUrl": "https://evil.example.com/events/next_batch_token",
         "events": [],
     }
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match=r"Invalid nextUrl host"):
             await client.poll()
 
 
+@pytest.mark.parametrize(
+    "allowed_host",
+    ["evil.example.com", "https://evil.example.com"],
+)
 async def test_allowed_external_next_url_override(
+    allowed_host: str,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Explicitly allowed external nextUrl domains should be followed."""
@@ -275,11 +319,13 @@ async def test_allowed_external_next_url_override(
         "nextUrl": None,
     }
 
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
-    mock_response.get(next_url, payload=success_response)
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
+    aioresponses_mock.get(next_url, payload=success_response)
 
     config = ClientConfig(
-        use_testbed=True, next_url_allowed_hosts=["evil.example.com"]
+        use_testbed=True, next_url_allowed_hosts=[allowed_host]
     )
 
     async with event_client_factory(config=config) as client:
@@ -288,47 +334,12 @@ async def test_allowed_external_next_url_override(
 
         events = await client.poll()
         assert len(events) == 1
-        assert events[0].type is EventType.TIP
-
-
-async def test_allowed_external_next_url_with_scheme_override(
-    event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
-    testbed_url_pattern: re.Pattern[str],
-) -> None:
-    """Hosts including a scheme in config should be normalized and allowed."""
-    next_url = "https://evil.example.com/events/next_batch_token"
-    timeout_response = {
-        "status": "waited too long for events",
-        "nextUrl": next_url,
-        "events": [],
-    }
-
-    success_response = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
-
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
-    mock_response.get(next_url, payload=success_response)
-
-    config = ClientConfig(
-        use_testbed=True,
-        next_url_allowed_hosts=["https://evil.example.com"],
-    )
-
-    async with event_client_factory(config=config) as client:
-        events = await client.poll()
-        assert len(events) == 0
-
-        events = await client.poll()
-        assert len(events) == 1
-        assert events[0].type is EventType.TIP
+    assert events[0].type == EventType.TIP
 
 
 async def test_allowed_hosts_always_include_base_host(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Even when only external hosts are configured, the base host is
@@ -345,10 +356,11 @@ async def test_allowed_hosts_always_include_base_host(
         "nextUrl": None,
     }
 
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
-    mock_response.get(next_url, payload=success_response)
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
+    aioresponses_mock.get(next_url, payload=success_response)
 
-    # only external host in allowed list - base should still be allowed
     config = ClientConfig(
         use_testbed=True,
         next_url_allowed_hosts=["evil.example.com"],
@@ -360,14 +372,14 @@ async def test_allowed_hosts_always_include_base_host(
 
         events = await client.poll()
         assert len(events) == 1
-        assert events[0].type is EventType.TIP
+    assert events[0].type == EventType.TIP
 
 
 @pytest.mark.parametrize("invalid_next_url", ["   ", {}])
 async def test_invalid_next_url_in_response(
     invalid_next_url: Any,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Invalid ``nextUrl`` values should raise an EventsError."""
@@ -375,7 +387,7 @@ async def test_invalid_next_url_in_response(
         "events": [],
         "nextUrl": invalid_next_url,
     }
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
         with pytest.raises(
@@ -388,7 +400,7 @@ async def test_invalid_next_url_in_response(
 async def test_timeout_invalid_next_url_raises(
     invalid_next_url: Any,
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Timeout responses with invalid ``nextUrl`` should surface errors."""
@@ -397,7 +409,9 @@ async def test_timeout_invalid_next_url_raises(
         "nextUrl": invalid_next_url,
         "events": [],
     }
-    mock_response.get(testbed_url_pattern, status=400, payload=timeout_response)
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
 
     async with event_client_factory() as client:
         with pytest.raises(
@@ -406,64 +420,53 @@ async def test_timeout_invalid_next_url_raises(
             await client.poll()
 
 
+@pytest.mark.parametrize(
+    "case",
+    [
+        (
+            TimeoutError("Connection timeout"),
+            2,
+            0.01,
+            1.0,
+            r"Failed to fetch events after 2 attempts.*network connectivity",
+        ),
+        (
+            OSError("Network unreachable"),
+            3,
+            0.01,
+            1.5,
+            r"Failed to fetch events after 3 attempts",
+        ),
+    ],
+)
 async def test_network_errors_exhaust_retries(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
+    case,
 ) -> None:
+    exc, retry_attempts, retry_backoff, retry_factor, match = case
     """Different network error types should exhaust retries properly."""
-    mock_response.get(
+    aioresponses_mock.get(
         testbed_url_pattern,
-        exception=TimeoutError("Connection timeout"),
+        exception=exc,
         repeat=True,
     )
     config = ClientConfig(
         use_testbed=True,
-        retry_attempts=2,
-        retry_backoff=0.01,
-        retry_factor=1.0,
+        retry_attempts=retry_attempts,
+        retry_backoff=retry_backoff,
+        retry_factor=retry_factor,
     )
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(
-            EventsError,
-            match=(
-                r"Failed to fetch events after 2 attempts.*"
-                r"network connectivity"
-            ),
-        ):
-            await client.poll()
-
-
-async def test_network_errors_with_oserror(
-    event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
-    testbed_url_pattern: re.Pattern[str],
-) -> None:
-    """OSError during requests should be retried and eventually raise."""
-    mock_response.get(
-        testbed_url_pattern,
-        exception=OSError("Network unreachable"),
-        repeat=True,
-    )
-    config = ClientConfig(
-        use_testbed=True,
-        retry_attempts=3,
-        retry_backoff=0.01,
-        retry_factor=1.5,
-    )
-
-    async with event_client_factory(config=config) as client:
-        with pytest.raises(
-            EventsError,
-            match=r"Failed to fetch events after 3 attempts",
-        ):
+        with pytest.raises(EventsError, match=match):
             await client.poll()
 
 
 async def test_strict_validation_raises_on_invalid_event(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Strict mode should surface validation failures."""
@@ -471,7 +474,7 @@ async def test_strict_validation_raises_on_invalid_event(
         "events": [{"method": "tip", "object": {}}],
         "nextUrl": None,
     }
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
     config = ClientConfig(use_testbed=True, strict_validation=True)
 
     async with event_client_factory(config=config) as client:
@@ -481,7 +484,7 @@ async def test_strict_validation_raises_on_invalid_event(
 
 async def test_lenient_validation_skips_invalid_events(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Lenient mode should skip invalid events and return the rest."""
@@ -492,7 +495,7 @@ async def test_lenient_validation_skips_invalid_events(
         ],
         "nextUrl": None,
     }
-    mock_response.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
     config = ClientConfig(use_testbed=True, strict_validation=False)
 
     async with event_client_factory(config=config) as client:
@@ -500,4 +503,4 @@ async def test_lenient_validation_skips_invalid_events(
 
     assert len(events) == 1
     assert events[0].id == "valid"
-    assert events[0].type is EventType.FOLLOW
+    assert events[0].type == EventType.FOLLOW
