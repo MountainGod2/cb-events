@@ -178,7 +178,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 strict = true
-addopts = ["--tb=short", "--cov-report=term-missing:skip-covered", "--cov=cb_events"]
+addopts = ["--tb=short", "--cov-report=term-missing:skip-covered", "--cov=src"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "e2e: marks tests as end-to-end tests",
@@ -188,6 +188,7 @@ markers = [
 source = ["src/"]
 branch = true
 parallel = true
+omit = ["tests/*"]
 
 [tool.coverage.report]
 show_missing = true
