@@ -91,14 +91,14 @@ def mock_handler() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_response() -> Iterator[aioresponses]:
+def aioresponses_mock() -> Iterator[aioresponses]:
     with aioresponses() as mock:
         yield mock
 
 
 @pytest_asyncio.fixture
 async def setup_mock_client(
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_config: ClientConfig,
     credentials: tuple[str, str],
 ) -> AsyncIterator[EventClient]:
