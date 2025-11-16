@@ -20,12 +20,12 @@ from cb_events import (
 )
 from tests.conftest import EventClientFactory
 
-pytestmark = [pytest.mark.e2e, pytest.mark.asyncio]
+pytestmark = [pytest.mark.e2e]
 
 
 async def test_client_router_workflow(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Sanity check that polling feeds into the router dispatch pipeline."""
@@ -46,20 +46,22 @@ async def test_client_router_workflow(
         "events": [
             {"method": "tip", "id": "1", "object": {"tip": {"tokens": 100}}},
             {"method": "follow", "id": "2", "object": {}},
+            {"method": "broadcastStart", "id": "3", "object": {}},
         ],
         "nextUrl": None,
     }
-    mock_response.get(testbed_url_pattern, payload=event_data)
+    aioresponses_mock.get(testbed_url_pattern, payload=event_data)
 
     async with event_client_factory() as client:
         events = await client.poll()
         for event in events:
             await router.dispatch(event)
 
-    assert len(events_received) == 3
+    assert len(events_received) == 4
     assert events_received[0] == "any:tip"
-    assert events_received[1].type is EventType.TIP
+    assert events_received[1].type == EventType.TIP
     assert events_received[2] == "any:follow"
+    assert events_received[3] == "any:broadcastStart"
 
 
 async def test_client_context_manager_lifecycle() -> None:
@@ -74,11 +76,11 @@ async def test_client_context_manager_lifecycle() -> None:
 
 async def test_authentication_error_propagation(
     event_client_factory: EventClientFactory,
-    mock_response: aioresponses,
+    aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Authentication failures should raise :class:`AuthError`."""
-    mock_response.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=401)
 
     async with event_client_factory(token_override="bad_token") as client:
         with pytest.raises(AuthError):
