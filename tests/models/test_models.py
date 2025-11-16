@@ -19,6 +19,10 @@ from cb_events.models import Message, RoomSubject, Tip, User
         ("roomSubjectChange", EventType.ROOM_SUBJECT_CHANGE),
         ("privateMessage", EventType.PRIVATE_MESSAGE),
         ("fanclubJoin", EventType.FANCLUB_JOIN),
+        ("unfollow", EventType.UNFOLLOW),
+        ("userLeave", EventType.USER_LEAVE),
+        ("broadcastStop", EventType.BROADCAST_STOP),
+        ("mediaPurchase", EventType.MEDIA_PURCHASE),
     ],
 )
 def test_event_type_mapping(method: str, expected_type: EventType) -> None:
@@ -26,7 +30,7 @@ def test_event_type_mapping(method: str, expected_type: EventType) -> None:
     event_data = {"method": method, "id": "test_id", "object": {}}
     event = Event.model_validate(event_data)
 
-    assert event.type is expected_type
+    assert event.type == expected_type
 
 
 def test_event_properties_parsed() -> None:
@@ -43,7 +47,7 @@ def test_event_properties_parsed() -> None:
     event = Event.model_validate(event_data)
 
     assert event.id == "event_123"
-    assert event.type is EventType.TIP
+    assert event.type == EventType.TIP
     assert event.tip is not None
     assert event.tip.tokens == 100
     assert event.user is not None
@@ -115,6 +119,60 @@ def test_room_subject_field() -> None:
     room_subject = RoomSubject.model_validate(subject_data)
 
     assert room_subject.subject == "Welcome to my room!"
+
+
+def test_media_parsed() -> None:
+    """MEDIA_PURCHASE events should validate and return a Media model."""
+    event_data = {
+        "method": "mediaPurchase",
+        "id": "evt-media",
+        "object": {
+            "media": {
+                "id": "m1",
+                "name": "clip",
+                "type": "video",
+                "tokens": 50,
+            }
+        },
+    }
+
+    event = Event.model_validate(event_data)
+    assert event.media is not None
+    assert event.media.id == "m1"
+    assert event.media.name == "clip"
+    assert event.media.type == "video"
+    assert event.media.tokens == 50
+
+
+def test_media_missing_payload_returns_none() -> None:
+    """Missing media key should return None for MEDIA_PURCHASE events."""
+    event = Event.model_validate(
+        {"method": "mediaPurchase", "id": "evt-media-2", "object": {}},
+    )
+    assert event.media is None
+
+
+def test_media_validation_error_logs(caplog: pytest.LogCaptureFixture) -> None:
+    """Invalid media payload should log and return None instead of raising."""
+    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    event = Event.model_validate(
+        {
+            "method": "mediaPurchase",
+            "id": "evt-media-3",
+            "object": {
+                "media": {
+                    "id": "m1",
+                    "name": "clip",
+                    "type": "video",
+                    "tokens": "abc",
+                }
+            },
+        },
+    )
+
+    assert event.media is None
+    assert "Invalid media in event evt-media-3" in caplog.text
+    assert "tokens" in caplog.text
 
 
 def test_event_user_validation_error(caplog: pytest.LogCaptureFixture) -> None:
