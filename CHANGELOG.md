@@ -2,6 +2,48 @@
 
 <!-- version list -->
 
+## v5.6.1 (2025-11-16)
+
+### Bug Fixes
+
+- **tests**: Update coverage options to include src and omit tests
+  ([`d370837`](https://github.com/MountainGod2/cb-events/commit/d370837f990988d29118b52fc574ab5af80419fd))
+
+### Refactoring
+
+- **init**: Add pragma comment for PackageNotFoundError
+  ([`a7a7672`](https://github.com/MountainGod2/cb-events/commit/a7a7672892a86cf1c2d8505756f0d5c78f0dc2c7))
+
+- **tests**: Remove unused pytestmark import
+  ([`e25409c`](https://github.com/MountainGod2/cb-events/commit/e25409c0337ba80aeb11fe3326deeef7ac4ac6b6))
+
+### Testing
+
+- **client**: Add tests for retry/backoff behavior
+  ([`c52f6cc`](https://github.com/MountainGod2/cb-events/commit/c52f6ccaee69063b6835d829d47dadebeafe74aa))
+
+- **client**: Add unit tests for client helper functions
+  ([`efc56a4`](https://github.com/MountainGod2/cb-events/commit/efc56a441903f510f587f24f4e98e301357dea56))
+
+- **concurrency**: Parameterize event methods in tests
+  ([`c74aad3`](https://github.com/MountainGod2/cb-events/commit/c74aad3fbac41fb08af484ea6319a73c7ae56f97))
+
+- **conftest**: Rename mock_response to aioresponses_mock
+  ([`98c4fd3`](https://github.com/MountainGod2/cb-events/commit/98c4fd37c9431c5e0a452371e209ffda02602243))
+
+- **integration**: Update tests for event handling and mocks
+  ([`6604ff5`](https://github.com/MountainGod2/cb-events/commit/6604ff5069ba65854fe3b2451269a1a9673d8fea))
+
+- **models**: Enhance event type mapping and add media tests
+  ([`e1750ef`](https://github.com/MountainGod2/cb-events/commit/e1750ef11214fb65035791b38672f536c3eb13d9))
+
+- **polling**: Parameterize event methods in tests
+  ([`26b43d5`](https://github.com/MountainGod2/cb-events/commit/26b43d581ff97278ed93d1b3cb03576bb7deac16))
+
+- **router**: Parameterize event methods in dispatch tests
+  ([`24ad8a7`](https://github.com/MountainGod2/cb-events/commit/24ad8a7a4410259c26e59a9e3173e8350986d1e3))
+
+
 ## v5.6.0 (2025-11-15)
 
 ### Documentation
