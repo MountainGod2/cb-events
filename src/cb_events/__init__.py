@@ -27,7 +27,7 @@ from importlib.metadata import PackageNotFoundError, version
 from .client import EventClient
 from .config import ClientConfig
 from .exceptions import AuthError, EventsError
-from .models import Event, EventType, Message, RoomSubject, Tip, User
+from .models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from .router import HandlerFunc, Router
 
 try:
@@ -43,6 +43,7 @@ __all__: list[str] = [
     "EventType",
     "EventsError",
     "HandlerFunc",
+    "Media",
     "Message",
     "RoomSubject",
     "Router",
