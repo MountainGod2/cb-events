@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
 from typing import Self, cast, override
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -169,6 +169,13 @@ class EventClient:
         self.base_url: str = (
             TESTBED_URL if self.config.use_testbed else BASE_URL
         )
+        parsed_base = urlparse(self.base_url)
+        if parsed_base.scheme and parsed_base.netloc:
+            self._base_origin: str = (
+                f"{parsed_base.scheme}://{parsed_base.netloc}"
+            )
+        else:
+            self._base_origin = self.base_url
         self.session: ClientSession | None = None
         self._next_url: str | None = None
 
@@ -417,7 +424,8 @@ class EventClient:
 
         Returns:
             Sanitized ``nextUrl`` string or ``None`` when no follow-up poll is
-            required.
+            required. Relative URLs are resolved against the current base API
+            endpoint.
 
         Raises:
             EventsError: If ``nextUrl`` is present but not a non-empty string
@@ -431,12 +439,20 @@ class EventClient:
         if isinstance(next_url, str):
             stripped: str = next_url.strip()
             if stripped:
-                # Verify host is permitted.
+                absolute = stripped
                 parsed = urlparse(stripped)
+                if not parsed.scheme and not parsed.netloc:
+                    if stripped.startswith("/"):
+                        base_for_join = f"{self._base_origin.rstrip('/')}/"
+                    else:
+                        base_for_join = f"{self.base_url.rstrip('/')}/"
+                    absolute = urljoin(base_for_join, stripped)
+                    parsed = urlparse(absolute)
+
                 hostname = parsed.hostname or (parsed.netloc or None)
                 if hostname is None:
-                    # Relative URLs are allowed.
-                    return stripped
+                    return absolute
+
                 if hostname.lower() not in self._allowed_next_hosts:
                     logger.error(
                         "Received nextUrl host %s which is not allowed "
@@ -449,7 +465,7 @@ class EventClient:
                         "Allow via ClientConfig.next_url_allowed_hosts.",
                     )
                     raise EventsError(msg, response_text=response_text)
-                return stripped
+                return absolute
             logger.error(
                 "Received empty nextUrl from API for user %s",
                 self.username,
