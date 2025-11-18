@@ -375,6 +375,35 @@ async def test_allowed_hosts_always_include_base_host(
     assert events[0].type == EventType.TIP
 
 
+async def test_relative_next_url_resolved_to_absolute(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Relative nextUrl values should resolve against the base host."""
+    relative_next = "/events/test_user/test_token/?timeout=10&next=relative"
+    initial_response = {"events": [], "nextUrl": relative_next}
+    next_absolute = (
+        "https://events.testbed.cb.dev/events/"
+        "test_user/test_token/?timeout=10&next=relative"
+    )
+    success_response = {
+        "events": [{"method": "tip", "id": "1", "object": {}}],
+        "nextUrl": None,
+    }
+
+    aioresponses_mock.get(testbed_url_pattern, payload=initial_response)
+    aioresponses_mock.get(next_absolute, payload=success_response)
+
+    async with event_client_factory() as client:
+        events = await client.poll()
+        assert not events
+
+        events = await client.poll()
+        assert len(events) == 1
+    assert events[0].type == EventType.TIP
+
+
 @pytest.mark.parametrize("invalid_next_url", ["   ", {}])
 async def test_invalid_next_url_in_response(
     invalid_next_url: Any,
