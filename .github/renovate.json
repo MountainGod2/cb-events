@@ -193,8 +193,7 @@
   "pep723": {
     "enabled": true,
     "managerFilePatterns": [
-      "/^examples\\/.*\\.py$/",
-      "/^examples\\/.*\\.pyw$/"
+      "/^examples/.*\\.py$/"
     ]
   },
   "pre-commit": {
