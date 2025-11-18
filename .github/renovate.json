@@ -3,6 +3,7 @@
   "extends": [
     "config:best-practices"
   ],
+  "ignorePaths": [],
   "automergeType": "branch",
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
