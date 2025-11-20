@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
 from typing import Self, cast, override
-from urllib.parse import quote, urljoin, urlparse
+from urllib.parse import ParseResult, quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -169,7 +169,7 @@ class EventClient:
         self.base_url: str = (
             TESTBED_URL if self.config.use_testbed else BASE_URL
         )
-        parsed_base = urlparse(self.base_url)
+        parsed_base: ParseResult = urlparse(self.base_url)
         if parsed_base.scheme and parsed_base.netloc:
             self._base_origin: str = (
                 f"{parsed_base.scheme}://{parsed_base.netloc}"
@@ -179,15 +179,15 @@ class EventClient:
         self.session: ClientSession | None = None
         self._next_url: str | None = None
 
-        base_hostname = urlparse(self.base_url).hostname or ""
-        raw_allowed = self.config.next_url_allowed_hosts
+        base_hostname: str = urlparse(self.base_url).hostname or ""
+        raw_allowed: list[str] | None = self.config.next_url_allowed_hosts
         allowed_hosts: set[str] = set()
         if raw_allowed:
             for host in raw_allowed:
-                host_str = str(host).strip()
+                host_str: str = str(host).strip()
                 if not host_str:
                     continue
-                parsed = urlparse(host_str)
+                parsed: ParseResult = urlparse(host_str)
                 if parsed.hostname:
                     allowed_hosts.add(parsed.hostname.lower())
                 else:
@@ -269,11 +269,11 @@ class EventClient:
             EventsError: If request fails after all retries.
         """
         if self.session is None:
-            msg = (
+            init_msg = (
                 "Client not initialized - use 'async with EventClient(...)' "
                 "context manager to properly initialize the session"
             )
-            raise EventsError(msg)
+            raise EventsError(init_msg)
 
         max_attempts: int = self.config.retry_attempts
         delay: float = self.config.retry_backoff
@@ -387,7 +387,7 @@ class EventClient:
             )
 
             if status == HTTPStatus.TOO_MANY_REQUESTS:
-                guidance = " " + _compose_message(
+                guidance: str = " " + _compose_message(
                     "Rate limit exceeded.",
                     "Reduce request rate.",
                     "Share a limiter across clients.",
@@ -439,17 +439,19 @@ class EventClient:
         if isinstance(next_url, str):
             stripped: str = next_url.strip()
             if stripped:
-                absolute = stripped
-                parsed = urlparse(stripped)
+                absolute: str = stripped
+                parsed: ParseResult = urlparse(stripped)
                 if not parsed.scheme and not parsed.netloc:
                     if stripped.startswith("/"):
-                        base_for_join = f"{self._base_origin.rstrip('/')}/"
+                        base_for_join: str = f"{self._base_origin.rstrip('/')}/"
                     else:
                         base_for_join = f"{self.base_url.rstrip('/')}/"
                     absolute = urljoin(base_for_join, stripped)
                     parsed = urlparse(absolute)
 
-                hostname = parsed.hostname or (parsed.netloc or None)
+                hostname: str | None = parsed.hostname or (
+                    parsed.netloc or None
+                )
                 if hostname is None:
                     return absolute
 
@@ -460,11 +462,11 @@ class EventClient:
                         hostname,
                         self.username,
                     )
-                    msg: str = _compose_message(
+                    host_msg: str = _compose_message(
                         "Invalid nextUrl host.",
                         "Allow via ClientConfig.next_url_allowed_hosts.",
                     )
-                    raise EventsError(msg, response_text=response_text)
+                    raise EventsError(host_msg, response_text=response_text)
                 return absolute
             logger.error(
                 "Received empty nextUrl from API for user %s",
@@ -490,21 +492,21 @@ class EventClient:
             True if nextUrl was found and extracted.
         """
         try:
-            data_obj = cast("object", json.loads(text))
+            data_obj: object = cast("object", json.loads(text))
         except (json.JSONDecodeError, KeyError):
             return False
 
         if not isinstance(data_obj, dict):
             return False
 
-        data_dict = cast("dict[str, object]", data_obj)
-        status_msg = data_dict.get("status")
+        data_dict: dict[str, object] = cast("dict[str, object]", data_obj)
+        status_msg: object | None = data_dict.get("status")
         is_timeout: bool = (
             isinstance(status_msg, str)
             and "waited too long" in status_msg.lower()
         )
         if is_timeout:
-            next_url = data_dict.get("nextUrl")
+            next_url: object | None = data_dict.get("nextUrl")
             if next_url is None:
                 return False
 
@@ -532,7 +534,7 @@ class EventClient:
             EventsError: If JSON is invalid or response format is wrong.
         """
         try:
-            data_obj = cast("object", json.loads(text))
+            data_obj: object = cast("object", json.loads(text))
         except json.JSONDecodeError as exc:
             snippet: str = text[:TRUNCATE_LENGTH]
             if len(text) > TRUNCATE_LENGTH:
@@ -560,13 +562,13 @@ class EventClient:
             )
 
         # Extract events and nextUrl
-        data_dict = cast("dict[str, object]", data_obj)
+        data_dict: dict[str, object] = cast("dict[str, object]", data_obj)
         self._next_url = self._validate_next_url(
             data_dict.get("nextUrl"),
             response_text=text,
         )
         if "events" in data_dict:
-            raw_events_obj = data_dict["events"]
+            raw_events_obj: object = data_dict["events"]
             if not isinstance(raw_events_obj, list):
                 msg = _compose_message(
                     "Invalid API response format: 'events' must be a list.",
@@ -576,9 +578,9 @@ class EventClient:
                     msg,
                     response_text=text,
                 )
-            raw_events_list = cast("list[object]", raw_events_obj)
+            raw_events_list: list[object] = cast("list[object]", raw_events_obj)
         else:
-            raw_events_list: list[object] = []
+            raw_events_list = []
 
         events: list[Event] = _parse_events(
             raw_events_list,
