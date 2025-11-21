@@ -233,8 +233,15 @@ class Event(BaseEventModel):
     ) -> _ModelT | None:
         """Extract and validate nested model from event data.
 
+        Args:
+            key: Key within ``data`` to look up.
+            loader: Callable that validates/constructs the nested model.
+            allowed_types: Event types eligible for extraction.
+            transform: Optional function to mutate the payload before
+                validation.
+
         Returns:
-            Validated model instance or None if unavailable/invalid.
+            Validated model instance or ``None`` if unavailable or invalid.
         """
         if allowed_types and self.type not in allowed_types:
             return None
