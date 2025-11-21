@@ -14,7 +14,15 @@ type HandlerFunc = Callable[[Event], Awaitable[None]]
 
 
 def _is_async_callable(func: object) -> bool:
-    """Return True if func is awaitable when called once."""
+    """Return whether ``func`` produces an awaitable when invoked once.
+
+    Args:
+        func: Candidate handler or callable-like object.
+
+    Returns:
+        ``True`` if the callable is async or returns a coroutine; otherwise
+        ``False``.
+    """
     if iscoroutinefunction(func):
         return True
 
@@ -34,7 +42,14 @@ def _is_async_callable(func: object) -> bool:
 
 
 def _handler_name(handler: object) -> str:
-    """Return a safe name for logging handler failures."""
+    """Return a safe name for logging handler failures.
+
+    Args:
+        handler: Handler object or partial.
+
+    Returns:
+        Best-effort human-readable name for logging.
+    """
     seen: set[int] = set()
     current: object = handler
 
@@ -73,14 +88,17 @@ class Router:
     __slots__: tuple[str, ...] = ("_handlers",)
 
     def __init__(self) -> None:
-        """Initialize router with empty handler registry."""
+        """Initialize router with an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
 
     def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
         """Register handler for a specific event type.
 
+        Args:
+            event_type: Event category to associate with the handler.
+
         Returns:
-            Decorator that registers the handler.
+            Decorator that registers the handler and returns it unchanged.
         """
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
@@ -96,7 +114,7 @@ class Router:
         """Register handler for all event types.
 
         Returns:
-            Decorator that registers the handler.
+            Decorator that registers the handler and returns it unchanged.
         """
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
@@ -111,7 +129,10 @@ class Router:
     async def dispatch(self, event: Event) -> None:
         """Dispatch event to matching handlers.
 
-        Wildcard handlers run first, then type-specific handlers.
+        Wildcard handlers execute before type-specific handlers.
+
+        Args:
+            event: Event payload to route to registered handlers.
         """
         handlers: list[HandlerFunc] = [
             *self._handlers.get(None, []),
