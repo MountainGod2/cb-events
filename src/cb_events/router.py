@@ -10,7 +10,9 @@ from .models import Event, EventType
 
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
+
 type HandlerFunc = Callable[[Event], Awaitable[None]]
+"""Async handler signature accepted by Router decorators."""
 
 
 def _is_async_callable(func: object) -> bool:
