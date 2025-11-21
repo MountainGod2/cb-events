@@ -5,5 +5,5 @@
 :maxdepth: 2
 :hidden:
 
-API Reference <api/index>
+API Reference <api/cb_events/index>
 ```
