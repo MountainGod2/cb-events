@@ -35,6 +35,14 @@ class ClientConfig(BaseModel):
 
     @model_validator(mode="after")
     def _check_delays(self) -> Self:
+        """Validate retry delay configuration.
+
+        Returns:
+            Self: Validated configuration instance.
+
+        Raises:
+            ValueError: If ``retry_max_delay`` is less than ``retry_backoff``.
+        """
         if self.retry_max_delay < self.retry_backoff:
             msg: str = (
                 f"retry_max_delay ({self.retry_max_delay}) must be >= "
