@@ -8,6 +8,7 @@
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
   "enabledManagers": [
+    "dockerfile",
     "github-actions",
     "pep723",
     "pep621",
@@ -37,6 +38,13 @@
   "semanticCommitType": "chore",
   "timezone": "America/Edmonton",
   "packageRules": [
+    {
+      "description": "Dockerfile updates",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "automerge": true
+    },
     {
       "description": "Major updates require manual review",
       "matchUpdateTypes": [
