@@ -18,14 +18,24 @@ class EventsError(Exception):
         status_code: int | None = None,
         response_text: str | None = None,
     ) -> None:
-        """Initialize error with message and optional HTTP details."""
+        """Initialize error with message and optional HTTP details.
+
+        Args:
+            message: Human-readable description of the failure.
+            status_code: Optional HTTP status code returned by the API.
+            response_text: Optional raw response body.
+        """
         super().__init__(message)
         self.status_code: int | None = status_code
         self.response_text: str | None = response_text
 
     @override
     def __str__(self) -> str:
-        """Return error message with HTTP status if available."""
+        """Return error message with HTTP status if available.
+
+        Returns:
+            Message string with optional HTTP status suffix.
+        """
         if self.status_code:
             return f"{super().__str__()} (HTTP {self.status_code})"
         return super().__str__()
