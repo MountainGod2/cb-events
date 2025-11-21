@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Self, cast, override
+from typing import Final, Self, cast, override
 from urllib.parse import ParseResult, quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
@@ -19,18 +19,31 @@ from .exceptions import AuthError, EventsError
 from .models import Event
 
 # API endpoints
-BASE_URL = "https://eventsapi.chaturbate.com/events"
-TESTBED_URL = "https://events.testbed.cb.dev/events"
+BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
+"""Production Events API endpoint base."""
+
+TESTBED_URL: Final[str] = "https://events.testbed.cb.dev/events"
+"""Testbed Events API endpoint base."""
 
 # Default rate limiting (per client instance)
-DEFAULT_MAX_RATE = 2000
-DEFAULT_TIME_PERIOD = 60
+DEFAULT_MAX_RATE: Final[int] = 2000
+"""Default maximum number of requests per limiter window."""
+
+DEFAULT_TIME_PERIOD: Final[int] = 60
+"""Length in seconds of the limiter window used for rate limiting."""
 
 # HTTP configuration
-SESSION_TIMEOUT_BUFFER = 5
-TOKEN_VISIBLE_CHARS = 4
-TRUNCATE_LENGTH = 200
+SESSION_TIMEOUT_BUFFER: Final[int] = 5
+"""Extra seconds added to aiohttp's client timeout."""
+
+TOKEN_VISIBLE_CHARS: Final[int] = 4
+"""Number of trailing token characters to reveal in logs."""
+
+TRUNCATE_LENGTH: Final[int] = 200
+"""Maximum number of characters of response text shown in logs."""
+
 AUTH_ERRORS: set[HTTPStatus] = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
+"""HTTP status codes treated as authentication failures."""
 RETRY_STATUS_CODES: set[int] = {
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
@@ -42,6 +55,7 @@ RETRY_STATUS_CODES: set[int] = {
     523,  # Cloudflare: origin unreachable
     524,  # Cloudflare: timeout occurred
 }
+"""HTTP status codes that trigger exponential backoff retries."""
 
 _MISSING = object()
 """Sentinel for detecting absent keys in API payloads."""
