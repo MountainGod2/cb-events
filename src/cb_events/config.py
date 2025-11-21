@@ -7,31 +7,33 @@ from pydantic.config import ConfigDict
 
 
 class ClientConfig(BaseModel):
-    """Client configuration.
-
-    Attributes:
-        timeout: Request timeout in seconds.
-        use_testbed: Use testbed API instead of production.
-        strict_validation: Raise on invalid events vs. skip and log.
-        retry_attempts: Total attempts including initial request (>=1).
-        retry_backoff: Initial retry delay in seconds.
-        retry_factor: Backoff multiplier per retry.
-        retry_max_delay: Maximum delay between retries.
-        next_url_allowed_hosts: Optional list of hostnames permitted for
-            'nextUrl' values returned by the API. If None, only the base API
-            host (production or testbed) will be followed.
-    """
+    """Immutable client configuration for API polling behavior."""
 
     model_config: ClassVar[ConfigDict] = {"frozen": True}
 
     timeout: int = Field(default=10, gt=0)
+    """Request timeout in seconds."""
+
     use_testbed: bool = False
+    """Use the testbed API instead of production."""
+
     strict_validation: bool = True
+    """Raise on invalid events vs. skip and log."""
+
     retry_attempts: int = Field(default=8, ge=1)
+    """Total attempts including the initial request (must be >= 1)."""
+
     retry_backoff: float = Field(default=1.0, ge=0)
+    """Initial retry delay in seconds."""
+
     retry_factor: float = Field(default=2.0, gt=0)
+    """Backoff multiplier applied after each retry."""
+
     retry_max_delay: float = Field(default=30.0, ge=0)
+    """Maximum delay between retries in seconds."""
+
     next_url_allowed_hosts: list[str] | None = None
+    """Hosts permitted for ``nextUrl`` responses; defaults to API host only."""
 
     @model_validator(mode="after")
     def _check_delays(self) -> Self:
