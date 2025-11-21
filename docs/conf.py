@@ -35,7 +35,6 @@ extensions: list[str] = [
     "sphinx.ext.viewcode",
     "autoapi.extension",
     "sphinx_autodoc_typehints",
-    "sphinxcontrib.autodoc_pydantic",
     "myst_nb",
 ]
 
@@ -83,13 +82,16 @@ autoapi_dirs: list[str] = [str(SRC_DIR / "cb_events")]
 autoapi_type = "python"
 autoapi_root = "api"
 autoapi_member_order = "bysource"
-autoapi_python_class_content = "class"
+autoapi_python_class_content = "both"
+autoapi_add_toctree_entry = False
 autoapi_keep_files = False
 
 autoapi_options: list[str] = [
     "members",
+    "undoc-members",
     "show-inheritance",
     "show-module-summary",
+    "special-members",
 ]
 
 autoapi_ignore: list[str] = [
@@ -106,10 +108,23 @@ intersphinx_mapping: dict[str, tuple[str, None]] = {
     "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
 }
 
+nitpicky = True
+nitpick_ignore: list[tuple[str, str]] = [
+    ("py:class", "aiolimiter.AsyncLimiter"),
+    ("py:class", "Event"),
+    ("py:class", "HandlerFunc"),
+    ("py:class", "Ellipsis"),
+]
+
 # Type hints configuration
-typehints_fully_qualified = False
-typehints_document_rtype = True
-always_document_param_types = True
+typehints_fully_qualified = True
+typehints_document_rtype = False
+always_document_param_types = False
+typehints_use_signature = True
+typehints_use_signature_return = True
+
+# Static assets
+html_static_path: list[str] = ["_static"]
 
 # MyST-NB configuration
 nb_execution_mode = "off"
