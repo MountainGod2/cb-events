@@ -4,12 +4,13 @@ from typing import override
 
 
 class EventsError(Exception):
-    """Base exception for API failures.
+    """Base exception for API failures with optional HTTP metadata."""
 
-    Attributes:
-        status_code: HTTP status code if available.
-        response_text: Raw response body if available.
-    """
+    status_code: int | None
+    """HTTP status code if available."""
+
+    response_text: str | None
+    """Raw response body if available."""
 
     def __init__(
         self,
