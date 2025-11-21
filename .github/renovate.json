@@ -1,18 +1,28 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate rules for cb-events dependency updates.",
   "extends": [
     "config:best-practices"
   ],
-  "ignorePaths": [],
   "automergeType": "branch",
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
+  "dependencyDashboardApproval": false,
+  "dependencyDashboardAutoclose": true,
   "enabledManagers": [
     "dockerfile",
     "github-actions",
-    "pep723",
     "pep621",
+    "pep723",
     "pre-commit"
+  ],
+  "ignorePaths": [
+    "**/.pytest_cache/**",
+    "**/__pycache__/**",
+    "docs/_build/**",
+    "htmlcov/**",
+    "coverage.xml",
+    "junit.xml"
   ],
   "internalChecksAsSuccess": false,
   "internalChecksFilter": "strict",
@@ -22,13 +32,14 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
-      "before 5am"
+      "before 5am on monday"
     ],
     "automerge": true
   },
   "minimumReleaseAge": "4 days",
   "platformAutomerge": false,
   "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
   "rangeStrategy": "bump",
   "rebaseWhen": "auto",
   "schedule": [
@@ -38,13 +49,6 @@
   "semanticCommitType": "chore",
   "timezone": "America/Edmonton",
   "packageRules": [
-    {
-      "description": "Dockerfile updates",
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "automerge": true
-    },
     {
       "description": "Major updates require manual review",
       "matchUpdateTypes": [
@@ -60,35 +64,6 @@
       ]
     },
     {
-      "description": "Auto-merge non-breaking updates",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest"
-      ],
-      "automerge": true,
-      "autoApprove": true
-    },
-    {
-      "description": "Keep Python version pinned",
-      "matchManagers": [
-        "pep621"
-      ],
-      "ignoreDeps": [
-        "python"
-      ]
-    },
-    {
-      "description": "Skip release age for self-references",
-      "matchManagers": [
-        "pep723"
-      ],
-      "matchDepNames": [
-        "cb-events"
-      ],
-      "minimumReleaseAge": "0"
-    },
-    {
       "description": "Runtime dependencies (async HTTP and validation)",
       "matchPackageNames": [
         "aiohttp",
@@ -101,19 +76,23 @@
         "dependencies",
         "core"
       ],
+      "minimumReleaseAge": "4 days",
       "semanticCommitScope": "runtime"
     },
     {
       "description": "Development tools (testing, linting, and type checking)",
       "matchPackageNames": [
         "pytest",
+        "pytest-asyncio",
+        "pytest-aiohttp",
+        "pytest-cov",
+        "pytest-mock",
         "aioresponses",
         "pyrefly",
         "pyright",
         "pylint",
         "bandit",
         "ruff",
-        "pre-commit",
         "/^pytest-.*$/",
         "/^pylint-.*$/",
         "/^bandit-.*$/",
@@ -130,12 +109,18 @@
         "minor",
         "patch"
       ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
       "semanticCommitScope": "dev"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
       "matchPackageNames": [
         "sphinx",
+        "sphinx-autoapi",
+        "sphinx-autodoc-typehints",
+        "sphinx-rtd-theme",
         "/^sphinx-.*$/",
         "/^myst-.*$/",
         "autodoc-pydantic",
@@ -150,12 +135,16 @@
         "minor",
         "patch"
       ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
       "semanticCommitScope": "docs"
     },
     {
       "description": "Build and release tools",
       "matchPackageNames": [
         "hatchling",
+        "hatch-fancy-pypi-readme",
         "python-semantic-release",
         "/^hatch-.*$/"
       ],
@@ -168,6 +157,9 @@
         "minor",
         "patch"
       ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
       "semanticCommitScope": "build"
     },
     {
@@ -184,6 +176,9 @@
         "minor",
         "patch"
       ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
       "semanticCommitScope": "pre-commit"
     },
     {
@@ -196,7 +191,59 @@
         "dependencies",
         "ci"
       ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
       "semanticCommitScope": "ci"
+    },
+    {
+      "description": "Dockerfile updates",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "docker",
+      "labels": [
+        "dependencies",
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
+      "semanticCommitScope": "docker"
+    },
+    {
+      "description": "Example scripts managed via PEP 723",
+      "matchManagers": [
+        "pep723"
+      ],
+      "groupName": "examples",
+      "labels": [
+        "dependencies",
+        "examples"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
+      "semanticCommitScope": "examples"
+    },
+    {
+      "description": "Keep Python version pinned",
+      "matchManagers": [
+        "pep621"
+      ],
+      "ignoreDeps": [
+        "python"
+      ]
     }
   ],
   "pep723": {
