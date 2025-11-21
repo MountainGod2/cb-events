@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events ==5.6.1",
+#     "cb-events == 5.6.1",
 #     "python-dotenv == 1.2.1",
 #     "rich == 14.2.0"
 # ]
@@ -11,18 +11,24 @@
 
 import asyncio
 import contextlib
+import logging
 import os
 
 from dotenv import load_dotenv
-from rich import print  # noqa: A004
 
 from cb_events import (
+    AuthError,
     ClientConfig,
     Event,
     EventClient,
     EventType,
     Router,
 )
+
+logging.basicConfig(
+    level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", format="%(message)s"
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -35,56 +41,58 @@ router = Router()
 @router.on(EventType.BROADCAST_START)
 async def handle_broadcast_start(event: Event) -> None:
     """Handle broadcast start events."""
-    print("Broadcast started")
+    logger.info("Broadcast started")
 
 
 @router.on(EventType.BROADCAST_STOP)
 async def handle_broadcast_stop(event: Event) -> None:
     """Handle broadcast stop events."""
-    print("Broadcast stopped")
+    logger.info("Broadcast stopped")
 
 
 @router.on(EventType.USER_ENTER)
 async def handle_user_enter(event: Event) -> None:
     """Handle user enter events."""
     if event.user:
-        print(f"{event.user.username} entered the room")
+        logger.info("%s entered the room", event.user.username)
 
 
 @router.on(EventType.USER_LEAVE)
 async def handle_user_leave(event: Event) -> None:
     """Handle user leave events."""
     if event.user:
-        print(f"{event.user.username} left the room")
+        logger.info("%s left the room", event.user.username)
 
 
 @router.on(EventType.FOLLOW)
 async def handle_follow(event: Event) -> None:
     """Handle follow events."""
     if event.user:
-        print(f"{event.user.username} has followed")
+        logger.info("%s has followed", event.user.username)
 
 
 @router.on(EventType.UNFOLLOW)
 async def handle_unfollow(event: Event) -> None:
     """Handle unfollow events."""
     if event.user:
-        print(f"{event.user.username} has unfollowed")
+        logger.info("%s has unfollowed", event.user.username)
 
 
 @router.on(EventType.FANCLUB_JOIN)
 async def handle_fanclub_join(event: Event) -> None:
     """Handle fanclub join events."""
     if event.user:
-        print(f"{event.user.username} joined the fan club")
+        logger.info("%s joined the fan club", event.user.username)
 
 
 @router.on(EventType.CHAT_MESSAGE)
 async def handle_chat_message(event: Event) -> None:
     """Handle chat message events."""
     if event.user and event.message:
-        print(
-            f"{event.user.username} sent chat message: {event.message.message}"
+        logger.info(
+            "%s sent chat message: %s",
+            event.user.username,
+            event.message.message,
         )
 
 
@@ -92,9 +100,11 @@ async def handle_chat_message(event: Event) -> None:
 async def handle_private_message(event: Event) -> None:
     """Handle private message events."""
     if event.message and event.message.from_user and event.message.to_user:
-        print(
-            f"{event.message.from_user} sent private message to "
-            f"{event.message.to_user}: {event.message.message}"
+        logger.info(
+            "%s sent private message to %s: %s",
+            event.message.from_user,
+            event.message.to_user,
+            event.message.message,
         )
 
 
@@ -107,9 +117,11 @@ async def handle_tip(event: Event) -> None:
             event.tip.message.removeprefix("| ") if event.tip.message else ""
         )
         message_text = f"with message: {clean_message}" if clean_message else ""
-        print(
-            f"{event.user.username} sent {event.tip.tokens} tokens "
-            f"{anon_text}{message_text}".strip()
+        logger.info(
+            "%s sent %s tokens %s",
+            event.user.username,
+            event.tip.tokens,
+            f"{anon_text}{message_text}".strip(),
         )
 
 
@@ -117,16 +129,19 @@ async def handle_tip(event: Event) -> None:
 async def handle_room_subject_change(event: Event) -> None:
     """Handle room subject change events."""
     if event.room_subject:
-        print(f"Room Subject changed to {event.room_subject.subject}")
+        logger.info("Room Subject changed to %s", event.room_subject.subject)
 
 
 @router.on(EventType.MEDIA_PURCHASE)
 async def handle_media_purchase(event: Event) -> None:
     """Handle media purchase events."""
     if event.user and event.media:
-        print(
-            f"{event.user.username} purchased {event.media.type} "
-            f"[{event.media.name}] for {event.media.tokens} tokens"
+        logger.info(
+            "%s purchased %s [%s] for %s tokens",
+            event.user.username,
+            event.media.type,
+            event.media.name,
+            event.media.tokens,
         )
 
 
@@ -148,7 +163,7 @@ async def handle_unknown_event(event: Event) -> None:
         EventType.MEDIA_PURCHASE,
     }
     if event.type not in known_types:
-        print(f"Unknown method: {event.type}")
+        logger.warning("Unknown method: %s", event.type)
 
 
 async def main() -> None:
@@ -156,7 +171,7 @@ async def main() -> None:
     config = ClientConfig(use_testbed=True)
 
     async with EventClient(username, token, config=config) as client:
-        print("Listening for events... (Ctrl+C to stop)")
+        logger.info("Listening for events... (Ctrl+C to stop)")
 
         async for event in client:
             await router.dispatch(event)
@@ -164,5 +179,8 @@ async def main() -> None:
 
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
-        asyncio.run(main())
-    print("\nExiting.")
+        try:
+            asyncio.run(main())
+        except AuthError as e:
+            logger.error("%s", e)
+    logger.info("Exiting.")
