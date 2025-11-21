@@ -53,6 +53,9 @@ logger: logging.Logger = logging.getLogger(__name__)
 def _compose_message(*parts: str) -> str:
     """Join message components with single spaces.
 
+    Args:
+        parts: Message fragments to join in order.
+
     Returns:
         Concatenated message containing the provided parts.
     """
@@ -62,8 +65,13 @@ def _compose_message(*parts: str) -> str:
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
 
+    Args:
+        token: Sensitive token string to sanitize.
+        visible: Number of trailing characters to keep unobscured.
+
     Returns:
-        Masked token with only last few characters visible.
+        Masked token with only the configured number of trailing characters
+        visible.
     """
     if visible <= 0 or len(token) <= visible:
         return "*" * len(token)
@@ -73,8 +81,12 @@ def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
 
+    Args:
+        url: URL string that may contain the sensitive token.
+        token: Token substring to redact within the URL.
+
     Returns:
-        URL with masked token.
+        URL with masked token occurrences replaced by the sanitized version.
     """
     masked: str = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
@@ -83,11 +95,15 @@ def _mask_url(url: str, token: str) -> str:
 def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     """Parse raw event dictionaries into Event models.
 
+    Args:
+        raw: Raw JSON-compatible objects returned by the API.
+        strict: Whether to raise ``ValidationError`` on invalid payloads.
+
     Returns:
-        List of validated Event instances.
+        List of validated :class:`Event` instances.
 
     Raises:
-        ValidationError: If strict=True and validation fails.
+        ValidationError: If ``strict`` is ``True`` and validation fails.
     """
     events: list[Event] = []
     for item in raw:
@@ -145,8 +161,15 @@ class EventClient:
     ) -> None:
         """Initialize event client with credentials and configuration.
 
+        Args:
+            username: Chaturbate username associated with the event feed.
+            token: API token generated for the username.
+            config: Optional client configuration overrides.
+            rate_limiter: Optional shared rate limiter to coordinate calls
+                across multiple clients.
+
         Raises:
-            AuthError: If username or token is invalid.
+            AuthError: If username or token is empty or contains whitespace.
         """
         if not username or username != username.strip():
             msg = (
@@ -205,7 +228,11 @@ class EventClient:
 
     @override
     def __repr__(self) -> str:
-        """Return string representation with masked token."""
+        """Return string representation with masked token.
+
+        Returns:
+            Masked representation revealing only limited token characters.
+        """
         return (
             f"EventClient(username='{self.username}', "
             f"token='{_mask_token(self.token)}')"
@@ -215,7 +242,7 @@ class EventClient:
         """Initialize HTTP session on context entry.
 
         Returns:
-            The client instance.
+            Self: Client instance ready for use.
 
         Raises:
             EventsError: If session creation fails.
@@ -243,14 +270,20 @@ class EventClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Clean up session on context exit."""
+        """Clean up session on context exit.
+
+        Args:
+            exc_type: Exception type raised inside the context, if any.
+            exc_val: Exception instance raised inside the context, if any.
+            exc_tb: Traceback object for the exception, if any.
+        """
         await self.close()
 
     def _build_url(self) -> str:
         """Build URL for next poll request.
 
         Returns:
-            URL for the next API request.
+            Fully qualified URL for the upcoming API request.
         """
         if self._next_url:
             return self._next_url
@@ -262,11 +295,14 @@ class EventClient:
     async def _request(self, url: str) -> tuple[int, str]:
         """Make HTTP request with retries.
 
+        Args:
+            url: Fully qualified endpoint to request.
+
         Returns:
-            Tuple of (status_code, response_text).
+            Tuple of ``(status_code, response_text)``.
 
         Raises:
-            EventsError: If request fails after all retries.
+            EventsError: If the request fails after the configured retries.
         """
         if self.session is None:
             init_msg = (
@@ -347,12 +383,16 @@ class EventClient:
     def _process_response(self, status: int, text: str) -> list[Event]:
         """Process HTTP response and extract events.
 
+        Args:
+            status: HTTP status code received from the API.
+            text: Raw response body.
+
         Returns:
-            List of parsed Event instances.
+            List of parsed :class:`Event` instances.
 
         Raises:
-            AuthError: For 401/403 responses.
-            EventsError: For other non-OK responses.
+            AuthError: For HTTP 401/403 responses.
+            EventsError: For other non-success responses.
         """
         if status in AUTH_ERRORS:
             logger.warning(
@@ -486,10 +526,14 @@ class EventClient:
         raise EventsError(msg, response_text=response_text)
 
     def _try_extract_next_url(self, text: str) -> bool:
-        """Try to extract nextUrl from timeout response.
+        """Try to extract ``nextUrl`` from timeout responses.
+
+        Args:
+            text: Raw response body from the timeout response.
 
         Returns:
-            True if nextUrl was found and extracted.
+            ``True`` if ``nextUrl`` was extracted and stored; otherwise
+            ``False``.
         """
         try:
             data_obj: object = cast("object", json.loads(text))
@@ -527,8 +571,11 @@ class EventClient:
     def _parse_json_response(self, text: str) -> list[Event]:
         """Parse JSON response and extract events.
 
+        Args:
+            text: Raw HTTP response body expected to contain JSON.
+
         Returns:
-            List of parsed Event instances.
+            List of parsed :class:`Event` instances.
 
         Raises:
             EventsError: If JSON is invalid or response format is wrong.
@@ -599,8 +646,6 @@ class EventClient:
     async def poll(self) -> list[Event]:
         """Poll the API for new events.
 
-        Safe for concurrent calls (uses internal lock).
-
         Returns:
             List of events received (empty if timeout or no events).
         """
@@ -616,7 +661,7 @@ class EventClient:
         """Stream events continuously as an async iterator.
 
         Returns:
-            Async iterator yielding Event objects.
+            Async iterator yielding :class:`Event` objects.
         """
         return self._stream()
 
@@ -624,7 +669,7 @@ class EventClient:
         """Internal generator for continuous event streaming.
 
         Yields:
-            Event objects from the API.
+            Event: Objects emitted by the Events API.
         """
         while True:
             events: list[Event] = await self.poll()
@@ -632,7 +677,10 @@ class EventClient:
                 yield event
 
     async def close(self) -> None:
-        """Close session and reset state (idempotent)."""
+        """Close session and reset internal state.
+
+        Safe to call multiple times.
+        """
         try:
             if self.session:
                 await self.session.close()
