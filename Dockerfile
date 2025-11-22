@@ -1,4 +1,4 @@
-FROM python:3.14-slim-bookworm AS builder
+FROM python:3.14-slim-bookworm@sha256:d13fa0424035d290decef3d575cea23d1b7d5952cdf429df8f5542c71e961576 AS builder
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
@@ -11,7 +11,7 @@ RUN pip --quiet --no-cache-dir install uv==0.9.11 && \
     uv sync --frozen --no-dev --group=examples && \
     /opt/venv/bin/pip install .
 
-FROM python:3.14-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm@sha256:d13fa0424035d290decef3d575cea23d1b7d5952cdf429df8f5542c71e961576 AS runtime
 
 WORKDIR /app
 COPY --chown=1000:1000 examples/example.py /app/
