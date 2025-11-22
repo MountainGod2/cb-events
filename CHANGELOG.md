@@ -2,6 +2,121 @@
 
 <!-- version list -->
 
+## v5.6.2 (2025-11-22)
+
+### Bug Fixes
+
+- **deps**: Add examples group for python-dotenv and rich
+  ([`07a4bfe`](https://github.com/MountainGod2/cb-events/commit/07a4bfebbd389956bc8cdcbe41deddd3014ff15c))
+
+- **Dockerfile**: Update Python base image to 3.14
+  ([`f36f456`](https://github.com/MountainGod2/cb-events/commit/f36f45655066d00a34e627e3825ea1a1c4b4308e))
+
+- **Dockerfile**: Update uv dependency to version 0.9.11
+  ([`14cfa07`](https://github.com/MountainGod2/cb-events/commit/14cfa079d8666e6cc6528679ba556f7652e6de44))
+
+### Chores
+
+- **deps**: Lock file maintenance
+  ([`8e79db8`](https://github.com/MountainGod2/cb-events/commit/8e79db81b43e34678335282a85868c42f2ae5955))
+
+- **deps**: Update dependency cb-events to v5.6.1
+  ([`41a9b29`](https://github.com/MountainGod2/cb-events/commit/41a9b299586b89057a904e94cf6c74e592aeef4b))
+
+- **dev**: Update dependency pyrefly to v0.41.1
+  ([`e41c6b4`](https://github.com/MountainGod2/cb-events/commit/e41c6b49a55db4ddab7f4b8048124b83b2eb2e6e))
+
+- **dev**: Update dependency pyrefly to v0.41.2
+  ([`c3e2b82`](https://github.com/MountainGod2/cb-events/commit/c3e2b82683509830bba0bce939f72e2e3a13a884))
+
+- **dev**: Update dependency pyrefly to v0.42.0
+  ([`2335997`](https://github.com/MountainGod2/cb-events/commit/233599770ce0702cc022e86eb068a23441bd41fc))
+
+- **dev**: Update dependency pytest to v9.0.1
+  ([`c8af5ad`](https://github.com/MountainGod2/cb-events/commit/c8af5ad6a8abf8303be0a44cd7a2748667bd0c29))
+
+- **dev**: Update dev
+  ([`6175256`](https://github.com/MountainGod2/cb-events/commit/617525670ca73daa5d058307ac5b0777f3ecbd4f))
+
+- **docs**: Remove autodoc-pydantic dependency
+  ([`fc46038`](https://github.com/MountainGod2/cb-events/commit/fc46038044e807c3567b17ab24d24ba1a4416c6a))
+
+- **models**: Add Media to exported items
+  ([`6b91572`](https://github.com/MountainGod2/cb-events/commit/6b915729d895dd028db60f06e9127846873ad9c6))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`53ccab8`](https://github.com/MountainGod2/cb-events/commit/53ccab868d8a6043d4a967d9ed10aef4fe1a2a06))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`8e448a0`](https://github.com/MountainGod2/cb-events/commit/8e448a0c91145ce025178574071a9372e17fa337))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`07b81f9`](https://github.com/MountainGod2/cb-events/commit/07b81f9cb011773334e480e569722965ab8257b3))
+
+- **renovate**: Add Dockerfile manager and rules
+  ([`5600327`](https://github.com/MountainGod2/cb-events/commit/5600327ba88cf91684ed468ef00def24bc45e97e))
+
+- **renovate**: Add ignorePaths to configuration
+  ([`61d5fdc`](https://github.com/MountainGod2/cb-events/commit/61d5fdca48c295bf1abfa18b69c771cd516df103))
+
+- **renovate**: Simplify managerFilePatterns regex
+  ([`9096420`](https://github.com/MountainGod2/cb-events/commit/90964204f4c20dbc11e78187ea87a236d9a45091))
+
+- **renovate**: Update configuration for dependency management
+  ([`1d1951d`](https://github.com/MountainGod2/cb-events/commit/1d1951daf6f1722941ca25500ca3d9b037c2b5df))
+
+### Documentation
+
+- **client**: Add type hints for constants and variables
+  ([`60285ec`](https://github.com/MountainGod2/cb-events/commit/60285ec87dc552ff350b80a2c86efcf0a1f5ff2a))
+
+- **client**: Update docstrings
+  ([`bc1296b`](https://github.com/MountainGod2/cb-events/commit/bc1296bf3727a62e24ccb8edf69d999c527c9556))
+
+- **conf**: Update AutoAPI configuration and remove unused extension
+  ([`a7ac8bb`](https://github.com/MountainGod2/cb-events/commit/a7ac8bb7f4562b2cf1064fd78a3bec0dbfbd32b3))
+
+- **config**: Update class docstring for clarity
+  ([`cb3d3da`](https://github.com/MountainGod2/cb-events/commit/cb3d3da4d61245c0fb642d7d5f94a21c7e7778d4))
+
+- **config**: Update docstring for delay validation
+  ([`4098dac`](https://github.com/MountainGod2/cb-events/commit/4098dac5b1ef80763216c692e5100c4de1e64348))
+
+- **Event**: Update docstring for extract_and_validate method
+  ([`51c2e42`](https://github.com/MountainGod2/cb-events/commit/51c2e426defeff7333bc47011ba87cb7082b5194))
+
+- **exceptions**: Update docstring for EventsError class
+  ([`7bc3ec6`](https://github.com/MountainGod2/cb-events/commit/7bc3ec6a21f6dc2f35b655aec6ded55c9474d468))
+
+- **exceptions**: Update docstrings
+  ([`33da795`](https://github.com/MountainGod2/cb-events/commit/33da795499ae02091b601ba930c35058c6f76fd1))
+
+- **index**: Update API reference link to correct path
+  ([`dcc18ec`](https://github.com/MountainGod2/cb-events/commit/dcc18ec7e47e7c5edf2fed984950162a24b78ca2))
+
+- **router**: Add docstring for HandlerFunc type
+  ([`e27b5b5`](https://github.com/MountainGod2/cb-events/commit/e27b5b55d0989a28658095c356d0155506ce8933))
+
+- **router**: Update docstrings
+  ([`0269bdb`](https://github.com/MountainGod2/cb-events/commit/0269bdbc2e953e29d464b61f5a3380f2f2bd97b6))
+
+### Refactoring
+
+- **client**: Improve type annotations
+  ([`18ab44f`](https://github.com/MountainGod2/cb-events/commit/18ab44f415739dc4209dcb10870daca389f7b002))
+
+- **client**: Improve URL handling in EventClient
+  ([`ca84207`](https://github.com/MountainGod2/cb-events/commit/ca84207863b10912a0f05bb7bb29196c444fa7ed))
+
+- **example**: Replace print statements with logging
+  ([`e1a2055`](https://github.com/MountainGod2/cb-events/commit/e1a205558290986e42dbff916748bbd2366498c2))
+
+### Testing
+
+- **client**: Add test for resolving relative nextUrl
+  ([`2de272a`](https://github.com/MountainGod2/cb-events/commit/2de272a202175355952f963c2a49368de01af4cd))
+
+
 ## v5.6.1 (2025-11-16)
 
 ### Bug Fixes
