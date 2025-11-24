@@ -17,9 +17,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -38,9 +38,9 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -77,9 +77,9 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -89,7 +89,7 @@ jobs:
 
       - run: make bandit
 
-      - uses: github/codeql-action/upload-sarif@014f16e7ab1402f30e7c3329d33797e7948572db # v4
+      - uses: github/codeql-action/upload-sarif@fdbfb4d2750291e159f0156def62b853c2798ca2 # v4
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
@@ -104,7 +104,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 0
 
-      - uses: github/codeql-action/upload-sarif@014f16e7ab1402f30e7c3329d33797e7948572db # v4
+      - uses: github/codeql-action/upload-sarif@fdbfb4d2750291e159f0156def62b853c2798ca2 # v4
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
@@ -124,14 +124,14 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
       - run: git checkout -B ${{ github.ref_name }}
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -168,7 +168,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
@@ -180,7 +180,7 @@ jobs:
           name: dist
           path: ./dist
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: "3.13"
           enable-cache: true
@@ -211,14 +211,14 @@ jobs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
     steps:
-      - uses: actions/checkout@71cf2267d89c5cb81562390fa70a37fa40b1305e # v6
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - run: git reset --hard ${{ github.sha }}
 
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7
         with:
           python-version: "3.13"
           enable-cache: true
