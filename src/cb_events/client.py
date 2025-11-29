@@ -18,21 +18,18 @@ from .config import ClientConfig
 from .exceptions import AuthError, EventsError
 from .models import Event
 
-# API endpoints
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
 
 TESTBED_URL: Final[str] = "https://events.testbed.cb.dev/events"
 """Testbed Events API endpoint base."""
 
-# Default rate limiting (per client instance)
 DEFAULT_MAX_RATE: Final[int] = 2000
 """Default maximum number of requests per limiter window."""
 
 DEFAULT_TIME_PERIOD: Final[int] = 60
 """Length in seconds of the limiter window used for rate limiting."""
 
-# HTTP configuration
 SESSION_TIMEOUT_BUFFER: Final[int] = 5
 """Extra seconds added to aiohttp's client timeout."""
 
@@ -44,6 +41,7 @@ TRUNCATE_LENGTH: Final[int] = 200
 
 AUTH_ERRORS: set[HTTPStatus] = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 """HTTP status codes treated as authentication failures."""
+
 RETRY_STATUS_CODES: set[int] = {
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
