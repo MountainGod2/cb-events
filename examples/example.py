@@ -24,16 +24,15 @@ from cb_events import (
     EventType,
     Router,
 )
+from cb_events.exceptions import EventsError
 
-logging.basicConfig(
-    level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S", format="%(message)s"
-)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 username = os.getenv("CB_USERNAME", "")
 token = os.getenv("CB_TOKEN", "")
+use_testbed = os.getenv("CB_USE_TESTBED", "false").lower() == "true"
 
 router = Router()
 
@@ -168,7 +167,7 @@ async def handle_unknown_event(event: Event) -> None:
 
 async def main() -> None:
     """Set up event handlers and start listening for events."""
-    config = ClientConfig(use_testbed=True)
+    config = ClientConfig(use_testbed=use_testbed)
 
     async with EventClient(username, token, config=config) as client:
         logger.info("Listening for events... (Ctrl+C to stop)")
@@ -178,9 +177,11 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     with contextlib.suppress(KeyboardInterrupt):
         try:
             asyncio.run(main())
-        except AuthError as e:
+        except (AuthError, EventsError) as e:
             logger.error("%s", e)
     logger.info("Exiting.")
