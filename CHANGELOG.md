@@ -2,6 +2,90 @@
 
 <!-- version list -->
 
+## v5.6.3 (2025-11-29)
+
+### Bug Fixes
+
+- **client**: Prevent redirects in session requests
+  ([`80f7305`](https://github.com/MountainGod2/cb-events/commit/80f730521efa1e5d06187d938fd2738e395843dc))
+
+### Chores
+
+- **build**: Update dependency hatchling to v1.28.0
+  ([`343663c`](https://github.com/MountainGod2/cb-events/commit/343663c346fb5830320112a25430d1f56e4d5ea4))
+
+- **ci**: Update github-actions
+  ([`b912c77`](https://github.com/MountainGod2/cb-events/commit/b912c77ef620584bd9594f6e3a346a58923231a2))
+
+- **deps**: Pin python docker tag to d13fa04
+  ([#33](https://github.com/MountainGod2/cb-events/pull/33),
+  [`26fd239`](https://github.com/MountainGod2/cb-events/commit/26fd239cffb2587430c446f4e43c6d556538eaef))
+
+- **dev**: Update dependency bandit to v1.9.2
+  ([`9f5952e`](https://github.com/MountainGod2/cb-events/commit/9f5952eba230257905652ffae2c5dba654603ae6))
+
+- **dev**: Update dependency pyrefly to v0.43.1
+  ([`b38a590`](https://github.com/MountainGod2/cb-events/commit/b38a590d23114b8e464c55937b41b335a1cab786))
+
+- **dev**: Update dependency ty to v0.0.1a28
+  ([`fc91bdc`](https://github.com/MountainGod2/cb-events/commit/fc91bdc4d3b613834b7eff85f7cc0cb6e682fc38))
+
+- **dev**: Update dev
+  ([`163f645`](https://github.com/MountainGod2/cb-events/commit/163f64545a6a7a9cb0e1ee5dccdb75a74479e6bc))
+
+- **dev**: Update dev
+  ([`5a79a53`](https://github.com/MountainGod2/cb-events/commit/5a79a5379d855d9b1b0f9494c94636d2bd11cadb))
+
+- **examples**: Update dependency cb-events to v5.6.2
+  ([`a955d46`](https://github.com/MountainGod2/cb-events/commit/a955d46df395e5ca31bfc03c6c5fdc1004921981))
+
+- **pre-commit**: Update pre-commit hook pycqa/bandit to v1.9.2
+  ([`19970e3`](https://github.com/MountainGod2/cb-events/commit/19970e34a38b352c19915f76675b6d390454cf16))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.19.7
+  ([`b1dc52e`](https://github.com/MountainGod2/cb-events/commit/b1dc52ed50cdf3ac462d2ecaa04e842810b9de73))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.20.1
+  ([`6af8d9a`](https://github.com/MountainGod2/cb-events/commit/6af8d9a3bbec857a751d6629ea5951489e07fb16))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.21.1
+  ([`0262924`](https://github.com/MountainGod2/cb-events/commit/026292407389e7ef3a27cf08e658a628f4add0dc))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.21.3
+  ([`a6ba2f5`](https://github.com/MountainGod2/cb-events/commit/a6ba2f556ca80a15c88d772b17f36a9e07385c45))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.24.0
+  ([`a8d11d1`](https://github.com/MountainGod2/cb-events/commit/a8d11d165937218577e19238ddac8fe189d14e2d))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`ab2b8ee`](https://github.com/MountainGod2/cb-events/commit/ab2b8ee01c9b621725cec1ae949ae28208316a27))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`77469ca`](https://github.com/MountainGod2/cb-events/commit/77469ca5b6dd57b6f44c1e9f13f09bf45d251745))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`b345c4e`](https://github.com/MountainGod2/cb-events/commit/b345c4e5da86abf22709ccc46d88ae7f9a3cda5c))
+
+### Documentation
+
+- **copilot**: Update instructions
+  ([`55ef71b`](https://github.com/MountainGod2/cb-events/commit/55ef71b4e741ed9c61a2c6555b906b4af3b44c16))
+
+### Refactoring
+
+- **client**: Clean up comments and organization
+  ([`398dadf`](https://github.com/MountainGod2/cb-events/commit/398dadf6e9fff16e25c1b006f2a431d8c6b117cb))
+
+- **client**: Remove unused sentinel for API keys
+  ([`b9126f6`](https://github.com/MountainGod2/cb-events/commit/b9126f6fc3ba84f9fe4c7a18a508b7fe8fa57456))
+
+- **example**: Remove redundant return type annotations
+  ([`87202bf`](https://github.com/MountainGod2/cb-events/commit/87202bf73ade7930e1e33ae78aa27479e8658a0f))
+
+- **example**: Use environment variable for testbed config
+  ([`832894b`](https://github.com/MountainGod2/cb-events/commit/832894b13eb2d7fe8f82630711d8c117f178e840))
+
+
 ## v5.6.2 (2025-11-22)
 
 ### Bug Fixes
