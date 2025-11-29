@@ -57,9 +57,6 @@ RETRY_STATUS_CODES: set[int] = {
 }
 """HTTP status codes that trigger exponential backoff retries."""
 
-_MISSING = object()
-"""Sentinel for detecting absent keys in API payloads."""
-
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.client module."""
 
