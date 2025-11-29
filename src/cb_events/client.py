@@ -331,7 +331,7 @@ class EventClient:
             try:
                 async with (
                     self._rate_limiter,
-                    self.session.get(url) as response,
+                    self.session.get(url, allow_redirects=False) as response,
                 ):
                     status: int = response.status
                     text: str = await response.text()
@@ -692,11 +692,12 @@ class EventClient:
 
         Safe to call multiple times.
         """
-        try:
-            if self.session:
-                await self.session.close()
-                self.session = None
-        except (ClientError, OSError, RuntimeError) as e:
-            logger.warning("Error closing session: %s", e, exc_info=True)
+        session: ClientSession | None = self.session
+        self.session = None
+        if session is not None:
+            try:
+                await session.close()
+            except (ClientError, OSError, RuntimeError) as e:
+                logger.warning("Error closing session: %s", e, exc_info=True)
 
         self._next_url = None
