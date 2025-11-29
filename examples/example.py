@@ -38,54 +38,54 @@ router = Router()
 
 
 @router.on(EventType.BROADCAST_START)
-async def handle_broadcast_start(event: Event) -> None:
+async def handle_broadcast_start(event: Event):
     """Handle broadcast start events."""
     logger.info("Broadcast started")
 
 
 @router.on(EventType.BROADCAST_STOP)
-async def handle_broadcast_stop(event: Event) -> None:
+async def handle_broadcast_stop(event: Event):
     """Handle broadcast stop events."""
     logger.info("Broadcast stopped")
 
 
 @router.on(EventType.USER_ENTER)
-async def handle_user_enter(event: Event) -> None:
+async def handle_user_enter(event: Event):
     """Handle user enter events."""
     if event.user:
         logger.info("%s entered the room", event.user.username)
 
 
 @router.on(EventType.USER_LEAVE)
-async def handle_user_leave(event: Event) -> None:
+async def handle_user_leave(event: Event):
     """Handle user leave events."""
     if event.user:
         logger.info("%s left the room", event.user.username)
 
 
 @router.on(EventType.FOLLOW)
-async def handle_follow(event: Event) -> None:
+async def handle_follow(event: Event):
     """Handle follow events."""
     if event.user:
         logger.info("%s has followed", event.user.username)
 
 
 @router.on(EventType.UNFOLLOW)
-async def handle_unfollow(event: Event) -> None:
+async def handle_unfollow(event: Event):
     """Handle unfollow events."""
     if event.user:
         logger.info("%s has unfollowed", event.user.username)
 
 
 @router.on(EventType.FANCLUB_JOIN)
-async def handle_fanclub_join(event: Event) -> None:
+async def handle_fanclub_join(event: Event):
     """Handle fanclub join events."""
     if event.user:
         logger.info("%s joined the fan club", event.user.username)
 
 
 @router.on(EventType.CHAT_MESSAGE)
-async def handle_chat_message(event: Event) -> None:
+async def handle_chat_message(event: Event):
     """Handle chat message events."""
     if event.user and event.message:
         logger.info(
@@ -96,7 +96,7 @@ async def handle_chat_message(event: Event) -> None:
 
 
 @router.on(EventType.PRIVATE_MESSAGE)
-async def handle_private_message(event: Event) -> None:
+async def handle_private_message(event: Event):
     """Handle private message events."""
     if event.message and event.message.from_user and event.message.to_user:
         logger.info(
@@ -108,7 +108,7 @@ async def handle_private_message(event: Event) -> None:
 
 
 @router.on(EventType.TIP)
-async def handle_tip(event: Event) -> None:
+async def handle_tip(event: Event):
     """Handle tip events."""
     if event.user and event.tip:
         anon_text = "anonymously " if event.tip.is_anon else ""
@@ -125,14 +125,14 @@ async def handle_tip(event: Event) -> None:
 
 
 @router.on(EventType.ROOM_SUBJECT_CHANGE)
-async def handle_room_subject_change(event: Event) -> None:
+async def handle_room_subject_change(event: Event):
     """Handle room subject change events."""
     if event.room_subject:
         logger.info("Room Subject changed to %s", event.room_subject.subject)
 
 
 @router.on(EventType.MEDIA_PURCHASE)
-async def handle_media_purchase(event: Event) -> None:
+async def handle_media_purchase(event: Event):
     """Handle media purchase events."""
     if event.user and event.media:
         logger.info(
@@ -145,7 +145,7 @@ async def handle_media_purchase(event: Event) -> None:
 
 
 @router.on_any()
-async def handle_unknown_event(event: Event) -> None:
+async def handle_unknown_event(event: Event):
     """Handle any unknown event types."""
     known_types = {
         EventType.BROADCAST_START,
@@ -165,7 +165,7 @@ async def handle_unknown_event(event: Event) -> None:
         logger.warning("Unknown method: %s", event.type)
 
 
-async def main() -> None:
+async def main():
     """Set up event handlers and start listening for events."""
     config = ClientConfig(use_testbed=use_testbed)
 
