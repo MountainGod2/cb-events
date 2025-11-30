@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v5.6.4 (2025-11-30)
+
+### Bug Fixes
+
+- **runtime**: Update dependency pydantic to v2.12.5
+  ([#35](https://github.com/MountainGod2/cb-events/pull/35),
+  [`fec4603`](https://github.com/MountainGod2/cb-events/commit/fec4603cc69d8d9f819c43a7f8fa12c5d38d40f8))
+
+### Chores
+
+- **deps**: Update dependency pre-commit to v4.5.0
+  ([#34](https://github.com/MountainGod2/cb-events/pull/34),
+  [`f6e72c5`](https://github.com/MountainGod2/cb-events/commit/f6e72c51134255cc30461320877352cbd4de69b5))
+
+- **dev**: Update dependency pylint to v4.0.4
+  ([`b32d33a`](https://github.com/MountainGod2/cb-events/commit/b32d33add4f8d3216c4d75dd0aa2d41104e51ce9))
+
+- **examples**: Update dependency cb-events to v5.6.3
+  ([`a0ee441`](https://github.com/MountainGod2/cb-events/commit/a0ee441b81af346142012ccc07cfae13412db47b))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.27.0
+  ([`7c5cfb2`](https://github.com/MountainGod2/cb-events/commit/7c5cfb285c837b3614e56a2a77dd11ccdbaddbc1))
+
+
 ## v5.6.3 (2025-11-29)
 
 ### Bug Fixes
