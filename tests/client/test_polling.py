@@ -12,25 +12,16 @@ from cb_events.config import ClientConfig
 from cb_events.exceptions import AuthError, EventsError
 from cb_events.models import EventType
 from tests.conftest import EventClientFactory
-
-
-@pytest.mark.parametrize(
-    "method",
-    [
-        EventType.TIP,
-        EventType.FOLLOW,
-        EventType.CHAT_MESSAGE,
-        EventType.BROADCAST_START,
-        EventType.BROADCAST_STOP,
-        EventType.ROOM_SUBJECT_CHANGE,
-        EventType.USER_ENTER,
-        EventType.USER_LEAVE,
-        EventType.UNFOLLOW,
-        EventType.FANCLUB_JOIN,
-        EventType.PRIVATE_MESSAGE,
-        EventType.MEDIA_PURCHASE,
-    ],
+from tests.helpers import (
+    ALL_EVENT_TYPES,
+    ITERATION_EVENT_TYPES,
+    make_event,
+    make_response,
+    make_timeout_payload,
 )
+
+
+@pytest.mark.parametrize("method", ALL_EVENT_TYPES)
 async def test_poll_returns_events(
     method: EventType,
     event_client_factory: EventClientFactory,
@@ -38,10 +29,7 @@ async def test_poll_returns_events(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Successful poll should return validated events."""
-    response: dict[str, Any] = {
-        "events": [{"method": method.value, "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    response = make_response([make_event(method, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
@@ -71,13 +59,13 @@ async def test_poll_handles_multiple_events(
 ) -> None:
     """Multiple events in the response should be parsed in order."""
     events_data = [
-        {"method": "tip", "id": "1", "object": {}},
-        {"method": "follow", "id": "2", "object": {}},
-        {"method": "chatMessage", "id": "3", "object": {}},
-        {"method": "broadcastStart", "id": "4", "object": {}},
-        {"method": "privateMessage", "id": "5", "object": {}},
+        make_event(EventType.TIP, event_id="1"),
+        make_event(EventType.FOLLOW, event_id="2"),
+        make_event(EventType.CHAT_MESSAGE, event_id="3"),
+        make_event(EventType.BROADCAST_START, event_id="4"),
+        make_event(EventType.PRIVATE_MESSAGE, event_id="5"),
     ]
-    response: dict[str, Any] = {"events": events_data, "nextUrl": "url"}
+    response = make_response(events_data, next_url="url")
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
@@ -92,16 +80,7 @@ async def test_poll_handles_multiple_events(
     ]
 
 
-@pytest.mark.parametrize(
-    "method",
-    [
-        EventType.TIP,
-        EventType.FOLLOW,
-        EventType.CHAT_MESSAGE,
-        EventType.BROADCAST_START,
-        EventType.PRIVATE_MESSAGE,
-    ],
-)
+@pytest.mark.parametrize("method", ITERATION_EVENT_TYPES)
 async def test_async_iteration_yields_events(
     method: EventType,
     event_client_factory: EventClientFactory,
@@ -109,10 +88,7 @@ async def test_async_iteration_yields_events(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """The client should support async iteration for continuous polling."""
-    response: dict[str, Any] = {
-        "events": [{"method": method.value, "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    response = make_response([make_event(method, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
@@ -126,16 +102,7 @@ async def test_async_iteration_yields_events(
     assert events[0].type == method
 
 
-@pytest.mark.parametrize(
-    "method",
-    [
-        EventType.TIP,
-        EventType.FOLLOW,
-        EventType.CHAT_MESSAGE,
-        EventType.BROADCAST_START,
-        EventType.PRIVATE_MESSAGE,
-    ],
-)
+@pytest.mark.parametrize("method", ITERATION_EVENT_TYPES)
 async def test_aiter_yields_events(
     method: EventType,
     event_client_factory: EventClientFactory,
@@ -143,10 +110,7 @@ async def test_aiter_yields_events(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """``__aiter__`` should yield events continuously."""
-    response: dict[str, Any] = {
-        "events": [{"method": method.value, "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    response = make_response([make_event(method, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
@@ -249,11 +213,9 @@ async def test_next_url_followed_after_timeout(
     This ensures the client follows on-host nextUrl links returned by the
     API and continues fetching events successfully.
     """
-    timeout_response = {
-        "status": "waited too long for events",
-        "nextUrl": "https://events.testbed.cb.dev/events/next_batch_token",
-        "events": [],
-    }
+    timeout_response = make_timeout_payload(
+        "https://events.testbed.cb.dev/events/next_batch_token"
+    )
     aioresponses_mock.get(
         testbed_url_pattern, status=400, payload=timeout_response
     )
@@ -261,10 +223,7 @@ async def test_next_url_followed_after_timeout(
     next_url_pattern = re.compile(
         r"https://events\.testbed\.cb\.dev/events/next_batch_token"
     )
-    success_response = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(next_url_pattern, payload=success_response)
 
     async with event_client_factory() as client:
@@ -282,11 +241,9 @@ async def test_unallowed_next_url_host_raises(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Timeout responses with off-host nextUrl should raise an error."""
-    timeout_response = {
-        "status": "waited too long for events",
-        "nextUrl": "https://evil.example.com/events/next_batch_token",
-        "events": [],
-    }
+    timeout_response = make_timeout_payload(
+        "https://evil.example.com/events/next_batch_token"
+    )
     aioresponses_mock.get(
         testbed_url_pattern, status=400, payload=timeout_response
     )
@@ -308,16 +265,9 @@ async def test_allowed_external_next_url_override(
 ) -> None:
     """Explicitly allowed external nextUrl domains should be followed."""
     next_url = "https://evil.example.com/events/next_batch_token"
-    timeout_response = {
-        "status": "waited too long for events",
-        "nextUrl": next_url,
-        "events": [],
-    }
+    timeout_response = make_timeout_payload(next_url)
 
-    success_response = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
 
     aioresponses_mock.get(
         testbed_url_pattern, status=400, payload=timeout_response
@@ -345,16 +295,9 @@ async def test_allowed_hosts_always_include_base_host(
     """Even when only external hosts are configured, the base host is
     still allowed."""
     next_url = "https://events.testbed.cb.dev/events/next_batch_token"
-    timeout_response = {
-        "status": "waited too long for events",
-        "nextUrl": next_url,
-        "events": [],
-    }
+    timeout_response = make_timeout_payload(next_url)
 
-    success_response = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
 
     aioresponses_mock.get(
         testbed_url_pattern, status=400, payload=timeout_response
@@ -382,15 +325,12 @@ async def test_relative_next_url_resolved_to_absolute(
 ) -> None:
     """Relative nextUrl values should resolve against the base host."""
     relative_next = "/events/test_user/test_token/?timeout=10&next=relative"
-    initial_response = {"events": [], "nextUrl": relative_next}
+    initial_response = make_response([], next_url=relative_next)
     next_absolute = (
         "https://events.testbed.cb.dev/events/"
         "test_user/test_token/?timeout=10&next=relative"
     )
-    success_response = {
-        "events": [{"method": "tip", "id": "1", "object": {}}],
-        "nextUrl": None,
-    }
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
 
     aioresponses_mock.get(testbed_url_pattern, payload=initial_response)
     aioresponses_mock.get(next_absolute, payload=success_response)
@@ -520,7 +460,7 @@ async def test_lenient_validation_skips_invalid_events(
     response: dict[str, Any] = {
         "events": [
             {"method": "tip", "object": {}},
-            {"method": "follow", "id": "valid", "object": {}},
+            make_event(EventType.FOLLOW, event_id="valid"),
         ],
         "nextUrl": None,
     }
