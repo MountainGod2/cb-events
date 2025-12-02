@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Final, Self, override
+from typing import Final, Self, cast, override
 from urllib.parse import ParseResult, quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
@@ -111,9 +111,10 @@ def _log_validation_error(
         item: Raw event data that failed validation.
         exc: Validation error containing field-level details.
     """
-    mapping_item: Mapping[str, object] | None = (
-        item if isinstance(item, Mapping) else None
-    )
+    mapping_item: Mapping[str, object] | None = None
+    if isinstance(item, Mapping):
+        mapping_item = cast("Mapping[str, object]", item)
+
     event_id: object = (
         mapping_item.get("id", "<unknown>")
         if mapping_item is not None
