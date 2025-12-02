@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Final, Self, cast, override
+from typing import Final, Self, override
 from urllib.parse import ParseResult, quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
@@ -101,6 +101,37 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
+def _log_validation_error(
+    item: object,
+    exc: ValidationError,
+) -> None:
+    """Log validation error details for an invalid event.
+
+    Args:
+        item: Raw event data that failed validation.
+        exc: Validation error containing field-level details.
+    """
+    mapping_item: Mapping[str, object] | None = (
+        item if isinstance(item, Mapping) else None
+    )
+    event_id: object = (
+        mapping_item.get("id", "<unknown>")
+        if mapping_item is not None
+        else "<unknown>"
+    )
+    fields: set[str] = set()
+    for detail in exc.errors():
+        location = detail.get("loc")
+        if not location:
+            continue
+        fields.add(".".join(str(part) for part in location))
+    logger.warning(
+        "Skipping invalid event %s (invalid fields: %s)",
+        event_id,
+        ", ".join(sorted(fields)),
+    )
+
+
 def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     """Parse raw event dictionaries into Event models.
 
@@ -121,27 +152,7 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
         except ValidationError as exc:
             if strict:
                 raise
-            mapping_item: Mapping[str, object] | None = (
-                cast("Mapping[str, object]", item)
-                if isinstance(item, Mapping)
-                else None
-            )
-            event_id: object = (
-                mapping_item.get("id", "<unknown>")
-                if mapping_item is not None
-                else "<unknown>"
-            )
-            fields: set[str] = set()
-            for detail in exc.errors():
-                location = detail.get("loc")
-                if not location:
-                    continue
-                fields.add(".".join(str(part) for part in location))
-            logger.warning(
-                "Skipping invalid event %s (invalid fields: %s)",
-                event_id,
-                ", ".join(sorted(fields)),
-            )
+            _log_validation_error(item, exc)
     return events
 
 
@@ -545,14 +556,14 @@ class EventClient:
             ``False``.
         """
         try:
-            data_obj: object = cast("object", json.loads(text))
+            data_obj: object = json.loads(text)
         except (json.JSONDecodeError, KeyError):
             return False
 
         if not isinstance(data_obj, dict):
             return False
 
-        data_dict: dict[str, object] = cast("dict[str, object]", data_obj)
+        data_dict = data_obj
         status_msg: object | None = data_dict.get("status")
         is_timeout: bool = (
             isinstance(status_msg, str)
@@ -590,7 +601,7 @@ class EventClient:
             EventsError: If JSON is invalid or response format is wrong.
         """
         try:
-            data_obj: object = cast("object", json.loads(text))
+            data_obj: object = json.loads(text)
         except json.JSONDecodeError as exc:
             snippet: str = text[:TRUNCATE_LENGTH]
             if len(text) > TRUNCATE_LENGTH:
@@ -618,7 +629,7 @@ class EventClient:
             )
 
         # Extract events and nextUrl
-        data_dict: dict[str, object] = cast("dict[str, object]", data_obj)
+        data_dict = data_obj
         self._next_url = self._validate_next_url(
             data_dict.get("nextUrl"),
             response_text=text,
@@ -634,7 +645,7 @@ class EventClient:
                     msg,
                     response_text=text,
                 )
-            raw_events_list: list[object] = cast("list[object]", raw_events_obj)
+            raw_events_list = raw_events_obj
         else:
             raw_events_list = []
 
