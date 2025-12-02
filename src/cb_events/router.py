@@ -135,6 +135,9 @@ class Router:
 
         Args:
             event: Event payload to route to registered handlers.
+
+        Raises:
+            asyncio.CancelledError: If handler execution is cancelled.
         """
         handlers: list[HandlerFunc] = [
             *self._handlers.get(None, []),
@@ -154,9 +157,9 @@ class Router:
         for handler in handlers:
             try:
                 await handler(event)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
-                if isinstance(exc, asyncio.CancelledError):
-                    raise
+            except asyncio.CancelledError:
+                raise
+            except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     "Handler %s failed for event %s (type: %s)",
                     _handler_name(handler),
