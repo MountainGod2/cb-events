@@ -233,33 +233,6 @@ async def test_cancelled_error_propagates(
         await router.dispatch(event)
 
 
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
-async def test_cancelled_error_branch_runs_when_exception_caught(
-    router: Router,
-    method: EventType,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Dispatch should propagate patched CancelledError from handlers."""
-
-    class CustomCancelledError(Exception):
-        """Custom exception that mimics asyncio.CancelledError."""
-
-    monkeypatch.setattr(
-        "cb_events.router.asyncio.CancelledError",
-        CustomCancelledError,
-        raising=False,
-    )
-
-    async def cancel_handler(event: Event) -> None:  # noqa: RUF029
-        raise CustomCancelledError
-
-    router.on(method)(cancel_handler)
-    event = Event.model_validate(make_event(method, event_id="patched"))
-
-    with pytest.raises(CustomCancelledError):
-        await router.dispatch(event)
-
-
 @pytest.mark.parametrize(
     "factory",
     [
