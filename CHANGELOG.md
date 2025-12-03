@@ -2,6 +2,45 @@
 
 <!-- version list -->
 
+## v5.6.5 (2025-12-03)
+
+### Bug Fixes
+
+- **router**: Handle asyncio.CancelledError separately
+  ([`8fb30bd`](https://github.com/MountainGod2/cb-events/commit/8fb30bd7a0ebd3f61b043d75107bd45252cae499))
+
+### Chores
+
+- **ci**: Update actions/checkout digest to 8e8c483
+  ([`6173f40`](https://github.com/MountainGod2/cb-events/commit/6173f4089c1a995867c19d966507618eac6bd7db))
+
+- **ci**: Update github/codeql-action digest to fe4161a
+  ([`0c3d36f`](https://github.com/MountainGod2/cb-events/commit/0c3d36fe0a079bea67eca25257aed0e6714521e1))
+
+- **examples**: Update dependency cb-events to v5.6.4
+  ([`8c472f1`](https://github.com/MountainGod2/cb-events/commit/8c472f1169f9982c876b74a9d68c36b8cccce622))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.29.4
+  ([`39dba04`](https://github.com/MountainGod2/cb-events/commit/39dba049d3e98c6a462a05e5ecc37d5cfa70f829))
+
+### Refactoring
+
+- **client**: Improve type casting in validation error logging
+  ([`320f603`](https://github.com/MountainGod2/cb-events/commit/320f60352154b86413d8b110b54b02c61cd135a3))
+
+- **client**: Simplify validation error logging
+  ([`4b01b7e`](https://github.com/MountainGod2/cb-events/commit/4b01b7eb5c2e35423e6a1d090afa2db418772590))
+
+- **examples**: Improve type hints and docstrings
+  ([`fa734cd`](https://github.com/MountainGod2/cb-events/commit/fa734cdaf9849ca743040d3af2b02f30465a3dc8))
+
+- **router**: Remove handling of asyncio.CancelledError in dispatch
+  ([`debfffb`](https://github.com/MountainGod2/cb-events/commit/debfffb7f0d307c44c68ea4c1c554c221301854e))
+
+- **tests**: Simplify event handling in tests
+  ([`7bd97e7`](https://github.com/MountainGod2/cb-events/commit/7bd97e70c6789bb7576d2d170ff4a42231308708))
+
+
 ## v5.6.4 (2025-11-30)
 
 ### Bug Fixes
