@@ -56,7 +56,7 @@ dev = [
     "pylint-pydantic==0.4.1",
     "bandit==1.9.2",
     "bandit-sarif-formatter==1.1.1",
-    "ty==0.0.1a29",
+    "ty==0.0.1a31",
     "pyrefly==0.44.1",
 ]
 
