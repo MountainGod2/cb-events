@@ -1,25 +1,34 @@
 """Async client for the Chaturbate Events API.
 
-Stream real-time events from Chaturbate with automatic retries, rate limiting,
-and type-safe event handling.
+This library provides a high-level async client for streaming real-time events
+from Chaturbate with automatic retries, rate limiting, and type-safe event
+handling.
+
+Key Components:
+    EventClient: Async context manager for API polling.
+    Router: Decorator-based event dispatcher.
+    Event: Type-safe event model with nested data accessors.
+    ClientConfig: Immutable configuration for client behavior.
 
 Example:
-    >>> import asyncio
-    >>> from cb_events import EventClient, Router, EventType, Event
-    >>>
-    >>> router = Router()
-    >>>
-    >>> @router.on(EventType.TIP)
-    >>> async def handle_tip(event: Event) -> None:
-    ...     if event.tip and event.user:
-    ...         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-    >>>
-    >>> async def main():
-    ...     async with EventClient("username", "token") as client:
-    ...         async for event in client:
-    ...             await router.dispatch(event)
-    >>>
-    >>> asyncio.run(main())
+    Basic usage with event routing::
+
+        import asyncio
+        from cb_events import EventClient, Router, EventType, Event
+
+        router = Router()
+
+        @router.on(EventType.TIP)
+        async def handle_tip(event: Event) -> None:
+            if event.tip and event.user:
+                print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+
+        async def main() -> None:
+            async with EventClient("username", "token") as client:
+                async for event in client:
+                    await router.dispatch(event)
+
+        asyncio.run(main())
 """
 
 from importlib.metadata import PackageNotFoundError, version
