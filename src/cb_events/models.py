@@ -1,4 +1,27 @@
-"""Data models for Chaturbate Events API."""
+"""Data models for Chaturbate Events API.
+
+This module defines Pydantic models for deserializing and validating events
+from the Chaturbate Events API. All models are immutable (frozen) and use
+camelCase aliases to match the API's JSON format.
+
+Model Hierarchy:
+    BaseEventModel: Base class with shared configuration.
+    Event: Main event container with type and nested data.
+    User: User information attached to events.
+    Message: Chat or private message content.
+    Tip: Tip transaction details.
+    Media: Media purchase information.
+    RoomSubject: Room subject/title changes.
+
+Example:
+    Accessing nested event data::
+
+        event = Event.model_validate(api_response)
+        if event.type == EventType.TIP and event.tip:
+            print(f"Received {event.tip.tokens} tokens")
+        if event.user:
+            print(f"From: {event.user.username}")
+"""
 
 from __future__ import annotations
 
@@ -20,7 +43,17 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 class BaseEventModel(BaseModel):
-    """Base for all event models with snake_case conversion."""
+    """Base model for all event-related data structures.
+
+    Provides shared Pydantic configuration for JSON deserialization with
+    camelCase to snake_case conversion, immutability, and strict validation.
+
+    Configuration:
+        alias_generator: Converts snake_case fields to camelCase aliases.
+        populate_by_name: Allows both field name and alias for input.
+        extra="forbid": Rejects unknown fields in input data.
+        frozen=True: Makes instances immutable after creation.
+    """
 
     model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
@@ -35,7 +68,18 @@ _ModelT = TypeVar("_ModelT", bound=BaseEventModel)
 
 
 class EventType(StrEnum):
-    """Event types from the Chaturbate Events API."""
+    """Event types from the Chaturbate Events API.
+
+    Each member represents a distinct event category that can be received
+    from the API. Use with Router.on() to register type-specific handlers.
+
+    Example:
+        Filtering events by type::
+
+            @router.on(EventType.TIP)
+            async def handle_tip(event: Event) -> None:
+                print(f"Tip received: {event.tip.tokens}")
+    """
 
     BROADCAST_START = "broadcastStart"
     """Broadcaster has started streaming."""
@@ -64,7 +108,30 @@ class EventType(StrEnum):
 
 
 class User(BaseEventModel):
-    """User information from events."""
+    """User information attached to events.
+
+    Contains details about the user who triggered the event, including
+    display name, membership status, and various flags.
+
+    Attributes:
+        username: Display name of the user.
+        color_group: User's color group designation.
+        fc_auto_renew: Whether fan club auto-renewal is enabled.
+        gender: User's gender setting.
+        has_darkmode: Whether dark mode is enabled.
+        has_tokens: Whether the user has tokens available.
+        in_fanclub: Whether the user is a fan club member.
+        in_private_show: Whether the user is in a private show.
+        is_broadcasting: Whether the user is currently broadcasting.
+        is_follower: Whether the user follows the broadcaster.
+        is_mod: Whether the user is a moderator.
+        is_owner: Whether the user is the room owner.
+        is_silenced: Whether the user is silenced.
+        is_spying: Whether the user is spying on a private show.
+        language: User's language preference.
+        recent_tips: Recent tip activity summary.
+        subgender: User's subgender setting.
+    """
 
     username: str
     """Display name of the user."""
@@ -103,7 +170,19 @@ class User(BaseEventModel):
 
 
 class Message(BaseEventModel):
-    """Chat or private message."""
+    """Chat or private message content.
+
+    Represents message data from chatMessage and privateMessage events.
+
+    Attributes:
+        message: The message text content.
+        bg_color: Background color for the message display.
+        color: Text color for the message.
+        font: Font style for the message.
+        orig: Original unprocessed message content.
+        from_user: Sender's username (private messages only).
+        to_user: Recipient's username (private messages only).
+    """
 
     message: str
     """Content of the message."""
@@ -127,7 +206,16 @@ class Message(BaseEventModel):
 
 
 class Tip(BaseEventModel):
-    """Tip transaction."""
+    """Tip transaction details.
+
+    Contains information about a tip event including the amount and
+    optional message.
+
+    Attributes:
+        tokens: Number of tokens in the tip.
+        is_anon: Whether the tip was sent anonymously.
+        message: Optional message attached to the tip.
+    """
 
     tokens: int
     """Number of tokens tipped."""
@@ -138,7 +226,16 @@ class Tip(BaseEventModel):
 
 
 class Media(BaseEventModel):
-    """Media purchase transaction."""
+    """Media purchase transaction details.
+
+    Contains information about a media purchase event.
+
+    Attributes:
+        id: Unique identifier for the purchased media.
+        name: Display name of the media item.
+        type: Media type, either "video" or "photos".
+        tokens: Token cost of the purchase.
+    """
 
     id: str
     """Identifier of the purchased media."""
@@ -151,7 +248,13 @@ class Media(BaseEventModel):
 
 
 class RoomSubject(BaseEventModel):
-    """Room subject/title."""
+    """Room subject or title information.
+
+    Contains the updated room subject from roomSubjectChange events.
+
+    Attributes:
+        subject: The room's current subject or title text.
+    """
 
     subject: str
     """The room subject or title."""
@@ -160,12 +263,36 @@ class RoomSubject(BaseEventModel):
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
-    Use properties to access nested data. Properties return None if
-    data is missing or invalid for the event type.
+    The main event container that wraps all event types. Use the typed
+    properties to access nested data safely—they return None if data
+    is missing or invalid for the event type.
+
+    Attributes:
+        type: The event type (e.g., EventType.TIP).
+        id: Unique identifier for this event.
+        data: Raw event payload dictionary.
+
+    Properties:
+        user: User data if present and valid.
+        message: Message data for chat/private message events.
+        broadcaster: Broadcaster username if present.
+        tip: Tip data for tip events.
+        media: Media data for media purchase events.
+        room_subject: Room subject for subject change events.
+
+    Example:
+        Safe access to nested data::
+
+            if event.type == EventType.TIP:
+                if tip := event.tip:
+                    print(f"Tip: {tip.tokens} tokens")
+                if user := event.user:
+                    print(f"From: {user.username}")
 
     Note:
         Properties are cached after first access for performance. Invalid
-        nested data is logged as a warning and returns None instead of raising.
+        nested data is logged as a warning and returns None instead of
+        raising an exception.
     """
 
     type: EventType = Field(alias="method")
@@ -234,14 +361,14 @@ class Event(BaseEventModel):
         """Extract and validate nested model from event data.
 
         Args:
-            key: Key within ``data`` to look up.
+            key: Key within data to look up.
             loader: Callable that validates/constructs the nested model.
             allowed_types: Event types eligible for extraction.
             transform: Optional function to mutate the payload before
                 validation.
 
         Returns:
-            Validated model instance or ``None`` if unavailable or invalid.
+            Validated model instance or None if unavailable or invalid.
         """
         if allowed_types and self.type not in allowed_types:
             return None
