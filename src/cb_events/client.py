@@ -1,4 +1,17 @@
-"""HTTP client for the Chaturbate Events API."""
+"""HTTP client for the Chaturbate Events API.
+
+This module provides the EventClient class for polling events from the
+Chaturbate Events API with automatic retries, rate limiting, and credential
+handling.
+
+Module Attributes:
+    BASE_URL: Production Events API endpoint.
+    TESTBED_URL: Testbed Events API endpoint for development.
+    DEFAULT_MAX_RATE: Default requests per rate limiter window.
+    DEFAULT_TIME_PERIOD: Default rate limiter window in seconds.
+    RETRY_STATUS_CODES: HTTP status codes that trigger retry logic.
+    AUTH_ERRORS: HTTP status codes indicating authentication failure.
+"""
 
 import asyncio
 import json
@@ -54,6 +67,9 @@ RETRY_STATUS_CODES: set[int] = {
     524,  # Cloudflare: timeout occurred
 }
 """HTTP status codes that trigger exponential backoff retries."""
+
+TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
+"""Status message indicating API polling timeout."""
 
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.client module."""
@@ -138,13 +154,13 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
 
     Args:
         raw: Raw JSON-compatible objects returned by the API.
-        strict: Whether to raise ``ValidationError`` on invalid payloads.
+        strict: Whether to raise ValidationError on invalid payloads.
 
     Returns:
-        List of validated :class:`Event` instances.
+        List of validated Event instances.
 
     Raises:
-        ValidationError: If ``strict`` is ``True`` and validation fails.
+        ValidationError: If strict is True and validation fails.
     """
     events: list[Event] = []
     for item in raw:
@@ -161,16 +177,56 @@ class EventClient:
     """Async client for polling the Chaturbate Events API.
 
     Streams events with automatic retries, rate limiting, and credential
-    handling. Use as an async context manager or iterator.
+    handling. Use as an async context manager and async iterator.
 
-    Share rate limiters across clients to pool request limits:
-        >>> limiter = AsyncLimiter(max_rate=2000, time_period=60)
-        >>> async with (
-        ...     EventClient("user1", "token1", rate_limiter=limiter) as c1,
-        ...     EventClient("user2", "token2", rate_limiter=limiter) as c2,
-        ... ):
-        ...     pass
+    This client implements long-polling with stateful URL tracking, where the
+    API returns a nextUrl to continue from the last position.
+
+    Attributes:
+        username: Chaturbate username for the event feed.
+        token: API token for authentication.
+        config: Client configuration instance.
+        timeout: Request timeout in seconds.
+        base_url: API endpoint base URL.
+        session: Active HTTP session (None until context entry).
+
+    Example:
+        Basic polling loop::
+
+            async with EventClient("username", "token") as client:
+                async for event in client:
+                    print(f"Received {event.type}: {event.id}")
+
+        Shared rate limiting across multiple clients::
+
+            from aiolimiter import AsyncLimiter
+
+            limiter = AsyncLimiter(max_rate=2000, time_period=60)
+            async with (
+                EventClient("user1", "token1", rate_limiter=limiter) as c1,
+                EventClient("user2", "token2", rate_limiter=limiter) as c2,
+            ):
+                # Both clients share the same rate limit pool
+                pass
+
+    Note:
+        Always use as an async context manager to ensure proper session
+        cleanup. The client is not thread-safe.
     """
+
+    __slots__: tuple[str, ...] = (
+        "_allowed_next_hosts",
+        "_base_origin",
+        "_next_url",
+        "_polling_lock",
+        "_rate_limiter",
+        "base_url",
+        "config",
+        "session",
+        "timeout",
+        "token",
+        "username",
+    )
 
     def __init__(
         self,
@@ -247,6 +303,19 @@ class EventClient:
             time_period=DEFAULT_TIME_PERIOD,
         )
 
+    def _next_delay(self, current: float) -> float:
+        """Calculate next retry delay with exponential backoff.
+
+        Args:
+            current: Current delay value in seconds.
+
+        Returns:
+            Next delay capped at configured maximum.
+        """
+        return min(
+            current * self.config.retry_factor, self.config.retry_max_delay
+        )
+
     @override
     def __repr__(self) -> str:
         """Return string representation with masked token.
@@ -320,7 +389,7 @@ class EventClient:
             url: Fully qualified endpoint to request.
 
         Returns:
-            Tuple of ``(status_code, response_text)``.
+            Tuple of (status_code, response_text).
 
         Raises:
             EventsError: If the request fails after the configured retries.
@@ -374,10 +443,7 @@ class EventClient:
                     exc,
                 )
                 await asyncio.sleep(delay)
-                delay = min(
-                    delay * self.config.retry_factor,
-                    self.config.retry_max_delay,
-                )
+                delay = self._next_delay(delay)
                 continue
 
             if status in RETRY_STATUS_CODES and attempt < max_attempts:
@@ -393,10 +459,7 @@ class EventClient:
                     delay,
                 )
                 await asyncio.sleep(delay)
-                delay = min(
-                    delay * self.config.retry_factor,
-                    self.config.retry_max_delay,
-                )
+                delay = self._next_delay(delay)
                 continue
 
             return status, text
@@ -409,7 +472,7 @@ class EventClient:
             text: Raw response body.
 
         Returns:
-            List of parsed :class:`Event` instances.
+            List of parsed Event instances.
 
         Raises:
             AuthError: For HTTP 401/403 responses.
@@ -477,21 +540,21 @@ class EventClient:
         *,
         response_text: str,
     ) -> str | None:
-        """Validate the ``nextUrl`` value from API responses.
+        """Validate the nextUrl value from API responses.
 
         Args:
-            next_url: Raw ``nextUrl`` value extracted from the API response.
+            next_url: Raw nextUrl value extracted from the API response.
             response_text: Original response body for error diagnostics.
 
         Returns:
-            Sanitized ``nextUrl`` string or ``None`` when no follow-up poll is
+            Sanitized nextUrl string or None when no follow-up poll is
             required. Relative URLs are resolved against the current base API
             endpoint.
 
         Raises:
-            EventsError: If ``nextUrl`` is present but not a non-empty string
+            EventsError: If nextUrl is present but not a non-empty string
             or if the URL references a hostname not permitted by
-            ``ClientConfig.next_url_allowed_hosts`` (the base API host is
+            ClientConfig.next_url_allowed_hosts (the base API host is
             always permitted).
         """
         if next_url is None:
@@ -547,14 +610,13 @@ class EventClient:
         raise EventsError(msg, response_text=response_text)
 
     def _try_extract_next_url(self, text: str) -> bool:
-        """Try to extract ``nextUrl`` from timeout responses.
+        """Try to extract nextUrl from timeout responses.
 
         Args:
             text: Raw response body from the timeout response.
 
         Returns:
-            ``True`` if ``nextUrl`` was extracted and stored; otherwise
-            ``False``.
+            True if nextUrl was extracted and stored, otherwise False.
         """
         try:
             data_obj: object = json.loads(text)
@@ -564,14 +626,13 @@ class EventClient:
         if not isinstance(data_obj, dict):
             return False
 
-        data_dict = data_obj
-        status_msg: object | None = data_dict.get("status")
+        status_msg: object | None = data_obj.get("status")
         is_timeout: bool = (
             isinstance(status_msg, str)
-            and "waited too long" in status_msg.lower()
+            and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
         )
         if is_timeout:
-            next_url: object | None = data_dict.get("nextUrl")
+            next_url: object | None = data_obj.get("nextUrl")
             if next_url is None:
                 return False
 
@@ -596,7 +657,7 @@ class EventClient:
             text: Raw HTTP response body expected to contain JSON.
 
         Returns:
-            List of parsed :class:`Event` instances.
+            List of parsed Event instances.
 
         Raises:
             EventsError: If JSON is invalid or response format is wrong.
@@ -630,13 +691,12 @@ class EventClient:
             )
 
         # Extract events and nextUrl
-        data_dict = data_obj
         self._next_url = self._validate_next_url(
-            data_dict.get("nextUrl"),
+            data_obj.get("nextUrl"),
             response_text=text,
         )
-        if "events" in data_dict:
-            raw_events_obj: object = data_dict["events"]
+        if "events" in data_obj:
+            raw_events_obj: object = data_obj["events"]
             if not isinstance(raw_events_obj, list):
                 msg = _compose_message(
                     "Invalid API response format: 'events' must be a list.",
@@ -667,8 +727,17 @@ class EventClient:
     async def poll(self) -> list[Event]:
         """Poll the API for new events.
 
+        Makes a single request to the Events API and returns any available
+        events. The client automatically tracks the nextUrl for subsequent
+        calls to maintain position in the event stream.
+
         Returns:
-            List of events received (empty if timeout or no events).
+            List of events received. Returns an empty list if no events are
+            available or the request timed out.
+
+        Note:
+            May raise EventsError if the client is not initialized or
+            the request fails, or AuthError if authentication fails.
         """
         async with self._polling_lock:
             url: str = self._build_url()
@@ -679,18 +748,30 @@ class EventClient:
             return self._process_response(status, text)
 
     def __aiter__(self) -> AsyncIterator[Event]:
-        """Stream events continuously as an async iterator.
+        """Return an async iterator for continuous event streaming.
+
+        Enables use in async for loops for continuous polling.
 
         Returns:
-            Async iterator yielding :class:`Event` objects.
+            Async iterator that yields Event instances indefinitely.
+
+        Example:
+            Continuous event streaming::
+
+                async with EventClient("user", "token") as client:
+                    async for event in client:
+                        print(f"Event: {event.type}")
         """
         return self._stream()
 
     async def _stream(self) -> AsyncGenerator[Event]:
-        """Internal generator for continuous event streaming.
+        """Generate events continuously from the API.
+
+        Internal generator that polls indefinitely and yields events as they
+        arrive. Used by __aiter__() to implement async iteration.
 
         Yields:
-            Event: Objects emitted by the Events API.
+            Event instances as they are received from the API.
         """
         while True:
             events: list[Event] = await self.poll()
@@ -698,9 +779,15 @@ class EventClient:
                 yield event
 
     async def close(self) -> None:
-        """Close session and reset internal state.
+        """Close the HTTP session and reset internal state.
 
-        Safe to call multiple times.
+        Releases network resources and clears the stored nextUrl. Safe to
+        call multiple times. Called automatically when exiting the async
+        context manager.
+
+        Note:
+            After calling close(), the client must be re-entered via
+            async with before making further requests.
         """
         session: ClientSession | None = self.session
         self.session = None
