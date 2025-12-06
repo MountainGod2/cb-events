@@ -1,4 +1,27 @@
-"""Event routing with decorator-based handler registration."""
+"""Event routing with decorator-based handler registration.
+
+This module provides the Router class for dispatching events to registered
+async handlers based on event type.
+
+Module Attributes:
+    HandlerFunc: Type alias for async handler functions accepting an Event
+        and returning None.
+
+Example:
+    Basic router setup::
+
+        from cb_events import Router, EventType, Event
+
+        router = Router()
+
+        @router.on(EventType.TIP)
+        async def handle_tip(event: Event) -> None:
+            print(f"Tip received: {event.id}")
+
+        @router.on_any()
+        async def log_all(event: Event) -> None:
+            print(f"Event: {event.type}")
+"""
 
 import logging
 from collections.abc import Awaitable, Callable
@@ -15,14 +38,13 @@ type HandlerFunc = Callable[[Event], Awaitable[None]]
 
 
 def _is_async_callable(func: object) -> bool:
-    """Return whether ``func`` produces an awaitable when invoked once.
+    """Return whether func produces an awaitable when invoked once.
 
     Args:
         func: Candidate handler or callable-like object.
 
     Returns:
-        ``True`` if the callable is async or returns a coroutine; otherwise
-        ``False``.
+        True if the callable is async or returns a coroutine, otherwise False.
     """
     if iscoroutinefunction(func):
         return True
@@ -80,10 +102,32 @@ def _handler_name(handler: object) -> str:
 
 
 class Router:
-    """Routes events to registered handlers.
+    """Routes events to registered async handlers.
 
-    Handlers run in registration order. Errors are logged but don't
-    prevent other handlers from running.
+    Provides decorator-based registration for event handlers with support for
+    both type-specific and wildcard (catch-all) handlers. Handlers execute
+    sequentially in registration order; errors are logged but do not prevent
+    subsequent handlers from running.
+
+    Example:
+        Register and dispatch handlers::
+
+            router = Router()
+
+            @router.on(EventType.TIP)
+            async def handle_tip(event: Event) -> None:
+                print(f"Tip: {event.tip.tokens if event.tip else 0}")
+
+            @router.on_any()
+            async def log_event(event: Event) -> None:
+                print(f"Event received: {event.type}")
+
+            # In your event loop:
+            await router.dispatch(event)
+
+    Note:
+        Wildcard handlers (registered via on_any()) execute before
+        type-specific handlers for each event.
     """
 
     __slots__: tuple[str, ...] = ("_handlers",)
@@ -91,6 +135,27 @@ class Router:
     def __init__(self) -> None:
         """Initialize router with an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
+
+    def _register(
+        self, key: EventType | None, func: HandlerFunc
+    ) -> HandlerFunc:
+        """Validate and register a handler function.
+
+        Args:
+            key: Event type to register for, or None for wildcard handlers.
+            func: Async handler function to register.
+
+        Returns:
+            The registered handler function unchanged.
+
+        Raises:
+            TypeError: If the handler is not async.
+        """
+        if not _is_async_callable(func):
+            msg: str = f"Handler {_handler_name(func)} must be async"
+            raise TypeError(msg)
+        self._handlers.setdefault(key, []).append(func)
+        return func
 
     def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
         """Register handler for a specific event type.
@@ -103,11 +168,7 @@ class Router:
         """
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
-            if not _is_async_callable(func):
-                msg: str = f"Handler {_handler_name(func)} must be async"
-                raise TypeError(msg)
-            self._handlers.setdefault(event_type, []).append(func)
-            return func
+            return self._register(event_type, func)
 
         return decorator
 
@@ -119,21 +180,19 @@ class Router:
         """
 
         def decorator(func: HandlerFunc) -> HandlerFunc:
-            if not _is_async_callable(func):
-                msg: str = f"Handler {_handler_name(func)} must be async"
-                raise TypeError(msg)
-            self._handlers.setdefault(None, []).append(func)
-            return func
+            return self._register(None, func)
 
         return decorator
 
     async def dispatch(self, event: Event) -> None:
-        """Dispatch event to matching handlers.
+        """Dispatch an event to all matching handlers.
 
-        Wildcard handlers execute before type-specific handlers.
+        Executes wildcard handlers first, then type-specific handlers, in
+        registration order. Handler exceptions are caught, logged, and do not
+        propagate or prevent other handlers from executing.
 
         Args:
-            event: Event payload to route to registered handlers.
+            event: Event instance to dispatch to registered handlers.
         """
         handlers: list[HandlerFunc] = [
             *self._handlers.get(None, []),
