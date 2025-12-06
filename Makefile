@@ -62,7 +62,7 @@ build:
 # Build documentation
 docs: FORCE
 	rm -rf docs/_build && rm -rf docs/api
-	uv run --group docs sphinx-build -E -T -a -b html -D language=en docs docs/_build/html
+	uv run --group docs sphinx-build -E -b html docs docs/_build/html
 
 # Serve documentation locally for development
 docs-serve: docs

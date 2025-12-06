@@ -1,0 +1,28 @@
+/* Custom styles for cb-events documentation */
+
+/* Improve code block readability */
+.highlight pre {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Consistent badge spacing in header */
+.content p>a>img {
+    margin-right: 0.25rem;
+}
+
+/* Better API signature display */
+.sig-name {
+    font-weight: 600;
+}
+
+/* Reduce visual noise in parameter lists */
+dl.field-list>dt {
+    font-weight: 500;
+}
+
+/* Improve table readability */
+table.docutils td,
+table.docutils th {
+    padding: 0.5rem 0.75rem;
+}
