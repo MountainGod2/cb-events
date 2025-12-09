@@ -6,7 +6,7 @@ WORKDIR /tmp
 COPY uv.lock pyproject.toml README.md ./
 COPY src/ ./src/
 
-RUN pip --quiet --no-cache-dir install uv==0.9.11 && \
+RUN pip --quiet --no-cache-dir install uv==0.9.16 && \
     python -m venv /opt/venv && \
     uv sync --frozen --no-dev --group=examples && \
     /opt/venv/bin/pip install .
