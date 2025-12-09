@@ -16,6 +16,7 @@ Module Attributes:
 import asyncio
 import json
 import logging
+import random
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
@@ -312,9 +313,11 @@ class EventClient:
         Returns:
             Next delay capped at configured maximum.
         """
-        return min(
+        base_delay: float = min(
             current * self.config.retry_factor, self.config.retry_max_delay
         )
+        jitter_factor: float = random.uniform(0.8, 1.2)  # noqa: S311  # nosec
+        return min(base_delay * jitter_factor, self.config.retry_max_delay)
 
     @override
     def __repr__(self) -> str:
@@ -408,10 +411,11 @@ class EventClient:
         while True:
             attempt += 1
             try:
-                async with (
-                    self._rate_limiter,
-                    self.session.get(url, allow_redirects=False) as response,
-                ):
+                await self._rate_limiter.acquire()
+                async with self.session.get(
+                    url,
+                    allow_redirects=False,
+                ) as response:
                     status: int = response.status
                     text: str = await response.text()
             except (ClientError, TimeoutError, OSError) as exc:
@@ -552,62 +556,86 @@ class EventClient:
             endpoint.
 
         Raises:
-            EventsError: If nextUrl is present but not a non-empty string
-            or if the URL references a hostname not permitted by
-            ClientConfig.next_url_allowed_hosts (the base API host is
-            always permitted).
+            EventsError: If nextUrl is present but not a non-empty string, has
+            an unsupported scheme, or references a hostname not permitted by
+            ClientConfig.next_url_allowed_hosts (the base API host is always
+            permitted).
         """
         if next_url is None:
             return None
 
-        if isinstance(next_url, str):
-            stripped: str = next_url.strip()
-            if stripped:
-                absolute: str = stripped
-                parsed: ParseResult = urlparse(stripped)
-                if not parsed.scheme and not parsed.netloc:
-                    if stripped.startswith("/"):
-                        base_for_join: str = f"{self._base_origin.rstrip('/')}/"
-                    else:
-                        base_for_join = f"{self.base_url.rstrip('/')}/"
-                    absolute = urljoin(base_for_join, stripped)
-                    parsed = urlparse(absolute)
-
-                hostname: str | None = parsed.hostname or (
-                    parsed.netloc or None
-                )
-                if hostname is None:
-                    return absolute
-
-                if hostname.lower() not in self._allowed_next_hosts:
-                    logger.error(
-                        "Received nextUrl host %s which is not allowed "
-                        "for user %s",
-                        hostname,
-                        self.username,
-                    )
-                    host_msg: str = _compose_message(
-                        "Invalid nextUrl host.",
-                        "Allow via ClientConfig.next_url_allowed_hosts.",
-                    )
-                    raise EventsError(host_msg, response_text=response_text)
-                return absolute
-            logger.error(
-                "Received empty nextUrl from API for user %s",
-                self.username,
-            )
-        else:
+        if not isinstance(next_url, str):
             logger.error(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
                 self.username,
             )
+            msg: str = _compose_message(
+                "Invalid API response: 'nextUrl' must be a non-empty string.",
+                "Check https://status.chaturbate.com for service status.",
+            )
+            raise EventsError(msg, response_text=response_text)
 
-        msg: str = _compose_message(
-            "Invalid API response: 'nextUrl' must be a non-empty string.",
-            "Check https://status.chaturbate.com for service status.",
-        )
-        raise EventsError(msg, response_text=response_text)
+        stripped: str = next_url.strip()
+        if not stripped:
+            logger.error(
+                "Received empty nextUrl from API for user %s",
+                self.username,
+            )
+            msg = _compose_message(
+                "Invalid API response: 'nextUrl' must be a non-empty string.",
+                "Check https://status.chaturbate.com for service status.",
+            )
+            raise EventsError(msg, response_text=response_text)
+
+        absolute: str = stripped
+        parsed: ParseResult = urlparse(stripped)
+        if not parsed.scheme and not parsed.netloc:
+            if stripped.startswith("/"):
+                base_for_join: str = f"{self._base_origin.rstrip('/')}/"
+            else:
+                base_for_join = f"{self.base_url.rstrip('/')}/"
+            absolute = urljoin(base_for_join, stripped)
+            parsed = urlparse(absolute)
+
+        scheme: str | None = parsed.scheme
+        if scheme not in {"http", "https"}:
+            logger.error(
+                "Received nextUrl with unsupported scheme %s for user %s",
+                scheme or "<missing>",
+                self.username,
+            )
+            msg_scheme: str = _compose_message(
+                "Invalid nextUrl scheme; only http/https are allowed.",
+                "Check https://status.chaturbate.com for service status.",
+            )
+            raise EventsError(msg_scheme, response_text=response_text)
+
+        hostname: str | None = parsed.hostname
+        if not hostname:
+            logger.error(
+                "Received nextUrl without hostname for user %s",
+                self.username,
+            )
+            msg_host: str = _compose_message(
+                "Invalid nextUrl host.",
+                "Allow via ClientConfig.next_url_allowed_hosts.",
+            )
+            raise EventsError(msg_host, response_text=response_text)
+
+        if hostname.lower() not in self._allowed_next_hosts:
+            logger.error(
+                "Received nextUrl host %s which is not allowed for user %s",
+                hostname,
+                self.username,
+            )
+            host_msg: str = _compose_message(
+                "Invalid nextUrl host.",
+                "Allow via ClientConfig.next_url_allowed_hosts.",
+            )
+            raise EventsError(host_msg, response_text=response_text)
+
+        return absolute
 
     def _try_extract_next_url(self, text: str) -> bool:
         """Try to extract nextUrl from timeout responses.
