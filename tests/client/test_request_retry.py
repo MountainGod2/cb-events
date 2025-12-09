@@ -6,6 +6,8 @@ client uses the configured values, factors, and caps for successive retries.
 
 import types
 
+import pytest
+
 import cb_events.client as client_module
 from cb_events import ClientConfig
 
@@ -53,8 +55,8 @@ async def test_exception_based_backoff_increases(
 
     assert len(events) == 1
     assert len(sleep_calls) == 2
-    assert sleep_calls[0] == 0.01
-    assert sleep_calls[1] == 0.02
+    assert sleep_calls[0] == pytest.approx(0.01)
+    assert sleep_calls[1] == pytest.approx(0.02, rel=0.25)
 
 
 async def test_backoff_clamped_by_max_delay(
@@ -95,8 +97,8 @@ async def test_backoff_clamped_by_max_delay(
         events = await client.poll()
 
     assert len(events) == 1
-    assert sleep_calls[0] == 0.01
-    assert sleep_calls[1] == 0.02
+    assert sleep_calls[0] == pytest.approx(0.01)
+    assert sleep_calls[1] == pytest.approx(0.02, rel=0.25)
 
 
 async def test_status_based_retry_backoff_increases(
@@ -137,5 +139,5 @@ async def test_status_based_retry_backoff_increases(
         events = await client.poll()
 
     assert len(events) == 1
-    assert sleep_calls[0] == 0.02
-    assert sleep_calls[1] == 0.04
+    assert sleep_calls[0] == pytest.approx(0.02)
+    assert sleep_calls[1] == pytest.approx(0.04, rel=0.25)

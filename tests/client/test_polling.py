@@ -365,6 +365,32 @@ async def test_invalid_next_url_in_response(
             await client.poll()
 
 
+@pytest.mark.parametrize(
+    ("invalid_next_url", "expected_pattern"),
+    [
+        ("javascript:alert(1)", r"Invalid nextUrl scheme"),
+        ("https:///nohost", r"Invalid nextUrl host"),
+    ],
+)
+async def test_invalid_next_url_scheme_or_host(
+    invalid_next_url: str,
+    expected_pattern: str,
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Unsupported schemes or missing hostnames should raise errors."""
+    response: dict[str, Any] = {
+        "events": [],
+        "nextUrl": invalid_next_url,
+    }
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match=expected_pattern):
+            await client.poll()
+
+
 @pytest.mark.parametrize("invalid_next_url", ["   ", {}])
 async def test_timeout_invalid_next_url_raises(
     invalid_next_url: Any,
@@ -386,6 +412,35 @@ async def test_timeout_invalid_next_url_raises(
         with pytest.raises(
             EventsError, match=r"Invalid API response: 'nextUrl' must be"
         ):
+            await client.poll()
+
+
+@pytest.mark.parametrize(
+    ("invalid_next_url", "expected_pattern"),
+    [
+        ("javascript:alert(1)", r"Invalid nextUrl scheme"),
+        ("https:///nohost", r"Invalid nextUrl host"),
+    ],
+)
+async def test_timeout_invalid_next_url_scheme_or_host_raises(
+    invalid_next_url: str,
+    expected_pattern: str,
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Timeout responses surface scheme/host validation errors."""
+    timeout_response = {
+        "status": "waited too long for events",
+        "nextUrl": invalid_next_url,
+        "events": [],
+    }
+    aioresponses_mock.get(
+        testbed_url_pattern, status=400, payload=timeout_response
+    )
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match=expected_pattern):
             await client.poll()
 
 
