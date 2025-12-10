@@ -56,16 +56,21 @@ TRUNCATE_LENGTH: Final[int] = 200
 AUTH_ERRORS: set[HTTPStatus] = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 """HTTP status codes treated as authentication failures."""
 
+CF_ORIGIN_DOWN: Final[int] = 521
+CF_CONNECTION_TIMEOUT: Final[int] = 522
+CF_ORIGIN_UNREACHABLE: Final[int] = 523
+CF_TIMEOUT_OCCURRED: Final[int] = 524
+
 RETRY_STATUS_CODES: set[int] = {
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
     HTTPStatus.SERVICE_UNAVAILABLE.value,
     HTTPStatus.GATEWAY_TIMEOUT.value,
     HTTPStatus.TOO_MANY_REQUESTS.value,
-    521,  # Cloudflare: origin down
-    522,  # Cloudflare: connection timeout
-    523,  # Cloudflare: origin unreachable
-    524,  # Cloudflare: timeout occurred
+    CF_ORIGIN_DOWN,  # Cloudflare: origin down
+    CF_CONNECTION_TIMEOUT,  # Cloudflare: connection timeout
+    CF_ORIGIN_UNREACHABLE,  # Cloudflare: origin unreachable
+    CF_TIMEOUT_OCCURRED,  # Cloudflare: timeout occurred
 }
 """HTTP status codes that trigger exponential backoff retries."""
 
@@ -406,10 +411,8 @@ class EventClient:
 
         max_attempts: int = self.config.retry_attempts
         delay: float = self.config.retry_backoff
-        attempt = 0
 
-        while True:
-            attempt += 1
+        for attempt in range(1, max_attempts + 1):
             try:
                 await self._rate_limiter.acquire()
                 async with self.session.get(
@@ -419,7 +422,7 @@ class EventClient:
                     status: int = response.status
                     text: str = await response.text()
             except (ClientError, TimeoutError, OSError) as exc:
-                if attempt >= max_attempts:
+                if attempt == max_attempts:
                     logger.exception(
                         "Request failed after %d attempts for user %s",
                         attempt,
@@ -468,6 +471,10 @@ class EventClient:
 
             return status, text
 
+        # Should be unreachable
+        msg = "Unexpected error in request loop"
+        raise EventsError(msg)
+
     def _process_response(self, status: int, text: str) -> list[Event]:
         """Process HTTP response and extract events.
 
@@ -498,9 +505,10 @@ class EventClient:
             )
             raise AuthError(msg, status_code=status, response_text=text)
 
-        if status == HTTPStatus.BAD_REQUEST and self._try_extract_next_url(
-            text
+        if status == HTTPStatus.BAD_REQUEST and (
+            next_url := self._extract_next_url_from_timeout(text)
         ):
+            self._next_url = next_url
             return []
 
         if status != HTTPStatus.OK:
@@ -637,22 +645,22 @@ class EventClient:
 
         return absolute
 
-    def _try_extract_next_url(self, text: str) -> bool:
+    def _extract_next_url_from_timeout(self, text: str) -> str | None:
         """Try to extract nextUrl from timeout responses.
 
         Args:
             text: Raw response body from the timeout response.
 
         Returns:
-            True if nextUrl was extracted and stored, otherwise False.
+            The extracted nextUrl if found and valid, otherwise None.
         """
         try:
             data_obj: object = json.loads(text)
         except (json.JSONDecodeError, KeyError):
-            return False
+            return None
 
         if not isinstance(data_obj, dict):
-            return False
+            return None
 
         status_msg: object | None = data_obj.get("status")
         is_timeout: bool = (
@@ -662,21 +670,21 @@ class EventClient:
         if is_timeout:
             next_url: object | None = data_obj.get("nextUrl")
             if next_url is None:
-                return False
+                return None
 
             validated: str | None = self._validate_next_url(
                 next_url,
                 response_text=text,
             )
             if validated is None:
-                return False
-            self._next_url = validated
+                return None
+
             logger.debug(
                 "Received nextUrl from timeout response: %s",
                 _mask_url(validated, self.token),
             )
-            return True
-        return False
+            return validated
+        return None
 
     def _parse_json_response(self, text: str) -> list[Event]:
         """Parse JSON response and extract events.
@@ -824,5 +832,3 @@ class EventClient:
                 await session.close()
             except (ClientError, OSError, RuntimeError) as e:
                 logger.warning("Error closing session: %s", e, exc_info=True)
-
-        self._next_url = None
