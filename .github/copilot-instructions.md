@@ -78,7 +78,6 @@ async def handle_any(event: Event) -> None: ...
 **Constants to respect**:
 - `BASE_URL` (prod) vs `TESTBED_URL` - controlled by `config.use_testbed`
 - `AUTH_ERRORS` set for 401/403, `RETRY_STATUS_CODES` for retriable failures
-- `_MISSING` sentinel for detecting absent keys vs `None` values in API payloads
 
 ## File Management
 
