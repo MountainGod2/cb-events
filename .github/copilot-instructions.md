@@ -35,6 +35,12 @@ make test-cov   # pytest with coverage reports (xml, term, html)
 make ci         # Mirror CI: format + fix + lint + bandit + trivy + test-cov
 ```
 
+**Documentation**:
+```bash
+make docs       # Build Sphinx docs
+make docs-serve # Serve docs locally at http://localhost:8000
+```
+
 **Testing** (pytest with aioresponses for HTTP mocking):
 - Use `tests/conftest.py` fixtures: `event_client_factory`, `aioresponses_mock`, `testbed_url_pattern`
 - Pattern: Mock API responses via `aioresponses_mock.get(testbed_url_pattern, payload=...)`
