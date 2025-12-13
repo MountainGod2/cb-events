@@ -123,6 +123,62 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
+def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
+    """Return a truncated response preview for logging."""
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}..."
+
+
+def _normalize_host_entry(candidate: object) -> str | None:
+    """Best-effort sanitize of host entries for allow lists.
+
+    Returns:
+        Sanitized hostname in lowercase, or None if invalid.
+    """
+    if candidate is None:
+        return None
+    host_text: str = str(candidate).strip()
+    if not host_text:
+        return None
+
+    parsed: ParseResult = urlparse(host_text)
+    if parsed.hostname:
+        return parsed.hostname.lower()
+
+    trimmed: str = host_text.split("/", 1)[0]
+    trimmed = trimmed.split("@", 1)[-1]
+    trimmed = trimmed.split(":", 1)[0]
+    trimmed = trimmed.strip()
+    return trimmed.lower() or None
+
+
+def _build_allowed_hosts(
+    base_url: str, extra_hosts: Sequence[str] | None
+) -> set[str]:
+    """Compile list of permitted nextUrl hostnames.
+
+    Returns:
+        Set of normalized hostnames allowed for nextUrl values.
+    """
+    hosts: set[str] = set()
+    parsed_base: ParseResult = urlparse(base_url)
+    if parsed_base.hostname:
+        hosts.add(parsed_base.hostname.lower())
+    else:
+        normalized_base: str | None = _normalize_host_entry(base_url)
+        if normalized_base:
+            hosts.add(normalized_base)
+
+    if extra_hosts:
+        for host in extra_hosts:
+            normalized: str | None = _normalize_host_entry(host)
+            if normalized:
+                hosts.add(normalized)
+
+    return hosts
+
+
 def _log_validation_error(
     item: object,
     exc: ValidationError,
@@ -177,6 +233,39 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
                 raise
             _log_validation_error(item, exc)
     return events
+
+
+class _BackoffSchedule:
+    """Track exponential backoff without compounding jitter."""
+
+    __slots__: tuple[str, ...] = (
+        "_current",
+        "_factor",
+        "_first_call",
+        "_max_delay",
+    )
+
+    def __init__(
+        self, initial: float, *, factor: float, max_delay: float
+    ) -> None:
+        self._current: float = max(0.0, initial)
+        self._factor: float = factor
+        self._max_delay: float = max_delay
+        self._first_call: bool = True
+
+    def next_delay(self) -> float:
+        """Return the next sleep duration applying jitter and clamping."""
+        base_delay: float = min(self._current, self._max_delay)
+        if self._first_call:
+            sleep_for: float = base_delay
+            self._first_call = False
+        else:
+            jitter_factor: float = random.uniform(0.8, 1.2)  # noqa: S311  # nosec
+            sleep_for = base_delay * jitter_factor
+
+        next_base: float = min(base_delay * self._factor, self._max_delay)
+        self._current = next_base
+        return min(sleep_for, self._max_delay)
 
 
 class EventClient:
@@ -285,44 +374,15 @@ class EventClient:
         self.session: ClientSession | None = None
         self._next_url: str | None = None
 
-        base_hostname: str = urlparse(self.base_url).hostname or ""
-        raw_allowed: list[str] | None = self.config.next_url_allowed_hosts
-        allowed_hosts: set[str] = set()
-        if raw_allowed:
-            for host in raw_allowed:
-                host_str: str = str(host).strip()
-                if not host_str:
-                    continue
-                parsed: ParseResult = urlparse(host_str)
-                if parsed.hostname:
-                    allowed_hosts.add(parsed.hostname.lower())
-                else:
-                    allowed_hosts.add(host_str.split(":", 1)[0].lower())
-
-        if base_hostname:
-            allowed_hosts.add(base_hostname.lower())
-
-        self._allowed_next_hosts: set[str] = allowed_hosts
+        self._allowed_next_hosts: set[str] = _build_allowed_hosts(
+            self.base_url,
+            self.config.next_url_allowed_hosts,
+        )
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=DEFAULT_MAX_RATE,
             time_period=DEFAULT_TIME_PERIOD,
         )
-
-    def _next_delay(self, current: float) -> float:
-        """Calculate next retry delay with exponential backoff.
-
-        Args:
-            current: Current delay value in seconds.
-
-        Returns:
-            Next delay capped at configured maximum.
-        """
-        base_delay: float = min(
-            current * self.config.retry_factor, self.config.retry_max_delay
-        )
-        jitter_factor: float = random.uniform(0.8, 1.2)  # noqa: S311  # nosec
-        return min(base_delay * jitter_factor, self.config.retry_max_delay)
 
     @override
     def __repr__(self) -> str:
@@ -410,7 +470,11 @@ class EventClient:
             raise EventsError(init_msg)
 
         max_attempts: int = self.config.retry_attempts
-        delay: float = self.config.retry_backoff
+        retry_schedule = _BackoffSchedule(
+            self.config.retry_backoff,
+            factor=self.config.retry_factor,
+            max_delay=self.config.retry_max_delay,
+        )
 
         for attempt in range(1, max_attempts + 1):
             try:
@@ -449,24 +513,21 @@ class EventClient:
                     self.username,
                     exc,
                 )
-                await asyncio.sleep(delay)
-                delay = self._next_delay(delay)
+                await self._sleep_with_backoff(
+                    retry_schedule,
+                    attempt=attempt,
+                    max_attempts=max_attempts,
+                    reason="transient error",
+                )
                 continue
 
             if status in RETRY_STATUS_CODES and attempt < max_attempts:
-                retry_msg = (
-                    "Retrying HTTP %d for %s (attempt %d/%d, delay %.1fs)"
+                await self._sleep_with_backoff(
+                    retry_schedule,
+                    attempt=attempt,
+                    max_attempts=max_attempts,
+                    reason=f"HTTP {status}",
                 )
-                logger.debug(
-                    retry_msg,
-                    status,
-                    self.username,
-                    attempt,
-                    max_attempts,
-                    delay,
-                )
-                await asyncio.sleep(delay)
-                delay = self._next_delay(delay)
                 continue
 
             return status, text
@@ -474,6 +535,26 @@ class EventClient:
         # Should be unreachable
         msg = "Unexpected error in request loop"
         raise EventsError(msg)
+
+    async def _sleep_with_backoff(
+        self,
+        backoff: _BackoffSchedule,
+        *,
+        attempt: int,
+        max_attempts: int,
+        reason: str,
+    ) -> None:
+        """Sleep according to the retry schedule and log the delay used."""
+        delay: float = backoff.next_delay()
+        logger.debug(
+            "Retrying %s for %s (attempt %d/%d, delay %.1fs)",
+            reason,
+            self.username,
+            attempt,
+            max_attempts,
+            delay,
+        )
+        await asyncio.sleep(delay)
 
     def _process_response(self, status: int, text: str) -> list[Event]:
         """Process HTTP response and extract events.
@@ -512,9 +593,7 @@ class EventClient:
             return []
 
         if status != HTTPStatus.OK:
-            snippet: str = text[:TRUNCATE_LENGTH]
-            if len(text) > TRUNCATE_LENGTH:
-                snippet += "..."
+            snippet: str = _response_snippet(text)
             logger.error(
                 "HTTP %d for user %s: %s",
                 status,
@@ -701,9 +780,7 @@ class EventClient:
         try:
             data_obj: object = json.loads(text)
         except json.JSONDecodeError as exc:
-            snippet: str = text[:TRUNCATE_LENGTH]
-            if len(text) > TRUNCATE_LENGTH:
-                snippet += "..."
+            snippet: str = _response_snippet(text)
             logger.exception("Failed to parse JSON: %s", snippet)
             msg: str = _compose_message(
                 f"Invalid JSON response from API: {exc.msg}.",
