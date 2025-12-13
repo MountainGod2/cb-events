@@ -2,6 +2,50 @@
 
 <!-- version list -->
 
+## v5.8.0 (2025-12-13)
+
+### Chores
+
+- **ci**: Update github-actions
+  ([`689e99b`](https://github.com/MountainGod2/cb-events/commit/689e99be57bb3fe18bae114b581728be13f4ac2a))
+
+- **dev**: Update dependency ty to v0.0.1a34
+  ([`3bfa572`](https://github.com/MountainGod2/cb-events/commit/3bfa572469622ad4d92b6230885c3fe228b4e314))
+
+- **dev**: Update dev
+  ([`55c93fc`](https://github.com/MountainGod2/cb-events/commit/55c93fc663457679b56ac1dadbe6d9f028797dbc))
+
+- **docker**: Update python:3.14-slim-bookworm docker digest to 404ca55
+  ([`eab6054`](https://github.com/MountainGod2/cb-events/commit/eab605449d59edf7830e5742b2dc859467a380d1))
+
+- **examples**: Update dependency cb-events to v5.7.0
+  ([`7a6b370`](https://github.com/MountainGod2/cb-events/commit/7a6b37047d606734bb4351c4cc5d8ba58b3e7dee))
+
+### Documentation
+
+- **copilot**: Add instructions for serving documentation
+  ([`a963970`](https://github.com/MountainGod2/cb-events/commit/a9639706977c932a28049b8557569508afd5bd78))
+
+- **copilot**: Remove reference to _MISSING sentinel
+  ([`db49d39`](https://github.com/MountainGod2/cb-events/commit/db49d3901a084da0c44353e3f522c3091b4044c1))
+
+### Features
+
+- **client**: Add response snippet and host entry sanitization
+  ([`a18825b`](https://github.com/MountainGod2/cb-events/commit/a18825b805db10d18a8b1ecf1264e8bb3b101408))
+
+### Refactoring
+
+- **client**: Improve formatting
+  ([`94cadd7`](https://github.com/MountainGod2/cb-events/commit/94cadd72202435b0b07949db015eee88e133f7ad))
+
+- **client**: Modify retry logic
+  ([`c24fbbb`](https://github.com/MountainGod2/cb-events/commit/c24fbbb648e4528ae7c724971e73f0d0c35ad976))
+
+- **example**: Simplify event handlers
+  ([`93d1894`](https://github.com/MountainGod2/cb-events/commit/93d189465768393aee631ea0e737fc6c7c4679b0))
+
+
 ## v5.7.0 (2025-12-09)
 
 ### Chores
