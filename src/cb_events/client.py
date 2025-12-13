@@ -238,6 +238,8 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
 class _BackoffSchedule:
     """Track exponential backoff without compounding jitter."""
 
+    # pylint: disable=too-few-public-methods
+
     __slots__: tuple[str, ...] = (
         "_current",
         "_factor",
@@ -260,7 +262,9 @@ class _BackoffSchedule:
             sleep_for: float = base_delay
             self._first_call = False
         else:
-            jitter_factor: float = random.uniform(0.8, 1.2)  # noqa: S311  # nosec
+            jitter_factor: float = random.uniform(  # noqa: S311
+                0.8, 1.2
+            )  # nosec
             sleep_for = base_delay * jitter_factor
 
         next_base: float = min(base_delay * self._factor, self._max_delay)
