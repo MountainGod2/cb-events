@@ -39,7 +39,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/MountainGod2/cb-events/issues"
 
 [dependency-groups]
-build = ["python-semantic-release==10.5.2"]
+build = ["python-semantic-release==10.5.3"]
 
 dev = [
     "pytest==9.0.2",
@@ -52,7 +52,7 @@ dev = [
     "pyright==1.1.407",
     "pylint==4.0.4",
     "pre-commit==4.5.0",
-    "python-semantic-release==10.5.2",
+    "python-semantic-release==10.5.3",
     "pylint-pydantic==0.4.1",
     "bandit==1.9.2",
     "bandit-sarif-formatter==1.1.1",
