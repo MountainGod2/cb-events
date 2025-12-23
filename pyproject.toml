@@ -64,8 +64,7 @@ docs = [
     "sphinx==8.2.3",
     "sphinx-autoapi==3.6.1",
     "sphinx-autodoc-typehints==3.5.2",
-    "furo==2025.12.19",
-    "myst-parser==4.0.1",
+    "furo==2025.9.25",
     "sphinx-copybutton==0.5.2",
 ]
 

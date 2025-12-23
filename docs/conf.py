@@ -35,7 +35,6 @@ extensions: list[str] = [
     "sphinx.ext.viewcode",
     "autoapi.extension",
     "sphinx_autodoc_typehints",
-    "myst_parser",
     "sphinx_copybutton",
 ]
 
@@ -117,15 +116,6 @@ typehints_document_rtype = True
 always_document_param_types = True
 typehints_use_signature = True
 typehints_use_signature_return = True
-
-# -- MyST configuration ------------------------------------------------------
-myst_enable_extensions: list[str] = [
-    "colon_fence",
-    "deflist",
-    "fieldlist",
-    "substitution",
-]
-myst_heading_anchors = 3
 
 # -- Copy button configuration -----------------------------------------------
 copybutton_prompt_text = r">>> |\.\.\. |\$ "

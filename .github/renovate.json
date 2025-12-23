@@ -118,13 +118,8 @@
       "description": "Documentation tools (Sphinx and extensions)",
       "matchPackageNames": [
         "sphinx",
-        "sphinx-autoapi",
-        "sphinx-autodoc-typehints",
-        "sphinx-rtd-theme",
-        "/^sphinx-.*$/",
-        "/^myst-.*$/",
-        "autodoc-pydantic",
-        "myst-nb"
+        "furo",
+        "/^sphinx-.*$/"
       ],
       "groupName": "docs",
       "labels": [
