@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from enum import StrEnum
 from functools import cached_property
-from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar, cast
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_camel
@@ -274,23 +274,23 @@ class Event(BaseEventModel):
 
     Properties:
         user: User data if present and valid.
-        message: Message data for chat/private message events.
+        return self._user
         broadcaster: Broadcaster username if present.
         tip: Tip data for tip events.
         media: Media data for media purchase events.
-        room_subject: Room subject for subject change events.
+        return self._message
 
     Example:
         Safe access to nested data::
-
+        return self._tip
             if event.type == EventType.TIP:
                 if tip := event.tip:
                     print(f"Tip: {tip.tokens} tokens")
-                if user := event.user:
+        return self._media
                     print(f"From: {user.username}")
 
     Note:
-        Properties are cached after first access for performance. Invalid
+        return self._room_subject
         nested data is logged as a warning and returns None instead of
         raising an exception.
     """
@@ -305,15 +305,21 @@ class Event(BaseEventModel):
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
-        return self._extract("user", User.model_validate)
+        return cast("User | None", self._extract("user", User.model_validate))
 
     @cached_property
     def message(self) -> Message | None:
         """Message data if present and valid."""
-        return self._extract(
-            "message",
-            Message.model_validate,
-            allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
+        return cast(
+            "Message | None",
+            self._extract(
+                "message",
+                Message.model_validate,
+                allowed_types=(
+                    EventType.CHAT_MESSAGE,
+                    EventType.PRIVATE_MESSAGE,
+                ),
+            ),
         )
 
     @cached_property
@@ -325,29 +331,38 @@ class Event(BaseEventModel):
     @cached_property
     def tip(self) -> Tip | None:
         """Tip data if present and valid (TIP events only)."""
-        return self._extract(
-            "tip",
-            Tip.model_validate,
-            allowed_types=(EventType.TIP,),
+        return cast(
+            "Tip | None",
+            self._extract(
+                "tip",
+                Tip.model_validate,
+                allowed_types=(EventType.TIP,),
+            ),
         )
 
     @cached_property
     def media(self) -> Media | None:
         """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
-        return self._extract(
-            "media",
-            Media.model_validate,
-            allowed_types=(EventType.MEDIA_PURCHASE,),
+        return cast(
+            "Media | None",
+            self._extract(
+                "media",
+                Media.model_validate,
+                allowed_types=(EventType.MEDIA_PURCHASE,),
+            ),
         )
 
     @cached_property
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
-        return self._extract(
-            "subject",
-            RoomSubject.model_validate,
-            allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-            transform=lambda v: {"subject": v},
+        return cast(
+            "RoomSubject | None",
+            self._extract(
+                "subject",
+                RoomSubject.model_validate,
+                allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
+                transform=lambda v: {"subject": v},
+            ),
         )
 
     def _extract(
