@@ -53,7 +53,7 @@ html_show_sourcelink = True
 html_copy_source = False
 html_last_updated_fmt = "%b %d, %Y"
 
-html_theme_options: dict[str, str | dict[str, str]] = {
+html_theme_options: dict[str, str | dict[str, str] | bool] = {
     "source_repository": "https://github.com/MountainGod2/cb-events",
     "source_branch": "main",
     "source_directory": "docs/",
