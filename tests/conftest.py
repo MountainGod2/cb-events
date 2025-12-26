@@ -27,7 +27,7 @@ class EventClientFactory(Protocol):
         token_override: str | None = ...,
         config: ClientConfig | None = ...,
         use_testbed: bool = ...,
-        **config_overrides: Any,
+        **config_overrides: object,
     ) -> AbstractAsyncContextManager[EventClient]: ...
 
 
@@ -118,7 +118,7 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
         token_override: str | None = None,
         config: ClientConfig | None = None,
         use_testbed: bool = True,
-        **config_overrides: Any,
+        **config_overrides: object,
     ) -> AsyncIterator[EventClient]:
         if config is not None and config_overrides:
             msg = "Provide either `config` or keyword overrides, not both."
@@ -129,7 +129,7 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
 
         if config is None:
             config_kwargs = {"use_testbed": use_testbed, **config_overrides}
-            config = ClientConfig(**config_kwargs)
+            config = ClientConfig.model_validate(config_kwargs)
 
         async with EventClient(
             client_username, client_token, config=config
