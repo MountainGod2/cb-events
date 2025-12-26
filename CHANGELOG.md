@@ -2,6 +2,136 @@
 
 <!-- version list -->
 
+## v5.8.1 (2025-12-26)
+
+### Bug Fixes
+
+- **docs**: Update html_theme_options type to include bool
+  ([`9c9a3a8`](https://github.com/MountainGod2/cb-events/commit/9c9a3a894aa502ced20674336056b3342851edef))
+
+### Chores
+
+- **build**: Update dependency python-semantic-release to v10.5.3
+  ([`53879fa`](https://github.com/MountainGod2/cb-events/commit/53879faca59426341baedcfb093594545c076959))
+
+- **ci**: Update astral-sh/setup-uv digest to 681c641
+  ([#42](https://github.com/MountainGod2/cb-events/pull/42),
+  [`47c2b46`](https://github.com/MountainGod2/cb-events/commit/47c2b46a07711385d99285784dc8500779066f81))
+
+- **ci**: Update codecov/test-results-action digest to 0fa95f0
+  ([`7c5d095`](https://github.com/MountainGod2/cb-events/commit/7c5d0956220f720dcf2d2477bd6b193363b4cf80))
+
+- **ci**: Update github-actions ([#40](https://github.com/MountainGod2/cb-events/pull/40),
+  [`ed21be9`](https://github.com/MountainGod2/cb-events/commit/ed21be9f65aaaff3d022616719f269232f456ab1))
+
+- **ci**: Update github/codeql-action digest to 5d4e8d1
+  ([`1727fb6`](https://github.com/MountainGod2/cb-events/commit/1727fb69acb63946a27b628edae358513fd3b447))
+
+- **deps**: Update dependency furo to v2025.12.19
+  ([#45](https://github.com/MountainGod2/cb-events/pull/45),
+  [`1c2dcda`](https://github.com/MountainGod2/cb-events/commit/1c2dcda2f1efc892612d3fcbf2011f0643db127b))
+
+- **deps**: Update dependency pre-commit to v4.5.1
+  ([#44](https://github.com/MountainGod2/cb-events/pull/44),
+  [`56a3700`](https://github.com/MountainGod2/cb-events/commit/56a37001150b664f83f248d9daf8eb133461a9ab))
+
+- **deps**: Update dependency sphinx to v9
+  ([#36](https://github.com/MountainGod2/cb-events/pull/36),
+  [`051875c`](https://github.com/MountainGod2/cb-events/commit/051875c59460d548dcea37f444f591c4bb692803))
+
+- **deps**: Update furo dependency to version 2025.12.19
+  ([`f77dcb3`](https://github.com/MountainGod2/cb-events/commit/f77dcb33d5e6836305de3056e96829c6a8845ed5))
+
+- **deps**: Update ty dependency to version 0.0.5
+  ([`ed4092b`](https://github.com/MountainGod2/cb-events/commit/ed4092b00db7b6093202487e77fe050437d3e7db))
+
+- **dev**: Update dependency pyrefly to v0.46.0
+  ([`d0e368e`](https://github.com/MountainGod2/cb-events/commit/d0e368e890311ab0dec4d9bcaec2a7a422277746))
+
+- **dev**: Update dependency pyrefly to v0.46.1
+  ([`651b339`](https://github.com/MountainGod2/cb-events/commit/651b339b188d9b65418bf1504ab1b43ddbfda838))
+
+- **dev**: Update dependency ty to v0.0.1a35
+  ([`b3cfda2`](https://github.com/MountainGod2/cb-events/commit/b3cfda2403a816bb65776fb31ac7008a62b2ef2c))
+
+- **dev**: Update dependency ty to v0.0.7
+  ([`9e1852c`](https://github.com/MountainGod2/cb-events/commit/9e1852c5037e790c4d7a7d97a3c8e18cbb41f097))
+
+- **dev**: Update dev ([#43](https://github.com/MountainGod2/cb-events/pull/43),
+  [`67fe4e9`](https://github.com/MountainGod2/cb-events/commit/67fe4e99b23916ea9b03d531bcbdd347bc14205d))
+
+- **docker**: Update base image
+  ([`a273350`](https://github.com/MountainGod2/cb-events/commit/a273350f788d5ddf93ed1cf43fe784becce0ca67))
+
+- **docs**: Remove myst-parser
+  ([`ca343cc`](https://github.com/MountainGod2/cb-events/commit/ca343cc823a3d2edaf3790dc0f097bfe6cbd640a))
+
+- **docs**: Update dependency sphinx-autodoc-typehints to v3.6.0
+  ([#38](https://github.com/MountainGod2/cb-events/pull/38),
+  [`f825154`](https://github.com/MountainGod2/cb-events/commit/f825154b0a7dd89af5956be00da7a7bf9b0387ab))
+
+- **examples**: Update dependency cb-events to v5.8.0
+  ([`b3d4458`](https://github.com/MountainGod2/cb-events/commit/b3d44588b2efd10970355f6c9a4cc7242ed5bef7))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.52.6
+  ([`d945a7d`](https://github.com/MountainGod2/cb-events/commit/d945a7d67e4481885ed285de45211b3c88183ede))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.52.8
+  ([`bb257e2`](https://github.com/MountainGod2/cb-events/commit/bb257e2fd3c0b3d507a2a526c4d50755f6533f09))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.54.1
+  ([`9947cae`](https://github.com/MountainGod2/cb-events/commit/9947caed0c1ebb6fbab97917a0d13915fc525a8d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.58.3
+  ([`fc0d443`](https://github.com/MountainGod2/cb-events/commit/fc0d4435581ada404d99b988b7d7b51e42527830))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.59.1
+  ([`90fcf83`](https://github.com/MountainGod2/cb-events/commit/90fcf837d5702c71971473c1159b3675c9ebcdb1))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.66.1
+  ([`0d40d1a`](https://github.com/MountainGod2/cb-events/commit/0d40d1a204a785db073ff9a59d9da82c42aa7f56))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.66.2
+  ([`44d0101`](https://github.com/MountainGod2/cb-events/commit/44d010139f032328f4bcb34b5b57f8b64f58c391))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.66.4
+  ([`88cfeb6`](https://github.com/MountainGod2/cb-events/commit/88cfeb68d80f52e0f23a79d41fa82df7ebaabf09))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`5536426`](https://github.com/MountainGod2/cb-events/commit/5536426119d8d0310966f7bb748b200d9be78300))
+
+- **pre-commit**: Update pre-commit-hooks
+  ([`00ab0c1`](https://github.com/MountainGod2/cb-events/commit/00ab0c115d6d7760f1e709567aa47653f4d341cb))
+
+- **pre-commit**: Update pre-commit-hooks ([#39](https://github.com/MountainGod2/cb-events/pull/39),
+  [`f31ce47`](https://github.com/MountainGod2/cb-events/commit/f31ce479f09d291fee6573c0a108dad6c7f753f6))
+
+### Code Style
+
+- **example**: Fix formatting of dependency version
+  ([`d2fa8a6`](https://github.com/MountainGod2/cb-events/commit/d2fa8a6b6f80d87cb182a1e65c8518d993dbbe04))
+
+### Refactoring
+
+- **factory**: Change config_overrides type to object
+  ([`9910083`](https://github.com/MountainGod2/cb-events/commit/99100838223692d92ac2d917191e0c0dc2c54a50))
+
+- **models**: Cast return types for cached properties
+  ([`a102e7c`](https://github.com/MountainGod2/cb-events/commit/a102e7c6b7e102ffb6156d89eda8e8d64c298dd8))
+
+- **models**: Cast user extraction to User type
+  ([`89efb87`](https://github.com/MountainGod2/cb-events/commit/89efb8775ef392475ea230330f4ac949ac0b86f2))
+
+- **models**: Simplify user extraction logic
+  ([`3991ffe`](https://github.com/MountainGod2/cb-events/commit/3991ffe3017998e61911f4eb896a9538acebe2ae))
+
+- **router**: Update handler type
+  ([`66e9c60`](https://github.com/MountainGod2/cb-events/commit/66e9c606d663ef5ce5a468c40d1dfa1124150e7f))
+
+- **tests**: Update _FuncAttrWrapper to accept non-awaitable callable
+  ([`6bfa8b9`](https://github.com/MountainGod2/cb-events/commit/6bfa8b99902caa65f6a477fee0c96d5ee735a1c8))
+
+
 ## v5.8.0 (2025-12-13)
 
 ### Chores
