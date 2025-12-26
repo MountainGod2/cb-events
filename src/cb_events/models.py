@@ -305,7 +305,7 @@ class Event(BaseEventModel):
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
-        return self._extract("user", User.model_validate)
+        return cast("User | None", self._extract("user", User.model_validate))
 
     @cached_property
     def message(self) -> Message | None:
