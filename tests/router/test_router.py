@@ -313,7 +313,7 @@ def test_is_async_callable_uses_func_attribute_when_not_callable() -> None:
 class _FuncAttrWrapper:
     """Callable storing target coroutine under func attribute."""
 
-    def __init__(self, func: Callable[..., Awaitable[object]]) -> None:
+    def __init__(self, func: Callable[..., object]) -> None:
         self.func = func
 
     def __call__(self, *args, **kwargs):
