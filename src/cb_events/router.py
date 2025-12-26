@@ -27,6 +27,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from functools import partial
 from inspect import iscoroutinefunction
+from typing import cast
 
 from .models import Event, EventType
 
@@ -35,6 +36,9 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 type HandlerFunc = Callable[[Event], Awaitable[None]]
 """Async handler signature accepted by Router decorators."""
+
+# Broad callable accepted by decorators (may be sync, partials, or wrappers).
+Handler = Callable[[Event], object]
 
 
 def _is_async_callable(func: object) -> bool:
@@ -136,9 +140,7 @@ class Router:
         """Initialize router with an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
 
-    def _register(
-        self, key: EventType | None, func: HandlerFunc
-    ) -> HandlerFunc:
+    def _register(self, key: EventType | None, func: Handler) -> Handler:
         """Validate and register a handler function.
 
         Args:
@@ -154,10 +156,11 @@ class Router:
         if not _is_async_callable(func):
             msg: str = f"Handler {_handler_name(func)} must be async"
             raise TypeError(msg)
-        self._handlers.setdefault(key, []).append(func)
+        # Store as an async handler; cast to the stricter HandlerFunc type.
+        self._handlers.setdefault(key, []).append(cast("HandlerFunc", func))
         return func
 
-    def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
+    def on(self, event_type: EventType) -> Callable[[Handler], Handler]:
         """Register handler for a specific event type.
 
         Args:
@@ -167,19 +170,19 @@ class Router:
             Decorator that registers the handler and returns it unchanged.
         """
 
-        def decorator(func: HandlerFunc) -> HandlerFunc:
+        def decorator(func: Handler) -> Handler:
             return self._register(event_type, func)
 
         return decorator
 
-    def on_any(self) -> Callable[[HandlerFunc], HandlerFunc]:
+    def on_any(self) -> Callable[[Handler], Handler]:
         """Register handler for all event types.
 
         Returns:
             Decorator that registers the handler and returns it unchanged.
         """
 
-        def decorator(func: HandlerFunc) -> HandlerFunc:
+        def decorator(func: Handler) -> Handler:
             return self._register(None, func)
 
         return decorator
