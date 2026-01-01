@@ -34,6 +34,11 @@
     "schedule": [
       "before 5am on monday"
     ],
+    "minimumReleaseAge": "0 days",
+    "labels": [
+      "dependencies",
+      "lockfile"
+    ],
     "automerge": true
   },
   "minimumReleaseAge": "4 days",
@@ -64,6 +69,21 @@
       ]
     },
     {
+      "description": "Treat 0.x minor updates as potentially breaking",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchCurrentVersion": "/^0\\./",
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "labels": [
+        "dependencies",
+        "breaking"
+      ],
+      "automerge": false
+    },
+    {
       "description": "Runtime dependencies (async HTTP and validation)",
       "matchPackageNames": [
         "aiohttp",
@@ -71,13 +91,13 @@
         "pydantic",
         "/^pydantic-.*$/"
       ],
-      "groupName": "runtime",
+      "groupName": "python-runtime",
       "labels": [
         "dependencies",
         "core"
       ],
       "minimumReleaseAge": "4 days",
-      "semanticCommitScope": "runtime"
+      "semanticCommitScope": "python-runtime"
     },
     {
       "description": "Development tools (testing, linting, and type checking)",
@@ -100,7 +120,7 @@
         "bandit-sarif-formatter",
         "pylint-pydantic"
       ],
-      "groupName": "dev",
+      "groupName": "python-dev-tools",
       "labels": [
         "dependencies",
         "dev"
@@ -112,7 +132,7 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "dev"
+      "semanticCommitScope": "python-dev-tools"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
@@ -121,7 +141,7 @@
         "furo",
         "/^sphinx-.*$/"
       ],
-      "groupName": "docs",
+      "groupName": "python-docs",
       "labels": [
         "dependencies",
         "docs"
@@ -133,7 +153,7 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "docs"
+      "semanticCommitScope": "python-docs"
     },
     {
       "description": "Build and release tools",
@@ -143,7 +163,7 @@
         "python-semantic-release",
         "/^hatch-.*$/"
       ],
-      "groupName": "build",
+      "groupName": "build-release",
       "labels": [
         "dependencies",
         "build"
@@ -155,14 +175,14 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "build"
+      "semanticCommitScope": "build-release"
     },
     {
       "description": "Pre-commit hooks",
       "matchManagers": [
         "pre-commit"
       ],
-      "groupName": "pre-commit-hooks",
+      "groupName": "pre-commit",
       "labels": [
         "dependencies",
         "pre-commit"
@@ -181,7 +201,7 @@
       "matchManagers": [
         "github-actions"
       ],
-      "groupName": "github-actions",
+      "groupName": "ci-github-actions",
       "labels": [
         "dependencies",
         "ci"
@@ -189,14 +209,14 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "ci"
+      "semanticCommitScope": "ci-github-actions"
     },
     {
       "description": "Dockerfile updates",
       "matchManagers": [
         "dockerfile"
       ],
-      "groupName": "docker",
+      "groupName": "docker-images",
       "labels": [
         "dependencies",
         "docker"
@@ -209,14 +229,14 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "docker"
+      "semanticCommitScope": "docker-images"
     },
     {
       "description": "Example scripts managed via PEP 723",
       "matchManagers": [
         "pep723"
       ],
-      "groupName": "examples",
+      "groupName": "examples-scripts",
       "labels": [
         "dependencies",
         "examples"
@@ -229,7 +249,30 @@
       "minimumReleaseAge": "0",
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "examples"
+      "semanticCommitScope": "examples-scripts"
+    },
+    {
+      "description": "Examples dependency group (pyproject.toml)",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchPackageNames": [
+        "python-dotenv",
+        "rich"
+      ],
+      "groupName": "examples-deps",
+      "labels": [
+        "dependencies",
+        "examples"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "minimumReleaseAge": "0",
+      "automerge": true,
+      "autoApprove": true,
+      "semanticCommitScope": "examples-deps"
     },
     {
       "description": "Keep Python version pinned",
@@ -254,10 +297,22 @@
     "enabled": true,
     "automerge": true,
     "labels": [
+      "dependencies",
       "security"
     ],
     "assignees": [
       "MountainGod2"
     ]
-  }
+  },
+  "registryAliases": {
+    "dhi.io": "dhi.io"
+  },
+  "hostRules": [
+    {
+      "matchHost": "dhi.io",
+      "hostType": "docker",
+      "username": "{{ secrets.MEND_DHI_USERNAME }}",
+      "password": "{{ secrets.MEND_DHI_PASSWORD }}"
+    }
+  ]
 }
