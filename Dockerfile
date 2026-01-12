@@ -1,4 +1,4 @@
-FROM dhi.io/python:3.14-alpine3.23-dev@sha256:d182abbe6366502eeda13ce007d7cf95e136d90ae12cf354b4fcb980a7f79e29 AS builder
+FROM dhi.io/python:3.14-alpine3.23-dev@sha256:4a6cdb0f2e280c9d502bf143c77e89783f5325cbf70cea09bee7f6f8eb4d8898 AS builder
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV PYTHONDONTWRITEBYTECODE=1
