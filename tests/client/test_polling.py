@@ -131,7 +131,13 @@ async def test_rate_limit_error(
     config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(EventsError, match="HTTP 429: Rate limit exceeded"):
+        with pytest.raises(
+            EventsError,
+            match=(
+                r"Failed to fetch events after 1 attempt\. "
+                r"Check network connectivity and firewall settings\."
+            ),
+        ):
             await client.poll()
 
 

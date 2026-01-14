@@ -16,21 +16,31 @@ Module Attributes:
 import asyncio
 import json
 import logging
-import random
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Final, Self, cast, override
+from typing import TYPE_CHECKING, Final, Self, cast, override
 from urllib.parse import ParseResult, quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
+from tenacity import (
+    AsyncRetrying,
+    RetryError,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from .config import ClientConfig
 from .exceptions import AuthError, EventsError
 from .models import Event
+
+if TYPE_CHECKING:
+    from tenacity import RetryCallState
+
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
@@ -235,43 +245,6 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     return events
 
 
-class _BackoffSchedule:
-    """Track exponential backoff without compounding jitter."""
-
-    # pylint: disable=too-few-public-methods
-
-    __slots__: tuple[str, ...] = (
-        "_current",
-        "_factor",
-        "_first_call",
-        "_max_delay",
-    )
-
-    def __init__(
-        self, initial: float, *, factor: float, max_delay: float
-    ) -> None:
-        self._current: float = max(0.0, initial)
-        self._factor: float = factor
-        self._max_delay: float = max_delay
-        self._first_call: bool = True
-
-    def next_delay(self) -> float:
-        """Return the next sleep duration applying jitter and clamping."""
-        base_delay: float = min(self._current, self._max_delay)
-        if self._first_call:
-            sleep_for: float = base_delay
-            self._first_call = False
-        else:
-            jitter_factor: float = random.uniform(  # noqa: S311
-                0.8, 1.2
-            )  # nosec
-            sleep_for = base_delay * jitter_factor
-
-        next_base: float = min(base_delay * self._factor, self._max_delay)
-        self._current = next_base
-        return min(sleep_for, self._max_delay)
-
-
 class EventClient:
     """Async client for polling the Chaturbate Events API.
 
@@ -465,6 +438,7 @@ class EventClient:
 
         Raises:
             EventsError: If the request fails after the configured retries.
+            _TransientError: Internal exception to trigger retries.
         """
         if self.session is None:
             init_msg = (
@@ -473,92 +447,97 @@ class EventClient:
             )
             raise EventsError(init_msg)
 
-        max_attempts: int = self.config.retry_attempts
-        retry_schedule = _BackoffSchedule(
-            self.config.retry_backoff,
-            factor=self.config.retry_factor,
-            max_delay=self.config.retry_max_delay,
-        )
+        class _TransientError(Exception):
+            """Internal exception for triggering retries on bad status codes."""
 
-        for attempt in range(1, max_attempts + 1):
-            try:
-                await self._rate_limiter.acquire()
-                async with self.session.get(
-                    url,
-                    allow_redirects=False,
-                ) as response:
-                    status: int = response.status
-                    text: str = await response.text()
-            except (ClientError, TimeoutError, OSError) as exc:
-                if attempt == max_attempts:
-                    logger.exception(
-                        "Request failed after %d attempts for user %s",
-                        attempt,
-                        self.username,
-                    )
-                    attempt_label: str = (
-                        "attempt" if attempt == 1 else "attempts"
-                    )
-                    failure_msg: str = (
-                        "Failed to fetch events after "
-                        f"{attempt} {attempt_label}."
-                    )
-                    msg: str = _compose_message(
-                        failure_msg,
-                        "Check network connectivity and firewall settings.",
-                        "Review API status at https://status.chaturbate.com.",
-                    )
-                    raise EventsError(msg) from exc
+        def _log_retry(retry_state: object) -> None:
+            state = cast("RetryCallState", retry_state)
 
-                logger.warning(
-                    "Attempt %d/%d failed for user %s: %r",
-                    attempt,
-                    max_attempts,
-                    self.username,
-                    exc,
-                )
-                await self._sleep_with_backoff(
-                    retry_schedule,
-                    attempt=attempt,
-                    max_attempts=max_attempts,
-                    reason="transient error",
-                )
-                continue
+            if state.outcome is None or state.next_action is None:
+                return
 
-            if status in RETRY_STATUS_CODES and attempt < max_attempts:
-                await self._sleep_with_backoff(
-                    retry_schedule,
-                    attempt=attempt,
-                    max_attempts=max_attempts,
-                    reason=f"HTTP {status}",
-                )
-                continue
+            if state.outcome.failed:
+                exc = state.outcome.exception()
+                verb = "failed"
+            else:
+                exc = None
+                verb = "finished"
 
-            return status, text
+            logger.warning(
+                "Attempt %d/%d %s for user %s: %r. Retrying in %.2fs...",
+                state.attempt_number,
+                self.config.retry_attempts,
+                verb,
+                self.username,
+                exc,
+                state.next_action.sleep,
+            )
+
+        try:
+            async for attempt in AsyncRetrying(
+                stop=stop_after_attempt(self.config.retry_attempts),
+                wait=wait_exponential(
+                    multiplier=self.config.retry_backoff,
+                    max=self.config.retry_max_delay,
+                    exp_base=self.config.retry_factor,
+                ),
+                retry=retry_if_exception_type((
+                    ClientError,
+                    TimeoutError,
+                    OSError,
+                    _TransientError,
+                )),
+                before_sleep=_log_retry,
+            ):
+                with attempt:
+                    await self._rate_limiter.acquire()
+                    async with self.session.get(
+                        url,
+                        allow_redirects=False,
+                    ) as response:
+                        status: int = response.status
+                        text: str = await response.text()
+
+                        if status in RETRY_STATUS_CODES:
+                            msg = f"HTTP {status}"
+                            raise _TransientError(msg)
+                        return status, text
+
+        except RetryError as exc:
+            original_exception = exc.last_attempt.exception()
+
+            logger.exception(
+                "Request failed after %d attempts for user %s",
+                exc.last_attempt.attempt_number,
+                self.username,
+            )
+
+            attempt_label: str = (
+                "attempt"
+                if exc.last_attempt.attempt_number == 1
+                else "attempts"
+            )
+            failure_msg: str = (
+                "Failed to fetch events after "
+                f"{exc.last_attempt.attempt_number} {attempt_label}."
+            )
+            msg: str = _compose_message(
+                failure_msg,
+                "Check network connectivity and firewall settings.",
+                "Review API status at https://status.chaturbate.com.",
+            )
+
+            # Unwrap _TransientError if that was the cause to avoid noise
+            if isinstance(original_exception, _TransientError):
+                cause = None
+            else:
+                cause = original_exception
+
+            raise EventsError(msg) from cause
 
         # Should be unreachable
         msg = "Unexpected error in request loop"
         raise EventsError(msg)
-
-    async def _sleep_with_backoff(
-        self,
-        backoff: _BackoffSchedule,
-        *,
-        attempt: int,
-        max_attempts: int,
-        reason: str,
-    ) -> None:
-        """Sleep according to the retry schedule and log the delay used."""
-        delay: float = backoff.next_delay()
-        logger.debug(
-            "Retrying %s for %s (attempt %d/%d, delay %.1fs)",
-            reason,
-            self.username,
-            attempt,
-            max_attempts,
-            delay,
-        )
-        await asyncio.sleep(delay)
 
     def _process_response(self, status: int, text: str) -> list[Event]:
         """Process HTTP response and extract events.
