@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from enum import StrEnum
 from functools import cached_property
-from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_camel
@@ -301,20 +301,17 @@ class Event(BaseEventModel):
     @cached_property
     def user(self) -> User | None:
         """User data if present and valid."""
-        return cast("User | None", self._extract("user", User.model_validate))
+        return self._extract("user", User.model_validate)
 
     @cached_property
     def message(self) -> Message | None:
         """Message data if present and valid."""
-        return cast(
-            "Message | None",
-            self._extract(
-                "message",
-                Message.model_validate,
-                allowed_types=(
-                    EventType.CHAT_MESSAGE,
-                    EventType.PRIVATE_MESSAGE,
-                ),
+        return self._extract(
+            "message",
+            Message.model_validate,
+            allowed_types=(
+                EventType.CHAT_MESSAGE,
+                EventType.PRIVATE_MESSAGE,
             ),
         )
 
@@ -327,38 +324,29 @@ class Event(BaseEventModel):
     @cached_property
     def tip(self) -> Tip | None:
         """Tip data if present and valid (TIP events only)."""
-        return cast(
-            "Tip | None",
-            self._extract(
-                "tip",
-                Tip.model_validate,
-                allowed_types=(EventType.TIP,),
-            ),
+        return self._extract(
+            "tip",
+            Tip.model_validate,
+            allowed_types=(EventType.TIP,),
         )
 
     @cached_property
     def media(self) -> Media | None:
         """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
-        return cast(
-            "Media | None",
-            self._extract(
-                "media",
-                Media.model_validate,
-                allowed_types=(EventType.MEDIA_PURCHASE,),
-            ),
+        return self._extract(
+            "media",
+            Media.model_validate,
+            allowed_types=(EventType.MEDIA_PURCHASE,),
         )
 
     @cached_property
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
-        return cast(
-            "RoomSubject | None",
-            self._extract(
-                "subject",
-                RoomSubject.model_validate,
-                allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-                transform=lambda v: {"subject": v},
-            ),
+        return self._extract(
+            "subject",
+            RoomSubject.model_validate,
+            allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
+            transform=lambda v: {"subject": v},
         )
 
     def _extract(
