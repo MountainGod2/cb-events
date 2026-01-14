@@ -68,8 +68,8 @@ class EventsError(Exception):
             response_text: Optional raw response body.
         """
         super().__init__(message)
-        self.status_code: int | None = status_code
-        self.response_text: str | None = response_text
+        self.status_code = status_code
+        self.response_text = response_text
 
     @override
     def __str__(self) -> str:
