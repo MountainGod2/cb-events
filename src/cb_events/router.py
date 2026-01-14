@@ -42,14 +42,7 @@ Handler = Callable[[Event], object]
 
 
 def _is_async_callable(func: object) -> bool:
-    """Return whether func produces an awaitable when invoked once.
-
-    Args:
-        func: Candidate handler or callable-like object.
-
-    Returns:
-        True if the callable is async or returns a coroutine, otherwise False.
-    """
+    """Return whether func produces an awaitable when invoked once."""
     if iscoroutinefunction(func):
         return True
 
@@ -69,20 +62,13 @@ def _is_async_callable(func: object) -> bool:
 
 
 def _handler_name(handler: object) -> str:
-    """Return a safe name for logging handler failures.
-
-    Args:
-        handler: Handler object or partial.
-
-    Returns:
-        Best-effort human-readable name for logging.
-    """
-    seen: set[int] = set()
-    current: object = handler
+    """Return a safe name for logging handler failures."""
+    seen = set()
+    current = handler
 
     while id(current) not in seen:
         seen.add(id(current))
-        name: str | None = getattr(current, "__name__", None)
+        name = getattr(current, "__name__", None)
         if name:
             return name
 
@@ -154,7 +140,7 @@ class Router:
             TypeError: If the handler is not async.
         """
         if not _is_async_callable(func):
-            msg: str = f"Handler {_handler_name(func)} must be async"
+            msg = f"Handler {_handler_name(func)} must be async"
             raise TypeError(msg)
         # Store as an async handler; cast to the stricter HandlerFunc type.
         self._handlers.setdefault(key, []).append(cast("HandlerFunc", func))
@@ -197,7 +183,7 @@ class Router:
         Args:
             event: Event instance to dispatch to registered handlers.
         """
-        handlers: list[HandlerFunc] = [
+        handlers = [
             *self._handlers.get(None, []),
             *self._handlers.get(event.type, []),
         ]
