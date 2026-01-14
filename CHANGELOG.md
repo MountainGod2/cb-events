@@ -2,6 +2,105 @@
 
 <!-- version list -->
 
+## v5.9.0 (2026-01-14)
+
+### Bug Fixes
+
+- **models**: Change extra field behavior to ignore unknown fields
+  ([`7216b19`](https://github.com/MountainGod2/cb-events/commit/7216b198dd586f292a0aaebed9c06771ad375576))
+
+### Chores
+
+- **ci-github-actions**: Update github/codeql-action digest to cdefb33
+  ([`9b75430`](https://github.com/MountainGod2/cb-events/commit/9b754305035ed42b3e15765137c3da71aaffd29b))
+
+- **deps**: Lock file maintenance
+  ([`96332d1`](https://github.com/MountainGod2/cb-events/commit/96332d16d9c88e49421f74110fad4cbfb58a84d7))
+
+- **docker-images**: Update dhi.io/python:3.14-alpine3.23-dev docker digest to 314cee7
+  ([`1872b89`](https://github.com/MountainGod2/cb-events/commit/1872b891634606f503d6da00a88ae11568e69713))
+
+- **docker-images**: Update dhi.io/python:3.14-alpine3.23-dev docker digest to 4a6cdb0
+  ([`56909d9`](https://github.com/MountainGod2/cb-events/commit/56909d9ce312ab03970ed8f72c05ca9a98cc7ef9))
+
+- **docker-images**: Update dhi.io/python:3.14-alpine3.23-dev docker digest to d182abb
+  ([`378c749`](https://github.com/MountainGod2/cb-events/commit/378c749f22b6b69a3c31a2bbc17d14d796e8e45a))
+
+- **docker-images**: Update docker-images
+  ([`bff1f7a`](https://github.com/MountainGod2/cb-events/commit/bff1f7a4104352095b6602d807a4b448b46119de))
+
+- **examples-scripts**: Update dependency cb-events to v5.8.2
+  ([`c11a0c0`](https://github.com/MountainGod2/cb-events/commit/c11a0c0e95289acef50a984b0a517afaede1696c))
+
+- **pre-commit**: Update pre-commit
+  ([`4e31e74`](https://github.com/MountainGod2/cb-events/commit/4e31e74cf519b86cb701d76e348dd3226a689b13))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.74.2
+  ([`c8c92a8`](https://github.com/MountainGod2/cb-events/commit/c8c92a8a0396f1d81b3f59b1e94cc68d8aa864b7))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.76.4
+  ([`74a64e6`](https://github.com/MountainGod2/cb-events/commit/74a64e6b4268615f26e11a02c4cdfea8682c2edb))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.78.0
+  ([`4457070`](https://github.com/MountainGod2/cb-events/commit/44570706214b57b7052adfadfac5a6bebdc16432))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.78.1
+  ([`1d1f807`](https://github.com/MountainGod2/cb-events/commit/1d1f807de38edb3ca9e724c18981c5e6366028c1))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.78.2
+  ([`9d64ba4`](https://github.com/MountainGod2/cb-events/commit/9d64ba4f0663d589ab6bee9e8f42e39725fe1583))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.80.1
+  ([`13a2a34`](https://github.com/MountainGod2/cb-events/commit/13a2a34dcb1b5b4197d4d5c5926bd3e364e331f6))
+
+- **pre-commit**: Update renovatebot hooks to v42.76.5
+  ([`0b5bf2d`](https://github.com/MountainGod2/cb-events/commit/0b5bf2d43cae753f5039831673853596d9cc1095))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.48.0
+  ([`c422977`](https://github.com/MountainGod2/cb-events/commit/c422977485e680ce8b51efa36fcec88cc2693114))
+
+- **python-dev-tools**: Update dependency pyright to v1.1.408
+  ([`32c40e5`](https://github.com/MountainGod2/cb-events/commit/32c40e588382b30f54b70d0e6c3a71c3c813062f))
+
+- **python-dev-tools**: Update dependency ty to v0.0.10
+  ([`906efa3`](https://github.com/MountainGod2/cb-events/commit/906efa3d86b8a8b2d61aafb15d5c85941e9bf2ec))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([#50](https://github.com/MountainGod2/cb-events/pull/50),
+  [`8fae012`](https://github.com/MountainGod2/cb-events/commit/8fae012dd4ef66124fef71b48a492dd295c1ce57))
+
+### Features
+
+- **client**: Recreate retry logic with tenacity
+  ([`34437e3`](https://github.com/MountainGod2/cb-events/commit/34437e318e514eec5993513568bd2757dba15be6))
+
+### Refactoring
+
+- **client**: Move _TransientError class outside EventClient
+  ([`6734f53`](https://github.com/MountainGod2/cb-events/commit/6734f5323cc20f9bb49494aea091fb552bdd0b7b))
+
+- **client**: Remove unused functions
+  ([`52322d1`](https://github.com/MountainGod2/cb-events/commit/52322d12e05edfba82ae7567093e22875b0c8f74))
+
+- **config**: Adjust message type assignment
+  ([`07f6f8c`](https://github.com/MountainGod2/cb-events/commit/07f6f8cb2e62d1e55d591d5a3de8ff2aed329c9e))
+
+- **exceptions**: Simplify attribute assignment in EventsError
+  ([`94e8334`](https://github.com/MountainGod2/cb-events/commit/94e833473b5d01151dee775634ec38c17c3c553e))
+
+- **models**: Remove unnecessary type casting in Event class
+  ([`0438d18`](https://github.com/MountainGod2/cb-events/commit/0438d183b284fbc7dccbeda7c7819b8b6ae227f5))
+
+- **router**: Simplify docstrings and variable assignments
+  ([`5ff4c13`](https://github.com/MountainGod2/cb-events/commit/5ff4c13e6a4ee321cd1ba6466ea874e1aafc19db))
+
+- **tests**: Remove unused _compose_message test
+  ([`150ed63`](https://github.com/MountainGod2/cb-events/commit/150ed63b938cd8bbb0ca8d5f4c662f93a845a5d4))
+
+- **version**: Move version logic to separate file
+  ([`42a6f12`](https://github.com/MountainGod2/cb-events/commit/42a6f121e237e03aae92d166a4e8073a9d6b08fe))
+
+
 ## v5.8.2 (2026-01-07)
 
 ### Bug Fixes
