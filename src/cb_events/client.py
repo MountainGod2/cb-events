@@ -20,7 +20,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
 from typing import TYPE_CHECKING, Final, Self, cast, override
-from urllib.parse import ParseResult, quote, urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -91,28 +91,11 @@ logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.client module."""
 
 
-def _compose_message(*parts: str) -> str:
-    """Join message components with single spaces.
-
-    Args:
-        parts: Message fragments to join in order.
-
-    Returns:
-        Concatenated message containing the provided parts.
-    """
-    return " ".join(part.strip() for part in parts if part)
-
-
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
 
-    Args:
-        token: Sensitive token string to sanitize.
-        visible: Number of trailing characters to keep unobscured.
-
     Returns:
-        Masked token with only the configured number of trailing characters
-        visible.
+        Masked token string.
     """
     if visible <= 0 or len(token) <= visible:
         return "*" * len(token)
@@ -122,41 +105,31 @@ def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
 
-    Args:
-        url: URL string that may contain the sensitive token.
-        token: Token substring to redact within the URL.
-
     Returns:
-        URL with masked token occurrences replaced by the sanitized version.
+        URL string with token masked.
     """
-    masked: str = _mask_token(token)
+    masked = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
 def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
-    """Return a truncated response preview for logging."""
     if len(text) <= limit:
         return text
     return f"{text[:limit]}..."
 
 
 def _normalize_host_entry(candidate: object) -> str | None:
-    """Best-effort sanitize of host entries for allow lists.
-
-    Returns:
-        Sanitized hostname in lowercase, or None if invalid.
-    """
     if candidate is None:
         return None
-    host_text: str = str(candidate).strip()
+    host_text = str(candidate).strip()
     if not host_text:
         return None
 
-    parsed: ParseResult = urlparse(host_text)
+    parsed = urlparse(host_text)
     if parsed.hostname:
         return parsed.hostname.lower()
 
-    trimmed: str = host_text.split("/", 1)[0]
+    trimmed = host_text.split("/", 1)[0]
     trimmed = trimmed.split("@", 1)[-1]
     trimmed = trimmed.split(":", 1)[0]
     trimmed = trimmed.strip()
@@ -166,23 +139,18 @@ def _normalize_host_entry(candidate: object) -> str | None:
 def _build_allowed_hosts(
     base_url: str, extra_hosts: Sequence[str] | None
 ) -> set[str]:
-    """Compile list of permitted nextUrl hostnames.
-
-    Returns:
-        Set of normalized hostnames allowed for nextUrl values.
-    """
-    hosts: set[str] = set()
-    parsed_base: ParseResult = urlparse(base_url)
+    hosts = set()
+    parsed_base = urlparse(base_url)
     if parsed_base.hostname:
         hosts.add(parsed_base.hostname.lower())
     else:
-        normalized_base: str | None = _normalize_host_entry(base_url)
+        normalized_base = _normalize_host_entry(base_url)
         if normalized_base:
             hosts.add(normalized_base)
 
     if extra_hosts:
         for host in extra_hosts:
-            normalized: str | None = _normalize_host_entry(host)
+            normalized = _normalize_host_entry(host)
             if normalized:
                 hosts.add(normalized)
 
@@ -193,17 +161,11 @@ def _log_validation_error(
     item: object,
     exc: ValidationError,
 ) -> None:
-    """Log validation error details for an invalid event.
-
-    Args:
-        item: Raw event data that failed validation.
-        exc: Validation error containing field-level details.
-    """
-    mapping_item: Mapping[str, object] | None = None
+    mapping_item = None
     if isinstance(item, Mapping):
         mapping_item = cast("Mapping[str, object]", item)
 
-    event_id: object = (
+    event_id = (
         mapping_item.get("id", "<unknown>")
         if mapping_item is not None
         else "<unknown>"
@@ -234,7 +196,7 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     Raises:
         ValidationError: If strict is True and validation fails.
     """
-    events: list[Event] = []
+    events = []
     for item in raw:
         try:
             events.append(Event.model_validate(item))
@@ -334,29 +296,25 @@ class EventClient:
             )
             raise AuthError(msg)
 
-        self.username: str = username
-        self.token: str = token
-        self.config: ClientConfig = config or ClientConfig()
-        self.timeout: int = self.config.timeout
-        self.base_url: str = (
-            TESTBED_URL if self.config.use_testbed else BASE_URL
-        )
-        parsed_base: ParseResult = urlparse(self.base_url)
+        self.username = username
+        self.token = token
+        self.config = config or ClientConfig()
+        self.timeout = self.config.timeout
+        self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
+        parsed_base = urlparse(self.base_url)
         if parsed_base.scheme and parsed_base.netloc:
-            self._base_origin: str = (
-                f"{parsed_base.scheme}://{parsed_base.netloc}"
-            )
+            self._base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
         else:
             self._base_origin = self.base_url
-        self.session: ClientSession | None = None
-        self._next_url: str | None = None
+        self.session = None
+        self._next_url = None
 
-        self._allowed_next_hosts: set[str] = _build_allowed_hosts(
+        self._allowed_next_hosts = _build_allowed_hosts(
             self.base_url,
             self.config.next_url_allowed_hosts,
         )
-        self._polling_lock: asyncio.Lock = asyncio.Lock()
-        self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
+        self._polling_lock = asyncio.Lock()
+        self._rate_limiter = rate_limiter or AsyncLimiter(
             max_rate=DEFAULT_MAX_RATE,
             time_period=DEFAULT_TIME_PERIOD,
         )
@@ -495,8 +453,8 @@ class EventClient:
                         url,
                         allow_redirects=False,
                     ) as response:
-                        status: int = response.status
-                        text: str = await response.text()
+                        status = response.status
+                        text = await response.text()
 
                         if status in RETRY_STATUS_CODES:
                             msg = f"HTTP {status}"
@@ -512,19 +470,18 @@ class EventClient:
                 self.username,
             )
 
-            attempt_label: str = (
+            attempt_label = (
                 "attempt"
                 if exc.last_attempt.attempt_number == 1
                 else "attempts"
             )
-            failure_msg: str = (
-                "Failed to fetch events after "
+            failure_msg = (
+                f"Failed to fetch events after "
                 f"{exc.last_attempt.attempt_number} {attempt_label}."
             )
-            msg: str = _compose_message(
-                failure_msg,
-                "Check network connectivity and firewall settings.",
-                "Review API status at https://status.chaturbate.com.",
+            msg = (
+                f"{failure_msg} Check network connectivity and firewall "
+                "settings. Review API status at https://status.chaturbate.com."
             )
 
             # Unwrap _TransientError if that was the cause to avoid noise
@@ -559,13 +516,11 @@ class EventClient:
                 self.username,
                 status,
             )
-            msg: str = _compose_message(
-                f"Authentication failed for '{self.username}'.",
-                "Verify your username and token are correct.",
-                (
-                    "Generate a new token at "
-                    "https://chaturbate.com/statsapi/authtoken/."
-                ),
+            msg = (
+                f"Authentication failed for '{self.username}'. "
+                "Verify your username and token are correct. "
+                "Generate a new token at "
+                "https://chaturbate.com/statsapi/authtoken/."
             )
             raise AuthError(msg, status_code=status, response_text=text)
 
@@ -576,7 +531,7 @@ class EventClient:
             return []
 
         if status != HTTPStatus.OK:
-            snippet: str = _response_snippet(text)
+            snippet = _response_snippet(text)
             logger.error(
                 "HTTP %d for user %s: %s",
                 status,
@@ -585,16 +540,14 @@ class EventClient:
             )
 
             if status == HTTPStatus.TOO_MANY_REQUESTS:
-                guidance: str = " " + _compose_message(
-                    "Rate limit exceeded.",
-                    "Reduce request rate.",
-                    "Share a limiter across clients.",
+                guidance = (
+                    " Rate limit exceeded. Reduce request rate. Share a "
+                    "limiter across clients."
                 )
             elif status >= HTTPStatus.INTERNAL_SERVER_ERROR:
-                guidance = " " + _compose_message(
-                    "Server error.",
-                    "Check https://status.chaturbate.com for API status.",
-                    "Retry later.",
+                guidance = (
+                    " Server error. Check https://status.chaturbate.com for "
+                    "API status. Retry later."
                 )
             else:
                 guidance = ""
@@ -640,56 +593,56 @@ class EventClient:
                 type(next_url).__name__,
                 self.username,
             )
-            msg: str = _compose_message(
-                "Invalid API response: 'nextUrl' must be a non-empty string.",
-                "Check https://status.chaturbate.com for service status.",
+            msg = (
+                "Invalid API response: 'nextUrl' must be a non-empty string. "
+                "Check https://status.chaturbate.com for service status."
             )
             raise EventsError(msg, response_text=response_text)
 
-        stripped: str = next_url.strip()
+        stripped = next_url.strip()
         if not stripped:
             logger.error(
                 "Received empty nextUrl from API for user %s",
                 self.username,
             )
-            msg = _compose_message(
-                "Invalid API response: 'nextUrl' must be a non-empty string.",
-                "Check https://status.chaturbate.com for service status.",
+            msg = (
+                "Invalid API response: 'nextUrl' must be a non-empty string. "
+                "Check https://status.chaturbate.com for service status."
             )
             raise EventsError(msg, response_text=response_text)
 
-        absolute: str = stripped
-        parsed: ParseResult = urlparse(stripped)
+        absolute = stripped
+        parsed = urlparse(stripped)
         if not parsed.scheme and not parsed.netloc:
             if stripped.startswith("/"):
-                base_for_join: str = f"{self._base_origin.rstrip('/')}/"
+                base_for_join = f"{self._base_origin.rstrip('/')}/"
             else:
                 base_for_join = f"{self.base_url.rstrip('/')}/"
             absolute = urljoin(base_for_join, stripped)
             parsed = urlparse(absolute)
 
-        scheme: str | None = parsed.scheme
+        scheme = parsed.scheme
         if scheme not in {"http", "https"}:
             logger.error(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
                 self.username,
             )
-            msg_scheme: str = _compose_message(
-                "Invalid nextUrl scheme; only http/https are allowed.",
-                "Check https://status.chaturbate.com for service status.",
+            msg_scheme = (
+                "Invalid nextUrl scheme; only http/https are allowed. "
+                "Check https://status.chaturbate.com for service status."
             )
             raise EventsError(msg_scheme, response_text=response_text)
 
-        hostname: str | None = parsed.hostname
+        hostname = parsed.hostname
         if not hostname:
             logger.error(
                 "Received nextUrl without hostname for user %s",
                 self.username,
             )
-            msg_host: str = _compose_message(
-                "Invalid nextUrl host.",
-                "Allow via ClientConfig.next_url_allowed_hosts.",
+            msg_host = (
+                "Invalid nextUrl host. Allow via "
+                "ClientConfig.next_url_allowed_hosts."
             )
             raise EventsError(msg_host, response_text=response_text)
 
@@ -699,9 +652,9 @@ class EventClient:
                 hostname,
                 self.username,
             )
-            host_msg: str = _compose_message(
-                "Invalid nextUrl host.",
-                "Allow via ClientConfig.next_url_allowed_hosts.",
+            host_msg = (
+                "Invalid nextUrl host. Allow via "
+                "ClientConfig.next_url_allowed_hosts."
             )
             raise EventsError(host_msg, response_text=response_text)
 
@@ -717,24 +670,24 @@ class EventClient:
             The extracted nextUrl if found and valid, otherwise None.
         """
         try:
-            data_obj: object = json.loads(text)
+            data_obj = json.loads(text)
         except (json.JSONDecodeError, KeyError):
             return None
 
         if not isinstance(data_obj, dict):
             return None
 
-        status_msg: object | None = data_obj.get("status")
-        is_timeout: bool = (
+        status_msg = data_obj.get("status")
+        is_timeout = (
             isinstance(status_msg, str)
             and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
         )
         if is_timeout:
-            next_url: object | None = data_obj.get("nextUrl")
+            next_url = data_obj.get("nextUrl")
             if next_url is None:
                 return None
 
-            validated: str | None = self._validate_next_url(
+            validated = self._validate_next_url(
                 next_url,
                 response_text=text,
             )
@@ -761,14 +714,14 @@ class EventClient:
             EventsError: If JSON is invalid or response format is wrong.
         """
         try:
-            data_obj: object = json.loads(text)
+            data_obj = json.loads(text)
         except json.JSONDecodeError as exc:
-            snippet: str = _response_snippet(text)
+            snippet = _response_snippet(text)
             logger.exception("Failed to parse JSON: %s", snippet)
-            msg: str = _compose_message(
-                f"Invalid JSON response from API: {exc.msg}.",
-                "The response may indicate an API outage or unexpected format.",
-                "Check https://status.chaturbate.com for service status.",
+            msg = (
+                f"Invalid JSON response from API: {exc.msg}. "
+                "The response may indicate an API outage or unexpected format. "
+                "Check https://status.chaturbate.com for service status."
             )
             raise EventsError(
                 msg,
@@ -776,10 +729,10 @@ class EventClient:
             ) from exc
 
         if not isinstance(data_obj, dict):
-            msg = _compose_message(
-                "Invalid API response format: expected JSON object.",
-                f"Got {type(data_obj).__name__} instead.",
-                "Check https://status.chaturbate.com for service status.",
+            msg = (
+                "Invalid API response format: expected JSON object. "
+                f"Got {type(data_obj).__name__} instead. "
+                "Check https://status.chaturbate.com for service status."
             )
             raise EventsError(
                 msg,
@@ -792,11 +745,11 @@ class EventClient:
             response_text=text,
         )
         if "events" in data_obj:
-            raw_events_obj: object = data_obj["events"]
+            raw_events_obj = data_obj["events"]
             if not isinstance(raw_events_obj, list):
-                msg = _compose_message(
-                    "Invalid API response format: 'events' must be a list.",
-                    "Each item must be an object.",
+                msg = (
+                    "Invalid API response format: 'events' must be a list. "
+                    "Each item must be an object."
                 )
                 raise EventsError(
                     msg,
@@ -806,7 +759,7 @@ class EventClient:
         else:
             raw_events_list = []
 
-        events: list[Event] = _parse_events(
+        events = _parse_events(
             raw_events_list,
             strict=self.config.strict_validation,
         )
@@ -836,7 +789,7 @@ class EventClient:
             the request fails, or AuthError if authentication fails.
         """
         async with self._polling_lock:
-            url: str = self._build_url()
+            url = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Polling %s", _mask_url(url, self.token))
 
@@ -870,7 +823,7 @@ class EventClient:
             Event instances as they are received from the API.
         """
         while True:
-            events: list[Event] = await self.poll()
+            events = await self.poll()
             for event in events:
                 yield event
 
