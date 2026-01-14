@@ -51,14 +51,14 @@ class BaseEventModel(BaseModel):
     Configuration:
         alias_generator: Converts snake_case fields to camelCase aliases.
         populate_by_name: Allows both field name and alias for input.
-        extra="forbid": Rejects unknown fields in input data.
+        extra="ignore": Ignores unknown fields in input for compatibility.
         frozen=True: Makes instances immutable after creation.
     """
 
     model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
-        extra="forbid",
+        extra="ignore",
         frozen=True,
     )
 
@@ -274,25 +274,21 @@ class Event(BaseEventModel):
 
     Properties:
         user: User data if present and valid.
-        return self._user
         broadcaster: Broadcaster username if present.
         tip: Tip data for tip events.
         media: Media data for media purchase events.
-        return self._message
 
     Example:
         Safe access to nested data::
-        return self._tip
+
             if event.type == EventType.TIP:
                 if tip := event.tip:
                     print(f"Tip: {tip.tokens} tokens")
-        return self._media
+                if user := event.user:
                     print(f"From: {user.username}")
 
     Note:
-        return self._room_subject
-        nested data is logged as a warning and returns None instead of
-        raising an exception.
+        Failures to parse nested data are logged as a warning and returns None.
     """
 
     type: EventType = Field(alias="method")
