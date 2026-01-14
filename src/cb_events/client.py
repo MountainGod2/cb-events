@@ -91,6 +91,10 @@ logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.client module."""
 
 
+class _TransientError(Exception):
+    """Internal exception for triggering retries on bad status codes."""
+
+
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
 
@@ -404,9 +408,6 @@ class EventClient:
                 "context manager to properly initialize the session"
             )
             raise EventsError(init_msg)
-
-        class _TransientError(Exception):
-            """Internal exception for triggering retries on bad status codes."""
 
         def _log_retry(retry_state: object) -> None:
             state = cast("RetryCallState", retry_state)
