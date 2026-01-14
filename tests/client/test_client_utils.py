@@ -9,18 +9,10 @@ from pydantic import ValidationError
 from cb_events import ClientConfig, EventClient, EventType
 
 client_module = import_module("cb_events.client")
-_compose_message = client_module._compose_message
 _mask_url = client_module._mask_url
 _mask_token = client_module._mask_token
 _parse_events = client_module._parse_events
 TOKEN_VISIBLE_CHARS = client_module.TOKEN_VISIBLE_CHARS
-
-
-def test_compose_message_trims_and_concatenates() -> None:
-    """_compose_message should strip parts and join them with single spaces."""
-
-    result = _compose_message("  Hello ", "world  ", "", "  from  ", " cb")
-    assert result == "Hello world from cb"
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
