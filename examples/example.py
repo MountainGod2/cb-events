@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events ==5.8.2",
+#     "cb-events ==5.9.0",
 #     "python-dotenv == 1.2.1",
 # ]
 # ///
