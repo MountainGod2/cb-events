@@ -48,7 +48,7 @@ dev = [
     "pytest-cov==7.0.0",
     "pytest-mock==3.15.1",
     "aioresponses==0.7.8",
-    "ruff==0.14.11",
+    "ruff==0.14.13",
     "pyright==1.1.408",
     "pylint==4.0.4",
     "pre-commit==4.5.1",
@@ -57,7 +57,7 @@ dev = [
     "bandit==1.9.2",
     "bandit-sarif-formatter==1.1.1",
     "ty==0.0.12",
-    "pyrefly==0.48.0",
+    "pyrefly==0.48.1",
 ]
 
 docs = [
