@@ -57,7 +57,7 @@ dev = [
     "bandit==1.9.2",
     "bandit-sarif-formatter==1.1.1",
     "ty==0.0.12",
-    "pyrefly==0.48.1",
+    "pyrefly==0.48.2",
 ]
 
 docs = [
