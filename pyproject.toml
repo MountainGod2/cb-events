@@ -54,7 +54,7 @@ dev = [
     "pre-commit==4.5.1",
     "python-semantic-release==10.5.3",
     "pylint-pydantic==0.4.1",
-    "bandit==1.9.2",
+    "bandit==1.9.3",
     "bandit-sarif-formatter==1.1.1",
     "ty==0.0.12",
     "pyrefly==0.48.2",
