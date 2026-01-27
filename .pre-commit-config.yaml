@@ -57,7 +57,7 @@ repos:
         always_run: true
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.36.0
+    rev: 0.36.1
     hooks:
       - id: check-github-workflows
         name: check github workflows
@@ -65,7 +65,7 @@ repos:
         name: check readthedocs config
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 42.84.0
+    rev: 42.93.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
@@ -79,7 +79,7 @@ repos:
         args: [--strict, --force-scope]
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.42.1
+    rev: v1.42.2
     hooks:
       - id: typos
         name: typos spell check
