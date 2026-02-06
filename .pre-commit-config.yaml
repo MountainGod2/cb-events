@@ -79,7 +79,7 @@ repos:
         args: [--strict, --force-scope]
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.43.1
+    rev: v1.43.2
     hooks:
       - id: typos
         name: typos spell check
