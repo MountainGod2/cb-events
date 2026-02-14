@@ -29,9 +29,9 @@ def test_custom_configuration() -> None:
     assert config.use_testbed is True
     assert config.timeout == 60
     assert config.retry_attempts == 5
-    assert config.retry_backoff == 2.0
-    assert config.retry_factor == 3.0
-    assert config.retry_max_delay == 120.0
+    assert config.retry_backoff == pytest.approx(2.0)
+    assert config.retry_factor == pytest.approx(3.0)
+    assert config.retry_max_delay == pytest.approx(120.0)
 
 
 @pytest.mark.parametrize("timeout", [0, -1])
@@ -64,5 +64,5 @@ def test_allow_max_delay_equal_to_backoff() -> None:
     """Backoff equal to max delay is acceptable (no scaling)."""
     config = ClientConfig(retry_backoff=5.0, retry_max_delay=5.0)
 
-    assert config.retry_backoff == 5.0
-    assert config.retry_max_delay == 5.0
+    assert config.retry_backoff == pytest.approx(5.0)
+    assert config.retry_max_delay == pytest.approx(5.0)
