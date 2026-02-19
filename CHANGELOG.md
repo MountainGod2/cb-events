@@ -2,6 +2,266 @@
 
 <!-- version list -->
 
+## v5.9.1 (2026-02-19)
+
+### Bug Fixes
+
+- **deps**: Update dependency tenacity to v9.1.4
+  ([#52](https://github.com/MountainGod2/cb-events/pull/52),
+  [`1296a3b`](https://github.com/MountainGod2/cb-events/commit/1296a3b37d62b68bbd543d3d768dfc48215a51b3))
+
+### Chores
+
+- **ci-github-actions**: Update actions/checkout digest to de0fac2
+  ([`9ead9b6`](https://github.com/MountainGod2/cb-events/commit/9ead9b6c54c0d49b2976b2b1d6bd480cc106ff3c))
+
+- **ci-github-actions**: Update astral-sh/setup-uv digest to 803947b
+  ([`cd4e01d`](https://github.com/MountainGod2/cb-events/commit/cd4e01df457f31a053a4a1491a5c70b1ab6ca899))
+
+- **ci-github-actions**: Update astral-sh/setup-uv digest to eac588a
+  ([`ccd7495`](https://github.com/MountainGod2/cb-events/commit/ccd74958b413186d4ba13fadece6d649ed1a82d4))
+
+- **ci-github-actions**: Update github/codeql-action digest to 19b2f06
+  ([`4aa6e58`](https://github.com/MountainGod2/cb-events/commit/4aa6e58a3f58ce8451acf192e3f2e57b39ea5410))
+
+- **ci-github-actions**: Update github/codeql-action digest to 45cbd0c
+  ([`52584a3`](https://github.com/MountainGod2/cb-events/commit/52584a3eeec1bc5f20e8d53d65e0b314235c9a48))
+
+- **ci-github-actions**: Update github/codeql-action digest to 6bc82e0
+  ([`13aa7a4`](https://github.com/MountainGod2/cb-events/commit/13aa7a4e7acb38adc332c27542b6c72de4b9b104))
+
+- **ci-github-actions**: Update github/codeql-action digest to 9e907b5
+  ([`b571aea`](https://github.com/MountainGod2/cb-events/commit/b571aea639592ab1135ea9ad4837b9bb1e3bf3c1))
+
+- **ci-github-actions**: Update github/codeql-action digest to b20883b
+  ([`ee74a6a`](https://github.com/MountainGod2/cb-events/commit/ee74a6a203fe0649c7d72cf99e7e62fc577dbda8))
+
+- **deps**: Lock file maintenance
+  ([`c65093f`](https://github.com/MountainGod2/cb-events/commit/c65093f11d2f4147de717a662e283729a226e3bc))
+
+- **deps**: Lock file maintenance
+  ([`8e5333a`](https://github.com/MountainGod2/cb-events/commit/8e5333a7474d7a11c997359b97039d5abef9337f))
+
+- **deps**: Lock file maintenance
+  ([`2b3346d`](https://github.com/MountainGod2/cb-events/commit/2b3346dd4fc656ed484080c3252f51f5bc972e3d))
+
+- **deps**: Lock file maintenance
+  ([`af0628e`](https://github.com/MountainGod2/cb-events/commit/af0628ea8d06fc6870084c120f6bba7ace2dbb85))
+
+- **deps**: Lock file maintenance
+  ([`43b09ba`](https://github.com/MountainGod2/cb-events/commit/43b09ba1141b0b76ca2af300d8d7dc0eaca4aea3))
+
+- **deps**: Update pre-commit hook renovatebot/pre-commit-hooks to v43
+  ([#51](https://github.com/MountainGod2/cb-events/pull/51),
+  [`ef74d9e`](https://github.com/MountainGod2/cb-events/commit/ef74d9e616c28ad4b0af4360fd90b19cdb666c3a))
+
+- **docker-images**: Update docker-images
+  ([`f421c47`](https://github.com/MountainGod2/cb-events/commit/f421c47d69b2eaf386731e8e1d7195640e0fd3ff))
+
+- **docker-images**: Update docker-images
+  ([`9c75721`](https://github.com/MountainGod2/cb-events/commit/9c75721f9817f697b85bcee9b02ea235facd7071))
+
+- **docker-images**: Update docker-images
+  ([`ed64390`](https://github.com/MountainGod2/cb-events/commit/ed64390073c986a4e47332ca09383ba3a7d37ae2))
+
+- **docker-images**: Update docker-images
+  ([`9ef5090`](https://github.com/MountainGod2/cb-events/commit/9ef5090cd23353b5e370525b28bc7602e6373565))
+
+- **docker-images**: Update docker-images
+  ([`0eff9ac`](https://github.com/MountainGod2/cb-events/commit/0eff9acd06cd1d8a1667a63450922e0c6ea7e475))
+
+- **docker-images**: Update docker-images
+  ([`6cf7fb4`](https://github.com/MountainGod2/cb-events/commit/6cf7fb4da8cc394fdafc5677273549503388f9b0))
+
+- **examples-deps**: Update dependency rich to v14.3.0
+  ([`80359bd`](https://github.com/MountainGod2/cb-events/commit/80359bd64120ce3c363d64eac0901c39e3676b35))
+
+- **examples-deps**: Update dependency rich to v14.3.1
+  ([`1d6d16f`](https://github.com/MountainGod2/cb-events/commit/1d6d16f030381bf4e4463afe89acfd4662cd90b0))
+
+- **examples-deps**: Update dependency rich to v14.3.2
+  ([`e9929e9`](https://github.com/MountainGod2/cb-events/commit/e9929e9b7f3f0012aecbb9e9048db35b033347a6))
+
+- **examples-scripts**: Update dependency cb-events to v5.9.0
+  ([`0ae3431`](https://github.com/MountainGod2/cb-events/commit/0ae34318581a5f5aa4c90cb7dddcff76885350c4))
+
+- **pre-commit**: Update pre-commit
+  ([`bd09706`](https://github.com/MountainGod2/cb-events/commit/bd09706bdcc5d43f458fd06b94f81353e899e077))
+
+- **pre-commit**: Update pre-commit
+  ([`9def64b`](https://github.com/MountainGod2/cb-events/commit/9def64b0b1c10c8ef1efca1c91ccb2cdaa4e5c88))
+
+- **pre-commit**: Update pre-commit
+  ([`0d42b81`](https://github.com/MountainGod2/cb-events/commit/0d42b8143af52d874ecd7de9af7ba8db4422e93c))
+
+- **pre-commit**: Update pre-commit
+  ([`ca90b72`](https://github.com/MountainGod2/cb-events/commit/ca90b7264b8d9b24356773cad69221f29253fe96))
+
+- **pre-commit**: Update pre-commit
+  ([`280af7e`](https://github.com/MountainGod2/cb-events/commit/280af7efe494c744f19fe82a7cb4a6e12efed29a))
+
+- **pre-commit**: Update pre-commit
+  ([`af0a4a8`](https://github.com/MountainGod2/cb-events/commit/af0a4a80e4d5d1e64eeb9d0a7cb602ec8eacd184))
+
+- **pre-commit**: Update pre-commit
+  ([`94021d6`](https://github.com/MountainGod2/cb-events/commit/94021d658d55f7b300b99ad03fa25ebf2d8d7802))
+
+- **pre-commit**: Update pre-commit
+  ([`4daa6b9`](https://github.com/MountainGod2/cb-events/commit/4daa6b9a9e5c877c9a0d8f47e248c27843ceeed4))
+
+- **pre-commit**: Update pre-commit
+  ([`282d92f`](https://github.com/MountainGod2/cb-events/commit/282d92f67ff216fedc75d0dbd413f5f491de8ff9))
+
+- **pre-commit**: Update pre-commit
+  ([`d4004f7`](https://github.com/MountainGod2/cb-events/commit/d4004f71df4a341be39b632d84bc44069dd5c3c9))
+
+- **pre-commit**: Update pre-commit hook adhtruong/mirrors-typos to v1.42.1
+  ([`10060f8`](https://github.com/MountainGod2/cb-events/commit/10060f8e30169168d12349ed27f33dac4bdf6283))
+
+- **pre-commit**: Update pre-commit hook adhtruong/mirrors-typos to v1.42.3
+  ([`2fb5dba`](https://github.com/MountainGod2/cb-events/commit/2fb5dba035bc1b2cd505e84473585c8645067dee))
+
+- **pre-commit**: Update pre-commit hook adhtruong/mirrors-typos to v1.43.2
+  ([`ec213eb`](https://github.com/MountainGod2/cb-events/commit/ec213eba62f2778939bd3b66a5067fcc74b3c9e3))
+
+- **pre-commit**: Update pre-commit hook astral-sh/ruff-pre-commit to v0.14.14
+  ([`538e873`](https://github.com/MountainGod2/cb-events/commit/538e8734d2ae9209b13fa57aa9ecd56498180284))
+
+- **pre-commit**: Update pre-commit hook pycqa/bandit to v1.9.3
+  ([`d925614`](https://github.com/MountainGod2/cb-events/commit/d9256148bbe882f828ce7cad35c442a50be4c421))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.81.2
+  ([`10d6696`](https://github.com/MountainGod2/cb-events/commit/10d6696dd2b7476d8809e798a0273b20c562b41e))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.81.3
+  ([`fd4ad1f`](https://github.com/MountainGod2/cb-events/commit/fd4ad1f6cedbd880556aa1a0ad305d650202229d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.81.6
+  ([`99bce9b`](https://github.com/MountainGod2/cb-events/commit/99bce9b3db0ef6d642d2e74a8994319e84b2128a))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.81.8
+  ([`7828749`](https://github.com/MountainGod2/cb-events/commit/782874905a50c0247b27c8608c2f8c45ad641232))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.83.0
+  ([`4612d39`](https://github.com/MountainGod2/cb-events/commit/4612d39627ececb65763e84b27994f1282d17f70))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.83.1
+  ([`767cc79`](https://github.com/MountainGod2/cb-events/commit/767cc7901f508c613aa59df7559a935e6985bf89))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.84.0
+  ([`f129214`](https://github.com/MountainGod2/cb-events/commit/f1292145b3b3f1f22e704cc1b5c58c4e6e91f496))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.93.1
+  ([`dff8cce`](https://github.com/MountainGod2/cb-events/commit/dff8cce7f041b3bc8855a19a051d20c801d7946e))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v42.95.1
+  ([`2d38db1`](https://github.com/MountainGod2/cb-events/commit/2d38db10d0e675f7c7ea20a30fb4fbe3be9b8df6))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.10.2
+  ([`34fa37a`](https://github.com/MountainGod2/cb-events/commit/34fa37a7d3980057b020a4f6e5c6ecc45e09d44d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.14.1
+  ([`eaf6fa0`](https://github.com/MountainGod2/cb-events/commit/eaf6fa006eba15d8234e5ce6380e027f7ce2af5b))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.15.0
+  ([`02f8c75`](https://github.com/MountainGod2/cb-events/commit/02f8c7582530f21ce3b9ffa70bc72dbf056d3f9b))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.15.1
+  ([`8aaff5d`](https://github.com/MountainGod2/cb-events/commit/8aaff5dd2c3d4e016e2e3a283a1289b7a9f1d116))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.19.2
+  ([`1179f63`](https://github.com/MountainGod2/cb-events/commit/1179f6338183a94dc3e2f2441f591f82bae6b46c))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.3.4
+  ([`76a75cd`](https://github.com/MountainGod2/cb-events/commit/76a75cdc5641a996186bdc13a9e565d6c1d5ba04))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.4.0
+  ([`90a6ca3`](https://github.com/MountainGod2/cb-events/commit/90a6ca3e227eb26313dc5ab39f0255712f88f39d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.4.3
+  ([`ffcd73d`](https://github.com/MountainGod2/cb-events/commit/ffcd73d61ad2070880028c6ef008df5f375e2dba))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.5.4
+  ([`22bef3e`](https://github.com/MountainGod2/cb-events/commit/22bef3ecca33e65f0740989bda3b362552deb1fa))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.8.2
+  ([`738cbb8`](https://github.com/MountainGod2/cb-events/commit/738cbb84f44a345d14f753656be8744f0b7f4888))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.8.5
+  ([`5cff272`](https://github.com/MountainGod2/cb-events/commit/5cff272203a12d479d4e438a29c195341cf40a0a))
+
+- **python-dev-tools**: Update dependency bandit to v1.9.3
+  ([`adf0700`](https://github.com/MountainGod2/cb-events/commit/adf0700476154977ca19af744231f7ec09a062fa))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.48.2
+  ([`0bd8e18`](https://github.com/MountainGod2/cb-events/commit/0bd8e18f8220fe761fa439bd547c0ba10e348688))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.49.0
+  ([`690f345`](https://github.com/MountainGod2/cb-events/commit/690f345c10c75a14f348890803e05e900924173b))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.50.1
+  ([`669b670`](https://github.com/MountainGod2/cb-events/commit/669b6701b72ec69a9269b214c9966bae3ee8c652))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.51.0
+  ([`4e96691`](https://github.com/MountainGod2/cb-events/commit/4e9669169ab0f6d9ad60bddf0c99699074ceeeac))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.51.1
+  ([`123ce12`](https://github.com/MountainGod2/cb-events/commit/123ce12cf4caee225d63717f9bcdcbc3b67e2ad7))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.51.2
+  ([`57b874d`](https://github.com/MountainGod2/cb-events/commit/57b874d96cd33d133d2c742b8ea31a0e046e3f12))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.52.0
+  ([`8302c37`](https://github.com/MountainGod2/cb-events/commit/8302c37b4ebff4e489bf8b88083b64782d3aa23f))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.53.0
+  ([`ebe3fb4`](https://github.com/MountainGod2/cb-events/commit/ebe3fb4a71a79d4185e585dea92dc6c5b32f8bb1))
+
+- **python-dev-tools**: Update dependency ruff to v0.14.14
+  ([`a079c69`](https://github.com/MountainGod2/cb-events/commit/a079c6993f5f74a2bcc636f32b390997cacc8eb1))
+
+- **python-dev-tools**: Update dependency ruff to v0.15.0
+  ([`6274e3d`](https://github.com/MountainGod2/cb-events/commit/6274e3d90b74d82b66cad0a199b6b7ed03517777))
+
+- **python-dev-tools**: Update dependency ty to v0.0.12
+  ([`a58c7ed`](https://github.com/MountainGod2/cb-events/commit/a58c7edc8dfe3e0210349792bd8043bb67f73a9a))
+
+- **python-dev-tools**: Update dependency ty to v0.0.13
+  ([`6b4945f`](https://github.com/MountainGod2/cb-events/commit/6b4945f17f4c1654e9a0f5c1256758b2342173df))
+
+- **python-dev-tools**: Update dependency ty to v0.0.15
+  ([`be81b95`](https://github.com/MountainGod2/cb-events/commit/be81b95ef6437c013e6c7f3b0856f8789cf9e821))
+
+- **python-dev-tools**: Update dependency ty to v0.0.16
+  ([`2bb8582`](https://github.com/MountainGod2/cb-events/commit/2bb85826f80427813a23b6bf958da1a28058a90a))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([#53](https://github.com/MountainGod2/cb-events/pull/53),
+  [`ed84828`](https://github.com/MountainGod2/cb-events/commit/ed8482854f76c18fe7a0d69489e956bd6320c387))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`d8b98eb`](https://github.com/MountainGod2/cb-events/commit/d8b98eb91f963dbf1adba5af95dce6111b940cf7))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`9101a62`](https://github.com/MountainGod2/cb-events/commit/9101a62f73f08b1f93a1fbe09c3c30683e9713cc))
+
+- **python-docs**: Update dependency sphinx-autoapi to v3.7.0
+  ([`849d691`](https://github.com/MountainGod2/cb-events/commit/849d691eafea4f90618002b2bfa5eaf6c4fb9908))
+
+- **python-docs**: Update dependency sphinx-autodoc-typehints to v3.6.3
+  ([`ca5adf2`](https://github.com/MountainGod2/cb-events/commit/ca5adf2de64725309a4aac5000f365b43f2fe4ba))
+
+### Continuous Integration
+
+- Update codecov action and add report types
+  ([`3114fc3`](https://github.com/MountainGod2/cb-events/commit/3114fc372ff6ec6575d14e30abdf1afb61426b43))
+
+### Testing
+
+- **client**: Use pytest.approx for floating point assertions
+  ([`b5817d6`](https://github.com/MountainGod2/cb-events/commit/b5817d677f5fa922e89f822c0e0b5b8607678af3))
+
+
 ## v5.9.0 (2026-01-14)
 
 ### Bug Fixes
