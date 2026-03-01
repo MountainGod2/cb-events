@@ -68,7 +68,7 @@ docs = [
     "sphinx-copybutton==0.5.2",
 ]
 
-examples = ["python-dotenv == 1.2.1", "rich ==14.3.3"]
+examples = ["python-dotenv ==1.2.2", "rich ==14.3.3"]
 
 [tool.hatch]
 build.targets.wheel.packages = ["src/cb_events"]
