@@ -306,7 +306,7 @@ docs = [
     { name = "furo", specifier = "==2025.12.19" },
     { name = "sphinx", specifier = "==9.1.0" },
     { name = "sphinx-autoapi", specifier = "==3.7.0" },
-    { name = "sphinx-autodoc-typehints", specifier = "==3.8.0" },
+    { name = "sphinx-autodoc-typehints", specifier = "==3.9.2" },
     { name = "sphinx-copybutton", specifier = "==0.5.2" },
 ]
 examples = [
@@ -1626,14 +1626,14 @@ wheels = [
 
 [[package]]
 name = "sphinx-autodoc-typehints"
-version = "3.8.0"
+version = "3.9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ba/89/72f96fe27aa1cfdc882aa6e1309a86b94e4653c1e8acf9b143d34e89c619/sphinx_autodoc_typehints-3.8.0.tar.gz", hash = "sha256:155a30407e88ed3287eeeb1e9156b0ed0ad08c998b0391c652b540563132fd70", size = 59672, upload-time = "2026-02-25T15:00:35.909Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/54/bf48480f2db2d6e5afc43b0986baf76247a4a98892b59e2b7bb35dc991dd/sphinx_autodoc_typehints-3.9.2.tar.gz", hash = "sha256:c7d2fd31fc59fee1b7ea0ca67c36ad6ae9211516e720e04ec76660570d5d2ff9", size = 62101, upload-time = "2026-03-01T16:30:46.176Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/0e/36820830c766647d688dfc2b3fda76d76c1cf007eea58fffc1990195aca4/sphinx_autodoc_typehints-3.8.0-py3-none-any.whl", hash = "sha256:f348971f3d88eaee053668b61512e921086b8f0600f1e0887a39bc9476aca51c", size = 32616, upload-time = "2026-02-25T15:00:34.749Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/78/46ebaf094a704d73c97917aad7ce11a0a34746bfabb163932957b4ca038b/sphinx_autodoc_typehints-3.9.2-py3-none-any.whl", hash = "sha256:71770af4858d5ba3284435a8995b5ab6792b6dbee02c08721ebd17cfd056e726", size = 34443, upload-time = "2026-03-01T16:30:44.402Z" },
 ]
 
 [[package]]
