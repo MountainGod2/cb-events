@@ -1,4 +1,4 @@
-FROM dhi.io/python:3.14-alpine3.23-dev@sha256:4718517ca151ef9cc2b69acd948a30889bc842e13ae94793b78486ffa56b9126 AS builder
+FROM dhi.io/python:3.14-alpine3.23-dev@sha256:6283532010844a98b364a53f67856167308c3ed1403adf3aa5d0064e2bc0095e AS builder
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -15,7 +15,7 @@ RUN python -m venv /opt/venv && \
     uv build && \
     /opt/venv/bin/pip install --no-cache-dir dist/*.whl
 
-FROM dhi.io/python:3.14-alpine3.23@sha256:400a115ed742d57ba86a98153440f85f24733038286a9ce43092484e8a6c0f3e AS runtime
+FROM dhi.io/python:3.14-alpine3.23@sha256:f58c5334aed610cc6bd0d644d43f255db7b558da602c5c12cc07e94c4e20ed5c AS runtime
 
 ENV PATH="/opt/venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
