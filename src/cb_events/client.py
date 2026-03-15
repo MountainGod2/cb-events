@@ -84,6 +84,12 @@ logger: logging.Logger = logging.getLogger(__name__)
 class _TransientError(Exception):
     """Internal exception for triggering retries on bad status codes."""
 
+    def __init__(self, msg: str, status_code: int, response_text: str) -> None:
+        """Initialize exception with message and HTTP metadata."""
+        super().__init__(msg)
+        self.status_code = status_code
+        self.response_text = response_text
+
 
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
@@ -414,7 +420,7 @@ class EventClient:
 
         if status in RETRY_STATUS_CODES:
             msg = f"HTTP {status}"
-            raise _TransientError(msg)
+            raise _TransientError(msg, status_code=status, response_text=text)
 
         return status, text
 
@@ -452,7 +458,15 @@ class EventClient:
             if isinstance(original_exception, _TransientError)
             else original_exception
         )
-        raise EventsError(msg) from cause
+
+        status_code = getattr(original_exception, "status_code", 0)
+        response_text = getattr(original_exception, "response_text", "")
+
+        raise EventsError(
+            msg,
+            status_code=status_code,
+            response_text=response_text,
+        ) from cause
 
     async def _request(self, url: str) -> tuple[int, str]:
         """Make HTTP request with retries.
