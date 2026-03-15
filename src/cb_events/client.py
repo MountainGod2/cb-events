@@ -19,28 +19,18 @@ import logging
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import TYPE_CHECKING, Final, Self, cast, override
+from typing import Final, NoReturn, Self, cast, override
 from urllib.parse import quote, urljoin, urlparse
 
+import stamina
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
-from tenacity import (
-    AsyncRetrying,
-    RetryError,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from .config import ClientConfig
 from .exceptions import AuthError, EventsError
 from .models import Event
-
-if TYPE_CHECKING:
-    from tenacity import RetryCallState
-
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
@@ -389,6 +379,81 @@ class EventClient:
             f"{quote(self.token, safe='')}/?timeout={self.timeout}"
         )
 
+    def _next_sleep_for_attempt(self, attempt_num: int) -> float:
+        """Compute capped exponential backoff delay for the given attempt.
+
+        Returns:
+            Delay in seconds before the next retry.
+        """
+        sleep_seconds = self.config.retry_backoff * (
+            self.config.retry_factor ** (attempt_num - 1)
+        )
+        return min(sleep_seconds, self.config.retry_max_delay)
+
+    async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
+        """Perform one HTTP attempt and surface retryable status failures.
+
+        Args:
+            url: Fully qualified endpoint to request.
+
+        Returns:
+            Tuple of (status_code, response_text).
+
+        Raises:
+            EventsError: If the client session is unexpectedly unavailable.
+            _TransientError: If the response status should trigger a retry.
+        """
+        if self.session is None:
+            msg = "Client session unexpectedly unavailable"
+            raise EventsError(msg)
+
+        await self._rate_limiter.acquire()
+        async with self.session.get(url, allow_redirects=False) as response:
+            status = response.status
+            text = await response.text()
+
+        if status in RETRY_STATUS_CODES:
+            msg = f"HTTP {status}"
+            raise _TransientError(msg)
+
+        return status, text
+
+    def _raise_request_failure(
+        self,
+        *,
+        attempts_made: int,
+        original_exception: Exception,
+    ) -> NoReturn:
+        """Raise EventsError with contextual request failure details.
+
+        Raises:
+            EventsError: Always raised with contextual request failure details.
+        """
+        final_attempts = attempts_made or self.config.retry_attempts
+        logger.error(
+            "Request failed after %d attempts for user %s",
+            final_attempts,
+            self.username,
+            exc_info=original_exception,
+        )
+
+        attempt_label = "attempt" if final_attempts == 1 else "attempts"
+        failure_msg = (
+            f"Failed to fetch events after {final_attempts} {attempt_label}."
+        )
+        msg = (
+            f"{failure_msg} Check network connectivity and firewall "
+            "settings. Review API status at https://status.chaturbate.com."
+        )
+
+        # Unwrap _TransientError if that was the cause to avoid noise.
+        cause = (
+            None
+            if isinstance(original_exception, _TransientError)
+            else original_exception
+        )
+        raise EventsError(msg) from cause
+
     async def _request(self, url: str) -> tuple[int, str]:
         """Make HTTP request with retries.
 
@@ -400,7 +465,6 @@ class EventClient:
 
         Raises:
             EventsError: If the request fails after the configured retries.
-            _TransientError: Internal exception to trigger retries.
         """
         if self.session is None:
             init_msg = (
@@ -409,91 +473,53 @@ class EventClient:
             )
             raise EventsError(init_msg)
 
-        def _log_retry(retry_state: object) -> None:
-            state = cast("RetryCallState", retry_state)
+        attempts_made = 0
+        retriable_exc_types = (
+            ClientError,
+            TimeoutError,
+            OSError,
+            _TransientError,
+        )
 
-            if state.outcome is None or state.next_action is None:
-                return
+        retry_decisions = {"count": 0}
 
-            if state.outcome.failed:
-                exc = state.outcome.exception()
-                verb = "failed"
-            else:
-                exc = None
-                verb = "finished"
+        def _should_retry(exc: Exception) -> bool | float:
+            if not isinstance(exc, retriable_exc_types):
+                return False
 
-            logger.warning(
-                "Attempt %d/%d %s for user %s: %r. Retrying in %.2fs...",
-                state.attempt_number,
-                self.config.retry_attempts,
-                verb,
-                self.username,
-                exc,
-                state.next_action.sleep,
-            )
+            retry_decisions["count"] += 1
+            return self._next_sleep_for_attempt(retry_decisions["count"])
 
         try:
-            async for attempt in AsyncRetrying(
-                stop=stop_after_attempt(self.config.retry_attempts),
-                wait=wait_exponential(
-                    multiplier=self.config.retry_backoff,
-                    max=self.config.retry_max_delay,
-                    exp_base=self.config.retry_factor,
-                ),
-                retry=retry_if_exception_type((
-                    ClientError,
-                    TimeoutError,
-                    OSError,
-                    _TransientError,
-                )),
-                before_sleep=_log_retry,
+            async for attempt in stamina.retry_context(
+                on=_should_retry,
+                attempts=self.config.retry_attempts,
             ):
-                with attempt:
-                    await self._rate_limiter.acquire()
-                    async with self.session.get(
-                        url,
-                        allow_redirects=False,
-                    ) as response:
-                        status = response.status
-                        text = await response.text()
+                attempts_made = attempt.num
+                try:
+                    with attempt:
+                        return await self._perform_request_attempt(url)
+                except retriable_exc_types as exc:
+                    if attempts_made < self.config.retry_attempts:
+                        logger.warning(
+                            (
+                                "Attempt %d/%d failed for user %s: %r. "
+                                "Retrying in %.2fs..."
+                            ),
+                            attempts_made,
+                            self.config.retry_attempts,
+                            self.username,
+                            exc,
+                            self._next_sleep_for_attempt(attempts_made),
+                        )
+                    raise
 
-                        if status in RETRY_STATUS_CODES:
-                            msg = f"HTTP {status}"
-                            raise _TransientError(msg)
-                        return status, text
-
-        except RetryError as exc:
-            original_exception = exc.last_attempt.exception()
-
-            logger.exception(
-                "Request failed after %d attempts for user %s",
-                exc.last_attempt.attempt_number,
-                self.username,
+        except retriable_exc_types as original_exception:
+            self._raise_request_failure(
+                attempts_made=attempts_made,
+                original_exception=original_exception,
             )
 
-            attempt_label = (
-                "attempt"
-                if exc.last_attempt.attempt_number == 1
-                else "attempts"
-            )
-            failure_msg = (
-                f"Failed to fetch events after "
-                f"{exc.last_attempt.attempt_number} {attempt_label}."
-            )
-            msg = (
-                f"{failure_msg} Check network connectivity and firewall "
-                "settings. Review API status at https://status.chaturbate.com."
-            )
-
-            # Unwrap _TransientError if that was the cause to avoid noise
-            if isinstance(original_exception, _TransientError):
-                cause = None
-            else:
-                cause = original_exception
-
-            raise EventsError(msg) from cause
-
-        # Should be unreachable
         msg = "Unexpected error in request loop"
         raise EventsError(msg)
 

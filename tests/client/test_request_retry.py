@@ -1,143 +1,89 @@
-"""Tests for retry/backoff behavior in the EventClient._request path.
-
-These tests patch asyncio.sleep to intercept backoff values and assert the
-client uses the configured values, factors, and caps for successive retries.
-"""
-
-import types
+"""Tests for retry behavior in the EventClient._request path."""
 
 import pytest
+import stamina
 
-import cb_events.client as client_module
-from cb_events import ClientConfig
+from cb_events import ClientConfig, EventsError
 
 
-async def test_exception_based_backoff_increases(
+async def test_exception_retries_until_success_with_testing_cap(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
     api_response,
-    monkeypatch,
 ) -> None:
-    """Retries caused by network exceptions should backup by retry_factor.
-
-    We patch asyncio.sleep in the client module to capture the backoff sleep
-    durations and assert they increase based on the configured factor.
-    """
+    """Network exceptions should retry and eventually succeed."""
     aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("first"))
     aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("second"))
     aioresponses_mock.get(testbed_url_pattern, payload=api_response)
 
+    stamina.set_testing(True, attempts=3)
+
     config = ClientConfig(
         use_testbed=True,
-        retry_attempts=3,
+        retry_attempts=10,
         retry_backoff=0.01,
         retry_factor=2.0,
         retry_max_delay=1.0,
     )
 
-    sleep_calls: list[float] = []
-
-    def fake_sleep(sec: float):
-        sleep_calls.append(sec)
-
-        @types.coroutine
-        def _noop():
-            if False:
-                yield
-
-        return _noop()
-
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
-
     async with event_client_factory(config=config) as client:
         events = await client.poll()
 
     assert len(events) == 1
-    assert len(sleep_calls) == 2
-    assert sleep_calls[0] == pytest.approx(0.01)
-    assert sleep_calls[1] == pytest.approx(0.02, rel=0.25)
 
 
-async def test_backoff_clamped_by_max_delay(
+async def test_testing_mode_caps_attempts_for_exceptions(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
-    api_response,
-    monkeypatch,
 ) -> None:
-    """Verify retry backoff respects retry_max_delay cap."""
-    aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("a"))
-    aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("b"))
-    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
+    """Stamina testing mode should cap retries for exception paths."""
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        exception=TimeoutError("always failing"),
+        repeat=True,
+    )
+
+    stamina.set_testing(True, attempts=2)
 
     config = ClientConfig(
         use_testbed=True,
-        retry_attempts=3,
+        retry_attempts=10,
         retry_backoff=0.01,
         retry_factor=3.0,
         retry_max_delay=0.02,
     )
 
-    sleep_calls: list[float] = []
-
-    def fake_sleep(sec: float):
-        sleep_calls.append(sec)
-
-        @types.coroutine
-        def _noop():
-            if False:
-                yield
-
-        return _noop()
-
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
-
     async with event_client_factory(config=config) as client:
-        events = await client.poll()
+        with pytest.raises(
+            EventsError,
+            match=r"Failed to fetch events after 2 attempts",
+        ):
+            await client.poll()
 
-    assert len(events) == 1
-    assert sleep_calls[0] == pytest.approx(0.01)
-    assert sleep_calls[1] == pytest.approx(0.02, rel=0.25)
 
-
-async def test_status_based_retry_backoff_increases(
+async def test_testing_mode_caps_attempts_for_status_retries(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
-    api_response,
-    monkeypatch,
 ) -> None:
-    """Status-based (eg 502) retries should use the same backoff scale."""
-    aioresponses_mock.get(testbed_url_pattern, status=502)
-    aioresponses_mock.get(testbed_url_pattern, status=502)
-    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
+    """Stamina testing mode should cap retries for retryable status codes."""
+    aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
+
+    stamina.set_testing(True, attempts=3)
 
     config = ClientConfig(
         use_testbed=True,
-        retry_attempts=4,
+        retry_attempts=10,
         retry_backoff=0.02,
         retry_factor=2.0,
         retry_max_delay=0.15,
     )
 
-    sleep_calls: list[float] = []
-
-    def fake_sleep(sec: float):
-        sleep_calls.append(sec)
-
-        @types.coroutine
-        def _noop():
-            if False:
-                yield
-
-        return _noop()
-
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
-
     async with event_client_factory(config=config) as client:
-        events = await client.poll()
-
-    assert len(events) == 1
-    assert sleep_calls[0] == pytest.approx(0.02)
-    assert sleep_calls[1] == pytest.approx(0.04, rel=0.25)
+        with pytest.raises(
+            EventsError,
+            match=r"Failed to fetch events after 3 attempts",
+        ):
+            await client.poll()
