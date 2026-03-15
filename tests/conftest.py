@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
+import stamina
 from aioresponses import aioresponses
 
 from cb_events import (
@@ -29,6 +30,20 @@ class EventClientFactory(Protocol):
         use_testbed: bool = ...,
         **config_overrides: object,
     ) -> AbstractAsyncContextManager[EventClient]: ...
+
+
+@pytest.fixture(autouse=True)
+def reset_stamina_state() -> Iterator[None]:
+    """Reset Stamina global testing/active flags around each test.
+
+    Yields:
+        None: Just a marker to indicate this is a fixture with setup/teardown.
+    """
+    stamina.set_active(True)
+    stamina.set_testing(False)
+    yield
+    stamina.set_active(True)
+    stamina.set_testing(False)
 
 
 @pytest.fixture
