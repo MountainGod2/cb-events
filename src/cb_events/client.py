@@ -459,8 +459,8 @@ class EventClient:
             else original_exception
         )
 
-        status_code = getattr(original_exception, "status_code", 0)
-        response_text = getattr(original_exception, "response_text", "")
+        status_code = getattr(original_exception, "status_code", None)
+        response_text = getattr(original_exception, "response_text", None)
 
         raise EventsError(
             msg,
