@@ -33,7 +33,7 @@ class EventClientFactory(Protocol):
 
 
 @pytest.fixture(autouse=True)
-def reset_stamina_state() -> None:
+def reset_stamina_state() -> Iterator[None]:
     """Reset Stamina global testing/active flags around each test.
 
     Yields:
