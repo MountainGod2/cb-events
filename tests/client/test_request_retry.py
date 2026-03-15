@@ -6,6 +6,27 @@ import stamina
 from cb_events import ClientConfig, EventsError
 
 
+async def test_exponential_backoff_schedule_and_clamping(
+    event_client_factory,
+) -> None:
+    """Verify exponential backoff calculation and max-clamping."""
+    stamina.set_testing(True, attempts=4)
+
+    config = ClientConfig(
+        use_testbed=True,
+        retry_attempts=10,
+        retry_backoff=0.01,
+        retry_factor=2.0,
+        retry_max_delay=0.03,
+    )
+
+    async with event_client_factory(config=config) as client:
+        assert client._next_sleep_for_attempt(1) == pytest.approx(0.01)
+        assert client._next_sleep_for_attempt(2) == pytest.approx(0.02)
+        assert client._next_sleep_for_attempt(3) == pytest.approx(0.03)
+        assert client._next_sleep_for_attempt(4) == pytest.approx(0.03)
+
+
 async def test_exception_retries_until_success_with_testing_cap(
     event_client_factory,
     aioresponses_mock,
