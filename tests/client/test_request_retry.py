@@ -4,6 +4,7 @@ import pytest
 import stamina
 
 from cb_events import ClientConfig, EventsError, EventType
+from tests.helpers import make_event, make_response
 
 
 async def test_exponential_backoff_schedule_and_clamping(
@@ -31,12 +32,12 @@ async def test_exception_retries_until_success_with_testing_cap(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
-    api_response,
 ) -> None:
     """Network exceptions should retry and eventually succeed."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("first"))
     aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("second"))
-    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
     stamina.set_testing(True, attempts=3)
 
@@ -91,12 +92,13 @@ async def test_testing_mode_caps_attempts(
 
 
 async def test_retries_on_retry_status_codes_then_succeeds(
-    event_client_factory, aioresponses_mock, testbed_url_pattern, api_response
+    event_client_factory, aioresponses_mock, testbed_url_pattern
 ) -> None:
     """Client should retry on HTTP status codes in RETRY_STATUS_CODES and
     eventually return events when a subsequent request succeeds."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, status=502)
-    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
     config = ClientConfig(use_testbed=True, retry_attempts=2, retry_backoff=0.0)
     async with event_client_factory(config=config) as client:

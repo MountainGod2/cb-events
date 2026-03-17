@@ -11,9 +11,7 @@ from cb_events.config import ClientConfig
 from cb_events.exceptions import AuthError, EventsError
 from cb_events.models import EventType
 from tests.helpers import (
-    ALL_EVENT_TYPES,
     CORE_EVENT_TYPES,
-    ITERATION_EVENT_TYPES,
     TESTBED_BASE_URL,
     make_event,
     make_response,
@@ -21,7 +19,7 @@ from tests.helpers import (
 )
 
 
-@pytest.mark.parametrize("method", ALL_EVENT_TYPES)
+@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_poll_returns_events(
     method,
     event_client_factory,
@@ -80,31 +78,38 @@ async def test_poll_handles_multiple_events(
     ]
 
 
-@pytest.mark.parametrize("method", ITERATION_EVENT_TYPES)
-async def test_async_iteration_and_aiter_yields_events(
-    method,
+async def test_aiter_protocol_yields_events(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
 ) -> None:
-    """Events should be yielded correctly via both async iteration and direct
-    __aiter__ calls."""
-    response = make_response([make_event(method, event_id="1")])
+    """Events should be accessible via the async iterator protocol directly."""
+    response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, payload=response, repeat=True)
 
     async with event_client_factory() as client:
-        # Test __aiter__ directly
         event = await anext(aiter(client))
-        assert event.type == method
 
-        # Test async for loop
-        events = []
+    assert event.type == EventType.TIP
+
+
+async def test_async_for_loop_yields_events(
+    event_client_factory,
+    aioresponses_mock,
+    testbed_url_pattern,
+) -> None:
+    """Events should be yielded correctly via async for loops."""
+    response = make_response([make_event(EventType.TIP, event_id="1")])
+    aioresponses_mock.get(testbed_url_pattern, payload=response, repeat=True)
+
+    events = []
+    async with event_client_factory() as client:
         async for evt in client:
             events.append(evt)
             break
 
     assert len(events) == 1
-    assert events[0].type == method
+    assert events[0].type == EventType.TIP
 
 
 async def test_rate_limit_error(
@@ -465,12 +470,10 @@ async def test_lenient_validation_skips_invalid_events(
     assert events[0].type == EventType.FOLLOW
 
 
-@pytest.mark.parametrize("method", ALL_EVENT_TYPES)
 async def test_concurrent_polls_serialized(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
-    method,
 ) -> None:
     """Concurrent ``poll`` calls should run serially via the internal lock."""
     base_url = TESTBED_BASE_URL
@@ -478,9 +481,15 @@ async def test_concurrent_polls_serialized(
     next_url_2 = f"{base_url}&next=2"
 
     responses = [
-        make_response([make_event(method, event_id="1")], next_url=next_url_1),
-        make_response([make_event(method, event_id="2")], next_url=next_url_2),
-        make_response([make_event(method, event_id="3")], next_url=base_url),
+        make_response(
+            [make_event(EventType.TIP, event_id="1")], next_url=next_url_1
+        ),
+        make_response(
+            [make_event(EventType.TIP, event_id="2")], next_url=next_url_2
+        ),
+        make_response(
+            [make_event(EventType.TIP, event_id="3")], next_url=base_url
+        ),
     ]
 
     for response in responses:
@@ -493,31 +502,6 @@ async def test_concurrent_polls_serialized(
 
     assert len(results) == 3
     assert all(
-        len(events) == 1 and events[0].type == method for events in results
+        len(events) == 1 and events[0].type == EventType.TIP
+        for events in results
     )
-
-
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
-async def test_state_protection_during_concurrency(
-    event_client_factory,
-    aioresponses_mock,
-    testbed_url_pattern,
-    method,
-) -> None:
-    """Concurrent calls should not corrupt the stored ``_next_url`` value."""
-    base_url = TESTBED_BASE_URL
-    next_url = f"{base_url}&next=1"
-
-    responses = [
-        make_response([make_event(method, event_id="1")], next_url=next_url),
-        make_response([make_event(method, event_id="2")], next_url=base_url),
-    ]
-
-    for response in responses:
-        aioresponses_mock.get(testbed_url_pattern, payload=response)
-
-    async with event_client_factory() as client:
-        results = await asyncio.gather(client.poll(), client.poll())
-
-    assert len(results) == 2
-    assert all(len(events) == 1 for events in results)

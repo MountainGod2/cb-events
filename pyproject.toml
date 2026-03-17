@@ -143,6 +143,7 @@ unfixable = []
     "D208",
     "D209",
     "FBT001",
+    "PLC2701", # Allow private import for testing
     "PLR2004",
     "PLR0913",
     "PLR0917",
@@ -153,7 +154,6 @@ unfixable = []
     "SLF001",
 ]
 "tests/conftest.py" = ["D101", "D102", "D103"]
-
 "tests/router/test_router.py" = ["ANN002", "ANN003", "ANN204"]
 
 [tool.ruff.lint.pydocstyle]

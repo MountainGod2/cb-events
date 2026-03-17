@@ -8,29 +8,16 @@ from cb_events import Event, EventType
 from cb_events.models import Message, RoomSubject, Tip, User
 
 
-@pytest.mark.parametrize(
-    ("method", "expected_type"),
-    [
-        ("tip", EventType.TIP),
-        ("chatMessage", EventType.CHAT_MESSAGE),
-        ("broadcastStart", EventType.BROADCAST_START),
-        ("userEnter", EventType.USER_ENTER),
-        ("follow", EventType.FOLLOW),
-        ("roomSubjectChange", EventType.ROOM_SUBJECT_CHANGE),
-        ("privateMessage", EventType.PRIVATE_MESSAGE),
-        ("fanclubJoin", EventType.FANCLUB_JOIN),
-        ("unfollow", EventType.UNFOLLOW),
-        ("userLeave", EventType.USER_LEAVE),
-        ("broadcastStop", EventType.BROADCAST_STOP),
-        ("mediaPurchase", EventType.MEDIA_PURCHASE),
-    ],
-)
-def test_event_type_mapping(method: str, expected_type: EventType) -> None:
-    """Event method strings should map to the correct enum member."""
-    event_data = {"method": method, "id": "test_id", "object": {}}
-    event = Event.model_validate(event_data)
+@pytest.mark.parametrize("event_type", EventType)
+def test_event_type_mapping(event_type: EventType) -> None:
+    """Every EventType value should round-trip through model validation."""
+    event = Event.model_validate({
+        "method": event_type.value,
+        "id": "test_id",
+        "object": {},
+    })
 
-    assert event.type == expected_type
+    assert event.type == event_type
 
 
 def test_event_properties_parsed() -> None:

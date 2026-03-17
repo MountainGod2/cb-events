@@ -11,7 +11,6 @@ from cb_events import AuthError, EventsError
         ("Test error message", None, None, "Test error message"),
         ("Request failed", 500, None, "Request failed (HTTP 500)"),
         ("Test error", 404, "Not found response", "Test error (HTTP 404)"),
-        ("Simple error", None, None, "Simple error"),
     ],
 )
 def test_events_error_properties_and_str(

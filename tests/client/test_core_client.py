@@ -1,12 +1,17 @@
 """Core tests for client initialization, configuration and utils."""
 
-from importlib import import_module
 from urllib.parse import quote
 
 import pytest
 from pydantic import ValidationError
 
 from cb_events import ClientConfig, EventClient
+from cb_events.client import (
+    TOKEN_VISIBLE_CHARS,
+    _mask_token,
+    _mask_url,
+    _parse_events,
+)
 from cb_events.exceptions import AuthError
 
 
@@ -34,13 +39,6 @@ def test_reject_invalid_credentials(
     """Invalid credentials should raise an ``AuthError`` with guidance."""
     with pytest.raises(AuthError, match=message):
         EventClient(username, token)
-
-
-client_module = import_module("cb_events.client")
-_mask_url = client_module._mask_url
-_mask_token = client_module._mask_token
-_parse_events = client_module._parse_events
-TOKEN_VISIBLE_CHARS = client_module.TOKEN_VISIBLE_CHARS
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
@@ -99,7 +97,9 @@ def test_parse_events_strict_and_lenient(
     assert "<unknown>" in caplog.text
 
 
-def test_parse_events_logs_invalid_fields(caplog) -> None:
+def test_parse_events_logs_invalid_fields(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Report nested invalid fields are logged when parsing events."""
     caplog.set_level("WARNING")
     invalid_nested = {
