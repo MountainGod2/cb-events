@@ -34,11 +34,6 @@ class EventClientFactory(Protocol):
 
 @pytest.fixture(autouse=True)
 def reset_stamina_state() -> Iterator[None]:
-    """Reset Stamina global testing/active flags around each test.
-
-    Yields:
-        None: Just a marker to indicate this is a fixture with setup/teardown.
-    """
     stamina.set_active(True)
     stamina.set_testing(False)
     yield

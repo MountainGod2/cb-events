@@ -75,30 +75,35 @@ def test_user_field_mapping() -> None:
     assert user.is_follower is True
 
 
-def test_message_public() -> None:
-    """Messages without sender/recipient should not be private."""
-    message_data = {"message": "Hello everyone!"}
-
+@pytest.mark.parametrize(
+    ("message_data", "expected_is_private", "expected_from", "expected_to"),
+    [
+        ({"message": "Hello everyone!"}, False, None, None),
+        (
+            {
+                "message": "Private hello",
+                "fromUser": "sender",
+                "toUser": "receiver",
+            },
+            True,
+            "sender",
+            "receiver",
+        ),
+    ],
+)
+def test_message_privacy(
+    message_data: dict[str, str],
+    expected_is_private: bool,
+    expected_from: str | None,
+    expected_to: str | None,
+) -> None:
+    """Message privacy depends on sender and recipient fields."""
     message = Message.model_validate(message_data)
 
-    assert message.message == "Hello everyone!"
-    assert not message.is_private
-
-
-def test_message_private() -> None:
-    """Messages with sender and recipient should read as private."""
-    message_data = {
-        "message": "Private hello",
-        "fromUser": "sender",
-        "toUser": "receiver",
-    }
-
-    message = Message.model_validate(message_data)
-
-    assert message.message == "Private hello"
-    assert message.from_user == "sender"
-    assert message.to_user == "receiver"
-    assert message.is_private
+    assert message.message == message_data["message"]
+    assert message.is_private is expected_is_private
+    assert message.from_user == expected_from
+    assert message.to_user == expected_to
 
 
 def test_tip_fields() -> None:
@@ -152,14 +157,41 @@ def test_media_missing_payload_returns_none() -> None:
     assert event.media is None
 
 
-def test_media_validation_error_logs(caplog: pytest.LogCaptureFixture) -> None:
-    """Invalid media payload should log and return None instead of raising."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
-    event = Event.model_validate(
-        {
-            "method": "mediaPurchase",
-            "id": "evt-media-3",
-            "object": {
+@pytest.mark.parametrize(
+    ("method", "event_id", "invalid_object", "attr_name", "log_msg"),
+    [
+        (
+            "tip",
+            "evt-user",
+            {"user": {"username": None}},
+            "user",
+            "Invalid user",
+        ),
+        (
+            "tip",
+            "evt-tip",
+            {"tip": {"message": "missing tokens"}},
+            "tip",
+            "Invalid tip",
+        ),
+        (
+            "chatMessage",
+            "evt-msg",
+            {"message": {}},
+            "message",
+            "Invalid message",
+        ),
+        (
+            "roomSubjectChange",
+            "evt-subject",
+            {"subject": 123},
+            "room_subject",
+            "Invalid subject",
+        ),
+        (
+            "mediaPurchase",
+            "evt-media-3",
+            {
                 "media": {
                     "id": "m1",
                     "name": "clip",
@@ -167,69 +199,31 @@ def test_media_validation_error_logs(caplog: pytest.LogCaptureFixture) -> None:
                     "tokens": "abc",
                 }
             },
-        },
-    )
-
-    assert event.media is None
-    assert "Invalid media in event evt-media-3" in caplog.text
-    assert "tokens" in caplog.text
-
-
-def test_event_user_validation_error(caplog: pytest.LogCaptureFixture) -> None:
-    """Invalid user payloads should be skipped with logged details."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
-    event = Event.model_validate({
-        "method": "tip",
-        "id": "evt-user",
-        "object": {"user": {"username": None}},
-    })
-
-    assert event.user is None
-    assert event.user is None  # cached value should remain None
-    assert "Invalid user in event evt-user" in caplog.text
-
-
-def test_event_tip_validation_error(caplog: pytest.LogCaptureFixture) -> None:
-    """Tip events with invalid tip data should log and return None."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
-    event = Event.model_validate({
-        "method": "tip",
-        "id": "evt-tip",
-        "object": {"tip": {"message": "missing tokens"}},
-    })
-
-    assert event.tip is None
-    assert "Invalid tip in event evt-tip" in caplog.text
-
-
-def test_event_message_validation_error(
+            "media",
+            "Invalid media",
+        ),
+    ],
+)
+def test_event_property_validation_errors_logged(
     caplog: pytest.LogCaptureFixture,
+    method: str,
+    event_id: str,
+    invalid_object: dict,
+    attr_name: str,
+    log_msg: str,
 ) -> None:
-    """Message events with invalid payloads should be ignored."""
+    """When event properties fail validation, they should return None."""
     caplog.set_level(logging.WARNING, logger="cb_events.models")
     event = Event.model_validate({
-        "method": "chatMessage",
-        "id": "evt-msg",
-        "object": {"message": {}},
+        "method": method,
+        "id": event_id,
+        "object": invalid_object,
     })
 
-    assert event.message is None
-    assert "Invalid message in event evt-msg" in caplog.text
-
-
-def test_event_room_subject_validation_error(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Room subject events should handle invalid payloads gracefully."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
-    event = Event.model_validate({
-        "method": "roomSubjectChange",
-        "id": "evt-subject",
-        "object": {"subject": 123},  # Invalid type
-    })
-
-    assert event.room_subject is None
-    assert "Invalid subject in event evt-subject" in caplog.text
+    assert getattr(event, attr_name) is None
+    # Access again to test cached value
+    assert getattr(event, attr_name) is None
+    assert f"{log_msg} in event {event_id}" in caplog.text
 
 
 def test_event_broadcaster_property() -> None:

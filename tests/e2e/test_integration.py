@@ -28,7 +28,8 @@ async def test_client_router_workflow(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Sanity check that polling feeds into the router dispatch pipeline."""
+    """Test the end-to-end workflow of receiving events and dispatching them
+    through the router."""
     router = Router()
     events_received: list[Any] = []
 

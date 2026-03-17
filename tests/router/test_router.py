@@ -15,9 +15,9 @@ from tests.helpers import ALL_EVENT_TYPES, CORE_EVENT_TYPES, make_event
 
 @pytest.mark.parametrize("method", ALL_EVENT_TYPES)
 async def test_dispatch_to_specific_handler(
-    router: Router,
-    mock_handler: AsyncMock,
-    method: EventType,
+    router,
+    mock_handler,
+    method,
 ) -> None:
     """An event should reach the handler registered for its type."""
     router.on(method)(mock_handler)
@@ -30,9 +30,9 @@ async def test_dispatch_to_specific_handler(
 
 @pytest.mark.parametrize("method", ALL_EVENT_TYPES)
 async def test_dispatch_to_any_handler(
-    router: Router,
-    mock_handler: AsyncMock,
-    method: EventType,
+    router,
+    mock_handler,
+    method,
 ) -> None:
     """Handlers via ``on_any`` receive events regardless of type."""
     router.on_any()(mock_handler)
@@ -45,8 +45,8 @@ async def test_dispatch_to_any_handler(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_dispatch_calls_multiple_handlers_in_order(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """All handlers registered for a specific type should execute."""
     handler_one = AsyncMock()
@@ -63,8 +63,8 @@ async def test_dispatch_calls_multiple_handlers_in_order(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_no_error_when_no_handlers(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Dispatching without handlers should simply no-op."""
     event = Event.model_validate(make_event(method, event_id="test"))
@@ -73,8 +73,8 @@ async def test_no_error_when_no_handlers(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_any_handlers_called_before_specific(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """``on_any`` handlers should run before type-specific handlers."""
     specific_handler = AsyncMock()
@@ -108,9 +108,9 @@ async def test_any_handlers_called_before_specific(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_handler_exception_logged(
-    router: Router,
-    method: EventType,
-    caplog: pytest.LogCaptureFixture,
+    router,
+    method,
+    caplog,
 ) -> None:
     """Handler exceptions should be logged without stopping dispatch."""
 
@@ -129,8 +129,8 @@ async def test_handler_exception_logged(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_handler_failure_does_not_stop_execution(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Handlers after a failing one should still run."""
     handler_one = AsyncMock(side_effect=ValueError("Handler 1 failed"))
@@ -148,7 +148,7 @@ async def test_handler_failure_does_not_stop_execution(
     handler_three.assert_called_once_with(event)
 
 
-def test_reject_non_async_handler_on_decorator(router: Router) -> None:
+def test_reject_non_async_handler_on_decorator(router) -> None:
     """Registering a non-async handler with on() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
@@ -157,7 +157,7 @@ def test_reject_non_async_handler_on_decorator(router: Router) -> None:
             pass
 
 
-def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
+def test_reject_non_async_handler_on_any_decorator(router) -> None:
     """Registering a non-async handler with on_any() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
@@ -167,7 +167,7 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
 
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
-def test_reject_partial_sync_handler(router: Router, method: EventType) -> None:
+def test_reject_partial_sync_handler(router, method) -> None:
     """Partial objects wrapping sync handlers should be rejected."""
 
     def sync_handler(event: Event, *, flag: bool) -> None:
@@ -179,8 +179,8 @@ def test_reject_partial_sync_handler(router: Router, method: EventType) -> None:
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_accept_partial_async_handler(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Async handlers wrapped in functools.partial should register."""
     seen: list[str] = []
@@ -198,8 +198,8 @@ async def test_accept_partial_async_handler(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_accept_async_callable_object(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Callable objects with async __call__ should register."""
     seen: list[str] = []
@@ -218,8 +218,8 @@ async def test_accept_async_callable_object(
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_cancelled_error_propagates(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Dispatch should not swallow CancelledError from handlers."""
 
@@ -251,7 +251,7 @@ async def test_cancelled_error_propagates(
     ],
 )
 def test_handler_name_prefers_underlying_callable(
-    factory: Callable[[], object],
+    factory,
 ) -> None:
     """_handler_name should unwrap helpers until it finds a function name."""
     handler = factory()
@@ -278,8 +278,8 @@ def test_router_reports_wrapped_handler_name(router: Router) -> None:
 
 @pytest.mark.parametrize("method", CORE_EVENT_TYPES)
 async def test_accept_handler_wrapper_with_func_attr(
-    router: Router,
-    method: EventType,
+    router,
+    method,
 ) -> None:
     """Handlers wrapped in an object with a 'func' attribute should register."""
 

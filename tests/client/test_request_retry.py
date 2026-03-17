@@ -3,7 +3,7 @@
 import pytest
 import stamina
 
-from cb_events import ClientConfig, EventsError
+from cb_events import ClientConfig, EventsError, EventType
 
 
 async def test_exponential_backoff_schedule_and_clamping(
@@ -54,17 +54,23 @@ async def test_exception_retries_until_success_with_testing_cap(
     assert len(events) == 1
 
 
-async def test_testing_mode_caps_attempts_for_exceptions(
+@pytest.mark.parametrize("is_exception", [True, False])
+async def test_testing_mode_caps_attempts(
     event_client_factory,
     aioresponses_mock,
     testbed_url_pattern,
+    is_exception: bool,
 ) -> None:
-    """Stamina testing mode should cap retries for exception paths."""
-    aioresponses_mock.get(
-        testbed_url_pattern,
-        exception=TimeoutError("always failing"),
-        repeat=True,
-    )
+    """When testing mode is enabled, the client should stop retrying after the
+    specified number of attempts, even if retry conditions persist."""
+    if is_exception:
+        aioresponses_mock.get(
+            testbed_url_pattern,
+            exception=TimeoutError("always failing"),
+            repeat=True,
+        )
+    else:
+        aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
 
     stamina.set_testing(True, attempts=2)
 
@@ -84,27 +90,17 @@ async def test_testing_mode_caps_attempts_for_exceptions(
             await client.poll()
 
 
-async def test_testing_mode_caps_attempts_for_status_retries(
-    event_client_factory,
-    aioresponses_mock,
-    testbed_url_pattern,
+async def test_retries_on_retry_status_codes_then_succeeds(
+    event_client_factory, aioresponses_mock, testbed_url_pattern, api_response
 ) -> None:
-    """Stamina testing mode should cap retries for retryable status codes."""
-    aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
+    """Client should retry on HTTP status codes in RETRY_STATUS_CODES and
+    eventually return events when a subsequent request succeeds."""
+    aioresponses_mock.get(testbed_url_pattern, status=502)
+    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
 
-    stamina.set_testing(True, attempts=3)
-
-    config = ClientConfig(
-        use_testbed=True,
-        retry_attempts=10,
-        retry_backoff=0.02,
-        retry_factor=2.0,
-        retry_max_delay=0.15,
-    )
-
+    config = ClientConfig(use_testbed=True, retry_attempts=2, retry_backoff=0.0)
     async with event_client_factory(config=config) as client:
-        with pytest.raises(
-            EventsError,
-            match=r"Failed to fetch events after 3 attempts",
-        ):
-            await client.poll()
+        events = await client.poll()
+
+    assert len(events) == 1
+    assert events[0].type == EventType.TIP
