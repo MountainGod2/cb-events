@@ -19,8 +19,8 @@ def test_events_error_properties_and_str(
     response_text: str | None,
     expected_str: str,
 ) -> None:
-    """EventsError should include message, status code, and response text in its
-    string representation."""
+    """EventsError should include message and optional HTTP status in its string
+    representation, and store status_code and response_text as attributes."""
     error = EventsError(
         message, status_code=status_code, response_text=response_text
     )

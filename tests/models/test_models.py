@@ -1,6 +1,7 @@
 """Model validation tests for :mod:`cb_events.models`."""
 
 import logging
+from typing import Any
 
 import pytest
 
@@ -195,7 +196,7 @@ def test_event_property_validation_errors_logged(
     caplog: pytest.LogCaptureFixture,
     method: str,
     event_id: str,
-    invalid_object: dict,
+    invalid_object: dict[str, Any],
     attr_name: str,
     log_msg: str,
 ) -> None:
