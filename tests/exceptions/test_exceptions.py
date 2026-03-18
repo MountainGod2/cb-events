@@ -1,42 +1,34 @@
 """Tests for exception hierarchy and messaging."""
 
+import pytest
+
 from cb_events import AuthError, EventsError
 
 
-def test_events_error_message_round_trip() -> None:
-    """Error messages should be preserved verbatim."""
-    error = EventsError("Test error message")
-
-    assert str(error) == "Test error message"
-    assert isinstance(error, Exception)
-
-
-def test_events_error_with_status_code() -> None:
-    """Status codes should appear in the string representation."""
-    error = EventsError("Request failed", status_code=500)
-
-    assert str(error) == "Request failed (HTTP 500)"
-    assert error.status_code == 500
-
-
-def test_events_error_attributes() -> None:
-    """Error attributes should be accessible."""
+@pytest.mark.parametrize(
+    ("message", "status_code", "response_text", "expected_str"),
+    [
+        ("Test error message", None, None, "Test error message"),
+        ("Request failed", 500, None, "Request failed (HTTP 500)"),
+        ("Test error", 404, "Not found response", "Test error (HTTP 404)"),
+    ],
+)
+def test_events_error_properties_and_str(
+    message: str,
+    status_code: int | None,
+    response_text: str | None,
+    expected_str: str,
+) -> None:
+    """EventsError should include message and optional HTTP status in its string
+    representation, and store status_code and response_text as attributes."""
     error = EventsError(
-        "Test error", status_code=404, response_text="Not found response"
+        message, status_code=status_code, response_text=response_text
     )
 
-    assert error.status_code == 404
-    assert error.response_text == "Not found response"
-    assert str(error) == "Test error (HTTP 404)"
-
-
-def test_events_error_minimal() -> None:
-    """Error should work with only message."""
-    error = EventsError("Simple error")
-
-    assert error.status_code is None
-    assert error.response_text is None
-    assert str(error) == "Simple error"
+    assert str(error) == expected_str
+    assert error.status_code == status_code
+    assert error.response_text == response_text
+    assert isinstance(error, Exception)
 
 
 def test_auth_error_inherits_events_error() -> None:
@@ -45,3 +37,14 @@ def test_auth_error_inherits_events_error() -> None:
 
     assert isinstance(error, EventsError)
     assert str(error) == "Authentication failed"
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_auth_error_with_status_codes(status_code: int) -> None:
+    """AuthError should include HTTP status code in its string representation
+    when provided."""
+    error = AuthError("Unauthorized", status_code=status_code)
+
+    assert str(error) == f"Unauthorized (HTTP {status_code})"
+    assert error.status_code == status_code
+    assert isinstance(error, EventsError)

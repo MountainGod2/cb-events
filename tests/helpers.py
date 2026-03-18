@@ -9,20 +9,10 @@ from cb_events import EventType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-ALL_EVENT_TYPES: tuple[EventType, ...] = tuple(EventType)
-
 CORE_EVENT_TYPES: tuple[EventType, ...] = (
     EventType.TIP,
     EventType.FOLLOW,
     EventType.CHAT_MESSAGE,
-)
-
-ITERATION_EVENT_TYPES: tuple[EventType, ...] = (
-    EventType.TIP,
-    EventType.FOLLOW,
-    EventType.CHAT_MESSAGE,
-    EventType.BROADCAST_START,
-    EventType.PRIVATE_MESSAGE,
 )
 
 TESTBED_BASE_URL = (

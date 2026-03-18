@@ -3,19 +3,16 @@
 import re
 from collections.abc import AsyncIterator, Iterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Any, Protocol
+from typing import Protocol
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 import stamina
 from aioresponses import aioresponses
 
 from cb_events import (
     ClientConfig,
-    Event,
     EventClient,
-    EventType,
     Router,
 )
 
@@ -34,21 +31,11 @@ class EventClientFactory(Protocol):
 
 @pytest.fixture(autouse=True)
 def reset_stamina_state() -> Iterator[None]:
-    """Reset Stamina global testing/active flags around each test.
-
-    Yields:
-        None: Just a marker to indicate this is a fixture with setup/teardown.
-    """
     stamina.set_active(True)
     stamina.set_testing(False)
     yield
     stamina.set_active(True)
     stamina.set_testing(False)
-
-
-@pytest.fixture
-def testbed_config() -> ClientConfig:
-    return ClientConfig(use_testbed=True)
 
 
 @pytest.fixture
@@ -59,40 +46,6 @@ def credentials() -> tuple[str, str]:
 @pytest.fixture
 def testbed_url_pattern() -> re.Pattern[str]:
     return re.compile(r"https://events\.testbed\.cb\.dev/events/.*/.*")
-
-
-@pytest.fixture
-def sample_event_data() -> dict[str, Any]:
-    return {
-        "method": EventType.TIP.value,
-        "id": "event_123",
-        "object": {
-            "tip": {"tokens": 100},
-            "user": {"username": "test_tipper"},
-        },
-    }
-
-
-@pytest.fixture
-def api_response(sample_event_data: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "events": [sample_event_data],
-        "nextUrl": "https://events.testbed.cb.dev/events/next_page_token",
-    }
-
-
-@pytest.fixture
-def sample_event(sample_event_data: dict[str, Any]) -> Event:
-    return Event.model_validate(sample_event_data)
-
-
-@pytest.fixture
-def simple_tip_event() -> Event:
-    return Event.model_validate({
-        "method": EventType.TIP.value,
-        "id": "test_event",
-        "object": {},
-    })
 
 
 @pytest.fixture
@@ -109,17 +62,6 @@ def mock_handler() -> AsyncMock:
 def aioresponses_mock() -> Iterator[aioresponses]:
     with aioresponses() as mock:
         yield mock
-
-
-@pytest_asyncio.fixture
-async def setup_mock_client(
-    aioresponses_mock: aioresponses,
-    testbed_config: ClientConfig,
-    credentials: tuple[str, str],
-) -> AsyncIterator[EventClient]:
-    username, token = credentials
-    async with EventClient(username, token, config=testbed_config) as client:
-        yield client
 
 
 @pytest.fixture

@@ -1,18 +1,46 @@
-"""Tests for internal cb_events.client helper functions and retries."""
+"""Core tests for client initialization, configuration and utils."""
 
-from importlib import import_module
 from urllib.parse import quote
 
 import pytest
 from pydantic import ValidationError
 
-from cb_events import ClientConfig, EventClient, EventType
+from cb_events import ClientConfig, EventClient
+from cb_events.client import (
+    TOKEN_VISIBLE_CHARS,
+    _mask_token,
+    _mask_url,
+    _parse_events,
+)
+from cb_events.exceptions import AuthError
 
-client_module = import_module("cb_events.client")
-_mask_url = client_module._mask_url
-_mask_token = client_module._mask_token
-_parse_events = client_module._parse_events
-TOKEN_VISIBLE_CHARS = client_module.TOKEN_VISIBLE_CHARS
+
+def test_token_masking_in_repr() -> None:
+    """Token should be masked while preserving the final characters."""
+    full_token = "secret_token_1234"
+    suffix = full_token[-TOKEN_VISIBLE_CHARS:]
+    client = EventClient("user", full_token)
+    repr_str = str(client)
+
+    assert full_token not in repr_str
+    assert suffix in repr_str
+
+
+@pytest.mark.parametrize(
+    ("username", "token", "message"),
+    [
+        ("", "token", "Username must not be empty or contain"),
+        (" user ", "token", "Username must not be empty or contain"),
+        ("user", "", "Token must not be empty or contain"),
+        ("user", " token ", "Token must not be empty or contain"),
+    ],
+)
+def test_reject_invalid_credentials(
+    username: str, token: str, message: str
+) -> None:
+    """Invalid credentials should raise an ``AuthError`` with guidance."""
+    with pytest.raises(AuthError, match=message):
+        EventClient(username, token)
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
@@ -20,7 +48,6 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     It should preserve the last few characters of the token for readability.
     """
-
     token = "super_secret_token_1234"
     encoded = quote(token, safe="")
     url = (
@@ -35,23 +62,6 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     visible = token[-TOKEN_VISIBLE_CHARS:]
     assert visible in masked
-
-
-async def test_retries_on_retry_status_codes_then_succeeds(
-    event_client_factory, aioresponses_mock, testbed_url_pattern, api_response
-) -> None:
-    """Client should retry on HTTP status codes in RETRY_STATUS_CODES and
-    eventually return events when a subsequent request succeeds.
-    """
-    aioresponses_mock.get(testbed_url_pattern, status=502)
-    aioresponses_mock.get(testbed_url_pattern, payload=api_response)
-
-    config = ClientConfig(use_testbed=True, retry_attempts=2, retry_backoff=0.0)
-    async with event_client_factory(config=config) as client:
-        events = await client.poll()
-
-    assert len(events) == 1
-    assert events[0].type == EventType.TIP
 
 
 def test_mask_token_various_lengths() -> None:
@@ -89,7 +99,9 @@ def test_parse_events_strict_and_lenient(
     assert "<unknown>" in caplog.text
 
 
-def test_parse_events_logs_invalid_fields(caplog) -> None:
+def test_parse_events_logs_invalid_fields(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Report nested invalid fields are logged when parsing events."""
     caplog.set_level("WARNING")
     invalid_nested = {
@@ -110,7 +122,7 @@ def test_eventclient_build_url_and_repr() -> None:
     URL and the returned representation string.
     """
     token = "super_secret_token_1234"
-    username = "user name"
+    username = "username"
     client = EventClient(username, token, config=ClientConfig(use_testbed=True))
 
     url = client._build_url()

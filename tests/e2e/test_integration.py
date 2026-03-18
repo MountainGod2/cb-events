@@ -19,6 +19,7 @@ from cb_events import (
     __version__,
 )
 from tests.conftest import EventClientFactory
+from tests.helpers import make_event, make_response
 
 pytestmark = [pytest.mark.e2e]
 
@@ -28,7 +29,8 @@ async def test_client_router_workflow(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Sanity check that polling feeds into the router dispatch pipeline."""
+    """Test the end-to-end workflow of receiving events and dispatching them
+    through the router."""
     router = Router()
     events_received: list[Any] = []
 
@@ -42,14 +44,13 @@ async def test_client_router_workflow(
         await asyncio.sleep(0)
         events_received.append(f"any:{event.type}")
 
-    event_data = {
-        "events": [
-            {"method": "tip", "id": "1", "object": {"tip": {"tokens": 100}}},
-            {"method": "follow", "id": "2", "object": {}},
-            {"method": "broadcastStart", "id": "3", "object": {}},
-        ],
-        "nextUrl": None,
-    }
+    event_data = make_response([
+        make_event(
+            EventType.TIP, event_id="1", object={"tip": {"tokens": 100}}
+        ),
+        make_event(EventType.FOLLOW, event_id="2"),
+        make_event(EventType.BROADCAST_START, event_id="3"),
+    ])
     aioresponses_mock.get(testbed_url_pattern, payload=event_data)
 
     async with event_client_factory() as client:
@@ -87,9 +88,8 @@ async def test_authentication_error_propagation(
             await client.poll()
 
 
-async def test_version_attribute() -> None:
+def test_version_attribute() -> None:
     """Package should expose a ``__version__`` attribute matching metadata."""
-    await asyncio.sleep(0)
     assert isinstance(__version__, str)
     assert version("cb-events") == __version__
 

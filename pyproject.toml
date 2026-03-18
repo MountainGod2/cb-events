@@ -10,12 +10,7 @@ authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 maintainers = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
 requires-python = ">=3.12"
-dependencies = [
-    "aiohttp==3.13.3",
-    "aiolimiter==1.2.1",
-    "pydantic==2.12.5",
-    "stamina==25.2.0",
-]
+dependencies = ["aiohttp==3.13.3", "aiolimiter==1.2.1", "pydantic==2.12.5", "stamina==25.2.0"]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
 classifiers = [
@@ -141,18 +136,25 @@ unfixable = []
     "PLR0915",
 ]
 "tests/*" = [
-    "D",
-    "ANN",
+    "ARG001",
+    "ANN001",
+    "ANN401",
+    "D205",
+    "D208",
+    "D209",
+    "FBT001",
+    "PLC2701", # Allow private import for testing
+    "PLR2004",
+    "PLR0913",
+    "PLR0917",
     "PLR6301",
     "S101",
     "S105",
     "S106",
     "SLF001",
-    "PLR2004",
-    "ANN401",
-    "ARG001",
-    "FBT001",
 ]
+"tests/conftest.py" = ["D101", "D102", "D103"]
+"tests/router/test_router.py" = ["ANN002", "ANN003", "ANN204"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

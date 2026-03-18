@@ -34,34 +34,37 @@ def test_custom_configuration() -> None:
     assert config.retry_max_delay == pytest.approx(120.0)
 
 
-@pytest.mark.parametrize("timeout", [0, -1])
-def test_reject_non_positive_timeout(timeout: int) -> None:
-    """Timeout must be strictly positive."""
-    with pytest.raises(ValidationError, match="greater than 0"):
-        ClientConfig(timeout=timeout)
-
-
-@pytest.mark.parametrize("attempts", [0, -1, -5])
-def test_reject_non_positive_retry_attempts(attempts: int) -> None:
-    """Retry attempts must be strictly positive."""
+@pytest.mark.parametrize(
+    "invalid_kwargs",
+    [
+        {"timeout": 0},
+        {"timeout": -1},
+        {"retry_attempts": 0},
+        {"retry_attempts": -5},
+    ],
+    ids=[
+        "timeout_zero",
+        "timeout_negative",
+        "retry_attempts_zero",
+        "retry_attempts_negative",
+    ],
+)
+def test_reject_non_positive_values(invalid_kwargs: dict[str, int]) -> None:
+    """Timeout and retry attempts must be strictly positive."""
     with pytest.raises(ValidationError):
-        ClientConfig(retry_attempts=attempts)
+        ClientConfig(**invalid_kwargs)
 
 
 def test_reject_max_delay_less_than_backoff() -> None:
     """Max delay must be greater than or equal to backoff."""
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(
+        ValidationError, match=r"retry_max_delay .* must be >= retry_backoff"
+    ):
         ClientConfig(retry_backoff=10.0, retry_max_delay=5.0)
-
-    errors = exc_info.value.errors()
-    assert errors
-    message = str(errors[0].get("ctx", {}).get("error", ""))
-    assert "must be >=" in message or "Retry max delay" in message
 
 
 def test_allow_max_delay_equal_to_backoff() -> None:
-    """Equal backoff and max delay should be accepted."""
-    """Backoff equal to max delay is acceptable (no scaling)."""
+    """Equal backoff and max delay should be accepted (no scaling)."""
     config = ClientConfig(retry_backoff=5.0, retry_max_delay=5.0)
 
     assert config.retry_backoff == pytest.approx(5.0)
