@@ -495,7 +495,7 @@ async def test_concurrent_polls_serialized(
         ),
     ]
 
-    aioresponses_mock.get(base_url, payload=responses[0])
+    aioresponses_mock.get(testbed_url_pattern, payload=responses[0])
     aioresponses_mock.get(next_url_1, payload=responses[1])
     aioresponses_mock.get(next_url_2, payload=responses[2])
 
