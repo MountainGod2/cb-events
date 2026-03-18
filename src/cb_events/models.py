@@ -23,20 +23,15 @@ Example:
             print(f"From: {event.user.username}")
 """
 
-from __future__ import annotations
-
 import logging
+from collections.abc import Callable
 from enum import StrEnum
 from functools import cached_property
-from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_camel
 from pydantic.config import ConfigDict
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
 
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
@@ -61,10 +56,6 @@ class BaseEventModel(BaseModel):
         extra="ignore",
         frozen=True,
     )
-
-
-_ModelT = TypeVar("_ModelT", bound=BaseEventModel)
-"""Type variable for BaseEventModel subclasses (User, Tip, Message, etc.)."""
 
 
 class EventType(StrEnum):
@@ -349,14 +340,14 @@ class Event(BaseEventModel):
             transform=lambda v: {"subject": v},
         )
 
-    def _extract(
+    def _extract[T: BaseEventModel](
         self,
         key: str,
-        loader: Callable[[object], _ModelT],
+        loader: Callable[[object], T],
         *,
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
-    ) -> _ModelT | None:
+    ) -> T | None:
         """Extract and validate nested model from event data.
 
         Args:
