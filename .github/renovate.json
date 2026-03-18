@@ -1,10 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Renovate rules for cb-events dependency updates.",
-  "extends": [
-    "config:best-practices"
-  ],
+  "extends": ["config:best-practices"],
   "automergeType": "branch",
+  "branchNameStrict": true,
+  "commitBodyTable": true,
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
   "dependencyDashboardApproval": false,
@@ -26,20 +26,14 @@
   ],
   "internalChecksAsSuccess": false,
   "internalChecksFilter": "strict",
-  "labels": [
-    "dependencies"
-  ],
+  "labels": ["dependencies"],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": [
-      "before 5am on monday"
-    ],
+    "schedule": ["before 5am on monday"],
     "minimumReleaseAge": "0 days",
-    "labels": [
-      "dependencies",
-      "lockfile"
-    ],
-    "automerge": true
+    "labels": ["dependencies", "lockfile"],
+    "automerge": true,
+    "semanticCommitScope": "lock-file"
   },
   "minimumReleaseAge": "4 days",
   "platformAutomerge": false,
@@ -47,40 +41,24 @@
   "prHourlyLimit": 2,
   "rangeStrategy": "bump",
   "rebaseWhen": "auto",
-  "schedule": [
-    "at any time"
-  ],
+  "schedule": ["at any time"],
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "timezone": "America/Edmonton",
   "packageRules": [
     {
       "description": "Major updates require manual review",
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "labels": [
-        "dependencies",
-        "breaking"
-      ],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "breaking"],
       "automerge": false,
-      "assignees": [
-        "MountainGod2"
-      ]
+      "assignees": ["MountainGod2"]
     },
     {
       "description": "Treat 0.x minor updates as potentially breaking",
-      "matchManagers": [
-        "pep621"
-      ],
+      "matchManagers": ["pep621"],
       "matchCurrentVersion": "/^0\\./",
-      "matchUpdateTypes": [
-        "minor"
-      ],
-      "labels": [
-        "dependencies",
-        "breaking"
-      ],
+      "matchUpdateTypes": ["minor"],
+      "labels": ["dependencies", "breaking"],
       "automerge": false
     },
     {
@@ -89,13 +67,11 @@
         "aiohttp",
         "aiolimiter",
         "pydantic",
+        "stamina",
         "/^pydantic-.*$/"
       ],
       "groupName": "python-runtime",
-      "labels": [
-        "dependencies",
-        "core"
-      ],
+      "labels": ["dependencies", "core"],
       "minimumReleaseAge": "4 days",
       "semanticCommitScope": "python-runtime"
     },
@@ -108,6 +84,7 @@
         "pytest-cov",
         "pytest-mock",
         "aioresponses",
+        "pre-commit",
         "pyrefly",
         "pyright",
         "pylint",
@@ -121,36 +98,20 @@
         "pylint-pydantic"
       ],
       "groupName": "python-dev-tools",
-      "labels": [
-        "dependencies",
-        "dev"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "dev"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "python-dev-tools"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
-      "matchPackageNames": [
-        "sphinx",
-        "furo",
-        "/^sphinx-.*$/"
-      ],
+      "matchPackageNames": ["sphinx", "furo", "/^sphinx-.*$/"],
       "groupName": "python-docs",
-      "labels": [
-        "dependencies",
-        "docs"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "docs"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "python-docs"
@@ -164,131 +125,77 @@
         "/^hatch-.*$/"
       ],
       "groupName": "build-release",
-      "labels": [
-        "dependencies",
-        "build"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "build"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "build-release"
     },
     {
       "description": "Pre-commit hooks",
-      "matchManagers": [
-        "pre-commit"
-      ],
+      "matchManagers": ["pre-commit"],
       "groupName": "pre-commit",
-      "labels": [
-        "dependencies",
-        "pre-commit"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "pre-commit"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "pre-commit"
     },
     {
       "description": "GitHub Actions workflows",
-      "matchManagers": [
-        "github-actions"
-      ],
+      "matchManagers": ["github-actions"],
       "groupName": "ci-github-actions",
-      "labels": [
-        "dependencies",
-        "ci"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "ci"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "ci-github-actions"
     },
     {
       "description": "Dockerfile updates",
-      "matchManagers": [
-        "dockerfile"
-      ],
+      "matchManagers": ["dockerfile"],
       "groupName": "docker-images",
-      "labels": [
-        "dependencies",
-        "docker"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "docker"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "docker-images"
     },
     {
       "description": "Example scripts managed via PEP 723",
-      "matchManagers": [
-        "pep723"
-      ],
+      "matchManagers": ["pep723"],
       "groupName": "examples-scripts",
-      "labels": [
-        "dependencies",
-        "examples"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "examples"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "examples-scripts"
     },
     {
       "description": "Examples dependency group (pyproject.toml)",
-      "matchManagers": [
-        "pep621"
-      ],
-      "matchPackageNames": [
-        "python-dotenv",
-        "rich"
-      ],
+      "matchManagers": ["pep621"],
+      "matchPackageNames": ["python-dotenv", "rich"],
       "groupName": "examples-deps",
-      "labels": [
-        "dependencies",
-        "examples"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "0",
+      "labels": ["dependencies", "examples"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "examples-deps"
     },
     {
       "description": "Keep Python version pinned",
-      "matchManagers": [
-        "pep621"
-      ],
-      "ignoreDeps": [
-        "python"
-      ]
+      "matchManagers": ["pep621"],
+      "ignoreDeps": ["python"]
     }
   ],
   "pep723": {
     "enabled": true,
-    "managerFilePatterns": [
-      "/^examples/.*\\.py$/"
-    ]
+    "managerFilePatterns": ["/^examples/.*\\.py$/"]
   },
   "pre-commit": {
     "enabled": true
@@ -296,13 +203,9 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "automerge": true,
-    "labels": [
-      "dependencies",
-      "security"
-    ],
-    "assignees": [
-      "MountainGod2"
-    ]
+    "labels": ["dependencies", "security"],
+    "assignees": ["MountainGod2"],
+    "semanticCommitScope": "security"
   },
   "registryAliases": {
     "dhi.io": "dhi.io"
