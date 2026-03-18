@@ -181,7 +181,7 @@ exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
 extraPaths = ["src"]
 pythonVersion = "3.12"
 
-[tool.pytest]
+[tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
