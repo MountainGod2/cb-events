@@ -37,3 +37,14 @@ def test_auth_error_inherits_events_error() -> None:
 
     assert isinstance(error, EventsError)
     assert str(error) == "Authentication failed"
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_auth_error_with_status_codes(status_code: int) -> None:
+    """AuthError should include HTTP status code in its string representation
+    when provided."""
+    error = AuthError("Unauthorized", status_code=status_code)
+
+    assert str(error) == f"Unauthorized (HTTP {status_code})"
+    assert error.status_code == status_code
+    assert isinstance(error, EventsError)

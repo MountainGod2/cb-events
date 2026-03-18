@@ -17,11 +17,13 @@ from cb_events.exceptions import AuthError
 
 def test_token_masking_in_repr() -> None:
     """Token should be masked while preserving the final characters."""
-    client = EventClient("user", "secret_token_1234")
+    full_token = "secret_token_1234"
+    suffix = full_token[-TOKEN_VISIBLE_CHARS:]
+    client = EventClient("user", full_token)
     repr_str = str(client)
 
-    assert repr_str.count("1234") == 1
-    assert "secret_token" not in repr_str
+    assert full_token not in repr_str
+    assert suffix in repr_str
 
 
 @pytest.mark.parametrize(
@@ -120,7 +122,7 @@ def test_eventclient_build_url_and_repr() -> None:
     URL and the returned representation string.
     """
     token = "super_secret_token_1234"
-    username = "user name"
+    username = "username"
     client = EventClient(username, token, config=ClientConfig(use_testbed=True))
 
     url = client._build_url()

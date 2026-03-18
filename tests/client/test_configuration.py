@@ -42,6 +42,12 @@ def test_custom_configuration() -> None:
         {"retry_attempts": 0},
         {"retry_attempts": -5},
     ],
+    ids=[
+        "timeout_zero",
+        "timeout_negative",
+        "retry_attempts_zero",
+        "retry_attempts_negative",
+    ],
 )
 def test_reject_non_positive_values(invalid_kwargs: dict[str, int]) -> None:
     """Timeout and retry attempts must be strictly positive."""

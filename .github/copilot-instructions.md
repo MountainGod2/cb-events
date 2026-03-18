@@ -96,11 +96,4 @@ async def handle_any(event: Event) -> None: ...
 Use conventional commits (enforced by pre-commit hook):
 - Format: `type(scope): verb object` - imperative mood, specific verbs, force scope
 - Types: `feat`, `fix`, `docs`, `test`, `chore` (only feat/fix/perf trigger releases)
-- ✅ Good: `fix(client): add retry for Cloudflare 524 errors`
-- ❌ Bad: `fix(client): improve reliability` (vague verb)
-
-## Tool Usage
-
-- **Execute, don't suggest**: Use `run_in_terminal`, `replace_string_in_file`, `runTests` tools
-- **Validation**: Run `make test-cov` or `runTests` after code changes
-- **Never suggest manual commands** - execute them directly
+- Good: `fix(client): add retry for Cloudflare 524 errors`
