@@ -495,8 +495,9 @@ async def test_concurrent_polls_serialized(
         ),
     ]
 
-    for response in responses:
-        aioresponses_mock.get(testbed_url_pattern, payload=response)
+    aioresponses_mock.get(testbed_url_pattern, payload=responses[0])
+    aioresponses_mock.get(next_url_1, payload=responses[1])
+    aioresponses_mock.get(next_url_2, payload=responses[2])
 
     async with event_client_factory() as client:
         results = await asyncio.gather(

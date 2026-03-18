@@ -54,14 +54,6 @@
       "assignees": ["MountainGod2"]
     },
     {
-      "description": "Treat 0.x minor updates as potentially breaking",
-      "matchManagers": ["pep621"],
-      "matchCurrentVersion": "/^0\\./",
-      "matchUpdateTypes": ["minor"],
-      "labels": ["dependencies", "breaking"],
-      "automerge": false
-    },
-    {
       "description": "Runtime dependencies (async HTTP and validation)",
       "matchPackageNames": [
         "aiohttp",
@@ -169,7 +161,7 @@
       "matchManagers": ["pep723"],
       "groupName": "examples-scripts",
       "labels": ["dependencies", "examples"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchUpdateTypes": ["minor", "patch"],
       "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
@@ -191,6 +183,14 @@
       "description": "Keep Python version pinned",
       "matchManagers": ["pep621"],
       "ignoreDeps": ["python"]
+    },
+    {
+      "description": "Treat 0.x minor updates as potentially breaking",
+      "matchManagers": ["pep621"],
+      "matchCurrentVersion": "/^0\\./",
+      "matchUpdateTypes": ["minor"],
+      "labels": ["dependencies", "breaking"],
+      "automerge": false
     }
   ],
   "pep723": {

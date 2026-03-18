@@ -211,7 +211,13 @@ def test_event_property_validation_errors_logged(
     assert getattr(event, attr_name) is None
     # Access again to test cached value
     assert getattr(event, attr_name) is None
-    assert f"{log_msg} in event {event_id}" in caplog.text
+    warning_records = [
+        r
+        for r in caplog.records
+        if r.levelname == "WARNING"
+        and f"{log_msg} in event {event_id}" in r.getMessage()
+    ]
+    assert len(warning_records) == 1
 
 
 def test_event_broadcaster_property() -> None:
