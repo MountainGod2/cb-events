@@ -55,7 +55,7 @@ class ClientConfig(BaseModel):
         configuration values.
     """
 
-    model_config: ClassVar[ConfigDict] = {"frozen": True}
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     timeout: int = Field(default=10, gt=0)
     """Request timeout in seconds."""
