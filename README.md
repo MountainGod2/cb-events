@@ -21,6 +21,9 @@ from cb_events import EventClient, Router, EventType, Event
 
 router = Router()
 
+username = "your_username"
+token = "your_api_token"
+
 @router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
@@ -36,6 +39,11 @@ async def main():
 
 asyncio.run(main())
 ```
+
+> [!NOTE]
+> You can generate your API token [here](https://chaturbate.com/statsapi/authtoken/).
+> 
+> Make sure to select the `Events API` scope when creating.
 
 ## Event Types
 
