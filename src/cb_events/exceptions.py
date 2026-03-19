@@ -20,7 +20,10 @@ Example:
             print(f"API error (HTTP {e.status_code}): {e}")
 """
 
-from typing import override
+from typing import Final, override
+
+_RESPONSE_TEXT_LIMIT: Final[int] = 200
+"""Maximum characters stored in response_text to limit PII exposure in logs."""
 
 
 class EventsError(Exception):
@@ -51,7 +54,7 @@ class EventsError(Exception):
     """HTTP status code if available."""
 
     response_text: str | None
-    """Raw response body if available."""
+    """Raw response body, truncated to 200 characters to limit PII in logs."""
 
     def __init__(
         self,
@@ -65,11 +68,18 @@ class EventsError(Exception):
         Args:
             message: Human-readable description of the failure.
             status_code: Optional HTTP status code returned by the API.
-            response_text: Optional raw response body.
+            response_text: Optional raw response body. Truncated to
+                200 characters to reduce PII exposure in structured
+                exception loggers and error-reporting tools.
         """
         super().__init__(message)
         self.status_code = status_code
-        self.response_text = response_text
+        self.response_text = (
+            f"{response_text[:_RESPONSE_TEXT_LIMIT]}..."
+            if response_text is not None
+            and len(response_text) > _RESPONSE_TEXT_LIMIT
+            else response_text
+        )
 
     @override
     def __str__(self) -> str:

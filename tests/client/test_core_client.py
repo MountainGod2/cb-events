@@ -16,14 +16,14 @@ from cb_events.exceptions import AuthError
 
 
 def test_token_masking_in_repr() -> None:
-    """Token should be masked while preserving the final characters."""
+    """Token should be fully masked in repr."""
     full_token = "secret_token_1234"
-    suffix = full_token[-TOKEN_VISIBLE_CHARS:]
     client = EventClient("user", full_token)
     repr_str = str(client)
 
     assert full_token not in repr_str
-    assert suffix in repr_str
+    assert "*" * len(full_token) in repr_str
+    assert TOKEN_VISIBLE_CHARS == 0
 
 
 @pytest.mark.parametrize(
@@ -59,9 +59,7 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     assert token not in masked
     assert encoded not in masked
-
-    visible = token[-TOKEN_VISIBLE_CHARS:]
-    assert visible in masked
+    assert TOKEN_VISIBLE_CHARS == 0
 
 
 def test_mask_token_various_lengths() -> None:
@@ -74,8 +72,8 @@ def test_mask_token_various_lengths() -> None:
     assert _mask_token(token, visible=20) == "*" * len(token)
     assert _mask_token(token, visible=0) == "*" * len(token)
     masked = _mask_token(token)
-    assert token not in masked
-    assert token[-TOKEN_VISIBLE_CHARS:] in masked
+    assert masked == "*" * len(token)
+    assert TOKEN_VISIBLE_CHARS == 0
 
 
 def test_parse_events_strict_and_lenient(
@@ -131,4 +129,5 @@ def test_eventclient_build_url_and_repr() -> None:
 
     r = repr(client)
     assert token not in r
-    assert token[-TOKEN_VISIBLE_CHARS:] in r
+    assert "*" * len(token) in r
+    assert TOKEN_VISIBLE_CHARS == 0

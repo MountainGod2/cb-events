@@ -47,8 +47,8 @@ DEFAULT_TIME_PERIOD: Final[int] = 60
 SESSION_TIMEOUT_BUFFER: Final[int] = 5
 """Extra seconds added to aiohttp's client timeout."""
 
-TOKEN_VISIBLE_CHARS: Final[int] = 4
-"""Number of trailing token characters to reveal in logs."""
+TOKEN_VISIBLE_CHARS: Final[int] = 0
+"""Number of trailing token characters to reveal in logs (0 = fully masked)."""
 
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum number of characters of response text shown in logs."""
