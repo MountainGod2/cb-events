@@ -53,7 +53,10 @@ TOKEN_VISIBLE_CHARS: Final[int] = 4
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum number of characters of response text shown in logs."""
 
-AUTH_ERRORS: set[HTTPStatus] = {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
+AUTH_ERRORS: Final[frozenset[int]] = frozenset({
+    HTTPStatus.UNAUTHORIZED.value,
+    HTTPStatus.FORBIDDEN.value,
+})
 """HTTP status codes treated as authentication failures."""
 
 CF_ORIGIN_DOWN: Final[int] = 521
@@ -61,7 +64,7 @@ CF_CONNECTION_TIMEOUT: Final[int] = 522
 CF_ORIGIN_UNREACHABLE: Final[int] = 523
 CF_TIMEOUT_OCCURRED: Final[int] = 524
 
-RETRY_STATUS_CODES: set[int] = {
+RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
     HTTPStatus.SERVICE_UNAVAILABLE.value,
@@ -71,7 +74,7 @@ RETRY_STATUS_CODES: set[int] = {
     CF_CONNECTION_TIMEOUT,  # Cloudflare: connection timeout
     CF_ORIGIN_UNREACHABLE,  # Cloudflare: origin unreachable
     CF_TIMEOUT_OCCURRED,  # Cloudflare: timeout occurred
-}
+})
 """HTTP status codes that trigger exponential backoff retries."""
 
 TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
@@ -84,8 +87,16 @@ logger: logging.Logger = logging.getLogger(__name__)
 class _TransientError(Exception):
     """Internal exception for triggering retries on bad status codes."""
 
-    def __init__(self, msg: str, status_code: int, response_text: str) -> None:
-        """Initialize exception with message and HTTP metadata."""
+    def __init__(
+        self, msg: str, *, status_code: int, response_text: str
+    ) -> None:
+        """Initialize exception with message and HTTP metadata.
+
+        Args:
+            msg: Human-readable description of the transient failure.
+            status_code: HTTP status code returned by the API.
+            response_text: Raw response body returned by the API.
+        """
         super().__init__(msg)
         self.status_code = status_code
         self.response_text = response_text
@@ -93,6 +104,10 @@ class _TransientError(Exception):
 
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
+
+    Args:
+        token: Raw token string to mask.
+        visible: Number of trailing characters to leave unmasked.
 
     Returns:
         Masked token string.
@@ -105,6 +120,10 @@ def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
 
+    Args:
+        url: Full URL that may contain the token.
+        token: Raw token string to redact from the URL.
+
     Returns:
         URL string with token masked.
     """
@@ -113,6 +132,15 @@ def _mask_url(url: str, token: str) -> str:
 
 
 def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
+    """Truncate response text for safe logging.
+
+    Args:
+        text: Raw response body to truncate.
+        limit: Maximum number of characters to retain.
+
+    Returns:
+        Text truncated to ``limit`` characters with ellipsis if needed.
+    """
     if len(text) <= limit:
         return text
     return f"{text[:limit]}..."
@@ -495,14 +523,15 @@ class EventClient:
             _TransientError,
         )
 
-        retry_decisions = {"count": 0}
+        retry_count = 0
 
         def _should_retry(exc: Exception) -> bool | float:
+            nonlocal retry_count
             if not isinstance(exc, retriable_exc_types):
                 return False
 
-            retry_decisions["count"] += 1
-            return self._next_sleep_for_attempt(retry_decisions["count"])
+            retry_count += 1
+            return self._next_sleep_for_attempt(retry_count)
 
         try:
             async for attempt in stamina.retry_context(
@@ -580,18 +609,12 @@ class EventClient:
                 snippet,
             )
 
-            if status == HTTPStatus.TOO_MANY_REQUESTS:
-                guidance = (
-                    " Rate limit exceeded. Reduce request rate. Share a "
-                    "limiter across clients."
-                )
-            elif status >= HTTPStatus.INTERNAL_SERVER_ERROR:
-                guidance = (
-                    " Server error. Check https://status.chaturbate.com for "
-                    "API status. Retry later."
-                )
-            else:
-                guidance = ""
+            guidance = (
+                " Server error. Check https://status.chaturbate.com for "
+                "API status. Retry later."
+                if status >= HTTPStatus.INTERNAL_SERVER_ERROR
+                else ""
+            )
 
             msg = f"HTTP {status}: {snippet}{guidance}"
             raise EventsError(

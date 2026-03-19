@@ -38,7 +38,7 @@ type HandlerFunc = Callable[[Event], Awaitable[None]]
 """Async handler signature accepted by Router decorators."""
 
 # Broad callable accepted by decorators (may be sync, partials, or wrappers).
-Handler = Callable[[Event], object]
+type Handler = Callable[[Event], object]
 
 
 def _is_async_callable(func: object) -> bool:
