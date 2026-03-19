@@ -3,14 +3,17 @@
 Async Python client for the Chaturbate Events API.
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
-[![Tag](https://img.shields.io/github/v/tag/mountaingod2/cb-events)](https://github.com/MountainGod2/cb-events/releases)
+[![Tag](https://img.shields.io/github/v/tag/MountainGod2/cb-events)](https://github.com/MountainGod2/cb-events/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/MountainGod2/cb-events/ci-cd.yml?label=ci)](https://github.com/MountainGod2/cb-events/actions/workflows/ci-cd.yml)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
-[![License](https://img.shields.io/github/license/mountaingod2/cb-events?label=license)](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/MountainGod2/cb-events?label=license)](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
 
 ## Installation
 
 ```bash
 pip install cb-events
+# or with uv
+uv add cb-events
 ```
 
 ## Quick Start
@@ -41,9 +44,9 @@ asyncio.run(main())
 ```
 
 > [!NOTE]
-> You can generate your API token [here](https://chaturbate.com/statsapi/authtoken/).
-> 
-> Make sure to select the `Events API` scope when creating.
+> You can [generate your Chaturbate API token](https://chaturbate.com/statsapi/authtoken/).
+>
+> Make sure to select the `Events API` scope when creating the token.
 
 ## Event Types
 
@@ -68,7 +71,8 @@ config = ClientConfig(
 client = EventClient(username, token, config=config)
 ```
 
-**Note:** Config is immutable. Pass `config` as a keyword argument.
+> [!NOTE]
+> Config is immutable. Pass `config` as a keyword argument.
 
 ## Rate Limiting
 
@@ -125,7 +129,7 @@ logging.getLogger('cb_events').setLevel(logging.DEBUG)
 
 ## Requirements
 
-Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml#L13).
+Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml).
 
 ## License
 
@@ -133,4 +137,4 @@ MIT - See [LICENSE](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
 
 ---
 
-Not affiliated with Chaturbate.
+> Not affiliated with Chaturbate.
