@@ -90,7 +90,13 @@ class _TransientError(Exception):
     def __init__(
         self, msg: str, *, status_code: int, response_text: str
     ) -> None:
-        """Initialize exception with message and HTTP metadata."""
+        """Initialize exception with message and HTTP metadata.
+
+        Args:
+            msg: Human-readable description of the transient failure.
+            status_code: HTTP status code returned by the API.
+            response_text: Raw response body returned by the API.
+        """
         super().__init__(msg)
         self.status_code = status_code
         self.response_text = response_text
@@ -98,6 +104,10 @@ class _TransientError(Exception):
 
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
+
+    Args:
+        token: Raw token string to mask.
+        visible: Number of trailing characters to leave unmasked.
 
     Returns:
         Masked token string.
@@ -110,6 +120,10 @@ def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging.
 
+    Args:
+        url: Full URL that may contain the token.
+        token: Raw token string to redact from the URL.
+
     Returns:
         URL string with token masked.
     """
@@ -119,6 +133,10 @@ def _mask_url(url: str, token: str) -> str:
 
 def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     """Truncate response text for safe logging.
+
+    Args:
+        text: Raw response body to truncate.
+        limit: Maximum number of characters to retain.
 
     Returns:
         Text truncated to ``limit`` characters with ellipsis if needed.
