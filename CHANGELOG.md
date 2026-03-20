@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v6.1.1 (2026-03-20)
+
+### Bug Fixes
+
+- **semantic-release**: Add commit author for GitHub Actions
+  ([`717c94c`](https://github.com/MountainGod2/cb-events/commit/717c94c5cb5738ea3bdf314ad431757dad420fa6))
+
+### Chores
+
+- **ci-github-actions**: Update github/codeql-action digest to c6f9311
+  ([`9414195`](https://github.com/MountainGod2/cb-events/commit/9414195fa0f880ca3ee5c43fd8ea721a15c14895))
+
+- **examples-scripts**: Update dependency cb-events to v6.1.0
+  ([`f2f24a7`](https://github.com/MountainGod2/cb-events/commit/f2f24a7caf7a5488e834d16265daf8cd37e9571a))
+
+- **pre-commit**: Update pre-commit hook gitleaks/gitleaks to v8.30.1
+  ([`5084ea0`](https://github.com/MountainGod2/cb-events/commit/5084ea0bf6a55772dd3ee5eaab1938e3bbbf9f01))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.83.1
+  ([`bb4371e`](https://github.com/MountainGod2/cb-events/commit/bb4371e84af6e5044106bfada8bb35c8a76e8a22))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.84.0
+  ([`30a7fe2`](https://github.com/MountainGod2/cb-events/commit/30a7fe2ca3b1ecd3d4cc35953142547ecd53b1e5))
+
+
 ## v6.1.0 (2026-03-20)
 
 ### Chores
