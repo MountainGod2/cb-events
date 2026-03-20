@@ -44,9 +44,11 @@ asyncio.run(main())
 ```
 
 > [!NOTE]
-> [Generate your Chaturbate API token](https://chaturbate.com/statsapi/authtoken/).
+> You can [generate your Chaturbate API token here](https://chaturbate.com/statsapi/authtoken/).
 >
 > Make sure to select the `Events API` scope when creating the token.
+
+See the [example](https://github.com/MountainGod2/cb-events/blob/main/examples/example.py) for additional details.
 
 ## Event Types
 

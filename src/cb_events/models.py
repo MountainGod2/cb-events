@@ -280,6 +280,12 @@ class Event(BaseEventModel):
 
     Note:
         Failures to parse nested data are logged as a warning and returns None.
+
+    Warning:
+        All string fields in event data (e.g. ``message.message``,
+        ``user.username``, ``tip.message``) originate from untrusted
+        user input and are not sanitized by this library. Escape or
+        validate them before use in HTML, SQL, or shell contexts.
     """
 
     type: EventType = Field(alias="method")
