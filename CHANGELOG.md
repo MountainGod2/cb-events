@@ -2,6 +2,167 @@
 
 <!-- version list -->
 
+## v6.1.0 (2026-03-20)
+
+### Chores
+
+- **ci-github-actions**: Update ci-github-actions
+  ([`1add124`](https://github.com/MountainGod2/cb-events/commit/1add1244a2df8453d6cc6fe5a79ca7f5852faed1))
+
+- **ci-github-actions**: Update codecov/codecov-action digest to 1af5884
+  ([`9650ba6`](https://github.com/MountainGod2/cb-events/commit/9650ba6c66617b564f5f45ea4fd9eb040bf60ce1))
+
+- **deps**: Lock file maintenance
+  ([`b09701d`](https://github.com/MountainGod2/cb-events/commit/b09701de3e92d4f4087aa40256e01cacde9a73ef))
+
+- **deps**: Update dependency cb-events to v6
+  ([#60](https://github.com/MountainGod2/cb-events/pull/60),
+  [`6b4de7f`](https://github.com/MountainGod2/cb-events/commit/6b4de7f834f3aac24fa85f58f6b52e6df005d91d))
+
+- **docs**: Add note about token permission
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **LICENSE**: Update copyright year
+  ([`b948dce`](https://github.com/MountainGod2/cb-events/commit/b948dcec0e49e43ed2950c99d94cebaca05e9133))
+
+- **pre-commit**: Update pre-commit
+  ([`8f28138`](https://github.com/MountainGod2/cb-events/commit/8f28138d4d607feed20a16495a6ca6b300a1c64b))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.76.2
+  ([`d90a7f2`](https://github.com/MountainGod2/cb-events/commit/d90a7f22d5e368677347a2dbf44367834d1aafa6))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.76.3
+  ([`776b0dc`](https://github.com/MountainGod2/cb-events/commit/776b0dc44df436958083e18662ed2b8a6dc5f023))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.77.7
+  ([`899a199`](https://github.com/MountainGod2/cb-events/commit/899a1994a52046e42cb9d486b5972150b2c4d441))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.77.8
+  ([`25e637c`](https://github.com/MountainGod2/cb-events/commit/25e637c2c76e9af1214e03d5704101dfb35020e9))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.78.0
+  ([`717e349`](https://github.com/MountainGod2/cb-events/commit/717e349ebe2e759af3a76b26769b4f75906ec7f2))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.57.0
+  ([`e56e31d`](https://github.com/MountainGod2/cb-events/commit/e56e31d08b0e0719f4cbc92edcbfe2f49d446e56))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.57.1
+  ([`dc4c4f1`](https://github.com/MountainGod2/cb-events/commit/dc4c4f177c189d14e3b02a5c95ae9b9caa0c1a03))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`6990b3b`](https://github.com/MountainGod2/cb-events/commit/6990b3bd7dadc0d2b4ae6ba26048d173a39896af))
+
+- **renovate**: Update configuration for dependency management
+  ([#57](https://github.com/MountainGod2/cb-events/pull/57),
+  [`4754915`](https://github.com/MountainGod2/cb-events/commit/47549156098afaafe498c3042cb231424a951d85))
+
+### Documentation
+
+- **models**: Add warning about untrusted user input in event data
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **README**: Update badges and notes formatting
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **README**: Update note on generating API token
+  ([`4c2400f`](https://github.com/MountainGod2/cb-events/commit/4c2400fa3b026bdc371eed63d5e2400dd120ace6))
+
+- **README**: Update token generation instructions
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **tests**: Clarify masking behavior in _mask_url docstring
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+### Features
+
+- **pre-commit**: Add gitleaks secret scan hook
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **pre-commit**: Add redact argument to gitleaks hook
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+### Refactoring
+
+- Update type annotations and immutabilty ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **client**: Change AUTH_ERRORS and RETRY_STATUS_CODES to frozenset
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **client**: Fully mask api token in logs
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **client**: Update docstrings for error handling and token masking
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **client, exceptions, tests**: Mask tokens fully in logs and repr
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **config**: Change model_config to use ConfigDict
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **models**: Simplify imports and type annotations
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **pytest**: Rename pytest section to ini_options
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **renovate**: Reorganize package rules ([#58](https://github.com/MountainGod2/cb-events/pull/58),
+  [`e51d770`](https://github.com/MountainGod2/cb-events/commit/e51d770dc05a6253013eccce7970dff9fb17dfdf))
+
+- **renovate**: Reorganize package rules and restore breaking update handling
+  ([#58](https://github.com/MountainGod2/cb-events/pull/58),
+  [`e51d770`](https://github.com/MountainGod2/cb-events/commit/e51d770dc05a6253013eccce7970dff9fb17dfdf))
+
+- **router**: Change Handler to type alias
+  ([#59](https://github.com/MountainGod2/cb-events/pull/59),
+  [`1c4f2f3`](https://github.com/MountainGod2/cb-events/commit/1c4f2f3aeafb9858734c9329de89e56faa2e663f))
+
+- **tests**: Add type hints to test parameters
+  ([#57](https://github.com/MountainGod2/cb-events/pull/57),
+  [`4754915`](https://github.com/MountainGod2/cb-events/commit/47549156098afaafe498c3042cb231424a951d85))
+
+- **tests**: Consolidate and improve test structure
+  ([#57](https://github.com/MountainGod2/cb-events/pull/57),
+  [`4754915`](https://github.com/MountainGod2/cb-events/commit/47549156098afaafe498c3042cb231424a951d85))
+
+- **tests**: Consolidate tests and helpers
+  ([#57](https://github.com/MountainGod2/cb-events/pull/57),
+  [`4754915`](https://github.com/MountainGod2/cb-events/commit/47549156098afaafe498c3042cb231424a951d85))
+
+### Testing
+
+- **client**: Correct testbed URL pattern in mock responses
+  ([#58](https://github.com/MountainGod2/cb-events/pull/58),
+  [`e51d770`](https://github.com/MountainGod2/cb-events/commit/e51d770dc05a6253013eccce7970dff9fb17dfdf))
+
+- **exceptions**: Add AuthError test for status codes
+  ([#57](https://github.com/MountainGod2/cb-events/pull/57),
+  [`4754915`](https://github.com/MountainGod2/cb-events/commit/47549156098afaafe498c3042cb231424a951d85))
+
+- **exceptions**: Add test for EventsError response_text truncation
+  ([#61](https://github.com/MountainGod2/cb-events/pull/61),
+  [`10d5651`](https://github.com/MountainGod2/cb-events/commit/10d5651392cc71773a433451cbc3c647774113ec))
+
+- **tests**: Improve test coverage for polling and exceptions
+  ([#58](https://github.com/MountainGod2/cb-events/pull/58),
+  [`e51d770`](https://github.com/MountainGod2/cb-events/commit/e51d770dc05a6253013eccce7970dff9fb17dfdf))
+
+
 ## v6.0.0 (2026-03-15)
 
 ### Chores
