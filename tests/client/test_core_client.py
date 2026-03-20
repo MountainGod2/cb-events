@@ -46,7 +46,8 @@ def test_reject_invalid_credentials(
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
     """_mask_url should mask both plain and percent-encoded tokens in URLs.
 
-    It should preserve the last few characters of the token for readability.
+    When TOKEN_VISIBLE_CHARS == 0 the token is fully redacted and no trailing
+    characters are preserved in the masked output.
     """
     token = "super_secret_token_1234"
     encoded = quote(token, safe="")
