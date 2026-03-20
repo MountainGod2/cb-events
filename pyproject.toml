@@ -87,6 +87,7 @@ build_command = """
   uv build
 """
 commit_parser = "conventional"
+commit_author = "github-actions <actions@github.com>"
 changelog_file = "CHANGELOG.md"
 output_format = "md"
 
