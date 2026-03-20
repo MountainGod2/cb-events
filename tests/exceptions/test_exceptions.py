@@ -40,6 +40,17 @@ def test_auth_error_inherits_events_error() -> None:
     assert str(error) == "Authentication failed"
 
 
+def test_events_error_truncates_long_response_text() -> None:
+    """EventsError should truncate response_text longer than 200 chars to 203
+    characters (200 chars + '...')."""
+    long_text = "x" * 300
+    error = EventsError("Test", response_text=long_text)
+
+    assert error.response_text is not None
+    assert len(error.response_text) == 203
+    assert error.response_text.endswith("...")
+
+
 @pytest.mark.parametrize("status_code", [401, 403])
 def test_auth_error_with_status_codes(status_code: int) -> None:
     """AuthError should include HTTP status code in its string representation
