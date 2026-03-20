@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v6.1.2 (2026-03-20)
+
+### Bug Fixes
+
+- **semantic-release**: Update commit author for GitHub Actions
+  ([`6a93c8a`](https://github.com/MountainGod2/cb-events/commit/6a93c8addc781cb461232b643d221ed6f014b6d1))
+
+
 ## v6.1.1 (2026-03-20)
 
 ### Bug Fixes
