@@ -33,10 +33,6 @@ class EventsError(Exception):
     non-authentication failures. Includes HTTP status code and response body
     when available.
 
-    Attributes:
-        status_code: HTTP status code if available, otherwise None.
-        response_text: Raw response body if available, otherwise None.
-
     Example:
         Inspecting error details::
 
