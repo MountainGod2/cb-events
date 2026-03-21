@@ -37,27 +37,6 @@ logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
-class BaseEventModel(BaseModel):
-    """Base model for all event-related data structures.
-
-    Provides shared Pydantic configuration for JSON deserialization with
-    camelCase to snake_case conversion, immutability, and strict validation.
-
-    Configuration:
-        alias_generator: Converts snake_case fields to camelCase aliases.
-        populate_by_name: Allows both field name and alias for input.
-        extra="ignore": Ignores unknown fields in input for compatibility.
-        frozen=True: Makes instances immutable after creation.
-    """
-
-    model_config: ClassVar[ConfigDict] = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
-
-
 class EventType(StrEnum):
     """Event types from the Chaturbate Events API.
 
@@ -96,6 +75,22 @@ class EventType(StrEnum):
     """User has sent a tip."""
     MEDIA_PURCHASE = "mediaPurchase"
     """User has purchased media."""
+
+
+class BaseEventModel(BaseModel):
+    """Base model for all event-related data structures.
+
+    Provides shared Pydantic configuration for JSON deserialization with
+    camelCase to snake_case conversion and immutability. All event data models
+    should inherit from this base class to ensure consistent behavior when
+    parsing API responses.
+    """
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        alias_generator=to_camel,
+        extra="ignore",
+        frozen=True,
+    )
 
 
 class User(BaseEventModel):
