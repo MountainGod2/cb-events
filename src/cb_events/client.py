@@ -3,14 +3,6 @@
 This module provides the EventClient class for polling events from the
 Chaturbate Events API with automatic retries, rate limiting, and credential
 handling.
-
-Module Attributes:
-    BASE_URL: Production Events API endpoint.
-    TESTBED_URL: Testbed Events API endpoint for development.
-    DEFAULT_MAX_RATE: Default requests per rate limiter window.
-    DEFAULT_TIME_PERIOD: Default rate limiter window in seconds.
-    RETRY_STATUS_CODES: HTTP status codes that trigger retry logic.
-    AUTH_ERRORS: HTTP status codes indicating authentication failure.
 """
 
 import asyncio
@@ -147,6 +139,14 @@ def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
 
 
 def _normalize_host_entry(candidate: object) -> str | None:
+    """Normalise an arbitrary host candidate to a lowercase hostname string.
+
+    Args:
+        candidate: Raw host value (URL, bare hostname, or other object).
+
+    Returns:
+        Lowercase hostname string, or None if nothing usable can be extracted.
+    """
     if candidate is None:
         return None
     host_text = str(candidate).strip()
@@ -167,21 +167,22 @@ def _normalize_host_entry(candidate: object) -> str | None:
 def _build_allowed_hosts(
     base_url: str, extra_hosts: Sequence[str] | None
 ) -> set[str]:
-    hosts = set()
-    parsed_base = urlparse(base_url)
-    if parsed_base.hostname:
-        hosts.add(parsed_base.hostname.lower())
-    else:
-        normalized_base = _normalize_host_entry(base_url)
-        if normalized_base:
-            hosts.add(normalized_base)
+    """Build the set of permitted hostnames for nextUrl redirection.
 
+    Args:
+        base_url: The client's base API endpoint URL.
+        extra_hosts: Additional hosts to allow, as configured by the caller.
+
+    Returns:
+        Set of lowercase hostnames that are allowed in nextUrl responses.
+    """
+    hosts: set[str] = set()
+    if host := _normalize_host_entry(base_url):
+        hosts.add(host)
     if extra_hosts:
-        for host in extra_hosts:
-            normalized = _normalize_host_entry(host)
-            if normalized:
-                hosts.add(normalized)
-
+        for entry in extra_hosts:
+            if host := _normalize_host_entry(entry):
+                hosts.add(host)
     return hosts
 
 
@@ -189,6 +190,12 @@ def _log_validation_error(
     item: object,
     exc: ValidationError,
 ) -> None:
+    """Log a warning for an event that failed Pydantic validation.
+
+    Args:
+        item: Raw object that failed validation.
+        exc: The ValidationError raised during parsing.
+    """
     mapping_item = None
     if isinstance(item, Mapping):
         mapping_item = cast("Mapping[str, object]", item)
@@ -416,6 +423,9 @@ class EventClient:
     def _next_sleep_for_attempt(self, attempt_num: int) -> float:
         """Compute capped exponential backoff delay for the given attempt.
 
+        Args:
+            attempt_num: 1-based attempt number for which to compute the delay.
+
         Returns:
             Delay in seconds before the next retry.
         """
@@ -463,7 +473,7 @@ class EventClient:
         Raises:
             EventsError: Always raised with contextual request failure details.
         """
-        final_attempts = attempts_made or self.config.retry_attempts
+        final_attempts = attempts_made
         logger.error(
             "Request failed after %d attempts for user %s",
             final_attempts,
@@ -523,15 +533,10 @@ class EventClient:
             _TransientError,
         )
 
-        retry_count = 0
-
         def _should_retry(exc: Exception) -> bool | float:
-            nonlocal retry_count
             if not isinstance(exc, retriable_exc_types):
                 return False
-
-            retry_count += 1
-            return self._next_sleep_for_attempt(retry_count)
+            return self._next_sleep_for_attempt(attempts_made)
 
         try:
             async for attempt in stamina.retry_context(
@@ -545,10 +550,8 @@ class EventClient:
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
                         logger.warning(
-                            (
-                                "Attempt %d/%d failed for user %s: %r. "
-                                "Retrying in %.2fs..."
-                            ),
+                            "Attempt %d/%d failed for user %s: %r. "
+                            "Retrying in %.2fs...",
                             attempts_made,
                             self.config.retry_attempts,
                             self.username,
@@ -692,11 +695,11 @@ class EventClient:
                 scheme or "<missing>",
                 self.username,
             )
-            msg_scheme = (
+            msg = (
                 "Invalid nextUrl scheme; only http/https are allowed. "
                 "Check https://status.chaturbate.com for service status."
             )
-            raise EventsError(msg_scheme, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
         if not hostname:
@@ -704,11 +707,11 @@ class EventClient:
                 "Received nextUrl without hostname for user %s",
                 self.username,
             )
-            msg_host = (
+            msg = (
                 "Invalid nextUrl host. Allow via "
                 "ClientConfig.next_url_allowed_hosts."
             )
-            raise EventsError(msg_host, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         if hostname.lower() not in self._allowed_next_hosts:
             logger.error(
@@ -716,11 +719,11 @@ class EventClient:
                 hostname,
                 self.username,
             )
-            host_msg = (
+            msg = (
                 "Invalid nextUrl host. Allow via "
                 "ClientConfig.next_url_allowed_hosts."
             )
-            raise EventsError(host_msg, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         return absolute
 
