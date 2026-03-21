@@ -470,24 +470,25 @@ class EventClient:
     ) -> NoReturn:
         """Raise EventsError with contextual request failure details.
 
+        Args:
+            attempts_made: Number of attempts that were made before failure.
+            original_exception: The last exception raised during the request.
+
         Raises:
             EventsError: Always raised with contextual request failure details.
         """
-        final_attempts = attempts_made
         logger.error(
             "Request failed after %d attempts for user %s",
-            final_attempts,
+            attempts_made,
             self.username,
             exc_info=original_exception,
         )
 
-        attempt_label = "attempt" if final_attempts == 1 else "attempts"
-        failure_msg = (
-            f"Failed to fetch events after {final_attempts} {attempt_label}."
-        )
+        attempt_label = "attempt" if attempts_made == 1 else "attempts"
         msg = (
-            f"{failure_msg} Check network connectivity and firewall "
-            "settings. Review API status at https://status.chaturbate.com."
+            f"Failed to fetch events after {attempts_made} {attempt_label}."
+            " Check network connectivity and firewall settings."
+            " Review API status at https://status.chaturbate.com."
         )
 
         # Unwrap _TransientError if that was the cause to avoid noise.
@@ -497,8 +498,12 @@ class EventClient:
             else original_exception
         )
 
-        status_code = getattr(original_exception, "status_code", None)
-        response_text = getattr(original_exception, "response_text", None)
+        status_code: int | None = getattr(
+            original_exception, "status_code", None
+        )
+        response_text: str | None = getattr(
+            original_exception, "response_text", None
+        )
 
         raise EventsError(
             msg,
@@ -654,17 +659,18 @@ class EventClient:
         if next_url is None:
             return None
 
+        invalid_next_url_msg = (
+            "Invalid API response: 'nextUrl' must be a non-empty string. "
+            "Check https://status.chaturbate.com for service status."
+        )
+
         if not isinstance(next_url, str):
             logger.error(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
                 self.username,
             )
-            msg = (
-                "Invalid API response: 'nextUrl' must be a non-empty string. "
-                "Check https://status.chaturbate.com for service status."
-            )
-            raise EventsError(msg, response_text=response_text)
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         stripped = next_url.strip()
         if not stripped:
@@ -672,11 +678,7 @@ class EventClient:
                 "Received empty nextUrl from API for user %s",
                 self.username,
             )
-            msg = (
-                "Invalid API response: 'nextUrl' must be a non-empty string. "
-                "Check https://status.chaturbate.com for service status."
-            )
-            raise EventsError(msg, response_text=response_text)
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         absolute = stripped
         parsed = urlparse(stripped)
@@ -738,35 +740,31 @@ class EventClient:
         """
         try:
             data_obj = json.loads(text)
-        except (json.JSONDecodeError, KeyError):
+        except json.JSONDecodeError:
             return None
 
         if not isinstance(data_obj, dict):
             return None
 
         status_msg = data_obj.get("status")
-        is_timeout = (
+        if not (
             isinstance(status_msg, str)
             and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
+        ):
+            return None
+
+        next_url = data_obj.get("nextUrl")
+        if next_url is None:
+            return None
+
+        validated = self._validate_next_url(next_url, response_text=text)
+        if validated is None:
+            return None
+        logger.debug(
+            "Received nextUrl from timeout response: %s",
+            _mask_url(validated, self.token),
         )
-        if is_timeout:
-            next_url = data_obj.get("nextUrl")
-            if next_url is None:
-                return None
-
-            validated = self._validate_next_url(
-                next_url,
-                response_text=text,
-            )
-            if validated is None:
-                return None
-
-            logger.debug(
-                "Received nextUrl from timeout response: %s",
-                _mask_url(validated, self.token),
-            )
-            return validated
-        return None
+        return validated
 
     def _parse_json_response(self, text: str) -> list[Event]:
         """Parse JSON response and extract events.
