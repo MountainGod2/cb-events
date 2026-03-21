@@ -221,6 +221,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
       - run: git reset --hard ${{ github.sha }}
 
@@ -245,7 +246,7 @@ jobs:
 
       - id: publish
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           bash .github/workflows/verify_upstream.sh
           uv run semantic-release -v --strict version --skip-build
