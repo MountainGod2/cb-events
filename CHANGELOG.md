@@ -2,6 +2,84 @@
 
 <!-- version list -->
 
+## v6.1.3 (2026-03-21)
+
+### Bug Fixes
+
+- **ci**: Update GitHub Actions to use GH_PAT for token
+  ([#63](https://github.com/MountainGod2/cb-events/pull/63),
+  [`599dece`](https://github.com/MountainGod2/cb-events/commit/599dece4b24d58f5c56aa75b5b6ffa9cfb9df4c2))
+
+- **client**: Improve error handling and logging in EventClient
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+### Chores
+
+- **ci-github-actions**: Update github/codeql-action digest to 3869755
+  ([`5ed5a5d`](https://github.com/MountainGod2/cb-events/commit/5ed5a5d29d0193c8c6579595df1eb0270cd1f8a1))
+
+- **docker-images**: Update docker-images
+  ([`c5a7939`](https://github.com/MountainGod2/cb-events/commit/c5a7939c7910292e496c9e935d95251ceb4b8e49))
+
+- **examples-scripts**: Update dependency cb-events to v6.1.2
+  ([`4ddb17e`](https://github.com/MountainGod2/cb-events/commit/4ddb17edbd339482716c890fdb9b11cb3ce49eff))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.84.2
+  ([`466611a`](https://github.com/MountainGod2/cb-events/commit/466611afa8502cbd8de9a96e7db11b38373433f1))
+
+- **python-docs**: Update dependency sphinx-autodoc-typehints to v3.9.9
+  ([`3d11a54`](https://github.com/MountainGod2/cb-events/commit/3d11a54b0dd17810b9ae08e69a442d181b9ff3fe))
+
+### Continuous Integration
+
+- Add environment variable for Node.js actions
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- Update Trivy action version in workflow ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+### Documentation
+
+- Refactor documentation and configuration
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **client**: Update module docstring and add parameter descriptions
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **index**: Improve event types and properties formatting
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+### Refactoring
+
+- **config**: Remove redundant attribute documentation
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **docs**: Simplify docs dependency list ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **docs**: Update Sphinx configuration settings
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **exceptions**: Remove redundant attribute documentation
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **models**: Improve BaseEventModel documentation
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+- **models**: Remove redundant attribute documentation
+  ([#62](https://github.com/MountainGod2/cb-events/pull/62),
+  [`79f9248`](https://github.com/MountainGod2/cb-events/commit/79f92487298eb6a57c531fd7fef8bc7049580066))
+
+
 ## v6.1.2 (2026-03-20)
 
 ### Bug Fixes
