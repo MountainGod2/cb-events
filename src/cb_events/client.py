@@ -3,14 +3,6 @@
 This module provides the EventClient class for polling events from the
 Chaturbate Events API with automatic retries, rate limiting, and credential
 handling.
-
-Module Attributes:
-    BASE_URL: Production Events API endpoint.
-    TESTBED_URL: Testbed Events API endpoint for development.
-    DEFAULT_MAX_RATE: Default requests per rate limiter window.
-    DEFAULT_TIME_PERIOD: Default rate limiter window in seconds.
-    RETRY_STATUS_CODES: HTTP status codes that trigger retry logic.
-    AUTH_ERRORS: HTTP status codes indicating authentication failure.
 """
 
 import asyncio
@@ -147,6 +139,14 @@ def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
 
 
 def _normalize_host_entry(candidate: object) -> str | None:
+    """Normalise an arbitrary host candidate to a lowercase hostname string.
+
+    Args:
+        candidate: Raw host value (URL, bare hostname, or other object).
+
+    Returns:
+        Lowercase hostname string, or None if nothing usable can be extracted.
+    """
     if candidate is None:
         return None
     host_text = str(candidate).strip()
@@ -167,21 +167,22 @@ def _normalize_host_entry(candidate: object) -> str | None:
 def _build_allowed_hosts(
     base_url: str, extra_hosts: Sequence[str] | None
 ) -> set[str]:
-    hosts = set()
-    parsed_base = urlparse(base_url)
-    if parsed_base.hostname:
-        hosts.add(parsed_base.hostname.lower())
-    else:
-        normalized_base = _normalize_host_entry(base_url)
-        if normalized_base:
-            hosts.add(normalized_base)
+    """Build the set of permitted hostnames for nextUrl redirection.
 
+    Args:
+        base_url: The client's base API endpoint URL.
+        extra_hosts: Additional hosts to allow, as configured by the caller.
+
+    Returns:
+        Set of lowercase hostnames that are allowed in nextUrl responses.
+    """
+    hosts: set[str] = set()
+    if host := _normalize_host_entry(base_url):
+        hosts.add(host)
     if extra_hosts:
-        for host in extra_hosts:
-            normalized = _normalize_host_entry(host)
-            if normalized:
-                hosts.add(normalized)
-
+        for entry in extra_hosts:
+            if host := _normalize_host_entry(entry):
+                hosts.add(host)
     return hosts
 
 
@@ -189,6 +190,12 @@ def _log_validation_error(
     item: object,
     exc: ValidationError,
 ) -> None:
+    """Log a warning for an event that failed Pydantic validation.
+
+    Args:
+        item: Raw object that failed validation.
+        exc: The ValidationError raised during parsing.
+    """
     mapping_item = None
     if isinstance(item, Mapping):
         mapping_item = cast("Mapping[str, object]", item)
@@ -416,6 +423,9 @@ class EventClient:
     def _next_sleep_for_attempt(self, attempt_num: int) -> float:
         """Compute capped exponential backoff delay for the given attempt.
 
+        Args:
+            attempt_num: 1-based attempt number for which to compute the delay.
+
         Returns:
             Delay in seconds before the next retry.
         """
@@ -460,24 +470,25 @@ class EventClient:
     ) -> NoReturn:
         """Raise EventsError with contextual request failure details.
 
+        Args:
+            attempts_made: Number of attempts that were made before failure.
+            original_exception: The last exception raised during the request.
+
         Raises:
             EventsError: Always raised with contextual request failure details.
         """
-        final_attempts = attempts_made or self.config.retry_attempts
         logger.error(
             "Request failed after %d attempts for user %s",
-            final_attempts,
+            attempts_made,
             self.username,
             exc_info=original_exception,
         )
 
-        attempt_label = "attempt" if final_attempts == 1 else "attempts"
-        failure_msg = (
-            f"Failed to fetch events after {final_attempts} {attempt_label}."
-        )
+        attempt_label = "attempt" if attempts_made == 1 else "attempts"
         msg = (
-            f"{failure_msg} Check network connectivity and firewall "
-            "settings. Review API status at https://status.chaturbate.com."
+            f"Failed to fetch events after {attempts_made} {attempt_label}."
+            " Check network connectivity and firewall settings."
+            " Review API status at https://status.chaturbate.com."
         )
 
         # Unwrap _TransientError if that was the cause to avoid noise.
@@ -487,8 +498,12 @@ class EventClient:
             else original_exception
         )
 
-        status_code = getattr(original_exception, "status_code", None)
-        response_text = getattr(original_exception, "response_text", None)
+        status_code: int | None = getattr(
+            original_exception, "status_code", None
+        )
+        response_text: str | None = getattr(
+            original_exception, "response_text", None
+        )
 
         raise EventsError(
             msg,
@@ -523,15 +538,10 @@ class EventClient:
             _TransientError,
         )
 
-        retry_count = 0
-
         def _should_retry(exc: Exception) -> bool | float:
-            nonlocal retry_count
             if not isinstance(exc, retriable_exc_types):
                 return False
-
-            retry_count += 1
-            return self._next_sleep_for_attempt(retry_count)
+            return self._next_sleep_for_attempt(attempts_made)
 
         try:
             async for attempt in stamina.retry_context(
@@ -545,10 +555,8 @@ class EventClient:
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
                         logger.warning(
-                            (
-                                "Attempt %d/%d failed for user %s: %r. "
-                                "Retrying in %.2fs..."
-                            ),
+                            "Attempt %d/%d failed for user %s: %r. "
+                            "Retrying in %.2fs...",
                             attempts_made,
                             self.config.retry_attempts,
                             self.username,
@@ -651,17 +659,18 @@ class EventClient:
         if next_url is None:
             return None
 
+        invalid_next_url_msg = (
+            "Invalid API response: 'nextUrl' must be a non-empty string. "
+            "Check https://status.chaturbate.com for service status."
+        )
+
         if not isinstance(next_url, str):
             logger.error(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
                 self.username,
             )
-            msg = (
-                "Invalid API response: 'nextUrl' must be a non-empty string. "
-                "Check https://status.chaturbate.com for service status."
-            )
-            raise EventsError(msg, response_text=response_text)
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         stripped = next_url.strip()
         if not stripped:
@@ -669,11 +678,7 @@ class EventClient:
                 "Received empty nextUrl from API for user %s",
                 self.username,
             )
-            msg = (
-                "Invalid API response: 'nextUrl' must be a non-empty string. "
-                "Check https://status.chaturbate.com for service status."
-            )
-            raise EventsError(msg, response_text=response_text)
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         absolute = stripped
         parsed = urlparse(stripped)
@@ -692,11 +697,11 @@ class EventClient:
                 scheme or "<missing>",
                 self.username,
             )
-            msg_scheme = (
+            msg = (
                 "Invalid nextUrl scheme; only http/https are allowed. "
                 "Check https://status.chaturbate.com for service status."
             )
-            raise EventsError(msg_scheme, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
         if not hostname:
@@ -704,11 +709,11 @@ class EventClient:
                 "Received nextUrl without hostname for user %s",
                 self.username,
             )
-            msg_host = (
+            msg = (
                 "Invalid nextUrl host. Allow via "
                 "ClientConfig.next_url_allowed_hosts."
             )
-            raise EventsError(msg_host, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         if hostname.lower() not in self._allowed_next_hosts:
             logger.error(
@@ -716,11 +721,11 @@ class EventClient:
                 hostname,
                 self.username,
             )
-            host_msg = (
+            msg = (
                 "Invalid nextUrl host. Allow via "
                 "ClientConfig.next_url_allowed_hosts."
             )
-            raise EventsError(host_msg, response_text=response_text)
+            raise EventsError(msg, response_text=response_text)
 
         return absolute
 
@@ -735,35 +740,31 @@ class EventClient:
         """
         try:
             data_obj = json.loads(text)
-        except (json.JSONDecodeError, KeyError):
+        except json.JSONDecodeError:
             return None
 
         if not isinstance(data_obj, dict):
             return None
 
         status_msg = data_obj.get("status")
-        is_timeout = (
+        if not (
             isinstance(status_msg, str)
             and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
+        ):
+            return None
+
+        next_url = data_obj.get("nextUrl")
+        if next_url is None:
+            return None
+
+        validated = self._validate_next_url(next_url, response_text=text)
+        if validated is None:
+            return None
+        logger.debug(
+            "Received nextUrl from timeout response: %s",
+            _mask_url(validated, self.token),
         )
-        if is_timeout:
-            next_url = data_obj.get("nextUrl")
-            if next_url is None:
-                return None
-
-            validated = self._validate_next_url(
-                next_url,
-                response_text=text,
-            )
-            if validated is None:
-                return None
-
-            logger.debug(
-                "Received nextUrl from timeout response: %s",
-                _mask_url(validated, self.token),
-            )
-            return validated
-        return None
+        return validated
 
     def _parse_json_response(self, text: str) -> list[Event]:
         """Parse JSON response and extract events.

@@ -34,7 +34,6 @@ extensions: list[str] = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "autoapi.extension",
-    "sphinx_autodoc_typehints",
     "sphinx_copybutton",
 ]
 
@@ -49,7 +48,7 @@ exclude_patterns: list[str] = [
 # -- HTML output -------------------------------------------------------------
 html_theme = "furo"
 html_title = "cb-events"
-html_show_sourcelink = True
+html_show_sourcelink = False
 html_copy_source = False
 html_last_updated_fmt = "%b %d, %Y"
 
@@ -86,7 +85,7 @@ autoapi_dirs: list[str] = [str(SRC_DIR / "cb_events")]
 autoapi_type = "python"
 autoapi_root = "api"
 autoapi_member_order = "groupwise"
-autoapi_python_class_content = "class"
+autoapi_python_class_content = "both"
 autoapi_add_toctree_entry = False
 autoapi_keep_files = False
 
@@ -110,13 +109,6 @@ intersphinx_mapping: dict[str, tuple[str, None]] = {
     "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
 }
 
-# -- Type hints configuration ------------------------------------------------
-typehints_fully_qualified = False
-typehints_document_rtype = True
-always_document_param_types = True
-typehints_use_signature = True
-typehints_use_signature_return = True
-
 # -- Copy button configuration -----------------------------------------------
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
@@ -127,6 +119,7 @@ nitpicky = True
 nitpick_ignore: list[tuple[str, str]] = [
     ("py:class", "aiolimiter.AsyncLimiter"),
     ("py:class", "Event"),
+    ("py:class", "Handler"),
     ("py:class", "HandlerFunc"),
     ("py:class", "Ellipsis"),
     ("py:obj", "BaseEventModel"),

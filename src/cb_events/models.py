@@ -37,27 +37,6 @@ logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
-class BaseEventModel(BaseModel):
-    """Base model for all event-related data structures.
-
-    Provides shared Pydantic configuration for JSON deserialization with
-    camelCase to snake_case conversion, immutability, and strict validation.
-
-    Configuration:
-        alias_generator: Converts snake_case fields to camelCase aliases.
-        populate_by_name: Allows both field name and alias for input.
-        extra="ignore": Ignores unknown fields in input for compatibility.
-        frozen=True: Makes instances immutable after creation.
-    """
-
-    model_config: ClassVar[ConfigDict] = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        extra="ignore",
-        frozen=True,
-    )
-
-
 class EventType(StrEnum):
     """Event types from the Chaturbate Events API.
 
@@ -98,30 +77,27 @@ class EventType(StrEnum):
     """User has purchased media."""
 
 
+class BaseEventModel(BaseModel):
+    """Base model for all event-related data structures.
+
+    Provides shared Pydantic configuration for JSON deserialization with
+    camelCase to snake_case conversion and immutability. All event data models
+    should inherit from this base class to ensure consistent behavior when
+    parsing API responses.
+    """
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        alias_generator=to_camel,
+        extra="ignore",
+        frozen=True,
+    )
+
+
 class User(BaseEventModel):
     """User information attached to events.
 
     Contains details about the user who triggered the event, including
     display name, membership status, and various flags.
-
-    Attributes:
-        username: Display name of the user.
-        color_group: User's color group designation.
-        fc_auto_renew: Whether fan club auto-renewal is enabled.
-        gender: User's gender setting.
-        has_darkmode: Whether dark mode is enabled.
-        has_tokens: Whether the user has tokens available.
-        in_fanclub: Whether the user is a fan club member.
-        in_private_show: Whether the user is in a private show.
-        is_broadcasting: Whether the user is currently broadcasting.
-        is_follower: Whether the user follows the broadcaster.
-        is_mod: Whether the user is a moderator.
-        is_owner: Whether the user is the room owner.
-        is_silenced: Whether the user is silenced.
-        is_spying: Whether the user is spying on a private show.
-        language: User's language preference.
-        recent_tips: Recent tip activity summary.
-        subgender: User's subgender setting.
     """
 
     username: str
@@ -164,15 +140,6 @@ class Message(BaseEventModel):
     """Chat or private message content.
 
     Represents message data from chatMessage and privateMessage events.
-
-    Attributes:
-        message: The message text content.
-        bg_color: Background color for the message display.
-        color: Text color for the message.
-        font: Font style for the message.
-        orig: Original unprocessed message content.
-        from_user: Sender's username (private messages only).
-        to_user: Recipient's username (private messages only).
     """
 
     message: str
@@ -201,11 +168,6 @@ class Tip(BaseEventModel):
 
     Contains information about a tip event including the amount and
     optional message.
-
-    Attributes:
-        tokens: Number of tokens in the tip.
-        is_anon: Whether the tip was sent anonymously.
-        message: Optional message attached to the tip.
     """
 
     tokens: int
@@ -220,12 +182,6 @@ class Media(BaseEventModel):
     """Media purchase transaction details.
 
     Contains information about a media purchase event.
-
-    Attributes:
-        id: Unique identifier for the purchased media.
-        name: Display name of the media item.
-        type: Media type, either "video" or "photos".
-        tokens: Token cost of the purchase.
     """
 
     id: str
@@ -242,9 +198,6 @@ class RoomSubject(BaseEventModel):
     """Room subject or title information.
 
     Contains the updated room subject from roomSubjectChange events.
-
-    Attributes:
-        subject: The room's current subject or title text.
     """
 
     subject: str
@@ -255,19 +208,8 @@ class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
     The main event container that wraps all event types. Use the typed
-    properties to access nested data safely—they return None if data
-    is missing or invalid for the event type.
-
-    Attributes:
-        type: The event type (e.g., EventType.TIP).
-        id: Unique identifier for this event.
-        data: Raw event payload dictionary.
-
-    Properties:
-        user: User data if present and valid.
-        broadcaster: Broadcaster username if present.
-        tip: Tip data for tip events.
-        media: Media data for media purchase events.
+    properties to access nested data safely—they return None if data is missing
+    or invalid for the event type.
 
     Example:
         Safe access to nested data::
@@ -279,7 +221,7 @@ class Event(BaseEventModel):
                     print(f"From: {user.username}")
 
     Note:
-        Failures to parse nested data are logged as a warning and returns None.
+        Failures to parse nested data are logged as a warning and return None.
 
     Warning:
         All string fields in event data (e.g. ``message.message``,

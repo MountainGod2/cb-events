@@ -46,9 +46,21 @@ Quick Start
 Event Types
 -----------
 
-The following event types are supported:
+.. hlist::
+   :columns: 3
 
-TIP · FANCLUB_JOIN · MEDIA_PURCHASE · CHAT_MESSAGE · PRIVATE_MESSAGE · USER_ENTER · USER_LEAVE · FOLLOW · UNFOLLOW · BROADCAST_START · BROADCAST_STOP · ROOM_SUBJECT_CHANGE
+   - ``TIP``
+   - ``FANCLUB_JOIN``
+   - ``MEDIA_PURCHASE``
+   - ``CHAT_MESSAGE``
+   - ``PRIVATE_MESSAGE``
+   - ``USER_ENTER``
+   - ``USER_LEAVE``
+   - ``FOLLOW``
+   - ``UNFOLLOW``
+   - ``BROADCAST_START``
+   - ``BROADCAST_STOP``
+   - ``ROOM_SUBJECT_CHANGE``
 
 Configuration
 -------------
@@ -87,13 +99,28 @@ Event Properties
 
 Properties return ``None`` for incompatible event types:
 
-.. code-block:: python
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
 
-   event.user          # User object (most events)
-   event.tip           # Tip object (TIP only)
-   event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
-   event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
-   event.broadcaster   # Broadcaster username string
+   * - Property
+     - Type
+     - Available on
+   * - ``user``
+     - ``User``
+     - Most events
+   * - ``tip``
+     - ``Tip``
+     - ``TIP`` only
+   * - ``message``
+     - ``Message``
+     - ``CHAT_MESSAGE``, ``PRIVATE_MESSAGE``
+   * - ``room_subject``
+     - ``RoomSubject``
+     - ``ROOM_SUBJECT_CHANGE`` only
+   * - ``broadcaster``
+     - ``str``
+     - Most events
 
 Error Handling
 --------------
@@ -113,7 +140,10 @@ Error Handling
        # API/network errors - check e.status_code, e.response_text
        pass
 
-**Retries:** Automatic on 429, 5xx, and Cloudflare errors. Auth errors don't retry.
+.. note::
+
+   Retries are automatic on 429, 5xx, and Cloudflare 521–524 errors.
+   ``AuthError`` (401/403) is never retried.
 
 Logging
 -------

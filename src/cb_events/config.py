@@ -30,17 +30,6 @@ class ClientConfig(BaseModel):
     Controls timeouts, retry logic, validation strictness, and API endpoint
     selection. All fields have sensible defaults for typical usage.
 
-    Attributes:
-        timeout: Request timeout in seconds. Must be greater than 0.
-        use_testbed: Use testbed API instead of production.
-        strict_validation: Raise on invalid events instead of skipping.
-        retry_attempts: Total attempts including initial request (>= 1).
-        retry_backoff: Initial delay between retries in seconds.
-        retry_factor: Multiplier applied to delay after each retry.
-        retry_max_delay: Maximum delay between retries in seconds.
-        next_url_allowed_hosts: Additional hosts allowed for nextUrl
-            responses. The base API host is always permitted.
-
     Example:
         Lenient configuration for development::
 
