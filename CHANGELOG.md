@@ -2,6 +2,23 @@
 
 <!-- version list -->
 
+## v6.1.4 (2026-03-22)
+
+### Bug Fixes
+
+- **ci**: Add GPG signing to publish steps in CI/CD
+  ([#64](https://github.com/MountainGod2/cb-events/pull/64),
+  [`056ec1c`](https://github.com/MountainGod2/cb-events/commit/056ec1c53975bf863f15e69d1060cf8acacff1d6))
+
+### Chores
+
+- **examples-scripts**: Update dependency cb-events to v6.1.3
+  ([`7ffc6f9`](https://github.com/MountainGod2/cb-events/commit/7ffc6f94ab75aef8ca7a2fc63112630c10b9e8dc))
+
+- **python-dev-tools**: Update dependency pytest-cov to v7.1.0
+  ([`a4e16bd`](https://github.com/MountainGod2/cb-events/commit/a4e16bdf437e4287e941b2c259d56dcb9e3f3e5f))
+
+
 ## v6.1.3 (2026-03-21)
 
 ### Bug Fixes
