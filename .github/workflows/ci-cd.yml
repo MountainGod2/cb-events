@@ -244,13 +244,20 @@ jobs:
 
       - run: git add uv.lock
 
+      - uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+
       - id: publish
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           bash .github/workflows/verify_upstream.sh
-          uv run semantic-release -v --strict version --skip-build
-          uv run semantic-release publish
+          uv run semantic-release --strict version --skip-build
+          uv run semantic-release --strict publish
 
       - run: uv cache prune --ci
 
