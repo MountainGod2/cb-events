@@ -14,13 +14,18 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions: {}
+
 jobs:
   dependency-sync:
+    name: Dependency Sync
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -33,8 +38,10 @@ jobs:
       - run: uv cache prune --ci
 
   test:
+    name: Test
     needs: dependency-sync
     runs-on: ubuntu-24.04
+    environment: testing
     permissions:
       contents: read
     strategy:
@@ -42,6 +49,8 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -76,14 +85,17 @@ jobs:
       - run: uv cache prune --ci
 
   security:
+    name: Security
     needs: dependency-sync
     runs-on: ubuntu-24.04
     permissions:
-      actions: read
+      actions: read # Required for CodeQL upload-sarif to read workflow context
       contents: read
-      security-events: write
+      security-events: write # Required to upload SARIF results to GitHub Security tab
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -119,6 +131,7 @@ jobs:
       - run: uv cache prune --ci
 
   build:
+    name: Build
     needs: [test, security]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
@@ -134,8 +147,9 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - run: git checkout -B ${{ github.ref_name }}
+      - run: git checkout -B ${GITHUB_REF_NAME}
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -169,6 +183,7 @@ jobs:
       - run: uv cache prune --ci
 
   e2e:
+    name: E2E Tests
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -178,6 +193,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
+          persist-credentials: false
 
       - if: needs.build.outputs.released == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -204,14 +220,16 @@ jobs:
       - run: uv cache prune --ci
 
   release:
+    name: Release
     needs: [build, e2e]
     if: github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
+    environment: release
     concurrency:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}
       cancel-in-progress: false
     permissions:
-      contents: write
+      contents: write # Required to create releases, tags, and push commits
     outputs:
       released: ${{ steps.publish.outputs.released }}
       version: ${{ steps.publish.outputs.version }}
@@ -222,8 +240,11 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
+          persist-credentials: false
 
-      - run: git reset --hard ${{ github.sha }}
+      - env:
+          GIT_SHA: ${{ github.sha }}
+        run: git reset --hard "$GIT_SHA"
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -262,6 +283,7 @@ jobs:
       - run: uv cache prune --ci
 
   deploy:
+    name: Deploy to PyPI
     needs: [build, release]
     if: github.ref == 'refs/heads/main' && needs.release.outputs.released == 'true' && github.repository == 'MountainGod2/cb-events'
     runs-on: ubuntu-24.04
@@ -269,16 +291,16 @@ jobs:
       name: pypi
       url: https://pypi.org/project/cb-events/
     permissions:
-      attestations: write
+      attestations: write # Required to create build provenance attestations
       contents: read
-      id-token: write
+      id-token: write # Required for OIDC authentication with PyPI
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: dist
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@987f11e872eb5ca67aad6a4fe531bd3089142c60 # v1
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1
         with:
           packages-dir: dist
           print-hash: true
