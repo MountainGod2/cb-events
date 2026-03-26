@@ -95,8 +95,9 @@ Lenient mode skips invalid events:
 .. code-block:: python
 
    config = ClientConfig(strict_validation=False)
-   async for event in client:
-       await router.dispatch(event)
+   async with EventClient(username, token, config=config) as client:
+       async for event in client:
+           await router.dispatch(event)
 
 Handler Errors
 --------------
@@ -170,6 +171,7 @@ Example
 
 .. code-block:: python
 
+   import asyncio
    import logging
    from cb_events import EventClient, AuthError, EventsError
 
