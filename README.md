@@ -12,7 +12,11 @@ Async Python client for the Chaturbate Events API.
 
 ```bash
 pip install cb-events
-# or with uv
+```
+
+With uv:
+
+```bash
 uv add cb-events
 ```
 
@@ -32,9 +36,6 @@ async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
-# Any async callable (functions, functools.partial wrappers, async callable objects)
-# can be registered with the router.
-
 async def main():
     async with EventClient(username, token) as client:
         async for event in client:
@@ -43,12 +44,9 @@ async def main():
 asyncio.run(main())
 ```
 
-> [!NOTE]
-> You can [generate your Chaturbate API token here](https://chaturbate.com/statsapi/authtoken/).
->
-> Make sure to select the `Events API` scope when creating the token.
+Generate API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
 
-See the [example](https://github.com/MountainGod2/cb-events/blob/main/examples/example.py) for additional details.
+See [example.py](https://github.com/MountainGod2/cb-events/blob/main/examples/example.py).
 
 ## Event Types
 
@@ -73,12 +71,11 @@ config = ClientConfig(
 client = EventClient(username, token, config=config)
 ```
 
-> [!NOTE]
-> Config is immutable. Pass `config` as a keyword argument.
-
 ## Rate Limiting
 
-Default: 2000 requests per 60 seconds per client. Share a rate limiter across multiple clients:
+Default: 2000 requests/60s per client.
+
+Shared limiter:
 
 ```python
 from aiolimiter import AsyncLimiter
@@ -89,8 +86,6 @@ client2 = EventClient(username2, token2, rate_limiter=limiter)
 ```
 
 ## Event Properties
-
-Properties return `None` for incompatible event types or invalid data:
 
 ```python
 event.user          # User object (most events)
@@ -117,9 +112,9 @@ except EventsError as e:
     pass
 ```
 
-**Retries:** Automatic on 429, 5xx, and Cloudflare errors. Auth errors don't retry.
+**Retries:** 429, 5xx, Cloudflare 521-524. Not retriable: 401/403.
 
-**Handlers:** Run sequentially. Non-cancellation errors are logged but don't stop other handlers; cancellations propagate.
+**Handlers:** Sequential execution. Errors logged but don't stop processing.
 
 ## Logging
 
@@ -131,11 +126,11 @@ logging.getLogger('cb_events').setLevel(logging.DEBUG)
 
 ## Requirements
 
-Python ≥3.12 - See [dependencies](https://github.com/MountainGod2/cb-events/blob/main/pyproject.toml).
+Python ≥3.12
 
 ## License
 
-MIT - See [LICENSE](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
+MIT
 
 ---
 
