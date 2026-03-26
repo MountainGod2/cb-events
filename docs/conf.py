@@ -35,7 +35,13 @@ extensions: list[str] = [
     "sphinx.ext.viewcode",
     "autoapi.extension",
     "sphinx_copybutton",
+    "myst_parser",
 ]
+
+source_suffix: dict[str, str] = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 exclude_patterns: list[str] = [
     "_build",
@@ -79,6 +85,11 @@ napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_attr_annotations = True
 napoleon_preprocess_types = True
+napoleon_use_ivar = True
+
+# -- Autodoc configuration ---------------------------------------------------
+autodoc_typehints = "signature"
+autodoc_typehints_format = "short"
 
 # -- AutoAPI configuration ---------------------------------------------------
 autoapi_dirs: list[str] = [str(SRC_DIR / "cb_events")]
@@ -91,8 +102,10 @@ autoapi_keep_files = False
 
 autoapi_options: list[str] = [
     "members",
+    "undoc-members",
     "show-inheritance",
     "show-module-summary",
+    "imported-members",
 ]
 
 autoapi_ignore: list[str] = [
