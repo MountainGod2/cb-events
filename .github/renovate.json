@@ -4,7 +4,6 @@
   "extends": ["config:best-practices"],
   "automergeType": "branch",
   "branchNameStrict": true,
-  "commitBodyTable": true,
   "commitMessageLowerCase": "auto",
   "dependencyDashboard": true,
   "dependencyDashboardApproval": false,
@@ -92,18 +91,16 @@
       "groupName": "python-dev-tools",
       "labels": ["dependencies", "dev"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "python-dev-tools"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
-      "matchPackageNames": ["sphinx", "furo", "/^sphinx-.*$/"],
+      "matchPackageNames": ["sphinx", "furo", "myst-parser", "/^sphinx-.*$/"],
       "groupName": "python-docs",
       "labels": ["dependencies", "docs"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "python-docs"
@@ -119,7 +116,6 @@
       "groupName": "build-release",
       "labels": ["dependencies", "build"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "build-release"
@@ -130,7 +126,6 @@
       "groupName": "pre-commit",
       "labels": ["dependencies", "pre-commit"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "pre-commit"
@@ -140,7 +135,6 @@
       "matchManagers": ["github-actions"],
       "groupName": "ci-github-actions",
       "labels": ["dependencies", "ci"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "ci-github-actions"
@@ -151,7 +145,6 @@
       "groupName": "docker-images",
       "labels": ["dependencies", "docker"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "docker-images"
@@ -162,7 +155,6 @@
       "groupName": "examples-scripts",
       "labels": ["dependencies", "examples"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
       "semanticCommitScope": "examples-scripts"
@@ -174,9 +166,16 @@
       "groupName": "examples-deps",
       "labels": ["dependencies", "examples"],
       "matchUpdateTypes": ["minor", "patch"],
-      "minimumReleaseAge": "0 days",
       "automerge": true,
       "autoApprove": true,
+      "semanticCommitScope": "examples-deps"
+    },
+    {
+      "description": "cb-events package in examples scripts",
+      "matchManagers": ["pep723"],
+      "matchPackageNames": ["cb-events"],
+      "labels": ["dependencies", "examples"],
+      "minimumReleaseAge": "0 days",
       "semanticCommitScope": "examples-deps"
     },
     {
