@@ -2,6 +2,62 @@
 
 <!-- version list -->
 
+## v6.2.0 (2026-03-26)
+
+### Bug Fixes
+
+- **docs**: Update error handling example for async usage
+  ([#68](https://github.com/MountainGod2/cb-events/pull/68),
+  [`adb2241`](https://github.com/MountainGod2/cb-events/commit/adb2241a88cf11076f85477f307bf6e82c5e43fa))
+
+### Chores
+
+- **examples-scripts**: Update dependency cb-events to v6.1.4
+  ([`4b5ba54`](https://github.com/MountainGod2/cb-events/commit/4b5ba5468b4ae18b382270c01ff584913d345be7))
+
+- **lock-file**: Lock file maintenance
+  ([`cd99c2f`](https://github.com/MountainGod2/cb-events/commit/cd99c2f02d1c476f4138a0d1c19ffe460e1137c8))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.86.0
+  ([`a95cde3`](https://github.com/MountainGod2/cb-events/commit/a95cde350ce9192110b026af97d967ee8af5242d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.86.1
+  ([`4814b48`](https://github.com/MountainGod2/cb-events/commit/4814b48c8866f413e1f099491e84f443911fe99f))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.86.2
+  ([`c464c13`](https://github.com/MountainGod2/cb-events/commit/c464c1370f5b8790892cc69fd18dab6a6c3adef4))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.87.1
+  ([`cd45896`](https://github.com/MountainGod2/cb-events/commit/cd4589683ab2f2e9471d25514730e1a62930a460))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.89.3
+  ([`e399b70`](https://github.com/MountainGod2/cb-events/commit/e399b704dce2cdf74f3df7784d43156938a28b03))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.89.4
+  ([`10b9e02`](https://github.com/MountainGod2/cb-events/commit/10b9e02b15fe1bddd40132ccb4d5b2c8db1ea6c1))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.91.4
+  ([#68](https://github.com/MountainGod2/cb-events/pull/68),
+  [`adb2241`](https://github.com/MountainGod2/cb-events/commit/adb2241a88cf11076f85477f307bf6e82c5e43fa))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.91.4
+  ([`3b282bf`](https://github.com/MountainGod2/cb-events/commit/3b282bf1aead8c52603027c4ba45e9500a808c29))
+
+- **python-dev-tools**: Update dependency ty to v0.0.25
+  ([`1581c79`](https://github.com/MountainGod2/cb-events/commit/1581c7903c5913385435ba64fade051b4c5157ad))
+
+### Continuous Integration
+
+- Update job names and permissions ([#66](https://github.com/MountainGod2/cb-events/pull/66),
+  [`0b1a77b`](https://github.com/MountainGod2/cb-events/commit/0b1a77b9988cf7ad7c461e314f107ce81f1043f3))
+
+### Features
+
+- **docs**: Add additional doc pages for config and installation
+  ([#68](https://github.com/MountainGod2/cb-events/pull/68),
+  [`adb2241`](https://github.com/MountainGod2/cb-events/commit/adb2241a88cf11076f85477f307bf6e82c5e43fa))
+
+
 ## v6.1.4 (2026-03-22)
 
 ### Bug Fixes
