@@ -1,8 +1,6 @@
 """Async client for the Chaturbate Events API.
 
-This library provides a high-level async client for streaming real-time events
-from Chaturbate with automatic retries, rate limiting, and type-safe event
-handling.
+Provides automatic retries, rate limiting, and type-safe event handling.
 
 Key Components:
     EventClient: Async context manager for API polling.
