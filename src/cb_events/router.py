@@ -112,7 +112,6 @@ class Router:
             async def log_event(event: Event) -> None:
                 print(f"Event received: {event.type}")
 
-            # In your event loop:
             await router.dispatch(event)
 
     Note:

@@ -28,7 +28,7 @@ class ClientConfig(BaseModel):
     """Immutable configuration for EventClient behavior.
 
     Controls timeouts, retry logic, validation strictness, and API endpoint
-    selection. All fields have sensible defaults for typical usage.
+    selection.
 
     Example:
         Lenient configuration for development::

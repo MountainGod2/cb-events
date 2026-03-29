@@ -279,8 +279,7 @@ class EventClient:
                 pass
 
     Note:
-        Always use as an async context manager to ensure proper session
-        cleanup. The client is not thread-safe.
+        Not thread-safe. Must be used as an async context manager.
     """
 
     __slots__: tuple[str, ...] = (
@@ -384,11 +383,7 @@ class EventClient:
                 )
         except (ClientError, OSError, TimeoutError) as e:
             await self.close()
-            msg = (
-                "Failed to create HTTP session. Check system resources, "
-                "network configuration, and ensure aiohttp is properly "
-                "installed."
-            )
+            msg = "Failed to create HTTP session."
             raise EventsError(msg) from e
         return self
 
@@ -485,11 +480,7 @@ class EventClient:
         )
 
         attempt_label = "attempt" if attempts_made == 1 else "attempts"
-        msg = (
-            f"Failed to fetch events after {attempts_made} {attempt_label}."
-            " Check network connectivity and firewall settings."
-            " Review API status at https://status.chaturbate.com."
-        )
+        msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
 
         # Unwrap _TransientError if that was the cause to avoid noise.
         cause = (
@@ -524,11 +515,11 @@ class EventClient:
             EventsError: If the request fails after the configured retries.
         """
         if self.session is None:
-            init_msg = (
-                "Client not initialized - use 'async with EventClient(...)' "
-                "context manager to properly initialize the session"
+            msg = (
+                "Client not initialized. Use 'async with EventClient(...)'"
+                " as a context manager."
             )
-            raise EventsError(init_msg)
+            raise EventsError(msg)
 
         attempts_made = 0
         retriable_exc_types = (
@@ -617,14 +608,7 @@ class EventClient:
                 snippet,
             )
 
-            guidance = (
-                " Server error. Check https://status.chaturbate.com for "
-                "API status. Retry later."
-                if status >= HTTPStatus.INTERNAL_SERVER_ERROR
-                else ""
-            )
-
-            msg = f"HTTP {status}: {snippet}{guidance}"
+            msg = f"Request failed: {snippet}"
             raise EventsError(
                 msg,
                 status_code=status,
@@ -660,8 +644,7 @@ class EventClient:
             return None
 
         invalid_next_url_msg = (
-            "Invalid API response: 'nextUrl' must be a non-empty string. "
-            "Check https://status.chaturbate.com for service status."
+            "Invalid API response: 'nextUrl' must be a non-empty string."
         )
 
         if not isinstance(next_url, str):
@@ -697,10 +680,7 @@ class EventClient:
                 scheme or "<missing>",
                 self.username,
             )
-            msg = (
-                "Invalid nextUrl scheme; only http/https are allowed. "
-                "Check https://status.chaturbate.com for service status."
-            )
+            msg = "Invalid nextUrl scheme; only http/https are allowed."
             raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
@@ -783,11 +763,7 @@ class EventClient:
         except json.JSONDecodeError as exc:
             snippet = _response_snippet(text)
             logger.exception("Failed to parse JSON: %s", snippet)
-            msg = (
-                f"Invalid JSON response from API: {exc.msg}. "
-                "The response may indicate an API outage or unexpected format. "
-                "Check https://status.chaturbate.com for service status."
-            )
+            msg = f"Invalid JSON response from API: {exc.msg}."
             raise EventsError(
                 msg,
                 response_text=text,
@@ -795,9 +771,8 @@ class EventClient:
 
         if not isinstance(data_obj, dict):
             msg = (
-                "Invalid API response format: expected JSON object. "
-                f"Got {type(data_obj).__name__} instead. "
-                "Check https://status.chaturbate.com for service status."
+                "Invalid API response format: expected JSON object, "
+                f"got {type(data_obj).__name__}."
             )
             raise EventsError(
                 msg,
@@ -842,17 +817,15 @@ class EventClient:
         """Poll the API for new events.
 
         Makes a single request to the Events API and returns any available
-        events. The client automatically tracks the nextUrl for subsequent
-        calls to maintain position in the event stream.
+        events. Updates _next_url from each response for subsequent polls.
 
         Returns:
-            List of events received. Returns an empty list if no events are
-            available or the request timed out.
+            List of events received, or an empty list on timeout.
 
-        Note:
-            May raise EventsError if the client is not initialized or
-            the request fails, or AuthError if authentication fails.
-        """
+        Raises:
+            EventsError: If the client is not initialized or the request fails.
+            AuthError: If authentication fails (HTTP 401/403).
+        """  # noqa: DOC502
         async with self._polling_lock:
             url = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
@@ -862,27 +835,15 @@ class EventClient:
             return self._process_response(status, text)
 
     def __aiter__(self) -> AsyncIterator[Event]:
-        """Return an async iterator for continuous event streaming.
-
-        Enables use in async for loops for continuous polling.
+        """Implement async iteration over events.
 
         Returns:
             Async iterator that yields Event instances indefinitely.
-
-        Example:
-            Continuous event streaming::
-
-                async with EventClient("user", "token") as client:
-                    async for event in client:
-                        print(f"Event: {event.type}")
         """
         return self._stream()
 
     async def _stream(self) -> AsyncGenerator[Event]:
         """Generate events continuously from the API.
-
-        Internal generator that polls indefinitely and yields events as they
-        arrive. Used by __aiter__() to implement async iteration.
 
         Yields:
             Event instances as they are received from the API.

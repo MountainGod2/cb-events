@@ -129,10 +129,7 @@ async def test_rate_limit_error(
     async with event_client_factory(config=config) as client:
         with pytest.raises(
             EventsError,
-            match=(
-                r"Failed to fetch events after 1 attempt\. "
-                r"Check network connectivity and firewall settings\."
-            ),
+            match=r"Failed to fetch events after 1 attempt\.",
         ):
             await client.poll()
 
@@ -392,7 +389,7 @@ async def test_invalid_next_url_handling(
             2,
             0.01,
             1.0,
-            r"Failed to fetch events after 2 attempts.*network connectivity",
+            r"Failed to fetch events after 2 attempts",
         ),
         (
             OSError("Network unreachable"),
