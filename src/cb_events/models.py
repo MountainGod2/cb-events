@@ -81,9 +81,7 @@ class BaseEventModel(BaseModel):
     """Base model for all event-related data structures.
 
     Provides shared Pydantic configuration for JSON deserialization with
-    camelCase to snake_case conversion and immutability. All event data models
-    should inherit from this base class to ensure consistent behavior when
-    parsing API responses.
+    camelCase to snake_case conversion and immutability.
     """
 
     model_config: ClassVar[ConfigDict] = ConfigDict(
