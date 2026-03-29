@@ -608,7 +608,7 @@ class EventClient:
                 snippet,
             )
 
-            msg = f"HTTP {status}: {snippet}"
+            msg = f"Request failed: {snippet}"
             raise EventsError(
                 msg,
                 status_code=status,
