@@ -136,7 +136,9 @@ async def test_rate_limit_error(
             await client.poll()
 
 
+@pytest.mark.parametrize("status_code", [500, 502, 503])
 async def test_server_error_after_retry_exhaustion(
+    status_code: int,
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
@@ -145,11 +147,11 @@ async def test_server_error_after_retry_exhaustion(
 
     This should happen after retries are exhausted.
     """
-    aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
+    aioresponses_mock.get(testbed_url_pattern, status=status_code, repeat=True)
     config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(ServerError, match=r"HTTP 502"):
+        with pytest.raises(ServerError, match=rf"HTTP {status_code}"):
             await client.poll()
 
 
