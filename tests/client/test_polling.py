@@ -10,7 +10,12 @@ from aioresponses import aioresponses
 from pydantic import ValidationError
 
 from cb_events.config import ClientConfig
-from cb_events.exceptions import AuthError, EventsError
+from cb_events.exceptions import (
+    AuthError,
+    EventsError,
+    RateLimitError,
+    ServerError,
+)
 from cb_events.models import EventType
 from tests.conftest import EventClientFactory
 from tests.helpers import (
@@ -120,17 +125,31 @@ async def test_rate_limit_error(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """HTTP 429 responses should surface as :class:`EventsError`."""
+    """HTTP 429 responses should surface as :class:`RateLimitError`."""
     aioresponses_mock.get(
         testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded"
     )
     config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(
-            EventsError,
-            match=r"Failed to fetch events after 1 attempt\.",
-        ):
+        with pytest.raises(RateLimitError, match=r"HTTP 429"):
+            await client.poll()
+
+
+async def test_server_error_after_retry_exhaustion(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Retryable 5xx failures should raise :class:`ServerError`.
+
+    This should happen after retries are exhausted.
+    """
+    aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
+    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
+
+    async with event_client_factory(config=config) as client:
+        with pytest.raises(ServerError, match=r"HTTP 502"):
             await client.poll()
 
 

@@ -11,7 +11,7 @@ import logging
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Final, NoReturn, Self, cast, override
+from typing import Final, NoReturn, cast
 from urllib.parse import quote, urljoin, urlparse
 
 import stamina
@@ -19,9 +19,10 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
+from typing_extensions import Self
 
 from .config import ClientConfig
-from .exceptions import AuthError, EventsError
+from .exceptions import AuthError, EventsError, build_http_error
 from .models import Event
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
@@ -227,19 +228,36 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
 
     Returns:
         List of validated Event instances.
+    """
+    events = []
+    for item in raw:
+        event = _parse_event(item, strict=strict)
+        if event is not None:
+            events.append(event)
+    return events
+
+
+def _parse_event(item: object, *, strict: bool) -> Event | None:
+    """Parse a single raw event object into an Event model.
+
+    Args:
+        item: Raw JSON-compatible object returned by the API.
+        strict: Whether to raise ValidationError on invalid payloads.
+
+    Returns:
+        Validated Event instance, or None when validation fails in non-strict
+        mode.
 
     Raises:
         ValidationError: If strict is True and validation fails.
     """
-    events = []
-    for item in raw:
-        try:
-            events.append(Event.model_validate(item))
-        except ValidationError as exc:
-            if strict:
-                raise
-            _log_validation_error(item, exc)
-    return events
+    try:
+        return Event.model_validate(item)
+    except ValidationError as exc:
+        if strict:
+            raise
+        _log_validation_error(item, exc)
+        return None
 
 
 class EventClient:
@@ -353,7 +371,6 @@ class EventClient:
             time_period=DEFAULT_TIME_PERIOD,
         )
 
-    @override
     def __repr__(self) -> str:
         """Return string representation with masked token.
 
@@ -463,14 +480,16 @@ class EventClient:
         attempts_made: int,
         original_exception: Exception,
     ) -> NoReturn:
-        """Raise EventsError with contextual request failure details.
+        """Raise request failure with contextual details.
 
         Args:
             attempts_made: Number of attempts that were made before failure.
             original_exception: The last exception raised during the request.
 
         Raises:
-            EventsError: Always raised with contextual request failure details.
+            build_http_error: When HTTP metadata is available to create a
+                specialized HTTP status error.
+            EventsError: When no HTTP status metadata is available.
         """
         logger.error(
             "Request failed after %d attempts for user %s",
@@ -495,6 +514,13 @@ class EventClient:
         response_text: str | None = getattr(
             original_exception, "response_text", None
         )
+
+        if status_code is not None:
+            raise build_http_error(
+                msg,
+                status_code=status_code,
+                response_text=response_text,
+            ) from cause
 
         raise EventsError(
             msg,
@@ -577,7 +603,7 @@ class EventClient:
 
         Raises:
             AuthError: For HTTP 401/403 responses.
-            EventsError: For other non-success responses.
+            build_http_error: For other non-success HTTP responses.
         """
         if status in AUTH_ERRORS:
             logger.warning(
@@ -609,7 +635,7 @@ class EventClient:
             )
 
             msg = f"Request failed: {snippet}"
-            raise EventsError(
+            raise build_http_error(
                 msg,
                 status_code=status,
                 response_text=text,

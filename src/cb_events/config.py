@@ -18,10 +18,11 @@ Example:
                 print(event)
 """
 
-from typing import ClassVar, Self
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic.config import ConfigDict
+from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):

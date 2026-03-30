@@ -2,7 +2,15 @@
 
 import pytest
 
-from cb_events import AuthError, EventsError
+from cb_events import (
+    AuthError,
+    ClientRequestError,
+    EventsError,
+    HttpStatusError,
+    RateLimitError,
+    ServerError,
+)
+from cb_events.exceptions import build_http_error
 
 
 @pytest.mark.parametrize(
@@ -38,6 +46,43 @@ def test_auth_error_inherits_events_error() -> None:
 
     assert isinstance(error, EventsError)
     assert str(error) == "Authentication failed"
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected_type"),
+    [
+        (429, RateLimitError),
+        (400, ClientRequestError),
+        (404, ClientRequestError),
+        (500, ServerError),
+        (521, ServerError),
+    ],
+)
+def test_build_http_error_returns_specific_subclasses(
+    status_code: int,
+    expected_type: type[HttpStatusError],
+) -> None:
+    """HTTP statuses should map to targeted error subclasses."""
+    error = build_http_error(
+        "Request failed",
+        status_code=status_code,
+        response_text="response",
+    )
+
+    assert isinstance(error, expected_type)
+    assert isinstance(error, HttpStatusError)
+    assert isinstance(error, EventsError)
+    assert error.status_code == status_code
+
+
+def test_build_http_error_returns_base_http_status_error_for_other_codes() -> (
+    None
+):
+    """Unexpected statuses should fall back to HttpStatusError."""
+    error = build_http_error("Request failed", status_code=302)
+
+    assert type(error) is HttpStatusError
+    assert error.status_code == 302
 
 
 def test_events_error_truncates_long_response_text() -> None:
