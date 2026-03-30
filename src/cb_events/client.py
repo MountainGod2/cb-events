@@ -487,10 +487,9 @@ class EventClient:
             original_exception: The last exception raised during the request.
 
         Raises:
-            build_http_error: When HTTP metadata is available to create a
-                specialized HTTP status error.
-            EventsError: When no HTTP status metadata is available.
-        """
+            EventsError: With details about the failure, including HTTP metadata
+                if available.
+        """  # noqa: DOC501
         logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
@@ -538,7 +537,7 @@ class EventClient:
             Tuple of (status_code, response_text).
 
         Raises:
-            EventsError: If the request fails after the configured retries.
+            EventsError: If the client is not initialized or the request fails.
         """
         if self.session is None:
             msg = (
@@ -603,8 +602,9 @@ class EventClient:
 
         Raises:
             AuthError: For HTTP 401/403 responses.
-            build_http_error: For other non-success HTTP responses.
-        """
+            EventsError: For other non-200 responses or when response format is
+                invalid. Includes HTTP metadata when available.
+        """  # noqa: DOC501, DOC502
         if status in AUTH_ERRORS:
             logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
