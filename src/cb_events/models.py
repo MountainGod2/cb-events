@@ -98,7 +98,7 @@ class BaseEventModel(BaseModel):
     )
 
 
-BaseEventModelT = TypeVar("BaseEventModelT", bound=BaseEventModel)
+_BaseEventModelT = TypeVar("_BaseEventModelT", bound=BaseEventModel)
 
 
 class User(BaseEventModel):
@@ -299,11 +299,11 @@ class Event(BaseEventModel):
     def _extract(
         self,
         key: str,
-        loader: Callable[[object], BaseEventModelT],
+        loader: Callable[[object], _BaseEventModelT],
         *,
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
-    ) -> BaseEventModelT | None:
+    ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
         Args:
