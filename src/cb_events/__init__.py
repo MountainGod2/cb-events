@@ -31,7 +31,14 @@ Example:
 
 from .client import EventClient
 from .config import ClientConfig
-from .exceptions import AuthError, EventsError
+from .exceptions import (
+    AuthError,
+    ClientRequestError,
+    EventsError,
+    HttpStatusError,
+    RateLimitError,
+    ServerError,
+)
 from .models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from .router import HandlerFunc, Router
 from .version import __version__
@@ -39,15 +46,19 @@ from .version import __version__
 __all__: list[str] = [
     "AuthError",
     "ClientConfig",
+    "ClientRequestError",
     "Event",
     "EventClient",
     "EventType",
     "EventsError",
     "HandlerFunc",
+    "HttpStatusError",
     "Media",
     "Message",
+    "RateLimitError",
     "RoomSubject",
     "Router",
+    "ServerError",
     "Tip",
     "User",
     "__version__",

@@ -4,6 +4,10 @@ This module defines the exception hierarchy for API errors:
 
     EventsError: Base exception for all API failures.
     AuthError: Authentication failures (HTTP 401/403).
+    HttpStatusError: Generic HTTP status failures.
+    ClientRequestError: HTTP 4xx failures (except auth/rate limit).
+    RateLimitError: HTTP 429 failures.
+    ServerError: HTTP 5xx and Cloudflare 52x failures.
 
 Example:
     Handling API errors::
@@ -20,10 +24,28 @@ Example:
             print(f"API error (HTTP {e.status_code}): {e}")
 """
 
-from typing import Final, override
+from typing import Final
 
 _RESPONSE_TEXT_LIMIT: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
+
+AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
+"""HTTP status codes indicating authentication failures."""
+
+RATE_LIMIT_STATUS_CODE: Final[int] = 429
+"""HTTP status code for rate limiting."""
+
+CLIENT_ERROR_MIN_STATUS_CODE: Final[int] = 400
+"""Lower bound for HTTP client error status codes."""
+
+CLIENT_ERROR_MAX_STATUS_CODE: Final[int] = 499
+"""Upper bound for HTTP client error status codes."""
+
+SERVER_ERROR_MIN_STATUS_CODE: Final[int] = 500
+"""Lower bound for HTTP server error status codes."""
+
+SERVER_ERROR_MAX_STATUS_CODE: Final[int] = 599
+"""Upper bound for HTTP server error status codes."""
 
 
 class EventsError(Exception):
@@ -77,7 +99,6 @@ class EventsError(Exception):
             else response_text
         )
 
-    @override
     def __str__(self) -> str:
         """Return error message with HTTP status if available.
 
@@ -109,3 +130,86 @@ class AuthError(EventsError):
     """
 
     __slots__: tuple[str, ...] = ()
+
+
+class HttpStatusError(EventsError):
+    """Base error for non-authentication HTTP status code failures."""
+
+    __slots__: tuple[str, ...] = ()
+
+
+class ClientRequestError(HttpStatusError):
+    """HTTP 4xx request failure (excluding auth and rate limiting)."""
+
+    __slots__: tuple[str, ...] = ()
+
+
+class RateLimitError(HttpStatusError):
+    """HTTP 429 rate-limiting failure."""
+
+    __slots__: tuple[str, ...] = ()
+
+
+class ServerError(HttpStatusError):
+    """HTTP 5xx server-side failure."""
+
+    __slots__: tuple[str, ...] = ()
+
+
+def build_http_error(
+    message: str,
+    *,
+    status_code: int,
+    response_text: str | None = None,
+) -> EventsError:
+    """Build the most specific HTTP status error for a status code.
+
+    Args:
+        message: Human-readable failure message.
+        status_code: HTTP status code returned by the API.
+        response_text: Optional response body.
+
+    Returns:
+        An instance of the most specific EventsError subclass matching the
+        status code, with message and HTTP details included.
+    """
+    if status_code in AUTH_ERROR_STATUS_CODES:
+        return AuthError(
+            message,
+            status_code=status_code,
+            response_text=response_text,
+        )
+    if status_code == RATE_LIMIT_STATUS_CODE:
+        return RateLimitError(
+            message,
+            status_code=status_code,
+            response_text=response_text,
+        )
+
+    if (
+        CLIENT_ERROR_MIN_STATUS_CODE
+        <= status_code
+        <= CLIENT_ERROR_MAX_STATUS_CODE
+    ):
+        return ClientRequestError(
+            message,
+            status_code=status_code,
+            response_text=response_text,
+        )
+
+    if (
+        SERVER_ERROR_MIN_STATUS_CODE
+        <= status_code
+        <= SERVER_ERROR_MAX_STATUS_CODE
+    ):
+        return ServerError(
+            message,
+            status_code=status_code,
+            response_text=response_text,
+        )
+
+    return HttpStatusError(
+        message,
+        status_code=status_code,
+        response_text=response_text,
+    )

@@ -25,9 +25,9 @@ Example:
 
 import logging
 from collections.abc import Callable
-from enum import StrEnum
+from enum import Enum
 from functools import cached_property
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 from pydantic.alias_generators import to_camel
@@ -37,7 +37,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
-class EventType(StrEnum):
+class EventType(str, Enum):
     """Event types from the Chaturbate Events API.
 
     Each member represents a distinct event category that can be received
@@ -76,6 +76,13 @@ class EventType(StrEnum):
     MEDIA_PURCHASE = "mediaPurchase"
     """User has purchased media."""
 
+    def __str__(self) -> str:
+        """Return the raw API value for string formatting.
+
+        This preserves the previous StrEnum behavior on Python 3.10.
+        """
+        return self.value
+
 
 class BaseEventModel(BaseModel):
     """Base model for all event-related data structures.
@@ -89,6 +96,9 @@ class BaseEventModel(BaseModel):
         extra="ignore",
         frozen=True,
     )
+
+
+_BaseEventModelT = TypeVar("_BaseEventModelT", bound=BaseEventModel)
 
 
 class User(BaseEventModel):
@@ -286,14 +296,14 @@ class Event(BaseEventModel):
             transform=lambda v: {"subject": v},
         )
 
-    def _extract[T: BaseEventModel](
+    def _extract(
         self,
         key: str,
-        loader: Callable[[object], T],
+        loader: Callable[[object], _BaseEventModelT],
         *,
         allowed_types: tuple[EventType, ...] | None = None,
         transform: Callable[[object], object] | None = None,
-    ) -> T | None:
+    ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
         Args:

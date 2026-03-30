@@ -59,6 +59,7 @@
         "aiolimiter",
         "pydantic",
         "stamina",
+        "typing-extensions",
         "/^pydantic-.*$/"
       ],
       "groupName": "python-runtime",

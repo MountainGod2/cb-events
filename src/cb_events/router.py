@@ -27,18 +27,36 @@ import logging
 from collections.abc import Awaitable, Callable
 from functools import partial
 from inspect import iscoroutinefunction
-from typing import cast
+from typing import TypeAlias, cast
 
 from .models import Event, EventType
 
 logger: logging.Logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
 
-type HandlerFunc = Callable[[Event], Awaitable[None]]
+HandlerFunc: TypeAlias = Callable[[Event], Awaitable[None]]
 """Async handler signature accepted by Router decorators."""
 
 # Broad callable accepted by decorators (may be sync, partials, or wrappers).
-type Handler = Callable[[Event], object]
+Handler: TypeAlias = Callable[[Event], object]
+
+
+async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
+    """Invoke a handler and log failures without stopping dispatch.
+
+    Args:
+        handler: Async callable that processes the event.
+        event: The event to pass to the handler.
+    """
+    try:
+        await handler(event)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Handler %s failed for event %s (type: %s)",
+            _handler_name(handler),
+            event.id,
+            event.type.value,
+        )
 
 
 def _is_async_callable(func: object) -> bool:
@@ -198,12 +216,4 @@ class Router:
         )
 
         for handler in handlers:
-            try:
-                await handler(event)
-            except Exception:  # pylint: disable=broad-exception-caught
-                logger.exception(
-                    "Handler %s failed for event %s (type: %s)",
-                    _handler_name(handler),
-                    event.id,
-                    event.type.value,
-                )
+            await _dispatch_handler(handler, event)
