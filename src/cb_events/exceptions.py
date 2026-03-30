@@ -156,7 +156,7 @@ class RateLimitError(HttpStatusError):
 
 
 class ServerError(HttpStatusError):
-    """HTTP 5xx or Cloudflare 52x server-side failure."""
+    """HTTP 5xx server-side failure."""
 
     __slots__: tuple[str, ...] = ()
 
@@ -199,7 +199,6 @@ def build_http_error(
         SERVER_ERROR_MIN_STATUS_CODE
         <= status_code
         <= SERVER_ERROR_MAX_STATUS_CODE
-        or status_code in _CLOUDFLARE_SERVER_ERRORS
     ):
         return ServerError(
             message,
