@@ -42,7 +42,12 @@ Handler: TypeAlias = Callable[[Event], object]
 
 
 async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
-    """Invoke a handler and log failures without stopping dispatch."""
+    """Invoke a handler and log failures without stopping dispatch.
+
+    Args:
+        handler: Async callable that processes the event.
+        event: The event to pass to the handler.
+    """
     try:
         await handler(event)
     except Exception:  # pylint: disable=broad-exception-caught
