@@ -29,6 +29,9 @@ from typing import Final
 _RESPONSE_TEXT_LIMIT: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
+AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
+"""HTTP status codes indicating authentication failures."""
+
 RATE_LIMIT_STATUS_CODE: Final[int] = 429
 """HTTP status code for rate limiting."""
 
@@ -166,7 +169,7 @@ def build_http_error(
     *,
     status_code: int,
     response_text: str | None = None,
-) -> HttpStatusError:
+) -> EventsError:
     """Build the most specific HTTP status error for a status code.
 
     Args:
@@ -175,8 +178,15 @@ def build_http_error(
         response_text: Optional response body.
 
     Returns:
-        A specialized HttpStatusError subclass instance.
+        An instance of the most specific EventsError subclass matching the
+        status code, with message and HTTP details included.
     """
+    if status_code in AUTH_ERROR_STATUS_CODES:
+        return AuthError(
+            message,
+            status_code=status_code,
+            response_text=response_text,
+        )
     if status_code == RATE_LIMIT_STATUS_CODE:
         return RateLimitError(
             message,
@@ -188,6 +198,8 @@ def build_http_error(
         CLIENT_ERROR_MIN_STATUS_CODE
         <= status_code
         <= CLIENT_ERROR_MAX_STATUS_CODE
+        and status_code not in AUTH_ERROR_STATUS_CODES
+        and status_code != RATE_LIMIT_STATUS_CODE
     ):
         return ClientRequestError(
             message,
