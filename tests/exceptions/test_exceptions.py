@@ -51,6 +51,8 @@ def test_auth_error_inherits_events_error() -> None:
 @pytest.mark.parametrize(
     ("status_code", "expected_type"),
     [
+        (401, AuthError),
+        (403, AuthError),
         (429, RateLimitError),
         (400, ClientRequestError),
         (404, ClientRequestError),
@@ -60,7 +62,7 @@ def test_auth_error_inherits_events_error() -> None:
 )
 def test_build_http_error_returns_specific_subclasses(
     status_code: int,
-    expected_type: type[HttpStatusError],
+    expected_type: type[EventsError],
 ) -> None:
     """HTTP statuses should map to targeted error subclasses."""
     error = build_http_error(
@@ -70,7 +72,6 @@ def test_build_http_error_returns_specific_subclasses(
     )
 
     assert isinstance(error, expected_type)
-    assert isinstance(error, HttpStatusError)
     assert isinstance(error, EventsError)
     assert error.status_code == status_code
 

@@ -47,14 +47,6 @@ SERVER_ERROR_MIN_STATUS_CODE: Final[int] = 500
 SERVER_ERROR_MAX_STATUS_CODE: Final[int] = 599
 """Upper bound for HTTP server error status codes."""
 
-_CLOUDFLARE_SERVER_ERRORS: Final[frozenset[int]] = frozenset({
-    521,
-    522,
-    523,
-    524,
-})
-"""Cloudflare-origin status codes treated as upstream server errors."""
-
 
 class EventsError(Exception):
     """Base exception for API failures with optional HTTP metadata.
@@ -198,8 +190,6 @@ def build_http_error(
         CLIENT_ERROR_MIN_STATUS_CODE
         <= status_code
         <= CLIENT_ERROR_MAX_STATUS_CODE
-        and status_code not in AUTH_ERROR_STATUS_CODES
-        and status_code != RATE_LIMIT_STATUS_CODE
     ):
         return ClientRequestError(
             message,
