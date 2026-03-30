@@ -2,6 +2,115 @@
 
 <!-- version list -->
 
+## v6.3.0 (2026-03-30)
+
+### Chores
+
+- **ci-github-actions**: Update codecov/codecov-action action to v6
+  ([`f927ed1`](https://github.com/MountainGod2/cb-events/commit/f927ed13c723f9b83e2a18f08680824a18f358d1))
+
+- **ci-github-actions**: Update codecov/codecov-action digest to 75cd116
+  ([`f4eeaf3`](https://github.com/MountainGod2/cb-events/commit/f4eeaf3fd15d2d58e06eda9dcc9c9041a27906cb))
+
+- **examples-scripts**: Update dependency cb-events to v6.2.0
+  ([`3b30772`](https://github.com/MountainGod2/cb-events/commit/3b30772dfcfb8c05c08b152a669009393788d9de))
+
+- **lock-file**: Lock file maintenance
+  ([`8587a60`](https://github.com/MountainGod2/cb-events/commit/8587a6009801d61f34cb02baf3160a79c6d804f1))
+
+- **pre-commit**: Update pre-commit
+  ([`5a0dcc3`](https://github.com/MountainGod2/cb-events/commit/5a0dcc30b0e41be00bbf78b433a9c3ed9aae8d5d))
+
+- **pre-commit**: Update pre-commit hook python-jsonschema/check-jsonschema to v0.37.1
+  ([`4e1a076`](https://github.com/MountainGod2/cb-events/commit/4e1a076243c1a9e7d14833d7f3e2b47d6a367a33))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.91.5
+  ([`dfa2a96`](https://github.com/MountainGod2/cb-events/commit/dfa2a96ffa8d5c57a5f4349b642096dc0e3668dd))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.58.0
+  ([#67](https://github.com/MountainGod2/cb-events/pull/67),
+  [`67ab36c`](https://github.com/MountainGod2/cb-events/commit/67ab36cbff0a9a08777ae571c28198c3f13afe1d))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`161f86c`](https://github.com/MountainGod2/cb-events/commit/161f86c3eb7b0fd9c0150139b448019728cd924a))
+
+- **renovate**: Update package rules and add cb-events
+  ([#69](https://github.com/MountainGod2/cb-events/pull/69),
+  [`221c4e3`](https://github.com/MountainGod2/cb-events/commit/221c4e37ee01b8a849a12af6c7f6bbe8be3ffe1a))
+
+### Documentation
+
+- Simplify and improve library docstrings ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- Simplify library description in __init__.py
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- **client**: Improve error handling documentation
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **config**: Remove redundant information from docstring
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- **exceptions**: Update ServerError docstring
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **models**: Simplify docstring for BaseEventModel
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- **router**: Update docstring for _dispatch_handler
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+### Features
+
+- Expand support to cover Python 3.10+ ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- Update supported Python versions ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+### Refactoring
+
+- **client**: Improve error message for request failures
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- **client**: Simplify error messages and notes
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+- **exceptions**: Add AuthError handling in build_http_error
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **exceptions**: Remove unused Cloudflare error codes
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **models**: Rename TypeVar ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **pre-commit**: Update ruff-check args for exit code
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+- **router**: Remove redundant comment in dispatch example
+  ([#70](https://github.com/MountainGod2/cb-events/pull/70),
+  [`ea2aa56`](https://github.com/MountainGod2/cb-events/commit/ea2aa56930d6bdd31655b9f4327dd1c762a72dad))
+
+### Testing
+
+- Add parameterized test for server error handling
+  ([#71](https://github.com/MountainGod2/cb-events/pull/71),
+  [`ddaace2`](https://github.com/MountainGod2/cb-events/commit/ddaace2600e220ae8bcc48eadeab6e0aa66e04c8))
+
+
 ## v6.2.0 (2026-03-26)
 
 ### Bug Fixes
