@@ -29,7 +29,6 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 5am on monday"],
-    "minimumReleaseAge": "0 days",
     "labels": ["dependencies", "lockfile"],
     "automerge": true,
     "semanticCommitScope": "lock-file"
@@ -64,7 +63,6 @@
       ],
       "groupName": "python-runtime",
       "labels": ["dependencies", "core"],
-      "minimumReleaseAge": "4 days",
       "semanticCommitScope": "python-runtime"
     },
     {
