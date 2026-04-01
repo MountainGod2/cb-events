@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-24T23:42:59.363782252Z"
+exclude-newer = "2026-03-25T00:01:27.28534722Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -303,7 +303,7 @@ dependencies = [
     { name = "aiolimiter" },
     { name = "pydantic" },
     { name = "stamina" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
 [package.dev-dependencies]
@@ -345,7 +345,7 @@ requires-dist = [
     { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "stamina", specifier = ">=25.2.0" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12'", specifier = ">=4.13" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.15.0" },
 ]
 
 [package.metadata.requires-dev]
