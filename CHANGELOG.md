@@ -2,6 +2,54 @@
 
 <!-- version list -->
 
+## v6.3.1 (2026-04-01)
+
+### Bug Fixes
+
+- **deps**: Update aiohttp to v3.13.5 and adjust settings
+  ([#78](https://github.com/MountainGod2/cb-events/pull/78),
+  [`425d141`](https://github.com/MountainGod2/cb-events/commit/425d141d2c0bf8899e43418618da971d07fd9131))
+
+### Chores
+
+- Update Self import for Python 3.11 ([#74](https://github.com/MountainGod2/cb-events/pull/74),
+  [`615b6a8`](https://github.com/MountainGod2/cb-events/commit/615b6a8187265f68e12c9379b2ab6dab7d46174b))
+
+- **deps**: Update package specifiers for runtime versions
+  ([#74](https://github.com/MountainGod2/cb-events/pull/74),
+  [`615b6a8`](https://github.com/MountainGod2/cb-events/commit/615b6a8187265f68e12c9379b2ab6dab7d46174b))
+
+- **deps**: Update typing-extensions markers
+  ([#74](https://github.com/MountainGod2/cb-events/pull/74),
+  [`615b6a8`](https://github.com/MountainGod2/cb-events/commit/615b6a8187265f68e12c9379b2ab6dab7d46174b))
+
+- **examples-deps**: Update dependency cb-events to v6.3.0
+  ([`9b752c7`](https://github.com/MountainGod2/cb-events/commit/9b752c72ed0fc0f506f3bc53e20f9c62ac00301d))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.96.0
+  ([`b92b3b1`](https://github.com/MountainGod2/cb-events/commit/b92b3b185631c5427afe9c921b28a27d2aab13f5))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.57.1
+  ([`b85de61`](https://github.com/MountainGod2/cb-events/commit/b85de61220b99d33c05d0eb7e4fa7c35726d33a4))
+
+- **renovate**: Update lock file maintenance settings
+  ([#73](https://github.com/MountainGod2/cb-events/pull/73),
+  [`2d2af70`](https://github.com/MountainGod2/cb-events/commit/2d2af707f8b72a2999d93fd9002448bb538d0bbe))
+
+- **security**: Update dependency aiohttp to v3.13.4 [security]
+  ([#76](https://github.com/MountainGod2/cb-events/pull/76),
+  [`9b43081`](https://github.com/MountainGod2/cb-events/commit/9b430810805bb4ae879815b5ef125870dd7dd240))
+
+### Documentation
+
+- Create SECURITY.md ([#75](https://github.com/MountainGod2/cb-events/pull/75),
+  [`8e955e7`](https://github.com/MountainGod2/cb-events/commit/8e955e766c5c590b41f319121f2782fc843ede46))
+
+- Update supported versions in SECURITY.md
+  ([#75](https://github.com/MountainGod2/cb-events/pull/75),
+  [`8e955e7`](https://github.com/MountainGod2/cb-events/commit/8e955e766c5c590b41f319121f2782fc843ede46))
+
+
 ## v6.3.0 (2026-03-30)
 
 ### Chores

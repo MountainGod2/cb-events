@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-25T23:02:08.920506753Z"
+exclude-newer = "2026-03-25T23:08:12.829357209Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -299,7 +299,7 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "6.3.0"
+version = "6.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
