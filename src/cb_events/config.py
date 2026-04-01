@@ -18,11 +18,16 @@ Example:
                 print(event)
 """
 
+import sys
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic.config import ConfigDict
-from typing_extensions import Self
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):

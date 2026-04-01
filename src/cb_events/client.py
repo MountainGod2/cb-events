@@ -8,6 +8,7 @@ handling.
 import asyncio
 import json
 import logging
+import sys
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
@@ -19,11 +20,16 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
-from typing_extensions import Self
 
 from .config import ClientConfig
 from .exceptions import AuthError, EventsError, build_http_error
 from .models import Event
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
