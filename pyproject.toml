@@ -11,7 +11,7 @@ maintainers = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
-    "aiohttp>=3.13.3",
+    "aiohttp>=3.13.5",
     "aiolimiter>=1.2.1",
     "pydantic>=2.12.5",
     "stamina>=25.2.0",
@@ -48,6 +48,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { aiohttp = false }
 
 [dependency-groups]
 build = ["python-semantic-release==10.5.3"]

@@ -203,6 +203,7 @@
     "automerge": true,
     "labels": ["dependencies", "security"],
     "assignees": ["MountainGod2"],
+    "semanticCommitType": "fix",
     "semanticCommitScope": "security"
   },
   "registryAliases": {
