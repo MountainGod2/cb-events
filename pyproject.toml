@@ -48,7 +48,11 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { aiohttp = false }
+exclude-newer-package = { aiohttp = false, cb-events = false }
+fork-strategy = "requires-python"
+
+[tool.uv.dependency-groups]
+docs = { requires-python = ">=3.12" }
 
 [dependency-groups]
 build = ["python-semantic-release==10.5.3"]
@@ -79,7 +83,7 @@ docs = [
     "myst-parser==5.0.0; python_version >= '3.12'",
 ]
 
-examples = ["python-dotenv >=1.2.2", "rich >=14.3.3"]
+examples = ["python-dotenv >=1.2.2"]
 
 [tool.hatch]
 build.targets.wheel.packages = ["src/cb_events"]

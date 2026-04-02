@@ -26,6 +26,8 @@ from cb_events.exceptions import EventsError
 
 logger = logging.getLogger(__name__)
 
+logger.setLevel(logging.DEBUG)
+
 load_dotenv()
 
 router = Router()
@@ -139,24 +141,9 @@ async def handle_media_purchase(event):
 
 
 @router.on_any()
-async def handle_unknown_event(event):
-    """Handle any unknown event types."""
-    known_types = {
-        EventType.BROADCAST_START,
-        EventType.BROADCAST_STOP,
-        EventType.USER_ENTER,
-        EventType.USER_LEAVE,
-        EventType.FOLLOW,
-        EventType.UNFOLLOW,
-        EventType.FANCLUB_JOIN,
-        EventType.CHAT_MESSAGE,
-        EventType.PRIVATE_MESSAGE,
-        EventType.TIP,
-        EventType.ROOM_SUBJECT_CHANGE,
-        EventType.MEDIA_PURCHASE,
-    }
-    if event.type not in known_types:
-        logger.warning("Unknown method: %s", event.type)
+async def handle_any_event(event):
+    """Handle any event (for debugging purposes)."""
+    logger.debug("Event received: %s", event.type)
 
 
 async def main():
