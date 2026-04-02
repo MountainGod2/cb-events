@@ -83,6 +83,8 @@ docs = [
     "myst-parser==5.0.0; python_version >= '3.12'",
 ]
 
+examples = ["python-dotenv >=1.2.2"]
+
 [tool.hatch]
 build.targets.wheel.packages = ["src/cb_events"]
 metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
