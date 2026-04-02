@@ -11,7 +11,7 @@ COPY uv.lock pyproject.toml README.md ./
 COPY src/ ./src/
 
 RUN python -m venv /opt/venv && \
-    uv sync --frozen --no-dev --group=examples && \
+    uv sync --frozen --group=examples && \
     uv build && \
     /opt/venv/bin/pip install --no-cache-dir dist/*.whl
 
