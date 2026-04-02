@@ -1,99 +1,102 @@
-# cb-events – AI Coding Instructions
+# cb-events – Coding Instructions
 
-Async Python client for Chaturbate Events API. Event-driven polling architecture with retry logic, rate limiting, and type-safe router pattern.
+Async Python client for the Chaturbate Events API. Python ≥3.12, uv-based.
 
 ## Architecture
 
-**Core components** (all in `src/cb_events/`):
-- `client.py`: `EventClient` - async context manager for long-polling API with exponential backoff retries
-- `router.py`: `Router` - decorator-based event dispatcher (`@router.on(EventType.TIP)`)
-- `models.py`: Immutable Pydantic models with camelCase aliases (API uses `nextUrl`, code uses `next_url`)
-- `config.py`: `ClientConfig` - frozen Pydantic config for retry/timeout/validation behavior
-- `exceptions.py`: `AuthError` (401/403) and `EventsError` base with `status_code`/`response_text`
+**Source** (`src/cb_events/`):
+
+- `client.py`: `EventClient` — async context manager, long-polling with exponential backoff retries
+- `router.py`: `Router` — decorator-based event dispatcher
+- `models.py`: Immutable Pydantic models (camelCase API aliases: `nextUrl` → `next_url`)
+- `config.py`: `ClientConfig` — frozen Pydantic settings
+- `exceptions.py`: Exception hierarchy — `EventsError` → `HttpStatusError` → `AuthError`, `ClientRequestError`, `RateLimitError`, `ServerError`
 
 **Key patterns**:
-- Client stores `_next_url` for stateful long-polling - API returns `nextUrl` to continue from last position
-- Events stream via async iterator (`async for event in client`) calling internal `_stream()` → `poll()` → `_request()`
-- Retry logic: `RETRY_STATUS_CODES` (429, 5xx, Cloudflare 52x) trigger exponential backoff, auth errors don't retry
-- Rate limiting: Default 2000 req/60s per client, shareable `AsyncLimiter` for multi-client pooling
-- Property accessors on `Event` return `None` for incompatible types (e.g., `event.tip` is `None` for non-TIP events)
+
+- `_next_url` tracks polling position — API returns `nextUrl` to continue from last position
+- Events stream via async iterator: `__aiter__` → `_stream()` → `poll()` → `_request()`
+- `RETRY_STATUS_CODES`: 429, 500–504, Cloudflare 521–524 — trigger exponential backoff; auth errors (401/403) don't retry
+- Rate limiting: 2000 req/60s default; `AsyncLimiter` is shareable across clients
+- `Event` property accessors return `None` for incompatible types (e.g., `event.tip` is `None` on non-TIP events)
 
 ## Development Workflow
 
-**Setup & dependencies** (uv-based, Python ≥3.12):
 ```bash
 make dev-setup  # First time: uv sync + pre-commit install
-make install    # Subsequent: uv sync --all-groups
+make install    # uv sync --all-groups
 ```
 
-**Code quality** (always run before committing):
+**Common commands**:
+
 ```bash
-make format     # ruff format
+make format     # ruff format --check
 make fix        # ruff check --fix
-make lint       # ruff + pyrefly + pyright + ty + pylint (full static analysis)
-make test-cov   # pytest with coverage reports (xml, term, html)
-make ci         # Mirror CI: format + fix + lint + bandit + trivy + test-cov
+make lint       # ruff check + pyrefly + pyright + ty + pylint
+make test-cov   # pytest with xml/term/html coverage
+make ci         # format + fix + lint + bandit + trivy + test-cov
+make pre-commit # pre-commit run --all-files
 ```
 
-**Documentation**:
-```bash
-make docs       # Build Sphinx docs
-make docs-serve # Serve docs locally at http://localhost:8000
-```
+**Docs**: `make docs` / `make docs-serve` (http://localhost:8000)
 
-**Testing** (pytest with aioresponses for HTTP mocking):
-- Use `tests/conftest.py` fixtures: `event_client_factory`, `aioresponses_mock`, `testbed_url_pattern`
-- Pattern: Mock API responses via `aioresponses_mock.get(testbed_url_pattern, payload=...)`
-- Test organization: `tests/client/` (client logic), `tests/router/` (dispatch), `tests/e2e/` (integration)
-- Run with `runTests` tool after changes - modify tests to match code, not reverse
+**Testing** (aioresponses for HTTP mocking):
 
-**Pre-commit hooks**: Run `make pre-commit` or rely on installed hooks (ruff, bandit, pyrefly, pip-audit, conventional commits)
+- Fixtures in `tests/conftest.py`: `event_client_factory`, `aioresponses_mock`, `testbed_url_pattern`
+- Mock pattern: `aioresponses_mock.get(testbed_url_pattern, payload=...)`
+- Directories: `tests/client/`, `tests/router/`, `tests/e2e/`
+- Modify tests to match code, not the reverse
 
 ## Code Style
 
-Follow Google Python Style Guide:
-- **Type hints**: Required on all public functions/methods (use `Self` for fluent returns, not string annotations)
-- **Docstrings**: Google style with Args/Returns/Raises sections
-- **Immutability**: Models use `frozen=True`, config uses Pydantic's `frozen` ConfigDict
-- **File formatting**: Always end files with trailing newline, no extra whitespace
+Google Python Style Guide:
 
-## Critical Patterns
+- Type hints on all public functions/methods (`Self` for fluent returns)
+- Docstrings: Google style with Args/Returns/Raises
+- Models: `frozen=True`; config: Pydantic `frozen` ConfigDict
+- Files: trailing newline, no trailing whitespace
 
-**Async context manager lifecycle** (`EventClient`):
+## Patterns
+
+**Client usage**:
+
 ```python
 async with EventClient(username, token, config=config) as client:
-    async for event in client:  # Uses __aiter__ → _stream()
+    async for event in client:
         await router.dispatch(event)
-# Automatic session cleanup in __aexit__
 ```
 
-**Router handlers** (sequential execution, errors logged but don't stop dispatch):
+**Router handlers**:
+
 ```python
-@router.on(EventType.TIP)        # Specific event type
+@router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None: ...
 
-@router.on_any()                 # All events
+@router.on_any()
 async def handle_any(event: Event) -> None: ...
 ```
 
-**Error handling hierarchy**:
-- `EventsError`: Base with `status_code`/`response_text` attributes
-- `AuthError(EventsError)`: For 401/403, includes credential validation in `__init__`
-- Retries only for `RETRY_STATUS_CODES`, not auth errors
+Handlers run sequentially; exceptions are logged but don't stop dispatch.
 
-**Constants to respect**:
-- `BASE_URL` (prod) vs `TESTBED_URL` - controlled by `config.use_testbed`
-- `AUTH_ERRORS` set for 401/403, `RETRY_STATUS_CODES` for retriable failures
+**Exceptions**:
 
-## File Management
+- `EventsError`: base, has `status_code` / `response_text`
+- `AuthError`: 401/403, also raised on empty/invalid credentials at init
+- `HttpStatusError` → `ClientRequestError` (4xx), `RateLimitError` (429), `ServerError` (5xx)
+- Use `build_http_error()` to construct the most specific type from a status code
 
-**Never create**: IMPROVEMENTS.md, CHANGES.md, NOTES.md, TODO.md, ROADMAP.md
-**Never edit**: CHANGELOG.md (auto-generated by semantic-release via `pyproject.toml` config)
-**Work directly**: Edit source files, tests, and docs only
+**URL constants**: `BASE_URL` (prod) / `TESTBED_URL` — set via `config.use_testbed`
+
+## File Rules
+
+- **Never create**: IMPROVEMENTS.md, CHANGES.md, NOTES.md, TODO.md, ROADMAP.md
+- **Never edit**: CHANGELOG.md (auto-generated by semantic-release)
+- Edit source files, tests, and docs only
 
 ## Commit Messages
 
-Use conventional commits (enforced by pre-commit hook):
-- Format: `type(scope): verb object` - imperative mood, specific verbs, force scope
-- Types: `feat`, `fix`, `docs`, `test`, `chore` (only feat/fix/perf trigger releases)
-- Good: `fix(client): add retry for Cloudflare 524 errors`
+Conventional commits (enforced by pre-commit):
+
+- `type(scope): verb object` — imperative mood, scope required
+- Types: `feat`, `fix`, `docs`, `test`, `chore` (only `feat`/`fix`/`perf` trigger releases)
+- Example: `fix(client): add retry for Cloudflare 524 errors`
