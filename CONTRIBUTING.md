@@ -32,7 +32,7 @@ Thanks for pitching in. Here’s how to help:
 
 - Add or update tests if needed.
 - Update docs for new/changed features.
-- Make sure it works on all supported Python versions.
+- Make sure it works on all supported OSes and Python versions.
 
 ## Code of Conduct
 
