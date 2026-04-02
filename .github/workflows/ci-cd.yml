@@ -55,7 +55,7 @@ jobs:
           enable-cache: true
           cache-suffix: ${{ hashFiles('uv.lock') }}
 
-      - run: uv sync --all-groups --frozen
+      - run: uv sync --frozen
 
       - run: |
           uv run ruff format --check
