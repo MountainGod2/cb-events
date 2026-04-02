@@ -11,7 +11,7 @@ dev-setup: install
 	uv run pre-commit install
 
 format:
-	uv run ruff format --check
+	uv run ruff format
 
 check:
 	uv run ruff check
