@@ -5,13 +5,11 @@ Thanks for pitching in. Here’s how to help:
 ## Ways to Contribute
 
 - **Bug?**
-  - Tell us your OS, Python version, and how to trigger it.
-- **Want to fix or improve something?**
-  - Check open issues (look for "bug" or "help wanted").
+  - Describe your OS, Python version, and how to trigger it.
 - **Feature idea?**
-  - Open an issue or PR. Keep it focused and clear.
+  - Open an issue or PR.
 - **Docs unclear?**
-  - PRs for docs, comments, or examples are always good.
+  - PRs for docs, comments, or examples are always welcome.
 
 ## Setup
 
@@ -34,7 +32,7 @@ Thanks for pitching in. Here’s how to help:
 
 - Add or update tests if needed.
 - Update docs for new/changed features.
-- Make sure it works on all supported OSes and Python versions.
+- Make sure it works on all supported Python versions.
 
 ## Code of Conduct
 
