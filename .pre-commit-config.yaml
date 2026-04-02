@@ -58,7 +58,7 @@ repos:
         always_run: true
       - id: pip-audit
         name: pip audit security scan
-        entry: uv run --all-groups --with pip-audit pip-audit -l
+        entry: uv run --all-groups pip-audit -l
         language: system
         pass_filenames: false
         always_run: true
