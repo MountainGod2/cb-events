@@ -60,12 +60,12 @@ from cb_events import ClientConfig
 config = ClientConfig(
     timeout=10,                   # Request timeout (seconds)
     use_testbed=False,            # Use testbed endpoint with test tokens
-    strict_validation=True,       # Raise on invalid events vs. skip
+    strict_validation=True,       # Raise on invalid events; False skips & logs them
     retry_attempts=8,             # Total attempts (initial + retries)
     retry_backoff=1.0,            # Initial backoff (seconds)
     retry_factor=2.0,             # Backoff multiplier
     retry_max_delay=30.0,         # Max retry delay (seconds)
-    next_url_allowed_hosts=None,  # List of allowed hostnames
+    next_url_allowed_hosts=None,  # None = API host only; list adds extra hosts
 )
 
 client = EventClient(username, token, config=config)
@@ -97,6 +97,8 @@ event.broadcaster   # Broadcaster username string
 
 ## Error Handling
 
+`AuthError` is a subclass of `EventsError` — `except EventsError` catches both. Put `AuthError` first if you need to distinguish them.
+
 ```python
 from cb_events import AuthError, EventsError
 
@@ -105,10 +107,10 @@ try:
         async for event in client:
             await router.dispatch(event)
 except AuthError:
-    # Authentication failed (401/403)
+    # Authentication failed (401/403) — never retried
     pass
 except EventsError as e:
-    # API/network errors - check e.status_code, e.response_text
+    # All other API/network errors — check e.status_code, e.response_text
     pass
 ```
 
@@ -126,7 +128,7 @@ logging.getLogger('cb_events').setLevel(logging.DEBUG)
 
 ## Requirements
 
-Python ≥3.12
+Python 3.10+
 
 ## License
 

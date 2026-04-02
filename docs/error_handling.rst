@@ -9,6 +9,9 @@ Exception Hierarchy
    EventsError (base)
    └── AuthError (401/403)
 
+``AuthError`` is a subclass of ``EventsError``, so ``except EventsError`` catches
+both. Put ``AuthError`` first if you need to handle the two cases differently.
+
 Basic Error Handling
 --------------------
 
@@ -89,6 +92,12 @@ Strict mode (default) raises on invalid event data:
            await router.dispatch(event)
    except EventsError as e:
        print(f"Invalid event data: {e}")
+
+.. note::
+
+   Use ``strict_validation=True`` during development to catch schema problems
+   early. In production, ``False`` is often safer: a bad payload is skipped and
+   logged rather than crashing the listener.
 
 Lenient mode skips invalid events:
 

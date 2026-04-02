@@ -62,7 +62,10 @@ Lenient mode:
 
    config = ClientConfig(strict_validation=False)
 
-Skips invalid events.
+.. note::
+
+   In production, ``strict_validation=False`` is often safer: a bad payload is skipped and
+   logged rather than crashing the listener.
 
 Testbed Environment
 -------------------
@@ -103,11 +106,19 @@ Shared Rate Limiter
 Allowed Hosts
 -------------
 
+``next_url_allowed_hosts=None`` restricts ``nextUrl`` to the configured API host
+only. Pass a list to permit extra hostnames:
+
 .. code-block:: python
 
    config = ClientConfig(
        next_url_allowed_hosts=["eventsapi.chaturbate.com", "events.testbed.cb.dev"]
    )
+
+.. warning::
+
+   ``None`` does **not** mean allow any host — it means the API host only.
+   An explicit list extends that set; it does not replace it.
 
 Logging
 -------
