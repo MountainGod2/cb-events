@@ -85,7 +85,7 @@
         "/^bandit-.*$/",
         "ty",
         "bandit-sarif-formatter",
-        "pylint-pydantic"
+        "pip-audit"
       ],
       "groupName": "python-dev-tools",
       "labels": ["dependencies", "dev"],

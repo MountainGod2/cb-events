@@ -14,8 +14,9 @@ concurrency:
 permissions: {}
 
 jobs:
-  dependency-sync:
-    name: Dependency Sync
+  warm-cache:
+    # Pre-populate the uv cache for downstream jobs
+    name: Warm Cache
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -34,9 +35,34 @@ jobs:
 
       - run: uv cache prune --ci
 
+  lint:
+    name: Lint
+    needs: warm-cache
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: ${{ hashFiles('uv.lock') }}
+
+      - run: uv sync --group=lint --frozen
+
+      - run: |
+          uv run ruff format --check
+          make lint
+
+      - run: uv cache prune --ci
+
   test:
     name: Test
-    needs: dependency-sync
+    needs: [warm-cache, lint]
     runs-on: ubuntu-24.04
     environment: testing
     permissions:
@@ -55,11 +81,7 @@ jobs:
           enable-cache: true
           cache-suffix: ${{ hashFiles('uv.lock') }}
 
-      - run: uv sync --frozen
-
-      - run: |
-          uv run ruff format --check
-          make lint
+      - run: uv sync --group=test --frozen
 
       - run: make test-cov
 
@@ -83,7 +105,7 @@ jobs:
 
   security:
     name: Security
-    needs: dependency-sync
+    needs: warm-cache
     runs-on: ubuntu-24.04
     permissions:
       actions: read # Required for CodeQL upload-sarif to read workflow context
@@ -100,7 +122,7 @@ jobs:
           enable-cache: true
           cache-suffix: ${{ hashFiles('uv.lock') }}
 
-      - run: uv sync --all-groups --frozen
+      - run: uv sync --group=security --frozen
 
       - run: make bandit
 
@@ -146,7 +168,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - run: git checkout -B ${GITHUB_REF_NAME}
+      - run: git checkout -B ${{ github.ref_name }}
 
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
@@ -182,7 +204,11 @@ jobs:
   e2e:
     name: E2E Tests
     needs: build
+    if: needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
+    env:
+      CB_USERNAME: ${{ secrets.CB_USERNAME }}
+      CB_TOKEN: ${{ secrets.CB_TOKEN }}
     permissions:
       contents: read
     steps:
@@ -192,8 +218,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - if: needs.build.outputs.released == 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         id: download
         with:
           name: dist
@@ -205,10 +230,9 @@ jobs:
           enable-cache: true
           cache-suffix: ${{ hashFiles('uv.lock') }}
 
-      - run: uv sync --frozen
+      - run: uv sync --group=test --frozen
 
-      - if: steps.download.outcome == 'success'
-        run: |
+      - run: |
           uv pip uninstall cb-events
           uv pip install dist/cb_events-*.whl
 
@@ -232,6 +256,7 @@ jobs:
       version: ${{ steps.publish.outputs.version }}
       tag: ${{ steps.publish.outputs.tag }}
     steps:
+      # semantic-release uses GH_TOKEN for git push auth instead of stored git credentials
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ github.ref_name }}
