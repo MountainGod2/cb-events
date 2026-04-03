@@ -1,6 +1,6 @@
 # cb-events – Coding Instructions
 
-Async Python client for the Chaturbate Events API. Python ≥3.12, uv-based.
+Async Python client for the Chaturbate Events API. Python ≥3.10, uv-based.
 
 ## Architecture
 
