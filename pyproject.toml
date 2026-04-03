@@ -59,12 +59,12 @@ docs = { requires-python = ">=3.12" }
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
-    "ruff==0.15.7",
+    "ruff==0.15.8",
     "pyright==1.1.408",
     "pylint==4.0.5",
     "pre-commit==4.5.1",
     "pylint-pydantic==0.4.1",
-    "ty==0.0.25",
+    "ty==0.0.26",
     "pyrefly==0.58.0",
 ]
 test = [
