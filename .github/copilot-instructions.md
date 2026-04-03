@@ -30,7 +30,7 @@ make install    # uv sync --all-groups
 **Common commands**:
 
 ```bash
-make format     # ruff format --check
+make format     # ruff format
 make fix        # ruff check --fix
 make lint       # ruff check + pyrefly + pyright + ty + pylint
 make test-cov   # pytest with xml/term/html coverage
