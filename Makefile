@@ -55,7 +55,7 @@ build:
 
 docs: FORCE
 	rm -rf docs/_build && rm -rf docs/api
-	uv run --group docs sphinx-build -E -b html docs docs/_build/html
+	uv run sphinx-build -E -b html docs docs/_build/html
 
 docs-serve: docs
 	@echo "Serving documentation at http://localhost:8000"
@@ -63,7 +63,7 @@ docs-serve: docs
 	uv run python -m http.server 8000 -d docs/_build/html
 
 docs-linkcheck:
-	uv run --group docs sphinx-build -b linkcheck docs docs/_build/linkcheck
+	uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
 
 FORCE:
 
