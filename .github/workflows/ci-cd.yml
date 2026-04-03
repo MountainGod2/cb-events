@@ -55,7 +55,7 @@ jobs:
       - run: uv sync --group=lint --frozen
 
       - run: |
-          make format
+          ruff format --check
           make lint
 
       - run: uv cache prune --ci
