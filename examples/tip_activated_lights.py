@@ -261,9 +261,9 @@ async def main(*, testbed: bool) -> None:
         ".", "", 1
     ).isdigit():
         light_config.brightness = float(raw_bri)
-    if (
-        raw_timeout := os.getenv("COLOR_TIMEOUT", "")
-    ) and raw_timeout.isdigit():
+    if (raw_timeout := os.getenv("COLOR_TIMEOUT", "")) and raw_timeout.replace(
+        ".", "", 1
+    ).isdigit():
         light_config.color_timeout = float(raw_timeout)
 
     logger.info("Hue Bridge IP: %s", hue_ip)
