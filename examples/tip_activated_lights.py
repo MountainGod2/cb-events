@@ -3,8 +3,8 @@
 # dependencies = [
 #     "cb-events ==6.3.1",
 #     "aiohue ==4.8.1",
-#     "python-dotenv >=1.0.0",
-#     "rich-click >=1.8.0",
+#     "python-dotenv >=1.2.2",
+#     "rich-click >=1.9.7",
 # ]
 # ///
 
