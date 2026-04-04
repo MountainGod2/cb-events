@@ -21,9 +21,9 @@ ENV PATH="/opt/venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY --chown=1000:1000 examples/example.py /app/
+COPY --chown=1000:1000 examples/event_handling.py /app/
 COPY --chown=1000:1000 --from=builder /opt/venv /opt/venv
 
 USER 1000:1000
 
-ENTRYPOINT ["python", "-u", "example.py"]
+ENTRYPOINT ["python", "-u", "event_handling.py"]
