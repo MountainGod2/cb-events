@@ -26,8 +26,6 @@ from cb_events.exceptions import EventsError
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.DEBUG)
-
 load_dotenv()
 
 router = Router()

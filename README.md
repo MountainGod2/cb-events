@@ -46,7 +46,7 @@ asyncio.run(main())
 
 Generate API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
 
-See [example.py](https://github.com/MountainGod2/cb-events/blob/main/examples/example.py).
+For usage examples, see the [examples folder](https://github.com/MountainGod2/cb-events/blob/main/examples).
 
 ## Event Types
 
