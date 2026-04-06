@@ -15,7 +15,6 @@ permissions: {}
 
 jobs:
   warm-cache:
-    # Pre-populate the uv cache for downstream jobs
     name: Warm Cache
     runs-on: ubuntu-24.04
     permissions:
@@ -108,8 +107,6 @@ jobs:
     needs: warm-cache
     runs-on: ubuntu-24.04
     permissions:
-      actions: read # Required for CodeQL upload-sarif to read workflow context
-      contents: read
       security-events: write # Required to upload SARIF results to GitHub Security tab
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -137,15 +134,23 @@ jobs:
           scan-type: fs
           skip-dirs: .git,.github,.venv,docs/_build
           format: sarif
-          output: trivy-results.sarif
+          output: trivy.sarif
           severity: CRITICAL,HIGH
           exit-code: 0
 
       - uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
         continue-on-error: true
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: trivy.sarif
           category: trivy
+
+      - run: uv run zizmor --format=sarif . > zizmor.sarif
+
+      - uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
+        continue-on-error: true
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
 
       - run: uv cache prune --ci
 
