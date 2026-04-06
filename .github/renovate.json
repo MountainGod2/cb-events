@@ -31,7 +31,8 @@
     "schedule": ["before 5am on monday"],
     "labels": ["dependencies", "lockfile"],
     "automerge": true,
-    "semanticCommitScope": "lock-file"
+    "semanticCommitScope": "lock-file",
+    "minimumReleaseAge": "0 days"
   },
   "minimumReleaseAge": "8 days",
   "platformAutomerge": false,
