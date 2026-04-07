@@ -217,6 +217,8 @@ jobs:
     needs: [test, security]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    env:
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "true" # Enable file coverage reporting on PRs
     permissions:
       contents: read
     outputs:
