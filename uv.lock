@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-30T23:35:22.513747447Z"
+exclude-newer = "2026-03-31T02:29:52.108206056Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -278,17 +278,10 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/05/a4/a26d5b25671d27e03afb5401a0be5899d94ff8fab6a698b1ac5be3ec29ef/bandit-1.9.4-py3-none-any.whl", hash = "sha256:f89ffa663767f5a0585ea075f01020207e966a9c0f2b9ef56a57c7963a3f6f8e", size = 134741, upload-time = "2026-02-25T06:44:13.694Z" },
 ]
 
-[[package]]
-name = "bandit-sarif-formatter"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
+[package.optional-dependencies]
+sarif = [
     { name = "jschema-to-python" },
     { name = "sarif-om" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/2d/fa7f7769e487ec03a28a62b780f1c0a2e788359ef1a18b8a62744d42ee43/bandit_sarif_formatter-1.1.1.tar.gz", hash = "sha256:2b6299617c559e41cccf4c9cdf0724dbfc9dc276ecbd94c28074db0d3363ef72", size = 7340, upload-time = "2019-10-05T20:24:04.638Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/9d/4e633743766b159d20cca63fc56c0817633d0f99c49607d72b796a386d46/bandit_sarif_formatter-1.1.1-py3-none-any.whl", hash = "sha256:2a8351cecc03b265ec7546794b9c54a988d0b7282db544de913dc6c5a46a50fb", size = 8466, upload-time = "2019-10-05T20:24:03.023Z" },
 ]
 
 [[package]]
@@ -382,8 +375,7 @@ lint = [
     { name = "ty" },
 ]
 security = [
-    { name = "bandit" },
-    { name = "bandit-sarif-formatter" },
+    { name = "bandit", extra = ["sarif"] },
     { name = "pip-audit" },
     { name = "zizmor" },
 ]
@@ -440,8 +432,7 @@ lint = [
     { name = "ty", specifier = "==0.0.26" },
 ]
 security = [
-    { name = "bandit", specifier = "==1.9.4" },
-    { name = "bandit-sarif-formatter", specifier = "==1.1.1" },
+    { name = "bandit", extras = ["sarif"], specifier = "==1.9.4" },
     { name = "pip-audit", specifier = "==2.10.0" },
     { name = "zizmor", specifier = "==1.23.1" },
 ]
