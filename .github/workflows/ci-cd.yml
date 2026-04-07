@@ -187,6 +187,8 @@ jobs:
       security-events: write
       actions: read
       contents: read
+    env:
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "true" # Enable file coverage reporting on PRs
     strategy:
       fail-fast: false
       matrix:
