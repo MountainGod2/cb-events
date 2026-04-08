@@ -89,7 +89,7 @@ Lenient mode (default) skips invalid events and logs them as a warning:
        async for event in client:
            await router.dispatch(event)
 
-Strict mode raises on invalid event data:
+Strict mode raises ``pydantic.ValidationError`` on invalid event data:
 
 .. code-block:: python
 
@@ -99,7 +99,7 @@ Strict mode raises on invalid event data:
    try:
        async for event in client:
            await router.dispatch(event)
-   except EventsError as e:
+   except pydantic.ValidationError as e:
        print(f"Invalid event data: {e}")
 
 .. note::

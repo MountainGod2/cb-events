@@ -62,7 +62,7 @@ Strict mode:
 
    config = ClientConfig(strict_validation=True)
 
-Raises :class:`~cb_events.exceptions.EventsError` on invalid event data.
+Raises ``pydantic.ValidationError`` on invalid event data. Non-strict paths still raise :class:`~cb_events.exceptions.EventsError`.
 
 .. note::
 
