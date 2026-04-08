@@ -80,9 +80,7 @@ def test_mask_token_various_lengths() -> None:
 def test_parse_events_strict_and_lenient(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """_parse_events should raise in strict mode and skip invalid events in
-    lenient mode while logging a warning.
-    """
+    """_parse_events should raise in strict mode and skip invalid events in lenient mode while logging a warning."""
     caplog.set_level("WARNING")
     valid = {"method": "tip", "id": "1", "object": {}}
     invalid = {"method": "tip", "object": {}}

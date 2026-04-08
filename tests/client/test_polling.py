@@ -312,8 +312,7 @@ async def test_allowed_hosts_always_include_base_host(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Even if the base host is not explicitly included in
-    next_url_allowed_hosts, it should still be followed after timeouts."""
+    """Even if the base host is not explicitly included in next_url_allowed_hosts, it should still be followed after timeouts."""
     next_url = "https://events.testbed.cb.dev/events/next_batch_token"
     timeout_response = make_timeout_payload(next_url)
 

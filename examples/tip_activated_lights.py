@@ -111,7 +111,11 @@ class HueController:
         ]
 
     def _save_states(self) -> dict[str, _LightState]:
-        """Capture current state of managed lights."""  # noqa: DOC201
+        """Capture current state of managed lights.
+
+        Returns:
+            A mapping of light ID to a tuple of (on, brightness, color_xy).
+        """
         saved: dict[str, _LightState] = {}
         for light in self.bridge.lights:
             if light.id not in self._light_ids:
@@ -239,7 +243,14 @@ class HueController:
 
 
 async def main(*, testbed: bool) -> None:
-    """Main async entry point."""  # noqa: DOC501
+    """Main async entry point.
+
+    Args:
+        testbed: Whether to use the Chaturbate testbed environment.
+
+    Raises:
+        ValueError: If required environment variables are missing.
+    """
     username = os.getenv("CB_USERNAME")
     token = os.getenv("CB_TOKEN")
     if not username or not token:
