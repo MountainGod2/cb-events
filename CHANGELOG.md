@@ -2,6 +2,219 @@
 
 <!-- version list -->
 
+## v7.0.0 (2026-04-08)
+
+### Chores
+
+- Update ruff hooks and add zizmor check ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+- **deps**: Remove outdated exclude-newer-packages contents
+  ([#84](https://github.com/MountainGod2/cb-events/pull/84),
+  [`d188451`](https://github.com/MountainGod2/cb-events/commit/d1884510924644b922098adfac66947944c42f99))
+
+- **deps**: Update bandit to use extras for sarif
+  ([#89](https://github.com/MountainGod2/cb-events/pull/89),
+  [`cb7f963`](https://github.com/MountainGod2/cb-events/commit/cb7f96323948e789ddad3776c9727db0ac8a3534))
+
+- **deps**: Update development dependencies and restructure groups
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **Dockerfile**: Remove --dev flag from uv sync command
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **docs**: Add examples dependency group for docker
+  ([#80](https://github.com/MountainGod2/cb-events/pull/80),
+  [`717f21b`](https://github.com/MountainGod2/cb-events/commit/717f21b20c725aaed1c2a98447a8a49abd217d1e))
+
+- **examples-deps**: Update dependency cb-events to v6.3.1
+  ([`3028d71`](https://github.com/MountainGod2/cb-events/commit/3028d715776e07fcbc926c912e7113cb21a27497))
+
+- **examples-scripts**: Update examples-scripts
+  ([`efa12c6`](https://github.com/MountainGod2/cb-events/commit/efa12c631f791e74ecbdb1f751c979af86703d91))
+
+- **lock-file**: Lock file maintenance ([#85](https://github.com/MountainGod2/cb-events/pull/85),
+  [`b753f86`](https://github.com/MountainGod2/cb-events/commit/b753f86a83c1ba3fc93513dc12175d53d3efe135))
+
+- **Makefile**: Update format command and Trivy installation message
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.100.0
+  ([`371d7a4`](https://github.com/MountainGod2/cb-events/commit/371d7a4af25d7a5019925ecfe37bc0c51fb0cfeb))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.101.2
+  ([`4e8e59d`](https://github.com/MountainGod2/cb-events/commit/4e8e59dc1b1b732f0a2025989b0a0749ea570175))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.98.0
+  ([`b7b69b8`](https://github.com/MountainGod2/cb-events/commit/b7b69b871a9b8c706a9bb67ce98d6e2da64a667b))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.99.0
+  ([`d863843`](https://github.com/MountainGod2/cb-events/commit/d8638437ed2bd417f4bbb7b4d27fd35b29d9b55f))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.99.1
+  ([`f33a6f9`](https://github.com/MountainGod2/cb-events/commit/f33a6f9bc62e360a502e3523e341efbd5fbc5279))
+
+- **pre-commit**: Update pre-commit hook zizmorcore/zizmor-pre-commit to v1.23.1
+  ([`b6cb2bc`](https://github.com/MountainGod2/cb-events/commit/b6cb2bc6c2a5aacf042b9cc107fe3288e73e2300))
+
+- **pre-commit**: Update ruff hooks and add zizmor check
+  ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+- **pyproject**: Update security dependencies and exclude aiohttp
+  ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.58.0
+  ([#79](https://github.com/MountainGod2/cb-events/pull/79),
+  [`271228f`](https://github.com/MountainGod2/cb-events/commit/271228f729f1638e9e289d3652e6861bd47c8b9a))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`79db97e`](https://github.com/MountainGod2/cb-events/commit/79db97e06db8e7c45865c2601ce219b6d3bebd1d))
+
+- **renovate**: Add pip-audit ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **renovate**: Set minimum release age to 0 days for lockfile
+  ([#87](https://github.com/MountainGod2/cb-events/pull/87),
+  [`ec4a5a8`](https://github.com/MountainGod2/cb-events/commit/ec4a5a8264b321a3f781f0b5657adfabb76bdcbd))
+
+### Code Style
+
+- **.gitignore**: Update pattern for SARIF files
+  ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+- **pre-commit**: Fix indentation for zizmor hook
+  ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+### Continuous Integration
+
+- Add CodeQL action to workflow ([#87](https://github.com/MountainGod2/cb-events/pull/87),
+  [`ec4a5a8`](https://github.com/MountainGod2/cb-events/commit/ec4a5a8264b321a3f781f0b5657adfabb76bdcbd))
+
+- Add workflow to update license year annually
+  ([#84](https://github.com/MountainGod2/cb-events/pull/84),
+  [`d188451`](https://github.com/MountainGod2/cb-events/commit/d1884510924644b922098adfac66947944c42f99))
+
+- Enable file coverage reporting for CodeQL on PRs
+  ([#89](https://github.com/MountainGod2/cb-events/pull/89),
+  [`cb7f963`](https://github.com/MountainGod2/cb-events/commit/cb7f96323948e789ddad3776c9727db0ac8a3534))
+
+- Enable file coverage reporting on PRs ([#89](https://github.com/MountainGod2/cb-events/pull/89),
+  [`cb7f963`](https://github.com/MountainGod2/cb-events/commit/cb7f96323948e789ddad3776c9727db0ac8a3534))
+
+- Update CI/CD workflow naming conventions
+  ([#88](https://github.com/MountainGod2/cb-events/pull/88),
+  [`176314b`](https://github.com/MountainGod2/cb-events/commit/176314bbe3d7465b2e209e544bba0e3f67b08609))
+
+- Update git checkout command to use environment variable
+  ([#82](https://github.com/MountainGod2/cb-events/pull/82),
+  [`e7ebe59`](https://github.com/MountainGod2/cb-events/commit/e7ebe599760b35cf5b52440b5c838cba74b8ecf4))
+
+- Update security job to include zizmor SARIF upload
+  ([#86](https://github.com/MountainGod2/cb-events/pull/86),
+  [`b571818`](https://github.com/MountainGod2/cb-events/commit/b5718188eb1501661ead0a746bd103883c5657d3))
+
+- Update uv sync command to remove all-groups option
+  ([#80](https://github.com/MountainGod2/cb-events/pull/80),
+  [`717f21b`](https://github.com/MountainGod2/cb-events/commit/717f21b20c725aaed1c2a98447a8a49abd217d1e))
+
+- Update workflow for license year update ([#84](https://github.com/MountainGod2/cb-events/pull/84),
+  [`d188451`](https://github.com/MountainGod2/cb-events/commit/d1884510924644b922098adfac66947944c42f99))
+
+- **ci-cd**: Refactor jobs for improved caching
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **LICENSE**: Add workflow to update license year annually
+  ([#84](https://github.com/MountainGod2/cb-events/pull/84),
+  [`d188451`](https://github.com/MountainGod2/cb-events/commit/d1884510924644b922098adfac66947944c42f99))
+
+- **lint**: Replace make format with ruff format --check
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **lint**: Update ruff command to use uv run
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **Makefile**: Remove unnecessary group flag from sphinx-build
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+### Documentation
+
+- Update documentation and examples ([#80](https://github.com/MountainGod2/cb-events/pull/80),
+  [`717f21b`](https://github.com/MountainGod2/cb-events/commit/717f21b20c725aaed1c2a98447a8a49abd217d1e))
+
+- Update format command ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- Update README and configuration ([#80](https://github.com/MountainGod2/cb-events/pull/80),
+  [`717f21b`](https://github.com/MountainGod2/cb-events/commit/717f21b20c725aaed1c2a98447a8a49abd217d1e))
+
+- **CONTRIBUTING**: Clarify guidelines and improve wording
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **CONTRIBUTING**: Update PR checklist ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **copilot**: Correct Python version requirement
+  ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **copilot**: Update coding instructions ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **examples**: Add additional example script
+  ([#82](https://github.com/MountainGod2/cb-events/pull/82),
+  [`e7ebe59`](https://github.com/MountainGod2/cb-events/commit/e7ebe599760b35cf5b52440b5c838cba74b8ecf4))
+
+- **examples**: Rename example API response file
+  ([#82](https://github.com/MountainGod2/cb-events/pull/82),
+  [`e7ebe59`](https://github.com/MountainGod2/cb-events/commit/e7ebe599760b35cf5b52440b5c838cba74b8ecf4))
+
+- **README**: Clarify strict_validation comment
+  ([#92](https://github.com/MountainGod2/cb-events/pull/92),
+  [`eb3ab1c`](https://github.com/MountainGod2/cb-events/commit/eb3ab1ceaa9465069b0790e254f6aef2bd3c3f7e))
+
+- **README**: Fix OpenSSF badge URL ([#83](https://github.com/MountainGod2/cb-events/pull/83),
+  [`0b8fd91`](https://github.com/MountainGod2/cb-events/commit/0b8fd915dc7f5e27f58349c19e0947a6598c3509))
+
+- **README**: Update badge section ([#83](https://github.com/MountainGod2/cb-events/pull/83),
+  [`0b8fd91`](https://github.com/MountainGod2/cb-events/commit/0b8fd915dc7f5e27f58349c19e0947a6598c3509))
+
+- **validation**: Clarify strict_validation error handling
+  ([#92](https://github.com/MountainGod2/cb-events/pull/92),
+  [`eb3ab1c`](https://github.com/MountainGod2/cb-events/commit/eb3ab1ceaa9465069b0790e254f6aef2bd3c3f7e))
+
+### Refactoring
+
+- Update workflow and dependency groups ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+- **config**: Change `strict_validation` default to false
+  ([#92](https://github.com/MountainGod2/cb-events/pull/92),
+  [`eb3ab1c`](https://github.com/MountainGod2/cb-events/commit/eb3ab1ceaa9465069b0790e254f6aef2bd3c3f7e))
+
+- **docs**: Clean up comments and improve docstrings
+  ([#90](https://github.com/MountainGod2/cb-events/pull/90),
+  [`5a728ab`](https://github.com/MountainGod2/cb-events/commit/5a728aba47e94dee928b02f3719cd242069faefc))
+
+- **examples**: Standardize color timeout validation logic
+  ([#82](https://github.com/MountainGod2/cb-events/pull/82),
+  [`e7ebe59`](https://github.com/MountainGod2/cb-events/commit/e7ebe599760b35cf5b52440b5c838cba74b8ecf4))
+
+- **Makefile**: Restore format command ([#81](https://github.com/MountainGod2/cb-events/pull/81),
+  [`1efa39d`](https://github.com/MountainGod2/cb-events/commit/1efa39d12ff77316bbf8612e250893c90ac67b25))
+
+
 ## v6.3.1 (2026-04-01)
 
 ### Bug Fixes
