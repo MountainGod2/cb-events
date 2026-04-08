@@ -61,7 +61,7 @@ from cb_events import ClientConfig
 config = ClientConfig(
     timeout=10,                   # Request timeout (seconds)
     use_testbed=False,            # Use testbed endpoint with test tokens
-    strict_validation=False,      # False: skip and log invalid events; True: raise on invalid events
+    strict_validation=False,      # False skips & logs invalid events; True raises.
     retry_attempts=8,             # Total attempts (initial + retries)
     retry_backoff=1.0,            # Initial backoff (seconds)
     retry_factor=2.0,             # Backoff multiplier
