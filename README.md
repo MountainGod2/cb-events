@@ -44,8 +44,14 @@ async def main():
 
 asyncio.run(main())
 ```
+Example output:
 
-Generate API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
+```text
+mountaingod2 tipped 100 tokens
+```
+
+
+Generate an API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
 
 For usage examples, see the [examples folder](https://github.com/MountainGod2/cb-events/blob/main/examples).
 
@@ -121,10 +127,19 @@ except EventsError as e:
 
 ## Logging
 
+Set the logger to `DEBUG` for verbose polling data:
+
 ```python
 import logging
+logging.getLogger("cb_events").setLevel(logging.DEBUG)
+```
 
-logging.getLogger('cb_events').setLevel(logging.DEBUG)
+Example output:
+
+```text
+DEBUG:cb_events:Polling https://eventsapi.chaturbate.com/events/user/token/?timeout=10
+DEBUG:cb_events:Received 1 events for user
+DEBUG:cb_events:Dispatching chatMessage event 1775683684418-0 to 2 handlers
 ```
 
 ## Requirements
@@ -137,4 +152,5 @@ MIT
 
 ---
 
-> Not affiliated with Chaturbate.
+
+Not affiliated with Chaturbate.

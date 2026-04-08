@@ -11,6 +11,12 @@ Quick Start
    username = "your_username"
    token = "your_api_token"
 
+   @router.on(EventType.USER_ENTER)
+   async def handle_user_enter(event: Event) -> None:
+       """Handle user enter events."""
+       if event.user:
+           print(f"{event.user.username} entered the room")
+
    @router.on(EventType.TIP)
    async def handle_tip(event: Event) -> None:
        if event.user and event.tip:
@@ -22,6 +28,13 @@ Quick Start
                await router.dispatch(event)
 
    asyncio.run(main())
+
+**Example Output:**
+
+.. code-block:: text
+
+   mountaingod2 entered the room
+   mountaingod2 tipped 100 tokens
 
 Event Types
 -----------
