@@ -66,8 +66,7 @@ async def test_testing_mode_caps_attempts(
     testbed_url_pattern: re.Pattern[str],
     is_exception: bool,
 ) -> None:
-    """When testing mode is enabled, the client should stop retrying after the
-    specified number of attempts, even if retry conditions persist."""
+    """When testing mode is enabled, the client should stop retrying after the specified number of attempts, even if retry conditions persist."""
     if is_exception:
         aioresponses_mock.get(
             testbed_url_pattern,
@@ -100,8 +99,7 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Client should retry on HTTP status codes in RETRY_STATUS_CODES and
-    eventually return events when a subsequent request succeeds."""
+    """Client should retry on HTTP status codes in RETRY_STATUS_CODES and eventually return events when a subsequent request succeeds."""
     success_response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, status=502)
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)

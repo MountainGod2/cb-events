@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from cb_events import (
     AuthError,
     ClientConfig,
+    Event,
     EventClient,
     EventType,
     Router,
@@ -32,54 +33,56 @@ router = Router()
 
 
 @router.on(EventType.BROADCAST_START)
-async def handle_broadcast_start(event):
+async def handle_broadcast_start(event: Event) -> None:
     """Handle broadcast start events."""
-    logger.info("Broadcast started")
+    if event.broadcaster:
+        logger.info("Broadcast started for %s", event.broadcaster)
 
 
 @router.on(EventType.BROADCAST_STOP)
-async def handle_broadcast_stop(event):
+async def handle_broadcast_stop(event: Event) -> None:
     """Handle broadcast stop events."""
-    logger.info("Broadcast stopped")
+    if event.broadcaster:
+        logger.info("Broadcast stopped for %s", event.broadcaster)
 
 
 @router.on(EventType.USER_ENTER)
-async def handle_user_enter(event):
+async def handle_user_enter(event: Event) -> None:
     """Handle user enter events."""
     if event.user:
         logger.info("%s entered the room", event.user.username)
 
 
 @router.on(EventType.USER_LEAVE)
-async def handle_user_leave(event):
+async def handle_user_leave(event: Event) -> None:
     """Handle user leave events."""
     if event.user:
         logger.info("%s left the room", event.user.username)
 
 
 @router.on(EventType.FOLLOW)
-async def handle_follow(event):
+async def handle_follow(event: Event) -> None:
     """Handle follow events."""
     if event.user:
         logger.info("%s has followed", event.user.username)
 
 
 @router.on(EventType.UNFOLLOW)
-async def handle_unfollow(event):
+async def handle_unfollow(event: Event) -> None:
     """Handle unfollow events."""
     if event.user:
         logger.info("%s has unfollowed", event.user.username)
 
 
 @router.on(EventType.FANCLUB_JOIN)
-async def handle_fanclub_join(event):
+async def handle_fanclub_join(event: Event) -> None:
     """Handle fanclub join events."""
     if event.user:
         logger.info("%s joined the fan club", event.user.username)
 
 
 @router.on(EventType.CHAT_MESSAGE)
-async def handle_chat_message(event):
+async def handle_chat_message(event: Event) -> None:
     """Handle chat message events."""
     if event.user and event.message:
         logger.info(
@@ -90,7 +93,7 @@ async def handle_chat_message(event):
 
 
 @router.on(EventType.PRIVATE_MESSAGE)
-async def handle_private_message(event):
+async def handle_private_message(event: Event) -> None:
     """Handle private message events."""
     if event.message and event.message.from_user and event.message.to_user:
         logger.info(
@@ -102,7 +105,7 @@ async def handle_private_message(event):
 
 
 @router.on(EventType.TIP)
-async def handle_tip(event):
+async def handle_tip(event: Event) -> None:
     """Handle tip events."""
     if event.user and event.tip:
         anon_text = "anonymously " if event.tip.is_anon else ""
@@ -119,14 +122,14 @@ async def handle_tip(event):
 
 
 @router.on(EventType.ROOM_SUBJECT_CHANGE)
-async def handle_room_subject_change(event):
+async def handle_room_subject_change(event: Event) -> None:
     """Handle room subject change events."""
     if event.room_subject:
         logger.info("Room Subject changed to %s", event.room_subject.subject)
 
 
 @router.on(EventType.MEDIA_PURCHASE)
-async def handle_media_purchase(event):
+async def handle_media_purchase(event: Event) -> None:
     """Handle media purchase events."""
     if event.user and event.media:
         logger.info(
@@ -139,12 +142,12 @@ async def handle_media_purchase(event):
 
 
 @router.on_any()
-async def handle_any_event(event):
+async def handle_any_event(event: Event) -> None:
     """Handle any event (for debugging purposes)."""
     logger.debug("Event received: %s", event.type)
 
 
-async def main():
+async def main() -> None:
     """Set up event handlers and start listening for events."""
     username = os.getenv("CB_USERNAME", "")
     token = os.getenv("CB_TOKEN", "")
@@ -166,6 +169,6 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(130)
-    except (AuthError, EventsError) as e:
-        logger.error("%s", e)
+    except (AuthError, EventsError):
+        logger.exception("An error occurred")
         sys.exit(1)

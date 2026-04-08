@@ -71,10 +71,10 @@ async def test_any_handlers_run_before_specific_handlers(
     """``on_any`` handlers should run before type-specific handlers."""
     call_order: list[str] = []
 
-    async def any_handler(event: Event) -> None:  # noqa: RUF029
+    async def any_handler(event: Event) -> None:
         call_order.append("any")
 
-    async def specific_handler(event: Event) -> None:  # noqa: RUF029
+    async def specific_handler(event: Event) -> None:
         call_order.append("specific")
 
     router.on(EventType.TIP)(specific_handler)
@@ -87,8 +87,7 @@ async def test_any_handlers_run_before_specific_handlers(
 
 
 async def test_any_handler_called_for_unmatched_type(router: Router) -> None:
-    """Even if no handlers are registered for a specific event type, ``on_any``
-    handlers should still be called."""
+    """Even if no handlers are registered for a specific event type, ``on_any`` handlers should still be called."""
     any_handler = AsyncMock()
     router.on(EventType.TIP)(AsyncMock())
     router.on_any()(any_handler)
@@ -170,7 +169,7 @@ async def test_accept_partial_async_handler(router: Router) -> None:
     """Async handlers wrapped in functools.partial should register."""
     seen: list[str] = []
 
-    async def handler(event: Event, *, results: list[str]) -> None:  # noqa: RUF029
+    async def handler(event: Event, *, results: list[str]) -> None:
         results.append(event.id)
 
     router.on(EventType.TIP)(partial(handler, results=seen))
@@ -200,7 +199,7 @@ async def test_accept_async_callable_object(router: Router) -> None:
 async def test_cancelled_error_propagates(router: Router) -> None:
     """Dispatch should not swallow CancelledError from handlers."""
 
-    async def cancel_handler(event: Event) -> None:  # noqa: RUF029
+    async def cancel_handler(event: Event) -> None:
         raise asyncio.CancelledError
 
     router.on(EventType.TIP)(cancel_handler)
@@ -256,7 +255,7 @@ def test_router_reports_wrapped_handler_name(router: Router) -> None:
 async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
     """Handlers wrapped in an object with a 'func' attribute should register."""
 
-    async def base_handler(event: Event) -> None:  # noqa: RUF029
+    async def base_handler(event: Event) -> None:
         _ = event.id
 
     handler = _FuncAttrWrapper(base_handler)
@@ -275,7 +274,7 @@ def test_is_async_callable_handles_missing_call_attribute() -> None:
 def test_is_async_callable_uses_func_attribute_when_not_callable() -> None:
     """Objects exposing async targets only via ``func`` should be accepted."""
 
-    async def inner_handler(event: Event) -> None:  # noqa: RUF029
+    async def inner_handler(event: Event) -> None:
         _ = event.id
 
     wrapper = _FuncAttrOnlyWrapper(inner_handler)

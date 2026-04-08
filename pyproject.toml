@@ -82,11 +82,7 @@ docs = [
     "furo==2025.12.19",
     "myst-parser==5.0.0",
 ]
-security = [
-    "bandit[sarif]==1.9.4",
-    "pip-audit==2.10.0",
-    "zizmor==1.23.1",
-]
+security = ["bandit[sarif]==1.9.4", "pip-audit==2.10.0", "zizmor==1.23.1"]
 build = ["python-semantic-release==10.5.3"]
 examples = ["python-dotenv >=1.2.2"]
 
@@ -96,7 +92,7 @@ metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
 metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Replace relative links in the README with absolute links to the GitHub repository
+# Replace relative links with absolute links to repository
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
@@ -137,45 +133,36 @@ indent-width = 4
 [tool.ruff.lint]
 preview = true
 select = ["ALL"]
-ignore = ["COM812", "CPY001", "ISC001"]
+ignore = [
+    "COM812", # Incompatible with ruff formatter
+    "CPY001", # Allow missing per-file copyright notices
+]
 unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = [
-    "ANN001",
-    "ANN201",
-    "ANN202",
-    "D100",
-    "D103",
-    "D104",
-    "T201",
-    "RUF029",
-    "INP001",
-    "TRY400",
-    "ARG001",
-    "C901",
-    "PLR0915",
+    "RUF029", # Allow async without await
 ]
 "tests/*" = [
-    "ARG001",
-    "ANN001",
-    "ANN401",
-    "D205",
-    "D208",
-    "D209",
-    "FBT001",
-    "PLC2701", # Allow private import for testing
-    "PLR2004",
-    "PLR0913",
-    "PLR0917",
-    "PLR6301",
-    "S101",
-    "S105",
-    "S106",
-    "SLF001",
+    "ANN",     # Allow missing type annotations
+    "E501",    # Allow line length violations
+    "FBT001",  # Allow boolean-typed positional arguments
+    "PLC2701", # Allow private imports
+    "PLR0913", # Allow too many arguments
+    "PLR0917", # Allow too many positional arguments
+    "PLR2004", # Allow magic values
+    "S101",    # Allow use of assert statements
+    "S105",    # Allow hardcoded passwords
+    "S106",    # Allow hardcoded passwords
+    "SLF001",  # Allow private member access
 ]
-"tests/conftest.py" = ["D101", "D102", "D103"]
-"tests/router/test_router.py" = ["ANN002", "ANN003", "ANN204"]
+"tests/conftest.py" = [
+    "D", # Allow missing docstrings
+]
+"tests/router/test_router.py" = [
+    "ARG001", # Allow unused arguments
+    "RUF029", # Allow unused handlers
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
