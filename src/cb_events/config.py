@@ -58,7 +58,7 @@ class ClientConfig(BaseModel):
     use_testbed: bool = False
     """Use the testbed API instead of production."""
 
-    strict_validation: bool = True
+    strict_validation: bool = False
     """Raise on invalid events vs. skip and log."""
 
     retry_attempts: int = Field(default=8, ge=1)

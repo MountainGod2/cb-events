@@ -11,7 +11,7 @@ Client Configuration
    config = ClientConfig(
        timeout=10,                   # Request timeout (seconds)
        use_testbed=False,            # Use testbed endpoint
-       strict_validation=True,       # Raise on invalid events vs. skip
+       strict_validation=False,      # Raise on invalid events vs. skip
        retry_attempts=8,             # Total attempts (initial + retries)
        retry_backoff=1.0,            # Initial backoff (seconds)
        retry_factor=2.0,             # Backoff multiplier
@@ -48,19 +48,21 @@ Retries on 429, 5xx, Cloudflare 521-524. Never retries 401/403.
 Validation Mode
 ---------------
 
-Strict mode (default):
+Lenient mode (default):
+
+.. code-block:: python
+
+   config = ClientConfig(strict_validation=False)
+
+skips invalid events and logs them as a warning.
+
+Strict mode:
 
 .. code-block:: python
 
    config = ClientConfig(strict_validation=True)
 
-Raises :class:`~cb_events.exceptions.EventsError` on invalid event data.
-
-Lenient mode:
-
-.. code-block:: python
-
-   config = ClientConfig(strict_validation=False)
+Raises ``pydantic.ValidationError`` on invalid event data. Non-strict paths still raise :class:`~cb_events.exceptions.EventsError`.
 
 .. note::
 

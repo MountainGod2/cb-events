@@ -80,7 +80,16 @@ Automatic Retries
 Validation Errors
 -----------------
 
-Strict mode (default) raises on invalid event data:
+Lenient mode (default) skips invalid events and logs them as a warning:
+
+.. code-block:: python
+
+   config = ClientConfig(strict_validation=False)
+   async with EventClient(username, token, config=config) as client:
+       async for event in client:
+           await router.dispatch(event)
+
+Strict mode raises ``pydantic.ValidationError`` on invalid event data:
 
 .. code-block:: python
 
@@ -90,23 +99,10 @@ Strict mode (default) raises on invalid event data:
    try:
        async for event in client:
            await router.dispatch(event)
-   except EventsError as e:
+   except pydantic.ValidationError as e:
        print(f"Invalid event data: {e}")
 
 .. note::
-
-   Use ``strict_validation=True`` during development to catch schema problems
-   early. In production, ``False`` is often safer: a bad payload is skipped and
-   logged rather than crashing the listener.
-
-Lenient mode skips invalid events:
-
-.. code-block:: python
-
-   config = ClientConfig(strict_validation=False)
-   async with EventClient(username, token, config=config) as client:
-       async for event in client:
-           await router.dispatch(event)
 
 Handler Errors
 --------------
