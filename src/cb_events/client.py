@@ -315,7 +315,6 @@ class EventClient:
         "base_url",
         "config",
         "session",
-        "timeout",
         "token",
         "username",
     )
@@ -357,7 +356,6 @@ class EventClient:
         self.username = username
         self.token = token
         self.config = config or ClientConfig()
-        self.timeout = self.config.timeout
         self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
         parsed_base = urlparse(self.base_url)
         if parsed_base.scheme and parsed_base.netloc:
@@ -401,7 +399,7 @@ class EventClient:
             if self.session is None:
                 self.session = ClientSession(
                     timeout=ClientTimeout(
-                        total=self.timeout + SESSION_TIMEOUT_BUFFER
+                        total=self.config.timeout + SESSION_TIMEOUT_BUFFER
                     ),
                 )
         except (ClientError, OSError, TimeoutError) as e:
@@ -435,7 +433,7 @@ class EventClient:
             return self._next_url
         return (
             f"{self.base_url}/{quote(self.username, safe='')}/"
-            f"{quote(self.token, safe='')}/?timeout={self.timeout}"
+            f"{quote(self.token, safe='')}/?timeout={self.config.timeout}"
         )
 
     def _next_sleep_for_attempt(self, attempt_num: int) -> float:
@@ -553,6 +551,7 @@ class EventClient:
             raise EventsError(msg)
 
         attempts_made = 0
+        last_delay: float = 0.0
         retriable_exc_types = (
             ClientError,
             TimeoutError,
@@ -561,9 +560,11 @@ class EventClient:
         )
 
         def _should_retry(exc: Exception) -> bool | float:
+            nonlocal last_delay
             if not isinstance(exc, retriable_exc_types):
                 return False
-            return self._next_sleep_for_attempt(attempts_made)
+            last_delay = self._next_sleep_for_attempt(attempts_made)
+            return last_delay
 
         try:
             async for attempt in stamina.retry_context(
@@ -583,7 +584,7 @@ class EventClient:
                             self.config.retry_attempts,
                             self.username,
                             exc,
-                            self._next_sleep_for_attempt(attempts_made),
+                            last_delay,
                         )
                     raise
 
@@ -898,6 +899,7 @@ class EventClient:
         """
         session: ClientSession | None = self.session
         self.session = None
+        self._next_url = None
         if session is not None:
             try:
                 await session.close()

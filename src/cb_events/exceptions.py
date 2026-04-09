@@ -105,7 +105,7 @@ class EventsError(Exception):
         Returns:
             Message string with optional HTTP status suffix.
         """
-        if self.status_code:
+        if self.status_code is not None:
             return f"{super().__str__()} (HTTP {self.status_code})"
         return super().__str__()
 
