@@ -24,9 +24,8 @@ Example:
 """
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from enum import Enum
-from functools import cached_property
 from typing import ClassVar, Literal, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
@@ -242,15 +241,15 @@ class Event(BaseEventModel):
     """Type of the event."""
     id: str
     """Unique identifier for the event."""
-    data: dict[str, object] = Field(default_factory=dict, alias="object")
+    data: Mapping[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
 
-    @cached_property
+    @property
     def user(self) -> User | None:
         """User data if present and valid."""
         return self._extract("user", User.model_validate)
 
-    @cached_property
+    @property
     def message(self) -> Message | None:
         """Message data if present and valid."""
         return self._extract(
@@ -262,13 +261,13 @@ class Event(BaseEventModel):
             ),
         )
 
-    @cached_property
+    @property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
         value: object | None = self.data.get("broadcaster")
         return value if isinstance(value, str) and value else None
 
-    @cached_property
+    @property
     def tip(self) -> Tip | None:
         """Tip data if present and valid (TIP events only)."""
         return self._extract(
@@ -277,7 +276,7 @@ class Event(BaseEventModel):
             allowed_types=(EventType.TIP,),
         )
 
-    @cached_property
+    @property
     def media(self) -> Media | None:
         """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
         return self._extract(
@@ -286,7 +285,7 @@ class Event(BaseEventModel):
             allowed_types=(EventType.MEDIA_PURCHASE,),
         )
 
-    @cached_property
+    @property
     def room_subject(self) -> RoomSubject | None:
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._extract(
