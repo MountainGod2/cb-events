@@ -43,7 +43,7 @@ from .models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from .router import HandlerFunc, Router
 from .version import __version__
 
-__all__: list[str] = [
+__all__: tuple[str, ...] = (
     "AuthError",
     "ClientConfig",
     "ClientRequestError",
@@ -62,4 +62,4 @@ __all__: list[str] = [
     "Tip",
     "User",
     "__version__",
-]
+)
