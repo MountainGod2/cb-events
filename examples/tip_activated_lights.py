@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events ==6.3.1",
+#     "cb-events ==7.0.1",
 #     "aiohue ==4.8.1",
 #     "python-dotenv >=1.2.2",
 #     "rich-click >=1.9.7",
