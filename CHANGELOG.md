@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v7.0.1 (2026-04-09)
+
+### Bug Fixes
+
+- Handle status_code check for None ([#93](https://github.com/MountainGod2/cb-events/pull/93),
+  [`b02019e`](https://github.com/MountainGod2/cb-events/commit/b02019e8c47d2073a3e2bc3e49c0785ca3ed4f5a))
+
+- **exceptions**: Handle status_code check for None
+  ([#93](https://github.com/MountainGod2/cb-events/pull/93),
+  [`b02019e`](https://github.com/MountainGod2/cb-events/commit/b02019e8c47d2073a3e2bc3e49c0785ca3ed4f5a))
+
+### Refactoring
+
+- **__init__**: Change __all__ from list to tuple
+  ([#93](https://github.com/MountainGod2/cb-events/pull/93),
+  [`b02019e`](https://github.com/MountainGod2/cb-events/commit/b02019e8c47d2073a3e2bc3e49c0785ca3ed4f5a))
+
+- **client**: Replace timeout attribute with config.timeout
+  ([#93](https://github.com/MountainGod2/cb-events/pull/93),
+  [`b02019e`](https://github.com/MountainGod2/cb-events/commit/b02019e8c47d2073a3e2bc3e49c0785ca3ed4f5a))
+
+- **models**: Replace cached_property with property
+  ([#93](https://github.com/MountainGod2/cb-events/pull/93),
+  [`b02019e`](https://github.com/MountainGod2/cb-events/commit/b02019e8c47d2073a3e2bc3e49c0785ca3ed4f5a))
+
+
 ## v7.0.0 (2026-04-08)
 
 ### Chores
