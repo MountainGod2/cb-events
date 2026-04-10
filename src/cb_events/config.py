@@ -53,7 +53,7 @@ class ClientConfig(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     timeout: int = Field(default=10, gt=0)
-    """Request timeout in seconds."""
+    """Server long-poll timeout in seconds."""
 
     use_testbed: bool = False
     """Use the testbed API instead of production."""
