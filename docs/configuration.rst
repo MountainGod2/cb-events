@@ -9,7 +9,7 @@ Client Configuration
    from cb_events import EventClient, ClientConfig
 
    config = ClientConfig(
-       timeout=10,                   # Request timeout (seconds)
+       timeout=10,                   # Server long-poll timeout (seconds)
        use_testbed=False,            # Use testbed endpoint
        strict_validation=False,      # Raise on invalid events vs. skip
        retry_attempts=8,             # Total attempts (initial + retries)
@@ -24,10 +24,13 @@ Client Configuration
 Timeout Settings
 ----------------
 
+The ``timeout`` parameter controls the maximum time (in seconds) the
+Chaturbate server will wait before sending back a response.
+
 .. code-block:: python
 
-   config = ClientConfig(timeout=5)   # Fast-fail
-   config = ClientConfig(timeout=30)  # Unreliable networks
+   config = ClientConfig(timeout=5)   # More frequent polls
+   config = ClientConfig(timeout=30)  # Server holds connection longer
 
 Default: 10 seconds
 

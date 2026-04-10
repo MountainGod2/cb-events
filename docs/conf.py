@@ -55,9 +55,6 @@ html_copy_source = False
 html_last_updated_fmt = "%b %d, %Y"
 
 html_theme_options: dict[str, str | dict[str, str] | bool] = {
-    "source_repository": "https://github.com/MountainGod2/cb-events",
-    "source_branch": "main",
-    "source_directory": "docs/",
     "light_css_variables": {
         "color-brand-primary": "#7C4DFF",
         "color-brand-content": "#7C4DFF",

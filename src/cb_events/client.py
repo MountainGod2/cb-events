@@ -279,7 +279,7 @@ class EventClient:
         username: Chaturbate username for the event feed.
         token: API token for authentication.
         config: Client configuration instance.
-        timeout: Request timeout in seconds.
+        timeout: Server long-poll timeout in seconds.
         base_url: API endpoint base URL.
         session: Active HTTP session (None until context entry).
 
