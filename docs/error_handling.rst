@@ -7,7 +7,11 @@ Exception Hierarchy
 .. code-block:: text
 
    EventsError (base)
-   └── AuthError (401/403)
+   ├── AuthError (401/403)
+   └── HttpStatusError
+       ├── ClientRequestError (4xx)
+       ├── RateLimitError (429)
+       └── ServerError (5xx/52x)
 
 ``AuthError`` is a subclass of ``EventsError``, so ``except EventsError`` catches
 both. Put ``AuthError`` first if you need to handle the two cases differently.
@@ -45,19 +49,6 @@ Authentication Errors
        print(f"Authentication failed: {e} (status {e.status_code})")
    except EventsError as e:
        print(f"API error: {e}")
-
-Error Properties
-----------------
-
-.. code-block:: python
-
-   try:
-       async with EventClient(username, token) as client:
-           # ...
-   except EventsError as e:
-       print(f"Status: {e.status_code}")
-       print(f"Response: {e.response_text}")
-       print(f"Message: {str(e)}")
 
 Automatic Retries
 -----------------
@@ -102,8 +93,6 @@ Strict mode raises ``pydantic.ValidationError`` on invalid event data:
    except pydantic.ValidationError as e:
        print(f"Invalid event data: {e}")
 
-.. note::
-
 Handler Errors
 --------------
 
@@ -127,23 +116,19 @@ Graceful Shutdown
    from cb_events import EventClient
 
    async def main():
-       async with EventClient(username, token) as client:
-           try:
+       loop = asyncio.get_running_loop()
+       task = asyncio.current_task()
+       for sig in (signal.SIGTERM, signal.SIGINT):
+           loop.add_signal_handler(sig, task.cancel)
+
+       try:
+           async with EventClient(username, token) as client:
                async for event in client:
                    await router.dispatch(event)
-           except asyncio.CancelledError:
-               print("Shutting down")
-               raise
+       except asyncio.CancelledError:
+           print("Shutting down")
 
-   def shutdown(signum, frame):
-       raise KeyboardInterrupt
-
-   signal.signal(signal.SIGTERM, shutdown)
-
-   try:
-       asyncio.run(main())
-   except KeyboardInterrupt:
-       print("Interrupted, exiting")
+   asyncio.run(main())
 
 Network Errors
 --------------
@@ -161,15 +146,6 @@ Network Errors
            print(f"API error: {e.status_code}")
        else:
            print(f"Network error: {e}")
-
-Best Practices
---------------
-
-- Catch :class:`~cb_events.exceptions.AuthError` separately
-- Enable logging for diagnostics
-- Use lenient mode only for malformed API data
-- Handle interrupts for clean shutdown
-- Monitor handler exceptions in logs
 
 Example
 -------
@@ -199,9 +175,9 @@ Example
                logger.error(f"API error: {e}")
                await asyncio.sleep(5)
 
-           except KeyboardInterrupt:
+           except asyncio.CancelledError:
                logger.info("Shutting down")
-               break
+               raise
 
            except Exception as e:
                logger.exception(f"Unexpected error: {e}")
