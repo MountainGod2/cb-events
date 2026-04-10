@@ -130,6 +130,16 @@ Graceful Shutdown
 
    asyncio.run(main())
 
+.. note::
+
+   ``loop.add_signal_handler()`` is Unix-only and raises ``NotImplementedError``
+   on Windows. To support Windows, either:
+
+   1. Wrap the calls in a ``try/except NotImplementedError`` block and fall back
+      to ``signal.signal()`` or another cancellation mechanism.
+   2. Implement a Windows-specific shutdown trigger (e.g. ``signal.signal`` with
+      an ``asyncio.Event``) for cross-platform behaviour.
+
 Network Errors
 --------------
 
