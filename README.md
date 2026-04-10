@@ -64,7 +64,7 @@ For usage examples, see the [examples folder](https://github.com/MountainGod2/cb
 from cb_events import ClientConfig
 
 config = ClientConfig(
-    timeout=10,                   # Request timeout (seconds)
+    timeout=10,                   # Server long-poll timeout (seconds)
     use_testbed=False,            # Use testbed endpoint with test tokens
     strict_validation=False,      # False skips & logs invalid events; True raises.
     retry_attempts=8,             # Total attempts (initial + retries)
