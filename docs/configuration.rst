@@ -136,6 +136,6 @@ Set the logger to ``DEBUG`` for verbose polling URLs and event dispatch data:
 
 .. code-block:: text
 
-   DEBUG:cb_events:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
-   DEBUG:cb_events:Received 1 events for user
-   DEBUG:cb_events:Dispatching chatMessage event 1775683684418-0 to 2 handlers
+   DEBUG:cb_events.client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
+   DEBUG:cb_events.client:Received 1 events for user
+   DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
