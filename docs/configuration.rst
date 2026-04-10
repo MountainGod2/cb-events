@@ -125,8 +125,17 @@ only. Pass a list to permit extra hostnames:
 Logging
 -------
 
+Set the logger to ``DEBUG`` for verbose polling URLs and event dispatch data:
+
 .. code-block:: python
 
    import logging
-
    logging.getLogger("cb_events").setLevel(logging.DEBUG)
+
+**Example DEBUG Output:**
+
+.. code-block:: text
+
+   DEBUG:cb_events.client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
+   DEBUG:cb_events.client:Received 1 events for user
+   DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handlers

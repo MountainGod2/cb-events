@@ -96,6 +96,11 @@ metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
+# Remove `> [!NOTE]` admonitions since PyPI doesn't support them
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = '^> \[![A-Z]+\].*$'
+replacement = ''
+
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 build_command = """

@@ -11,6 +11,11 @@ Quick Start
    username = "your_username"
    token = "your_api_token"
 
+   @router.on(EventType.USER_ENTER)
+   async def handle_user_enter(event: Event) -> None:
+       if event.user:
+           print(f"{event.user.username} entered the room")
+
    @router.on(EventType.TIP)
    async def handle_tip(event: Event) -> None:
        if event.user and event.tip:
@@ -23,27 +28,15 @@ Quick Start
 
    asyncio.run(main())
 
+**Example Output:**
+
+.. code-block:: text
+
+   mountaingod2 entered the room
+   mountaingod2 tipped 100 tokens
+
 Event Types
 -----------
-
-.. code-block:: python
-
-   @router.on(EventType.TIP)
-   async def handle_tip(event: Event) -> None:
-       print(f"Tip: {event.tip.tokens} tokens")
-
-   @router.on(EventType.FANCLUB_JOIN)
-   async def handle_fanclub(event: Event) -> None:
-       print(f"New fan: {event.user.username}")
-
-   @router.on(EventType.FOLLOW)
-   async def handle_follow(event: Event) -> None:
-       print(f"New follower: {event.user.username}")
-
-   @router.on(EventType.CHAT_MESSAGE)
-   async def handle_message(event: Event) -> None:
-       if event.message:
-           print(f"{event.user.username}: {event.message.message}")
 
 Available event types:
 

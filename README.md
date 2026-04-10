@@ -15,7 +15,7 @@ Async Python client for the Chaturbate Events API.
 pip install cb-events
 ```
 
-With uv:
+With [uv](https://docs.astral.sh/uv/) (recommended):
 
 ```bash
 uv add cb-events
@@ -45,9 +45,14 @@ async def main():
 asyncio.run(main())
 ```
 
-Generate API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
+```text
+mountaingod2 tipped 100 tokens
+```
 
 For usage examples, see the [examples folder](https://github.com/MountainGod2/cb-events/blob/main/examples).
+
+> [!NOTE]
+> Generate an API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
 
 ## Event Types
 
@@ -121,10 +126,19 @@ except EventsError as e:
 
 ## Logging
 
+Set the logger to `DEBUG` for verbose polling data:
+
 ```python
 import logging
+logging.getLogger("cb_events").setLevel(logging.DEBUG)
+```
 
-logging.getLogger('cb_events').setLevel(logging.DEBUG)
+Example output:
+
+```text
+DEBUG:cb_events.client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
+DEBUG:cb_events.client:Received 1 events for user
+DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
 ```
 
 ## Requirements
@@ -137,4 +151,4 @@ MIT
 
 ---
 
-> Not affiliated with Chaturbate.
+Not affiliated with Chaturbate.
