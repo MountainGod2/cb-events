@@ -123,7 +123,7 @@ only. Pass a tuple to permit extra hostnames:
 .. warning::
 
    ``None`` does **not** mean allow any host — it means the API host only.
-   An explicit list extends that set; it does not replace it.
+   An explicit tuple extends that set; it does not replace it.
 
 Logging
 -------
