@@ -16,7 +16,7 @@ Client Configuration
        retry_backoff=1.0,            # Initial backoff (seconds)
        retry_factor=2.0,             # Backoff multiplier
        retry_max_delay=30.0,         # Max retry delay (seconds)
-       next_url_allowed_hosts=None,  # List of allowed hostnames for next_url
+       next_url_allowed_hosts=None,  # Tuple of allowed hostnames for next_url
    )
 
    client = EventClient(username, token, config=config)
@@ -112,12 +112,12 @@ Allowed Hosts
 -------------
 
 ``next_url_allowed_hosts=None`` restricts ``nextUrl`` to the configured API host
-only. Pass a list to permit extra hostnames:
+only. Pass a tuple to permit extra hostnames:
 
 .. code-block:: python
 
    config = ClientConfig(
-       next_url_allowed_hosts=["eventsapi.chaturbate.com", "events.testbed.cb.dev"]
+       next_url_allowed_hosts=("eventsapi.chaturbate.com", "events.testbed.cb.dev")
    )
 
 .. warning::
