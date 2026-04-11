@@ -26,26 +26,19 @@ Example:
 
 from typing import Final
 
-_RESPONSE_TEXT_LIMIT: Final[int] = 200
-"""Maximum characters stored in response_text to limit PII exposure in logs."""
-
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 """HTTP status codes indicating authentication failures."""
 
-RATE_LIMIT_STATUS_CODE: Final[int] = 429
-"""HTTP status code for rate limiting."""
+_RESPONSE_TEXT_LIMIT: Final[int] = 200
+"""Maximum characters stored in response_text to limit PII exposure in logs."""
 
-CLIENT_ERROR_MIN_STATUS_CODE: Final[int] = 400
-"""Lower bound for HTTP client error status codes."""
+_RATE_LIMIT_STATUS_CODE: Final[int] = 429
+"""HTTP status code indicating rate-limiting failures."""
+_CLIENT_ERROR_RANGE: Final[tuple[int, int]] = (400, 499)
+"""Range of HTTP status codes indicating client request errors."""
 
-CLIENT_ERROR_MAX_STATUS_CODE: Final[int] = 499
-"""Upper bound for HTTP client error status codes."""
-
-SERVER_ERROR_MIN_STATUS_CODE: Final[int] = 500
-"""Lower bound for HTTP server error status codes."""
-
-SERVER_ERROR_MAX_STATUS_CODE: Final[int] = 599
-"""Upper bound for HTTP server error status codes."""
+_SERVER_ERROR_RANGE: Final[tuple[int, int]] = (500, 599)
+"""Range of HTTP status codes indicating server errors."""
 
 
 class EventsError(Exception):
@@ -179,35 +172,24 @@ def build_http_error(
             status_code=status_code,
             response_text=response_text,
         )
-    if status_code == RATE_LIMIT_STATUS_CODE:
+    if status_code == _RATE_LIMIT_STATUS_CODE:
         return RateLimitError(
             message,
             status_code=status_code,
             response_text=response_text,
         )
-
-    if (
-        CLIENT_ERROR_MIN_STATUS_CODE
-        <= status_code
-        <= CLIENT_ERROR_MAX_STATUS_CODE
-    ):
+    if _CLIENT_ERROR_RANGE[0] <= status_code <= _CLIENT_ERROR_RANGE[1]:
         return ClientRequestError(
             message,
             status_code=status_code,
             response_text=response_text,
         )
-
-    if (
-        SERVER_ERROR_MIN_STATUS_CODE
-        <= status_code
-        <= SERVER_ERROR_MAX_STATUS_CODE
-    ):
+    if _SERVER_ERROR_RANGE[0] <= status_code <= _SERVER_ERROR_RANGE[1]:
         return ServerError(
             message,
             status_code=status_code,
             response_text=response_text,
         )
-
     return HttpStatusError(
         message,
         status_code=status_code,
