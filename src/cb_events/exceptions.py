@@ -178,13 +178,15 @@ def build_http_error(
             status_code=status_code,
             response_text=response_text,
         )
-    if _CLIENT_ERROR_RANGE[0] <= status_code <= _CLIENT_ERROR_RANGE[1]:
+    client_min, client_max = _CLIENT_ERROR_RANGE
+    server_min, server_max = _SERVER_ERROR_RANGE
+    if client_min <= status_code <= client_max:
         return ClientRequestError(
             message,
             status_code=status_code,
             response_text=response_text,
         )
-    if _SERVER_ERROR_RANGE[0] <= status_code <= _SERVER_ERROR_RANGE[1]:
+    if server_min <= status_code <= server_max:
         return ServerError(
             message,
             status_code=status_code,
