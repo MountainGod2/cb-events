@@ -2,6 +2,145 @@
 
 <!-- version list -->
 
+## v7.1.0 (2026-04-11)
+
+### Chores
+
+- Update .gitignore list ([#99](https://github.com/MountainGod2/cb-events/pull/99),
+  [`11bc4d2`](https://github.com/MountainGod2/cb-events/commit/11bc4d2c6439d8ab61303767f08d2d77c7983df8))
+
+- **.gitignore**: Update ignored files ([#99](https://github.com/MountainGod2/cb-events/pull/99),
+  [`11bc4d2`](https://github.com/MountainGod2/cb-events/commit/11bc4d2c6439d8ab61303767f08d2d77c7983df8))
+
+- **config**: Add Python version file ([#99](https://github.com/MountainGod2/cb-events/pull/99),
+  [`11bc4d2`](https://github.com/MountainGod2/cb-events/commit/11bc4d2c6439d8ab61303767f08d2d77c7983df8))
+
+- **examples**: Update version constraints
+  ([#99](https://github.com/MountainGod2/cb-events/pull/99),
+  [`11bc4d2`](https://github.com/MountainGod2/cb-events/commit/11bc4d2c6439d8ab61303767f08d2d77c7983df8))
+
+- **examples-deps**: Update dependency cb-events to v7
+  ([#94](https://github.com/MountainGod2/cb-events/pull/94),
+  [`df64e6d`](https://github.com/MountainGod2/cb-events/commit/df64e6df353e17b2ccd56d2b52e02b0c76ed2ab3))
+
+- **pre-commit**: Update pre-commit
+  ([`1b6fe5c`](https://github.com/MountainGod2/cb-events/commit/1b6fe5ced1a0c36549d896d4111bde6b7adcab6e))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.102.1
+  ([`54aba5e`](https://github.com/MountainGod2/cb-events/commit/54aba5e41d6519cad4d13d3dc672058996482553))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.102.10
+  ([`6a290d4`](https://github.com/MountainGod2/cb-events/commit/6a290d47a35969eb99fd01590da8b6ffda5c0b2f))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.102.2
+  ([`cd5eede`](https://github.com/MountainGod2/cb-events/commit/cd5eede0a454303d1b3530d99c4e5061b51ee8d7))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.102.8
+  ([`c9e6fd2`](https://github.com/MountainGod2/cb-events/commit/c9e6fd2e79f986edc6c9946ddf942c581aadcb9e))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.102.9
+  ([`809a96f`](https://github.com/MountainGod2/cb-events/commit/809a96fcc468ef0b1e7420d3e589fa7e72cee451))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.104.1
+  ([`1f93fdb`](https://github.com/MountainGod2/cb-events/commit/1f93fdbc24266789fcd232048c1cc7ba9d0302e6))
+
+- **python-dev-tools**: Update dependency pyrefly to v0.59.1
+  ([`02e247d`](https://github.com/MountainGod2/cb-events/commit/02e247df95f76f925f894ed903edd49693217c4b))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([`6a16af7`](https://github.com/MountainGod2/cb-events/commit/6a16af74c9501a4f1ee1352e9255b84ae8f8de2a))
+
+- **python-dev-tools**: Update python-dev-tools
+  ([#91](https://github.com/MountainGod2/cb-events/pull/91),
+  [`2bbca3a`](https://github.com/MountainGod2/cb-events/commit/2bbca3a350e1c848f1a83b9874bbe856d68b534b))
+
+- **renovate**: Set prCreation to not-pending
+  ([#95](https://github.com/MountainGod2/cb-events/pull/95),
+  [`1ae2112`](https://github.com/MountainGod2/cb-events/commit/1ae211286b8355403c191acdc0ffaae2d9977d5e))
+
+### Continuous Integration
+
+- **makefile**: Add command for multi-version tests
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+### Documentation
+
+- Add additional examples and logging details
+  ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+- Clarify timeout parameter description ([#98](https://github.com/MountainGod2/cb-events/pull/98),
+  [`2320891`](https://github.com/MountainGod2/cb-events/commit/2320891b5d9594fe2f7bbebc3299c3f9dcf292e5))
+
+- Remove broken source repository details ([#98](https://github.com/MountainGod2/cb-events/pull/98),
+  [`2320891`](https://github.com/MountainGod2/cb-events/commit/2320891b5d9594fe2f7bbebc3299c3f9dcf292e5))
+
+- **config**: Correct next_url_allowed_hosts type
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **config**: Update wording on allowed hosts
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **error_handling**: Add note on Unix-only signal handling
+  ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+- **error_handling**: Update exception hierarchy and error handling examples
+  ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+- **logging**: Update debug log messages ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+- **pyproject**: Remove unsupported admonitions for PyPI
+  ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+- **README**: Add uv installation instructions
+  ([#96](https://github.com/MountainGod2/cb-events/pull/96),
+  [`38a0b5e`](https://github.com/MountainGod2/cb-events/commit/38a0b5e0f5bb270d93b5b050e0ecbe6d4fa1e373))
+
+### Features
+
+- Convert next_url_allowed_hosts to tuple and reorganize constants
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+### Refactoring
+
+- **client**: Update type hints ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **exceptions**: Simplify error handling
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **exceptions**: Update status code definitions
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **makefile**: Rename test-all to check-all
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **router**: Simplify handler logging and type checks
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+- **tests**: Remove TOKEN_VISIBLE_CHARS assertions
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+### Testing
+
+- **token**: Add test for masking token with visible length
+  ([#100](https://github.com/MountainGod2/cb-events/pull/100),
+  [`57ea719`](https://github.com/MountainGod2/cb-events/commit/57ea7190ea266668d4bfc97a5a92577a2b55de30))
+
+
 ## v7.0.1 (2026-04-09)
 
 ### Bug Fixes
