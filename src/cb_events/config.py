@@ -73,7 +73,7 @@ class ClientConfig(BaseModel):
     retry_max_delay: float = Field(default=30.0, ge=0)
     """Maximum delay between retries in seconds."""
 
-    next_url_allowed_hosts: list[str] | None = None
+    next_url_allowed_hosts: tuple[str, ...] | None = None
     """Hosts permitted for nextUrl responses; defaults to API host only."""
 
     @model_validator(mode="after")
