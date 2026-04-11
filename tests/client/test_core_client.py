@@ -64,6 +64,7 @@ def test_mask_token_various_lengths() -> None:
     """
     token = "abcd1234"
     assert _mask_token(token, visible=20) == "*" * len(token)
+    assert _mask_token(token, visible=4) == "****1234"
     assert _mask_token(token, visible=0) == "*" * len(token)
     masked = _mask_token(token)
     assert masked == "*" * len(token)
