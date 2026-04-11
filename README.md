@@ -71,7 +71,7 @@ config = ClientConfig(
     retry_backoff=1.0,            # Initial backoff (seconds)
     retry_factor=2.0,             # Backoff multiplier
     retry_max_delay=30.0,         # Max retry delay (seconds)
-    next_url_allowed_hosts=None,  # None = API host only; list adds extra hosts
+    next_url_allowed_hosts=None,  # None = API host only; tuple adds extra hosts
 )
 
 client = EventClient(username, token, config=config)

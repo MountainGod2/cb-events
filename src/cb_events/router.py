@@ -25,7 +25,6 @@ Example:
 
 import logging
 from collections.abc import Awaitable, Callable
-from functools import partial
 from inspect import iscoroutinefunction
 from typing import TypeAlias, cast
 
@@ -55,7 +54,7 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
             "Handler %s failed for event %s (type: %s)",
             _handler_name(handler),
             event.id,
-            event.type.value,
+            event.type,
         )
 
 
@@ -63,19 +62,13 @@ def _is_async_callable(func: object) -> bool:
     """Return whether func produces an awaitable when invoked once."""
     if iscoroutinefunction(func):
         return True
-
     if callable(func):
-        try:
-            call_method = type(func).__call__
-        except AttributeError:
-            call_method = None
+        call_method = getattr(type(func), "__call__", None)  # noqa: B004
         if call_method and iscoroutinefunction(call_method):
             return True
-
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
         return _is_async_callable(underlying)
-
     return False
 
 
@@ -89,10 +82,6 @@ def _handler_name(handler: object) -> str:
         name = getattr(current, "__name__", None)
         if name:
             return name
-
-        if isinstance(current, partial):
-            current = current.func
-            continue
 
         wrapped = getattr(current, "__wrapped__", None)
         if callable(wrapped) and wrapped is not current:
@@ -210,7 +199,7 @@ class Router:
 
         logger.debug(
             "Dispatching %s event %s to %d handlers",
-            event.type.value,
+            event.type,
             event.id,
             len(handlers),
         )

@@ -12,7 +12,7 @@ import sys
 from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 from http import HTTPStatus
 from types import TracebackType
-from typing import Final, NoReturn, cast
+from typing import Final, NoReturn
 from urllib.parse import quote, urljoin, urlparse
 
 import stamina
@@ -22,7 +22,12 @@ from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
 
 from .config import ClientConfig
-from .exceptions import AuthError, EventsError, build_http_error
+from .exceptions import (
+    AUTH_ERROR_STATUS_CODES,
+    AuthError,
+    EventsError,
+    build_http_error,
+)
 from .models import Event
 
 if sys.version_info >= (3, 11):
@@ -52,16 +57,17 @@ TOKEN_VISIBLE_CHARS: Final[int] = 0
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum number of characters of response text shown in logs."""
 
-AUTH_ERRORS: Final[frozenset[int]] = frozenset({
-    HTTPStatus.UNAUTHORIZED.value,
-    HTTPStatus.FORBIDDEN.value,
-})
-"""HTTP status codes treated as authentication failures."""
-
 CF_ORIGIN_DOWN: Final[int] = 521
+"""Cloudflare status code indicating the origin server is down."""
+
 CF_CONNECTION_TIMEOUT: Final[int] = 522
+"""Cloudflare status code indicating a connection timeout to the origin."""
+
 CF_ORIGIN_UNREACHABLE: Final[int] = 523
+"""Cloudflare status code indicating the origin is unreachable."""
+
 CF_TIMEOUT_OCCURRED: Final[int] = 524
+"""Cloudflare status code indicating a timeout occurred."""
 
 RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
@@ -172,7 +178,7 @@ def _normalize_host_entry(candidate: object) -> str | None:
 
 
 def _build_allowed_hosts(
-    base_url: str, extra_hosts: Sequence[str] | None
+    base_url: str, extra_hosts: tuple[str, ...] | None
 ) -> set[str]:
     """Build the set of permitted hostnames for nextUrl redirection.
 
@@ -203,13 +209,9 @@ def _log_validation_error(
         item: Raw object that failed validation.
         exc: The ValidationError raised during parsing.
     """
-    mapping_item = None
-    if isinstance(item, Mapping):
-        mapping_item = cast("Mapping[str, object]", item)
-
     event_id = (
-        mapping_item.get("id", "<unknown>")
-        if mapping_item is not None
+        item.get("id", "<unknown>")  # ty: ignore[no-matching-overload]
+        if isinstance(item, Mapping)
         else "<unknown>"
     )
     fields: set[str] = set()
@@ -235,12 +237,11 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     Returns:
         List of validated Event instances.
     """
-    events = []
-    for item in raw:
-        event = _parse_event(item, strict=strict)
-        if event is not None:
-            events.append(event)
-    return events
+    return [
+        event
+        for item in raw
+        if (event := _parse_event(item, strict=strict)) is not None
+    ]
 
 
 def _parse_event(item: object, *, strict: bool) -> Event | None:
@@ -279,7 +280,6 @@ class EventClient:
         username: Chaturbate username for the event feed.
         token: API token for authentication.
         config: Client configuration instance.
-        timeout: Server long-poll timeout in seconds.
         base_url: API endpoint base URL.
         session: Active HTTP session (None until context entry).
 
@@ -612,7 +612,7 @@ class EventClient:
             EventsError: For other non-200 responses or when response format is
                 invalid. Includes HTTP metadata when available.
         """  # noqa: DOC501, DOC502
-        if status in AUTH_ERRORS:
+        if status in AUTH_ERROR_STATUS_CODES:
             logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
                 self.username,

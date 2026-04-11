@@ -1,4 +1,6 @@
-.PHONY: install sync format check fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
+.PHONY: install sync format check fix type-check lint test test-cov check-all pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
+
+PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 
 all: format fix lint test
 
@@ -8,6 +10,7 @@ install:
 sync: install
 
 dev-setup: install
+	uv python install $(PYTHON_VERSIONS)
 	uv run pre-commit install
 
 format:
@@ -46,6 +49,14 @@ test-cov:
 
 test-e2e:
 	uv run pytest -m e2e --no-cov
+
+check-all:
+	@for version in $(PYTHON_VERSIONS); do \
+		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
+		uv run --python $$version --group lint pyrefly check || exit 1; \
+		uv run --python $$version --group lint pyright || exit 1; \
+		uv run --python $$version --group lint ty check src || exit 1; \
+	done
 
 pre-commit:
 	uv run pre-commit run --all-files
@@ -92,6 +103,7 @@ help:
 	@echo "Development:"
 	@echo "  format     check     fix       type-check"
 	@echo "  lint       bandit    trivy     pre-commit"
+	@echo "  check-all"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test       test-cov  test-e2e"
