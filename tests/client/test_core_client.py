@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from cb_events import ClientConfig, EventClient
 from cb_events.client import (
-    TOKEN_VISIBLE_CHARS,
     _mask_token,
     _mask_url,
     _parse_events,
@@ -23,7 +22,6 @@ def test_token_masking_in_repr() -> None:
 
     assert full_token not in repr_str
     assert "*" * len(full_token) in repr_str
-    assert TOKEN_VISIBLE_CHARS == 0
 
 
 @pytest.mark.parametrize(
@@ -44,11 +42,7 @@ def test_reject_invalid_credentials(
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
-    """_mask_url should mask both plain and percent-encoded tokens in URLs.
-
-    When TOKEN_VISIBLE_CHARS == 0 the token is fully redacted and no trailing
-    characters are preserved in the masked output.
-    """
+    """_mask_url should mask both plain and percent-encoded tokens in URLs."""
     token = "super_secret_token_1234"
     encoded = quote(token, safe="")
     url = (
@@ -60,7 +54,6 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     assert token not in masked
     assert encoded not in masked
-    assert TOKEN_VISIBLE_CHARS == 0
 
 
 def test_mask_token_various_lengths() -> None:
@@ -74,7 +67,6 @@ def test_mask_token_various_lengths() -> None:
     assert _mask_token(token, visible=0) == "*" * len(token)
     masked = _mask_token(token)
     assert masked == "*" * len(token)
-    assert TOKEN_VISIBLE_CHARS == 0
 
 
 def test_parse_events_strict_and_lenient(
@@ -129,4 +121,3 @@ def test_eventclient_build_url_and_repr() -> None:
     r = repr(client)
     assert token not in r
     assert "*" * len(token) in r
-    assert TOKEN_VISIBLE_CHARS == 0
