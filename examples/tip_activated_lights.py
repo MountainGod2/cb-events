@@ -229,7 +229,7 @@ class HueController:
             await self._restore_states(saved)
 
 
-async def main(*, testbed: bool) -> None:
+async def main(*, testbed: bool) -> None:  # noqa: C901
     """Main async entry point.
 
     Args:
@@ -276,8 +276,12 @@ async def main(*, testbed: bool) -> None:
     if task is None:
         msg = "main() must be called from within a running task"
         raise RuntimeError(msg)
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, task.cancel)
+    try:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(sig, task.cancel)
+    except NotImplementedError:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(sig, lambda _s, _f: task.cancel())
 
     try:
         async with HueBridgeV2(hue_ip, hue_app_key) as bridge:

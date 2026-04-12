@@ -158,8 +158,14 @@ async def main() -> None:
 
     loop = asyncio.get_running_loop()
     task = asyncio.current_task()
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, task.cancel)
+    try:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(sig, task.cancel)
+    except NotImplementedError:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            signal.signal(
+                sig, lambda _s, _f: task.cancel() if task is not None else None
+            )
 
     try:
         async with EventClient(username, token, config=config) as client:
