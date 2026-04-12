@@ -1,4 +1,4 @@
-.PHONY: install sync format check fix type-check lint test test-cov check-all pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
+.PHONY: install sync format check check-all fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
 
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 
@@ -101,9 +101,9 @@ help:
 	@echo "  install    sync    dev-setup"
 	@echo ""
 	@echo "Development:"
-	@echo "  format     check     fix       type-check"
-	@echo "  lint       bandit    trivy     pre-commit"
-	@echo "  check-all"
+	@echo "  format     check     check-all"
+	@echo "  fix        type-check lint"
+	@echo "  bandit     trivy     pre-commit"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test       test-cov  test-e2e"
