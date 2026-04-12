@@ -8,14 +8,15 @@
 # ]
 # ///
 
-"""Tip-activated Philips Hue lights using cb-events and aiohue."""
+"""CLI for setting up and managing tip-activated Philips Hue lights."""
 
 import asyncio
 import contextlib
 import logging
 import os
+import signal
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, TypeAlias
 
 import rich_click as click
 from aiohue import create_app_key
@@ -31,16 +32,15 @@ from cb_events.models import Event
 click.rich_click.MAX_WIDTH = 100
 
 
-@dataclass(frozen=True)
 class HueConfig:
-    """Configuration constants for Hue light control."""
+    """Constants for Hue light control."""
 
-    DEFAULT_HUE_IP: ClassVar[str] = "192.168.0.23"
-    DEFAULT_HUE_APP_KEY: ClassVar[str] = ""
-    FLASH_DELAY: ClassVar[float] = 0.5
-    DEFAULT_REQUIRED_TOKENS: ClassVar[int] = 35
-    COLOR_TIMEOUT: ClassVar[float] = 600.0
-    DEFAULT_BRIGHTNESS: ClassVar[float] = 100.0
+    DEFAULT_HUE_IP: str = "192.168.0.23"
+    DEFAULT_HUE_APP_KEY: str = ""
+    FLASH_DELAY: float = 0.5
+    DEFAULT_REQUIRED_TOKENS: int = 35
+    COLOR_TIMEOUT: float = 600.0
+    DEFAULT_BRIGHTNESS: float = 100.0
 
     COLOR_COMMANDS: ClassVar[dict[str, tuple[float, float]]] = {
         "red": (0.6750, 0.3220),
@@ -78,11 +78,17 @@ def setup_logging() -> None:
     logging.getLogger("aiohue").setLevel(logging.WARNING)
 
 
-load_dotenv()
-
 logger = logging.getLogger("hue_light_control")
 
-_LightState = tuple[bool, float | None, tuple[float, float] | None]
+_LightState: TypeAlias = tuple[bool, float | None, tuple[float, float] | None]
+
+
+def _parse_float_env(name: str, default: float) -> float:
+    """Return a float from the named env var, or the default."""
+    try:
+        return float(os.environ[name])
+    except (KeyError, ValueError):
+        return default
 
 
 class HueController:
@@ -168,15 +174,17 @@ class HueController:
 
         saved = self._save_states()
         for light_id in self._light_ids:
-            await self._set_single_light_color(light_id, xy)
+            await self._set_light_color(
+                light_id, xy, transition_time=self.config.transition_time
+            )
         logger.info("Lights set to %s", color)
 
         self._color_timer = asyncio.create_task(
             self._restore_states(saved, delay=self.config.color_timeout)
         )
 
-    async def _set_single_light_color(
-        self, light_id: str, xy: tuple[float, float]
+    async def _set_light_color(
+        self, light_id: str, xy: tuple[float, float], *, transition_time: int
     ) -> None:
         try:
             await self.bridge.lights.set_state(
@@ -184,12 +192,17 @@ class HueController:
                 on=True,
                 brightness=self.config.brightness,
                 color_xy=xy,
-                transition_time=self.config.transition_time,
+                transition_time=transition_time,
             )
         except AiohueException:
+            logger.warning("Bridge communication issue on light %s", light_id)
+
+    async def _turn_off_light(self, light_id: str) -> None:
+        try:
+            await self.bridge.lights.turn_off(light_id)
+        except AiohueException:
             logger.warning(
-                "Bridge communication issue setting color on light %s",
-                light_id,
+                "Bridge communication issue turning off light %s", light_id
             )
 
     async def flash_lights(self, color: str, count: int | None = None) -> None:
@@ -207,39 +220,13 @@ class HueController:
         try:
             for _ in range(flashes):
                 for light_id in self._light_ids:
-                    await self._flash_single_light_on(light_id, xy)
+                    await self._set_light_color(light_id, xy, transition_time=0)
                 await asyncio.sleep(HueConfig.FLASH_DELAY)
                 for light_id in self._light_ids:
-                    await self._flash_single_light_off(light_id)
+                    await self._turn_off_light(light_id)
                 await asyncio.sleep(HueConfig.FLASH_DELAY)
         finally:
             await self._restore_states(saved)
-
-    async def _flash_single_light_on(
-        self, light_id: str, xy: tuple[float, float]
-    ) -> None:
-        try:
-            await self.bridge.lights.set_state(
-                light_id,
-                on=True,
-                brightness=self.config.brightness,
-                color_xy=xy,
-                transition_time=0,
-            )
-        except AiohueException:
-            logger.warning(
-                "Bridge communication issue flashing light %s",
-                light_id,
-            )
-
-    async def _flash_single_light_off(self, light_id: str) -> None:
-        try:
-            await self.bridge.lights.turn_off(light_id)
-        except AiohueException:
-            logger.warning(
-                "Bridge communication issue turning off light %s",
-                light_id,
-            )
 
 
 async def main(*, testbed: bool) -> None:
@@ -250,6 +237,7 @@ async def main(*, testbed: bool) -> None:
 
     Raises:
         ValueError: If required environment variables are missing.
+        RuntimeError: If called outside a running asyncio task.
     """
     username = os.getenv("CB_USERNAME")
     token = os.getenv("CB_TOKEN")
@@ -263,19 +251,16 @@ async def main(*, testbed: bool) -> None:
         os.getenv("TIP_THRESHOLD") or HueConfig.DEFAULT_REQUIRED_TOKENS
     )
 
-    light_config = LightConfig()
-    if raw_lights := os.getenv("LIGHT_NAMES"):
-        light_config.lights = [
-            n.strip() for n in raw_lights.split(",") if n.strip()
-        ]
-    if (raw_bri := os.getenv("BRIGHTNESS", "")) and raw_bri.replace(
-        ".", "", 1
-    ).isdigit():
-        light_config.brightness = float(raw_bri)
-    if (raw_timeout := os.getenv("COLOR_TIMEOUT", "")) and raw_timeout.replace(
-        ".", "", 1
-    ).isdigit():
-        light_config.color_timeout = float(raw_timeout)
+    lights = [
+        n.strip() for n in os.getenv("LIGHT_NAMES", "").split(",") if n.strip()
+    ]
+    light_config = LightConfig(
+        brightness=_parse_float_env("BRIGHTNESS", HueConfig.DEFAULT_BRIGHTNESS),
+        color_timeout=_parse_float_env(
+            "COLOR_TIMEOUT", HueConfig.COLOR_TIMEOUT
+        ),
+        lights=lights,
+    )
 
     logger.info("Hue Bridge IP: %s", hue_ip)
     logger.info(
@@ -286,26 +271,37 @@ async def main(*, testbed: bool) -> None:
     router = Router()
     config = ClientConfig(use_testbed=testbed)
 
-    async with HueBridgeV2(hue_ip, hue_app_key) as bridge:
-        hue = HueController(bridge, config=light_config)
+    loop = asyncio.get_running_loop()
+    task = asyncio.current_task()
+    if task is None:
+        msg = "main() must be called from within a running task"
+        raise RuntimeError(msg)
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, task.cancel)
 
-        @router.on(EventType.TIP)
-        async def handle_tip(event: Event) -> None:
-            if (
-                not event.tip
-                or event.tip.tokens < tip_threshold
-                or not event.tip.message
-            ):
-                return
-            message = event.tip.message.lower()
-            for color in HueConfig.COLOR_COMMANDS:
-                if color in message.split():
-                    await hue.set_color(color)
-                    break
+    try:
+        async with HueBridgeV2(hue_ip, hue_app_key) as bridge:
+            hue = HueController(bridge, config=light_config)
 
-        async with EventClient(username, token, config=config) as client:
-            async for event in client:
-                await router.dispatch(event)
+            @router.on(EventType.TIP)
+            async def handle_tip(event: Event) -> None:
+                if (
+                    not event.tip
+                    or event.tip.tokens < tip_threshold
+                    or not event.tip.message
+                ):
+                    return
+                message = event.tip.message.lower()
+                for color in HueConfig.COLOR_COMMANDS:
+                    if color in message.split():
+                        await hue.set_color(color)
+                        break
+
+            async with EventClient(username, token, config=config) as client:
+                async for event in client:
+                    await router.dispatch(event)
+    except asyncio.CancelledError:
+        logger.info("Shutting down")
 
 
 @click.group()
@@ -318,14 +314,13 @@ def cli() -> None:
 def run(*, testbed: bool) -> None:
     """Start monitoring tips and activating lights."""
     setup_logging()
+    load_dotenv()
     try:
         asyncio.run(main(testbed=testbed))
     except AuthError:
         logger.exception(
             "Authentication failed. Check CB_USERNAME and CB_TOKEN."
         )
-    except KeyboardInterrupt:
-        logger.info("Interrupted by user")
     except Exception:
         logger.exception("Fatal error occurred")
     finally:
@@ -336,7 +331,10 @@ def run(*, testbed: bool) -> None:
 @click.option(
     "--host",
     default=None,
-    help="Hue bridge IP or hostname (defaults to HUE_IP env var or auto-discovery).",  # noqa: E501
+    help=(
+        "Hue bridge IP or hostname"
+        " (defaults to HUE_IP env var or auto-discovery)."
+    ),
 )
 @click.option(
     "--env-file",
@@ -347,6 +345,7 @@ def run(*, testbed: bool) -> None:
 def register(host: str | None, env_file: str) -> None:
     """Register this app with the Hue bridge and save the app key."""
     setup_logging()
+    load_dotenv()
 
     async def _register() -> None:
         bridge_host = host or os.getenv("HUE_IP")

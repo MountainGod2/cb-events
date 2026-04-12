@@ -11,6 +11,7 @@
 import asyncio
 import logging
 import os
+import signal
 import sys
 
 from dotenv import load_dotenv
@@ -155,11 +156,19 @@ async def main() -> None:
 
     config = ClientConfig(use_testbed=use_testbed)
 
-    async with EventClient(username, token, config=config) as client:
-        logger.info("Listening for events... (Ctrl+C to stop)")
+    loop = asyncio.get_running_loop()
+    task = asyncio.current_task()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, task.cancel)
 
-        async for event in client:
-            await router.dispatch(event)
+    try:
+        async with EventClient(username, token, config=config) as client:
+            logger.info("Listening for events... (Ctrl+C to stop)")
+
+            async for event in client:
+                await router.dispatch(event)
+    except asyncio.CancelledError:
+        logger.info("Shutting down")
 
 
 if __name__ == "__main__":
@@ -167,8 +176,6 @@ if __name__ == "__main__":
 
     try:
         asyncio.run(main())
-    except KeyboardInterrupt:
-        sys.exit(130)
     except (AuthError, EventsError):
         logger.exception("An error occurred")
         sys.exit(1)
