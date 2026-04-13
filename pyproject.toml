@@ -98,7 +98,7 @@ replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 # Remove `> [!NOTE]` admonitions since PyPI doesn't support them
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-pattern = '^> \[![A-Z]+\].*$'
+pattern = '> \[![A-Z]+\][^\n]*\n'
 replacement = ''
 
 [tool.semantic_release]
