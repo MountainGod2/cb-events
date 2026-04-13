@@ -64,7 +64,7 @@ lint = [
     "pylint==4.0.5",
     "pre-commit==4.5.1",
     "pylint-pydantic==0.4.1",
-    "ty==0.0.28",
+    "ty==0.0.29",
     "pyrefly==0.59.1",
 ]
 test = [
