@@ -4,7 +4,8 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN pip install --no-cache-dir uv==0.9.16
+# renovate: datasource=pypi depName=uv
+RUN pip install --no-cache-dir uv==0.11.2
 
 WORKDIR /tmp
 COPY uv.lock pyproject.toml README.md ./
