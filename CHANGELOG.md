@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v7.1.2 (2026-04-13)
+
+### Bug Fixes
+
+- **security**: Update dependency pytest to v9.0.3 [security]
+  ([#104](https://github.com/MountainGod2/cb-events/pull/104),
+  [`0fc4480`](https://github.com/MountainGod2/cb-events/commit/0fc4480d73e65466ac37e314e8edc0ca52ad9c7f))
+
+### Chores
+
+- **examples-deps**: Update dependency cb-events to v7.1.1
+  ([`181149b`](https://github.com/MountainGod2/cb-events/commit/181149beb0292a9e096b93c512323044155a0af3))
+
+- **lock-file**: Lock file maintenance
+  ([`50afe2a`](https://github.com/MountainGod2/cb-events/commit/50afe2a905cd917321e86b877a7c420beab02203))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.104.4
+  ([`536d729`](https://github.com/MountainGod2/cb-events/commit/536d729366e55e8a45931bd25f0c51caca2f4b91))
+
+- **python-dev-tools**: Update dependency ty to v0.0.29
+  ([`17acd6e`](https://github.com/MountainGod2/cb-events/commit/17acd6e32abdbe2afc2392d617426bea2c279717))
+
+### Refactoring
+
+- **Dockerfile**: Replace pip install with COPY for uv
+  ([#103](https://github.com/MountainGod2/cb-events/pull/103),
+  [`26fc564`](https://github.com/MountainGod2/cb-events/commit/26fc564ea7cc8eb05add378c630946e54791e41c))
+
+- **uv**: Add pytest to exclude-newer-package
+  ([#105](https://github.com/MountainGod2/cb-events/pull/105),
+  [`37c6d14`](https://github.com/MountainGod2/cb-events/commit/37c6d14336e64fe0d98ab5ad95f4d7028930668e))
+
+
 ## v7.1.1 (2026-04-13)
 
 ### Bug Fixes
