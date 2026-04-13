@@ -2,6 +2,53 @@
 
 <!-- version list -->
 
+## v7.1.1 (2026-04-13)
+
+### Bug Fixes
+
+- Update admonitions pattern ([#102](https://github.com/MountainGod2/cb-events/pull/102),
+  [`51eac6c`](https://github.com/MountainGod2/cb-events/commit/51eac6c5d9f1c268a58dc58931f51808b5e44491))
+
+- **pyproject**: Update admonitions pattern
+  ([#102](https://github.com/MountainGod2/cb-events/pull/102),
+  [`51eac6c`](https://github.com/MountainGod2/cb-events/commit/51eac6c5d9f1c268a58dc58931f51808b5e44491))
+
+### Chores
+
+- **Dockerfile**: Update uv dependency to version 0.11.2
+  ([#102](https://github.com/MountainGod2/cb-events/pull/102),
+  [`51eac6c`](https://github.com/MountainGod2/cb-events/commit/51eac6c5d9f1c268a58dc58931f51808b5e44491))
+
+- **examples**: Modify signal registration
+  ([#101](https://github.com/MountainGod2/cb-events/pull/101),
+  [`60cc836`](https://github.com/MountainGod2/cb-events/commit/60cc836442f22c780ed3e2a7ffe23479bac86f1b))
+
+- **examples-deps**: Update dependency cb-events to v7.1.0
+  ([`139a3fe`](https://github.com/MountainGod2/cb-events/commit/139a3fe21e43339a9555acd09034b70b5daf5260))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.104.2
+  ([`9de702a`](https://github.com/MountainGod2/cb-events/commit/9de702a8f5764e4719801b9083e93e4fe913cbcf))
+
+- **pre-commit**: Update pre-commit hook renovatebot/pre-commit-hooks to v43.104.3
+  ([`6b2f832`](https://github.com/MountainGod2/cb-events/commit/6b2f83260dd8e98475cfd770b63c21ba9185eef7))
+
+### Code Style
+
+- **Makefile**: Reorganize help command output
+  ([#101](https://github.com/MountainGod2/cb-events/pull/101),
+  [`60cc836`](https://github.com/MountainGod2/cb-events/commit/60cc836442f22c780ed3e2a7ffe23479bac86f1b))
+
+### Refactoring
+
+- Improve signal handling and shutdown process
+  ([#101](https://github.com/MountainGod2/cb-events/pull/101),
+  [`60cc836`](https://github.com/MountainGod2/cb-events/commit/60cc836442f22c780ed3e2a7ffe23479bac86f1b))
+
+- **event_handling**: Improve signal handling and shutdown process
+  ([#101](https://github.com/MountainGod2/cb-events/pull/101),
+  [`60cc836`](https://github.com/MountainGod2/cb-events/commit/60cc836442f22c780ed3e2a7ffe23479bac86f1b))
+
+
 ## v7.1.0 (2026-04-11)
 
 ### Chores
