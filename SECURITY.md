@@ -7,9 +7,8 @@ We actively provide security updates for the following versions of cb-events:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 6.x.x   | :white_check_mark: |
-| 5.8.2   | :white_check_mark: |
-| 5.8.1 and earlier   | :x:                |
+| 7.1.2   | :white_check_mark: |
+| 7.1.1 and earlier   | :x:                |
 
 ## Reporting a Vulnerability
 
