@@ -4,8 +4,7 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# renovate: datasource=pypi depName=uv
-RUN pip install --no-cache-dir uv==0.11.2
+COPY --from=ghcr.io/astral-sh/uv:0.11.2 /uv /usr/local/bin/uv
 
 WORKDIR /tmp
 COPY uv.lock pyproject.toml README.md ./
