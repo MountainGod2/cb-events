@@ -116,9 +116,11 @@ Shared Rate Limiter
 Allowed Hosts
 -------------
 
-``next_url_allowed_hosts`` restricts which hostnames are followed in ``nextUrl``
-redirects. Default ``None`` allows the base API host only. Pass a tuple to
-permit additional hostnames:
+``next_url_allowed_hosts`` restricts which hostnames are permitted in ``nextUrl``
+redirects. Default ``None`` allows only the base API host — ``eventsapi.chaturbate.com``
+or ``events.testbed.cb.dev`` when ``use_testbed=True``.
+
+Pass a tuple to add extra permitted hostnames:
 
 .. code-block:: python
 
@@ -129,8 +131,7 @@ permit additional hostnames:
 .. warning::
 
    An explicit tuple **extends** the allowlist; it does not replace the base
-   host. Keep this as restrictive as possible — extra hosts can be used to
-   redirect polling to an attacker-controlled server.
+   host. Keep this as restrictive as possible.
 
 Logging
 -------
