@@ -117,15 +117,16 @@ Allowed Hosts
 -------------
 
 ``next_url_allowed_hosts`` restricts which hostnames are permitted in ``nextUrl``
-redirects. Default ``None`` allows only the base API host — ``eventsapi.chaturbate.com``
-or ``events.testbed.cb.dev`` when ``use_testbed=True``.
+redirects. Default ``None`` allows only the appropriate base API host:
+``eventsapi.chaturbate.com`` by default or ``events.testbed.cb.dev`` when
+``use_testbed=True``.
 
 Pass a tuple to add extra permitted hostnames:
 
 .. code-block:: python
 
    config = ClientConfig(
-       next_url_allowed_hosts=("eventsapi.chaturbate.com", "events.testbed.cb.dev")
+       next_url_allowed_hosts=("custom.example.com",)
    )
 
 .. warning::
