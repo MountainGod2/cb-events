@@ -122,3 +122,18 @@ def test_eventclient_build_url_and_repr() -> None:
     r = repr(client)
     assert token not in r
     assert "*" * len(token) in r
+
+
+async def test_close_called_twice_does_not_raise() -> None:
+    """Calling close() twice should be a no-op on the second call."""
+    client = EventClient("user", "test_token")
+    await client.close()
+    await client.close()
+
+
+async def test_properties_accessible_after_close() -> None:
+    """Username and session state should be accessible without raising after close()."""
+    client = EventClient("user", "test_token")
+    await client.close()
+    assert client.username == "user"
+    assert client.session is None

@@ -371,6 +371,7 @@ async def test_relative_next_url_resolved_to_absolute(
         ({}, r"Invalid API response: 'nextUrl' must be"),
         ("javascript:alert(1)", r"Invalid nextUrl scheme"),
         ("https:///nohost", r"Invalid nextUrl host"),
+        ("//evil.com/path", r"Invalid nextUrl scheme"),
     ],
 )
 async def test_invalid_next_url_handling(

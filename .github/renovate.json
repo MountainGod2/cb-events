@@ -63,9 +63,9 @@
         "typing-extensions",
         "/^pydantic-.*$/"
       ],
-      "groupName": "python-runtime",
+      "groupName": "runtime",
       "labels": ["dependencies", "core"],
-      "semanticCommitScope": "python-runtime"
+      "semanticCommitScope": "runtime"
     },
     {
       "description": "Development tools (testing, linting, and type checking)",
@@ -80,31 +80,37 @@
         "pyrefly",
         "pyright",
         "pylint",
-        "bandit",
         "ruff",
         "/^pytest-.*$/",
         "/^pylint-.*$/",
-        "/^bandit-.*$/",
-        "ty",
-        "bandit-sarif-formatter",
-        "pip-audit"
+        "ty"
       ],
-      "groupName": "python-dev-tools",
+      "groupName": "dev-tools",
       "labels": ["dependencies", "dev"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "python-dev-tools"
+      "semanticCommitScope": "dev-tools"
+    },
+    {
+      "description": "Security scanning tools (SAST and dependency audit)",
+      "matchPackageNames": ["bandit", "pip-audit", "zizmor"],
+      "groupName": "security",
+      "labels": ["dependencies", "security"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "autoApprove": true,
+      "semanticCommitScope": "security"
     },
     {
       "description": "Documentation tools (Sphinx and extensions)",
       "matchPackageNames": ["sphinx", "furo", "myst-parser", "/^sphinx-.*$/"],
-      "groupName": "python-docs",
+      "groupName": "docs",
       "labels": ["dependencies", "docs"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "python-docs"
+      "semanticCommitScope": "docs"
     },
     {
       "description": "Build and release tools",
@@ -114,12 +120,12 @@
         "python-semantic-release",
         "/^hatch-.*$/"
       ],
-      "groupName": "build-release",
+      "groupName": "build",
       "labels": ["dependencies", "build"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "build-release"
+      "semanticCommitScope": "build"
     },
     {
       "description": "Pre-commit hooks",
@@ -134,31 +140,31 @@
     {
       "description": "GitHub Actions workflows",
       "matchManagers": ["github-actions"],
-      "groupName": "ci-github-actions",
+      "groupName": "ci",
       "labels": ["dependencies", "ci"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "ci-github-actions"
+      "semanticCommitScope": "ci"
     },
     {
       "description": "Dockerfile updates",
       "matchManagers": ["dockerfile"],
-      "groupName": "docker-images",
+      "groupName": "docker",
       "labels": ["dependencies", "docker"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "docker-images"
+      "semanticCommitScope": "docker"
     },
     {
       "description": "Example scripts managed via PEP 723",
       "matchManagers": ["pep723"],
-      "groupName": "examples-scripts",
+      "groupName": "examples",
       "labels": ["dependencies", "examples"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "examples-scripts"
+      "semanticCommitScope": "examples"
     },
     {
       "description": "Examples dependency group (pyproject.toml)",

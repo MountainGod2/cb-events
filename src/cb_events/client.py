@@ -33,7 +33,7 @@ from .models import Event
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
-    from typing_extensions import Self
+    from typing_extensions import Self  # pragma: no cover
 
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
