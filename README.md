@@ -79,9 +79,8 @@ client = EventClient(username, token, config=config)
 
 ## Rate Limiting
 
-Default: 2000 requests/60s per client.
-
-Shared limiter:
+Default: 2000 req/60s per client. Multiple clients each get an independent
+budget unless a shared limiter is passed:
 
 ```python
 from aiolimiter import AsyncLimiter

@@ -100,6 +100,11 @@ Custom Rate Limiter
 Shared Rate Limiter
 ~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+   Each client gets its own independent budget by default. Multiple clients
+   without a shared limiter multiply the effective request rate.
+
 .. code-block:: python
 
    limiter = AsyncLimiter(max_rate=2000, time_period=60)
@@ -111,8 +116,9 @@ Shared Rate Limiter
 Allowed Hosts
 -------------
 
-``next_url_allowed_hosts=None`` restricts ``nextUrl`` to the configured API host
-only. Pass a tuple to permit extra hostnames:
+``next_url_allowed_hosts`` restricts which hostnames are followed in ``nextUrl``
+redirects. Default ``None`` allows the base API host only. Pass a tuple to
+permit additional hostnames:
 
 .. code-block:: python
 
@@ -122,8 +128,9 @@ only. Pass a tuple to permit extra hostnames:
 
 .. warning::
 
-   ``None`` does **not** mean allow any host — it means the API host only.
-   An explicit tuple extends that set; it does not replace it.
+   An explicit tuple **extends** the allowlist; it does not replace the base
+   host. Keep this as restrictive as possible — extra hosts can be used to
+   redirect polling to an attacker-controlled server.
 
 Logging
 -------

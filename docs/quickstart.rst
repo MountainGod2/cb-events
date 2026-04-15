@@ -74,3 +74,8 @@ Multiple Handlers
    @router.on(EventType.TIP)
    async def thank_tipper(event: Event) -> None:
        await send_thank_you(event.user.username)
+
+.. note::
+
+   Handlers run sequentially in registration order. Exceptions are logged and
+   dispatch continues — a failing handler does not stop the others.
