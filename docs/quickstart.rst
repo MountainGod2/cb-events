@@ -77,5 +77,6 @@ Multiple Handlers
 
 .. note::
 
-   Handlers run sequentially in registration order. Exceptions are logged and
-   dispatch continues — a failing handler does not stop the others.
+   Handlers run sequentially in registration order. Regular handler exceptions
+   are logged and dispatch continues — a failing handler does not stop the
+   others. ``asyncio.CancelledError`` will propagate immediately.
