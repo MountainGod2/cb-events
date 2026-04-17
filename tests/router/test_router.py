@@ -275,9 +275,9 @@ async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
 
 
 def test_is_async_callable_handles_missing_call_attribute() -> None:
-    """_is_async_callable should tolerate metaclasses hiding __call__."""
+    """_is_async_callable should detect async __call__ despite metaclass hiding."""
     handler = _MetaclassCallable()
-    assert not _is_async_callable(handler)
+    assert _is_async_callable(handler)
 
 
 def test_is_async_callable_uses_func_attribute_when_not_callable() -> None:

@@ -27,9 +27,9 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 from pydantic.alias_generators import to_camel
 from typing_extensions import override
 
@@ -38,6 +38,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
+
+_SENTINEL: object = object()
+"""Module-level sentinel for cache-miss detection."""
 
 
 class EventType(str, Enum):
@@ -248,6 +251,7 @@ class Event(BaseEventModel):
     """Unique identifier for the event."""
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
+    _cache: dict[str, object] = PrivateAttr(default_factory=dict)
 
     @property
     def user(self) -> User | None:
@@ -269,8 +273,14 @@ class Event(BaseEventModel):
     @property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
+        cache = self._cache
+        cached = cache.get("broadcaster", _SENTINEL)
+        if cached is not _SENTINEL:
+            return cast("str | None", cached)
         value: object | None = self.data.get("broadcaster")
-        return value if isinstance(value, str) and value else None
+        result = value if isinstance(value, str) and value else None
+        cache["broadcaster"] = result
+        return result
 
     @property
     def tip(self) -> Tip | None:
@@ -308,6 +318,8 @@ class Event(BaseEventModel):
     ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
+        Results are cached so repeated access avoids re-parsing.
+
         Args:
             key: Key within data to look up.
             loader: Callable that validates/constructs the nested model.
@@ -319,12 +331,18 @@ class Event(BaseEventModel):
         if allowed_types and self.type not in allowed_types:
             return None
 
+        cache = self._cache
+        cached = cache.get(key, _SENTINEL)
+        if cached is not _SENTINEL:
+            return cast("_BaseEventModelT | None", cached)
+
         payload: object | None = self.data.get(key)
         if payload is None:
+            cache[key] = None
             return None
 
         try:
-            return loader(payload)
+            result = loader(payload)
         except ValidationError as exc:
             fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key
@@ -336,4 +354,8 @@ class Event(BaseEventModel):
                 self.id,
                 ", ".join(sorted(fields)),
             )
+            cache[key] = None
             return None
+
+        cache[key] = result
+        return result

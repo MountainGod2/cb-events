@@ -24,11 +24,12 @@ from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
-    _TRUNCATE_LENGTH,  # pyright: ignore[reportPrivateUsage]
     AUTH_ERROR_STATUS_CODES,
+    TRUNCATE_LENGTH,
     AuthError,
     EventsError,
     build_http_error,
+    truncate_text,
 )
 from .models import Event
 
@@ -137,7 +138,7 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-def _response_snippet(text: str, *, limit: int = _TRUNCATE_LENGTH) -> str:
+def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     """Truncate response text for safe logging.
 
     Args:
@@ -147,9 +148,7 @@ def _response_snippet(text: str, *, limit: int = _TRUNCATE_LENGTH) -> str:
     Returns:
         Text truncated to ``limit`` characters with ellipsis if needed.
     """
-    if len(text) <= limit:
-        return text
-    return f"{text[:limit]}..."
+    return truncate_text(text, limit=limit)
 
 
 def _normalize_host_entry(candidate: str | None) -> str | None:
@@ -908,9 +907,10 @@ class EventClient:
             After calling close(), the client must be re-entered via
             async with before making further requests.
         """
-        session: ClientSession | None = self.session
-        self.session = None
-        self._next_url = None
+        async with self._polling_lock:
+            session: ClientSession | None = self.session
+            self.session = None
+            self._next_url = None
         if session is not None:
             try:
                 await session.close()

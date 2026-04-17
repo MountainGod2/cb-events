@@ -33,11 +33,32 @@ from typing_extensions import override
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 """HTTP status codes indicating authentication failures."""
 
-_TRUNCATE_LENGTH: Final[int] = 200
+TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
 _RATE_LIMIT_STATUS_CODE: Final[int] = 429
 """HTTP status code indicating rate-limiting failures."""
+
+
+def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
+    """Truncate text with ellipsis if it exceeds the limit.
+
+    Args:
+        text: Text to truncate.
+        limit: Maximum number of characters to retain.
+
+    Returns:
+        Text truncated to ``limit`` characters with ellipsis if needed.
+
+    Raises:
+        ValueError: If ``limit`` is negative.
+    """
+    if limit < 0:
+        msg = f"truncate_text() limit must be non-negative, got {limit}"
+        raise ValueError(msg)
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}..."
 
 
 class EventsError(Exception):
@@ -85,9 +106,8 @@ class EventsError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.response_text = (
-            f"{response_text[:_TRUNCATE_LENGTH]}..."
+            truncate_text(response_text)
             if response_text is not None
-            and len(response_text) > _TRUNCATE_LENGTH
             else response_text
         )
 

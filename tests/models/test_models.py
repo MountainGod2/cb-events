@@ -209,7 +209,7 @@ def test_event_property_validation_errors_logged(
     })
 
     assert getattr(event, attr_name) is None
-    # Access again — each call re-evaluates (no caching), so a second warning is expected
+    # Access again — result is cached, so no additional warning is expected
     assert getattr(event, attr_name) is None
     warning_records = [
         r
@@ -217,7 +217,7 @@ def test_event_property_validation_errors_logged(
         if r.levelname == "WARNING"
         and f"{log_msg} in event {event_id}" in r.getMessage()
     ]
-    assert len(warning_records) == 2
+    assert len(warning_records) == 1
 
 
 def test_event_broadcaster_property() -> None:
@@ -229,6 +229,19 @@ def test_event_broadcaster_property() -> None:
     })
 
     assert event.broadcaster == "streamer"
+
+
+def test_event_broadcaster_property_cached() -> None:
+    """Broadcaster property should return the same value on repeated access (cache hit path)."""
+    event = Event.model_validate({
+        "method": "broadcastStart",
+        "id": "evt-bcaster-cache",
+        "object": {"broadcaster": "streamer"},
+    })
+
+    first = event.broadcaster
+    second = event.broadcaster
+    assert first == second == "streamer"
 
 
 def test_message_not_parsed_on_tip_event() -> None:
