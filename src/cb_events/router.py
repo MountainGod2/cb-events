@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from inspect import iscoroutinefunction
+from inspect import getattr_static, iscoroutinefunction
 from typing import TYPE_CHECKING, TypeAlias
 
 from .models import Event
@@ -64,12 +64,9 @@ def _is_async_callable(func: object) -> bool:
     """Return whether func produces an awaitable when invoked once."""
     if iscoroutinefunction(func):
         return True
-    if callable(func):
-        # Check the instance's __call__ directly, which handles decorated
-        # classes, staticmethod descriptors, and other non-standard callables.
-        call_method: object = getattr(func, "__call__", None)  # noqa: B004
-        if call_method is not None and iscoroutinefunction(call_method):
-            return True
+    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]
+    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]
+        return True
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
         return _is_async_callable(underlying)

@@ -29,7 +29,7 @@ import logging
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 from pydantic.alias_generators import to_camel
 from typing_extensions import override
 
@@ -248,6 +248,7 @@ class Event(BaseEventModel):
     """Unique identifier for the event."""
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
+    _cache: dict[str, object] = PrivateAttr(default_factory=dict)
 
     @override
     def model_post_init(self, context: object, /) -> None:
@@ -274,10 +275,7 @@ class Event(BaseEventModel):
     @property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
-        cache = cast(
-            "dict[str, object]",
-            self._cache,  # pyright: ignore[reportAttributeAccessIssue]
-        )
+        cache = self._cache
         sentinel = object()
         cached = cache.get("broadcaster", sentinel)
         if cached is not sentinel:
@@ -336,10 +334,7 @@ class Event(BaseEventModel):
         if allowed_types and self.type not in allowed_types:
             return None
 
-        cache = cast(
-            "dict[str, object]",
-            self._cache,  # pyright: ignore[reportAttributeAccessIssue]
-        )
+        cache = self._cache
         sentinel = object()
         cached = cache.get(key, sentinel)
         if cached is not sentinel:
