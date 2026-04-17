@@ -24,7 +24,7 @@ from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
-    _TRUNCATE_LENGTH,
+    _TRUNCATE_LENGTH,  # pyright: ignore[reportPrivateUsage]
     AUTH_ERROR_STATUS_CODES,
     AuthError,
     EventsError,
