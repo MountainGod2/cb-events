@@ -18,16 +18,10 @@ Example:
                 print(event)
 """
 
-import sys
-from typing import ClassVar
+from __future__ import annotations
 
-from pydantic import BaseModel, Field, model_validator
-from pydantic.config import ConfigDict
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self  # pragma: no cover
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):
@@ -50,7 +44,7 @@ class ClientConfig(BaseModel):
         configuration values.
     """
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True)  # pyright: ignore[reportUnannotatedClassAttribute] # pylint: disable=line-too-long
 
     timeout: int = Field(default=10, gt=0)
     """Server long-poll timeout in seconds."""

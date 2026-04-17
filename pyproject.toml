@@ -15,7 +15,7 @@ dependencies = [
     "aiolimiter>=1.2.1",
     "pydantic>=2.12.5",
     "stamina>=25.2.0",
-    "typing-extensions>=4.15.0; python_version < '3.11'",
+    "typing-extensions>=4.15.0",
 ]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
@@ -59,28 +59,26 @@ docs = { requires-python = ">=3.12" }
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
-    "ruff==0.15.9",
-    "pyright==1.1.408",
-    "pylint==4.0.5",
+    "basedpyright==1.39.0",
     "pre-commit==4.5.1",
+    "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
-    "ty==0.0.29",
-    "pyrefly==0.60.0",
+    "ruff==0.15.9",
 ]
 test = [
+    "aioresponses==0.7.8",
     "pytest==9.0.3",
     "pytest-asyncio==1.3.0",
     "pytest-aiohttp==1.1.0",
     "pytest-cov==7.1.0",
     "pytest-mock==3.15.1",
-    "aioresponses==0.7.8",
 ]
 docs = [
+    "furo==2025.12.19",
+    "myst-parser==5.0.0",
     "sphinx==9.1.0",
     "sphinx-autoapi==3.8.0",
     "sphinx-copybutton==0.5.2",
-    "furo==2025.12.19",
-    "myst-parser==5.0.0",
 ]
 security = ["bandit[sarif]==1.9.4", "pip-audit==2.10.0", "zizmor==1.23.1"]
 build = ["python-semantic-release==10.5.3"]
@@ -143,10 +141,12 @@ ignore = [
     "CPY001", # Allow missing per-file copyright notices
 ]
 unfixable = []
+future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = [
     "RUF029", # Allow async without await
+    "TC",     # Allow imports outside of type-checking blocks
 ]
 "tests/*" = [
     "ANN",     # Allow missing type annotations
@@ -160,6 +160,7 @@ unfixable = []
     "S105",    # Allow hardcoded passwords
     "S106",    # Allow hardcoded passwords
     "SLF001",  # Allow private member access
+    "TC",      # Allow imports outside of type-checking blocks
 ]
 "tests/conftest.py" = [
     "D", # Allow missing docstrings
@@ -229,7 +230,3 @@ directory = "htmlcov"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
-
-[tool.pyrefly]
-python-version = "3.10"
-project-includes = ["src/"]

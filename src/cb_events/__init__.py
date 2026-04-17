@@ -29,6 +29,8 @@ Example:
         asyncio.run(main())
 """
 
+from __future__ import annotations
+
 from .client import EventClient
 from .config import ClientConfig
 from .exceptions import (

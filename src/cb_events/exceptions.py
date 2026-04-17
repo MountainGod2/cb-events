@@ -24,21 +24,20 @@ Example:
             print(f"API error (HTTP {e.status_code}): {e}")
 """
 
+from __future__ import annotations
+
 from typing import Final
+
+from typing_extensions import override
 
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 """HTTP status codes indicating authentication failures."""
 
-_RESPONSE_TEXT_LIMIT: Final[int] = 200
+_TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
 _RATE_LIMIT_STATUS_CODE: Final[int] = 429
 """HTTP status code indicating rate-limiting failures."""
-_CLIENT_ERROR_RANGE: Final[tuple[int, int]] = (400, 499)
-"""Range of HTTP status codes indicating client request errors."""
-
-_SERVER_ERROR_RANGE: Final[tuple[int, int]] = (500, 599)
-"""Range of HTTP status codes indicating server errors."""
 
 
 class EventsError(Exception):
@@ -86,12 +85,13 @@ class EventsError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.response_text = (
-            f"{response_text[:_RESPONSE_TEXT_LIMIT]}..."
+            f"{response_text[:_TRUNCATE_LENGTH]}..."
             if response_text is not None
-            and len(response_text) > _RESPONSE_TEXT_LIMIT
+            and len(response_text) > _TRUNCATE_LENGTH
             else response_text
         )
 
+    @override
     def __str__(self) -> str:
         """Return error message with HTTP status if available.
 
@@ -178,15 +178,13 @@ def build_http_error(
             status_code=status_code,
             response_text=response_text,
         )
-    client_min, client_max = _CLIENT_ERROR_RANGE
-    server_min, server_max = _SERVER_ERROR_RANGE
-    if client_min <= status_code <= client_max:
+    if 400 <= status_code < 500:  # noqa: PLR2004
         return ClientRequestError(
             message,
             status_code=status_code,
             response_text=response_text,
         )
-    if server_min <= status_code <= server_max:
+    if 500 <= status_code < 600:  # noqa: PLR2004
         return ServerError(
             message,
             status_code=status_code,

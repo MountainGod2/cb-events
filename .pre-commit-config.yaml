@@ -48,12 +48,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: pyrefly
-        name: pyrefly type check
-        entry: uv run pyrefly check
-        language: system
-        pass_filenames: false
-        always_run: true
       - id: pip-audit
         name: pip audit security scan
         entry: uv run --all-groups pip-audit -l
