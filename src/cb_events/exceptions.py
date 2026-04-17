@@ -36,9 +36,6 @@ AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
-_TRUNCATE_LENGTH: Final[int] = TRUNCATE_LENGTH
-"""Deprecated alias for TRUNCATE_LENGTH. Use TRUNCATE_LENGTH instead."""
-
 _RATE_LIMIT_STATUS_CODE: Final[int] = 429
 """HTTP status code indicating rate-limiting failures."""
 

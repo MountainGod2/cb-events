@@ -24,8 +24,8 @@ from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
-    _TRUNCATE_LENGTH,  # pyright: ignore[reportPrivateUsage]
     AUTH_ERROR_STATUS_CODES,
+    TRUNCATE_LENGTH,
     AuthError,
     EventsError,
     build_http_error,
@@ -138,7 +138,7 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-def _response_snippet(text: str, *, limit: int = _TRUNCATE_LENGTH) -> str:
+def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     """Truncate response text for safe logging.
 
     Args:
