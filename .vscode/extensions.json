@@ -1,7 +1,3 @@
 {
-    "recommendations": [
-        "ms-python.python",
-        "charliermarsh.ruff",
-        "meta.pyrefly"
-    ]
+  "recommendations": ["ms-python.python", "charliermarsh.ruff"]
 }

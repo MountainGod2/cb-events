@@ -23,9 +23,7 @@ fix:
 	uv run ruff check --fix
 
 type-check:
-	uv run pyrefly check
-	uv run pyright
-	uv run ty check src
+	uv run basedpyright
 
 lint: check type-check
 	uv run pylint ./src
@@ -54,12 +52,11 @@ check-all:
 	@for version in $(PYTHON_VERSIONS); do \
 		uv run --python $$version --group lint ruff format --check || exit 1; \
 		uv run --python $$version --group lint ruff check || exit 1; \
-		uv run --python $$version --group lint pyrefly check || exit 1; \
-		uv run --python $$version --group lint pyright || exit 1; \
-		uv run --python $$version --group lint ty check src || exit 1; \
+		uv run --python $$version --group lint basedpyright || exit 1; \
 		uv run --python $$version --group lint pylint ./src || exit 1; \
 		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
 	done
+	uv sync --all-groups
 
 pre-commit:
 	uv run pre-commit run --all-files

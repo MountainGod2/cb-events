@@ -23,16 +23,20 @@ Example:
             print(f"From: {event.user.username}")
 """
 
+from __future__ import annotations
+
 import logging
-from collections.abc import Callable, Mapping
 from enum import Enum
-from typing import ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.alias_generators import to_camel
-from pydantic.config import ConfigDict
+from typing_extensions import override
 
-logger: logging.Logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
@@ -75,6 +79,7 @@ class EventType(str, Enum):
     MEDIA_PURCHASE = "mediaPurchase"
     """User has purchased media."""
 
+    @override
     def __str__(self) -> str:
         """Return the raw API value for string formatting.
 
@@ -90,7 +95,7 @@ class BaseEventModel(BaseModel):
     camelCase to snake_case conversion and immutability.
     """
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(
+    model_config = ConfigDict(  # pyright: ignore[reportUnannotatedClassAttribute] # pylint: disable=line-too-long
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
@@ -241,7 +246,7 @@ class Event(BaseEventModel):
     """Type of the event."""
     id: str
     """Unique identifier for the event."""
-    data: Mapping[str, object] = Field(default_factory=dict, alias="object")
+    data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
 
     @property
@@ -290,9 +295,8 @@ class Event(BaseEventModel):
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._extract(
             "subject",
-            RoomSubject.model_validate,
+            lambda v: RoomSubject.model_validate({"subject": v}),
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-            transform=lambda v: {"subject": v},
         )
 
     def _extract(
@@ -301,7 +305,6 @@ class Event(BaseEventModel):
         loader: Callable[[object], _BaseEventModelT],
         *,
         allowed_types: tuple[EventType, ...] | None = None,
-        transform: Callable[[object], object] | None = None,
     ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
@@ -309,8 +312,6 @@ class Event(BaseEventModel):
             key: Key within data to look up.
             loader: Callable that validates/constructs the nested model.
             allowed_types: Event types eligible for extraction.
-            transform: Optional function to mutate the payload before
-                validation.
 
         Returns:
             Validated model instance or None if unavailable or invalid.
@@ -321,9 +322,6 @@ class Event(BaseEventModel):
         payload: object | None = self.data.get(key)
         if payload is None:
             return None
-
-        if transform:
-            payload = transform(payload)
 
         try:
             return loader(payload)

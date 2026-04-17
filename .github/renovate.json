@@ -77,13 +77,11 @@
         "pytest-mock",
         "aioresponses",
         "pre-commit",
-        "pyrefly",
-        "pyright",
+        "basedpyright",
         "pylint",
         "ruff",
         "/^pytest-.*$/",
-        "/^pylint-.*$/",
-        "ty"
+        "/^pylint-.*$/"
       ],
       "groupName": "dev-tools",
       "labels": ["dependencies", "dev"],

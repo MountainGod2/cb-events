@@ -32,7 +32,7 @@ make install    # uv sync --all-groups
 ```bash
 make format     # ruff format
 make fix        # ruff check --fix
-make lint       # ruff check + pyrefly + pyright + ty + pylint
+make lint       # ruff check + basedpyright + pylint
 make test-cov   # pytest with xml/term/html coverage
 make ci         # format + fix + lint + bandit + trivy + test-cov
 make pre-commit # pre-commit run --all-files

@@ -5,14 +5,14 @@ Chaturbate Events API with automatic retries, rate limiting, and credential
 handling.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
-import sys
-from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
+from collections.abc import Mapping
 from http import HTTPStatus
-from types import TracebackType
-from typing import Final, NoReturn
+from typing import TYPE_CHECKING, Final, NoReturn, cast
 from urllib.parse import quote, urljoin, urlparse
 
 import stamina
@@ -20,21 +20,21 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
+from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
     AUTH_ERROR_STATUS_CODES,
+    TRUNCATE_LENGTH,
     AuthError,
     EventsError,
     build_http_error,
 )
 from .models import Event
 
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self  # pragma: no cover
-
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+    from types import TracebackType
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
@@ -53,9 +53,6 @@ SESSION_TIMEOUT_BUFFER: Final[int] = 5
 
 TOKEN_VISIBLE_CHARS: Final[int] = 0
 """Number of trailing token characters to reveal in logs (0 = fully masked)."""
-
-TRUNCATE_LENGTH: Final[int] = 200
-"""Maximum number of characters of response text shown in logs."""
 
 CF_ORIGIN_DOWN: Final[int] = 521
 """Cloudflare status code indicating the origin server is down."""
@@ -85,12 +82,16 @@ RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
 """Status message indicating API polling timeout."""
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 """Logger for the cb_events.client module."""
 
 
 class _TransientError(Exception):
     """Internal exception for triggering retries on bad status codes."""
+
+    __slots__: tuple[str, ...] = ("response_text", "status_code")
+    status_code: int
+    response_text: str
 
     def __init__(
         self, msg: str, *, status_code: int, response_text: str
@@ -151,18 +152,18 @@ def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     return f"{text[:limit]}..."
 
 
-def _normalize_host_entry(candidate: object) -> str | None:
-    """Normalise an arbitrary host candidate to a lowercase hostname string.
+def _normalize_host_entry(candidate: str | None) -> str | None:
+    """Normalise a host candidate to a lowercase hostname string.
 
     Args:
-        candidate: Raw host value (URL, bare hostname, or other object).
+        candidate: URL, bare hostname, or None.
 
     Returns:
         Lowercase hostname string, or None if nothing usable can be extracted.
     """
     if candidate is None:
         return None
-    host_text = str(candidate).strip()
+    host_text = candidate.strip()
     if not host_text:
         return None
 
@@ -210,7 +211,7 @@ def _log_validation_error(
         exc: The ValidationError raised during parsing.
     """
     event_id = (
-        item.get("id", "<unknown>")  # ty: ignore[no-matching-overload]
+        cast("Mapping[str, object]", item).get("id", "<unknown>")
         if isinstance(item, Mapping)
         else "<unknown>"
     )
@@ -353,28 +354,33 @@ class EventClient:
             )
             raise AuthError(msg)
 
-        self.username = username
-        self.token = token
-        self.config = config or ClientConfig()
-        self.base_url = TESTBED_URL if self.config.use_testbed else BASE_URL
+        self.username: str = username
+        self.token: str = token
+        self.config: ClientConfig = config or ClientConfig()
+        self.base_url: str = (
+            TESTBED_URL if self.config.use_testbed else BASE_URL
+        )
         parsed_base = urlparse(self.base_url)
         if parsed_base.scheme and parsed_base.netloc:
-            self._base_origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+            self._base_origin: str = (
+                f"{parsed_base.scheme}://{parsed_base.netloc}"
+            )
         else:
             self._base_origin = self.base_url
-        self.session = None
-        self._next_url = None
+        self.session: ClientSession | None = None
+        self._next_url: str | None = None
 
-        self._allowed_next_hosts = _build_allowed_hosts(
+        self._allowed_next_hosts: set[str] = _build_allowed_hosts(
             self.base_url,
             self.config.next_url_allowed_hosts,
         )
-        self._polling_lock = asyncio.Lock()
-        self._rate_limiter = rate_limiter or AsyncLimiter(
+        self._polling_lock: asyncio.Lock = asyncio.Lock()
+        self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=DEFAULT_MAX_RATE,
             time_period=DEFAULT_TIME_PERIOD,
         )
 
+    @override
     def __repr__(self) -> str:
         """Return string representation with masked token.
 
@@ -577,9 +583,12 @@ class EventClient:
                         return await self._perform_request_attempt(url)
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
-                        logger.warning(
+                        msg = (
                             "Attempt %d/%d failed for user %s: %r. "
-                            "Retrying in %.2fs...",
+                            "Retrying in %.2fs..."
+                        )
+                        logger.warning(
+                            msg,
                             attempts_made,
                             self.config.retry_attempts,
                             self.username,
@@ -752,21 +761,22 @@ class EventClient:
             The extracted nextUrl if found and valid, otherwise None.
         """
         try:
-            data_obj = json.loads(text)
+            data_obj: object = json.loads(text)  # pyright: ignore[reportAny]
         except json.JSONDecodeError:
             return None
 
         if not isinstance(data_obj, dict):
             return None
 
-        status_msg = data_obj.get("status")
+        data = cast("dict[str, object]", data_obj)
+        status_msg = data.get("status")
         if not (
             isinstance(status_msg, str)
             and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
         ):
             return None
 
-        next_url = data_obj.get("nextUrl")
+        next_url = data.get("nextUrl")
         if next_url is None:
             return None
 
@@ -792,7 +802,7 @@ class EventClient:
             EventsError: If JSON is invalid or response format is wrong.
         """
         try:
-            data_obj = json.loads(text)
+            data_obj: object = json.loads(text)  # pyright: ignore[reportAny]
         except json.JSONDecodeError as exc:
             snippet = _response_snippet(text)
             logger.exception("Failed to parse JSON: %s", snippet)
@@ -812,13 +822,14 @@ class EventClient:
                 response_text=text,
             )
 
+        data = cast("dict[str, object]", data_obj)
         # Extract events and nextUrl
         self._next_url = self._validate_next_url(
-            data_obj.get("nextUrl"),
+            data.get("nextUrl"),
             response_text=text,
         )
-        if "events" in data_obj:
-            raw_events_obj = data_obj["events"]
+        if "events" in data:
+            raw_events_obj: object = data["events"]
             if not isinstance(raw_events_obj, list):
                 msg = (
                     "Invalid API response format: 'events' must be a list. "
@@ -828,7 +839,7 @@ class EventClient:
                     msg,
                     response_text=text,
                 )
-            raw_events_list = raw_events_obj
+            raw_events_list: list[object] = cast("list[object]", raw_events_obj)
         else:
             raw_events_list = []
 
