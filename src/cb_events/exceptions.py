@@ -33,7 +33,7 @@ from typing_extensions import override
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 """HTTP status codes indicating authentication failures."""
 
-TRUNCATE_LENGTH: Final[int] = 200
+_TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
 _RATE_LIMIT_STATUS_CODE: Final[int] = 429
@@ -85,9 +85,9 @@ class EventsError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.response_text = (
-            f"{response_text[:TRUNCATE_LENGTH]}..."
+            f"{response_text[:_TRUNCATE_LENGTH]}..."
             if response_text is not None
-            and len(response_text) > TRUNCATE_LENGTH
+            and len(response_text) > _TRUNCATE_LENGTH
             else response_text
         )
 
