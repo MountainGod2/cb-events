@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.alias_generators import to_camel
@@ -249,6 +249,11 @@ class Event(BaseEventModel):
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
 
+    @override
+    def model_post_init(self, context: object, /) -> None:
+        """Initialize the property cache after model construction."""
+        object.__setattr__(self, "_cache", {})  # noqa: PLC2801
+
     @property
     def user(self) -> User | None:
         """User data if present and valid."""
@@ -269,8 +274,18 @@ class Event(BaseEventModel):
     @property
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
+        cache = cast(
+            "dict[str, object]",
+            self._cache,  # pyright: ignore[reportAttributeAccessIssue]
+        )
+        sentinel = object()
+        cached = cache.get("broadcaster", sentinel)
+        if cached is not sentinel:
+            return cast("str | None", cached)
         value: object | None = self.data.get("broadcaster")
-        return value if isinstance(value, str) and value else None
+        result = value if isinstance(value, str) and value else None
+        cache["broadcaster"] = result
+        return result
 
     @property
     def tip(self) -> Tip | None:
@@ -308,6 +323,8 @@ class Event(BaseEventModel):
     ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
+        Results are cached so repeated access avoids re-parsing.
+
         Args:
             key: Key within data to look up.
             loader: Callable that validates/constructs the nested model.
@@ -319,12 +336,22 @@ class Event(BaseEventModel):
         if allowed_types and self.type not in allowed_types:
             return None
 
+        cache = cast(
+            "dict[str, object]",
+            self._cache,  # pyright: ignore[reportAttributeAccessIssue]
+        )
+        sentinel = object()
+        cached = cache.get(key, sentinel)
+        if cached is not sentinel:
+            return cast("_BaseEventModelT | None", cached)
+
         payload: object | None = self.data.get(key)
         if payload is None:
+            cache[key] = None
             return None
 
         try:
-            return loader(payload)
+            result = loader(payload)
         except ValidationError as exc:
             fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key
@@ -336,4 +363,8 @@ class Event(BaseEventModel):
                 self.id,
                 ", ".join(sorted(fields)),
             )
+            cache[key] = None
             return None
+
+        cache[key] = result
+        return result

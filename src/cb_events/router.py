@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 from inspect import iscoroutinefunction
-from typing import TYPE_CHECKING, TypeAlias, cast
+from typing import TYPE_CHECKING, TypeAlias
 
 from .models import Event
 
@@ -40,9 +40,6 @@ logger = logging.getLogger(__name__)
 
 HandlerFunc: TypeAlias = Callable[[Event], Awaitable[None]]
 """Async handler signature accepted by Router decorators."""
-
-_Handler: TypeAlias = Callable[[Event], object]
-"""Handler signature accepted by Router decorators before validation."""
 
 
 async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
@@ -68,10 +65,10 @@ def _is_async_callable(func: object) -> bool:
     if iscoroutinefunction(func):
         return True
     if callable(func):
-        call_method: object = getattr(  # noqa: B004
-            type(func), "__call__", None
-        )
-        if call_method and iscoroutinefunction(call_method):
+        # Check the instance's __call__ directly, which handles decorated
+        # classes, staticmethod descriptors, and other non-standard callables.
+        call_method: object = getattr(func, "__call__", None)  # noqa: B004
+        if call_method is not None and iscoroutinefunction(call_method):
             return True
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
@@ -139,7 +136,9 @@ class Router:
         """Initialize router with an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
 
-    def _register(self, key: EventType | None, func: _Handler) -> _Handler:
+    def _register(
+        self, key: EventType | None, func: HandlerFunc
+    ) -> HandlerFunc:
         """Validate and register a handler function.
 
         Args:
@@ -155,11 +154,10 @@ class Router:
         if not _is_async_callable(func):
             msg = f"Handler {_handler_name(func)} must be async"
             raise TypeError(msg)
-        # Store as an async handler; cast to the stricter HandlerFunc type.
-        self._handlers.setdefault(key, []).append(cast("HandlerFunc", func))
+        self._handlers.setdefault(key, []).append(func)
         return func
 
-    def on(self, event_type: EventType) -> Callable[[_Handler], _Handler]:
+    def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
         """Register handler for a specific event type.
 
         Args:
@@ -169,19 +167,19 @@ class Router:
             Decorator that registers the handler and returns it unchanged.
         """
 
-        def decorator(func: _Handler) -> _Handler:
+        def decorator(func: HandlerFunc) -> HandlerFunc:
             return self._register(event_type, func)
 
         return decorator
 
-    def on_any(self) -> Callable[[_Handler], _Handler]:
+    def on_any(self) -> Callable[[HandlerFunc], HandlerFunc]:
         """Register handler for all event types.
 
         Returns:
             Decorator that registers the handler and returns it unchanged.
         """
 
-        def decorator(func: _Handler) -> _Handler:
+        def decorator(func: HandlerFunc) -> HandlerFunc:
             return self._register(None, func)
 
         return decorator
