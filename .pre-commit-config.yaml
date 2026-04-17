@@ -64,7 +64,7 @@ repos:
         name: check readthedocs config
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.110.5
+    rev: 43.110.6
     hooks:
       - id: renovate-config-validator
         args: [--strict]
