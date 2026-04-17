@@ -39,6 +39,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
+_SENTINEL: object = object()
+"""Module-level sentinel for cache-miss detection."""
+
 
 class EventType(str, Enum):
     """Event types from the Chaturbate Events API.
@@ -250,11 +253,6 @@ class Event(BaseEventModel):
     """Event data payload."""
     _cache: dict[str, object] = PrivateAttr(default_factory=dict)
 
-    @override
-    def model_post_init(self, context: object, /) -> None:
-        """Initialize the property cache after model construction."""
-        object.__setattr__(self, "_cache", {})  # noqa: PLC2801
-
     @property
     def user(self) -> User | None:
         """User data if present and valid."""
@@ -276,9 +274,8 @@ class Event(BaseEventModel):
     def broadcaster(self) -> str | None:
         """Broadcaster username if present."""
         cache = self._cache
-        sentinel = object()
-        cached = cache.get("broadcaster", sentinel)
-        if cached is not sentinel:
+        cached = cache.get("broadcaster", _SENTINEL)
+        if cached is not _SENTINEL:
             return cast("str | None", cached)
         value: object | None = self.data.get("broadcaster")
         result = value if isinstance(value, str) and value else None
@@ -335,9 +332,8 @@ class Event(BaseEventModel):
             return None
 
         cache = self._cache
-        sentinel = object()
-        cached = cache.get(key, sentinel)
-        if cached is not sentinel:
+        cached = cache.get(key, _SENTINEL)
+        if cached is not _SENTINEL:
             return cast("_BaseEventModelT | None", cached)
 
         payload: object | None = self.data.get(key)

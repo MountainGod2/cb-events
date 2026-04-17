@@ -10,7 +10,7 @@ from cb_events import (
     RateLimitError,
     ServerError,
 )
-from cb_events.exceptions import build_http_error
+from cb_events.exceptions import build_http_error, truncate_text
 
 
 @pytest.mark.parametrize(
@@ -93,6 +93,12 @@ def test_events_error_truncates_long_response_text() -> None:
     assert error.response_text is not None
     assert len(error.response_text) == 203
     assert error.response_text.endswith("...")
+
+
+def test_truncate_text_raises_on_negative_limit() -> None:
+    """truncate_text() should raise ValueError when limit is negative."""
+    with pytest.raises(ValueError, match="truncate_text"):
+        truncate_text("hello", limit=-1)
 
 
 @pytest.mark.parametrize("status_code", [401, 403])

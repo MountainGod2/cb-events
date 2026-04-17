@@ -49,7 +49,13 @@ def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
 
     Returns:
         Text truncated to ``limit`` characters with ellipsis if needed.
+
+    Raises:
+        ValueError: If ``limit`` is negative.
     """
+    if limit < 0:
+        msg = f"truncate_text() limit must be non-negative, got {limit}"
+        raise ValueError(msg)
     if len(text) <= limit:
         return text
     return f"{text[:limit]}..."

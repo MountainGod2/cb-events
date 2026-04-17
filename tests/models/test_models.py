@@ -231,6 +231,19 @@ def test_event_broadcaster_property() -> None:
     assert event.broadcaster == "streamer"
 
 
+def test_event_broadcaster_property_cached() -> None:
+    """Broadcaster property should return the same value on repeated access (cache hit path)."""
+    event = Event.model_validate({
+        "method": "broadcastStart",
+        "id": "evt-bcaster-cache",
+        "object": {"broadcaster": "streamer"},
+    })
+
+    first = event.broadcaster
+    second = event.broadcaster
+    assert first == second == "streamer"
+
+
 def test_message_not_parsed_on_tip_event() -> None:
     """Message objects should not be parsed for TIP events."""
     event = Event.model_validate({
