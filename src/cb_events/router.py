@@ -64,8 +64,8 @@ def _is_async_callable(func: object) -> bool:
     """Return whether func produces an awaitable when invoked once."""
     if iscoroutinefunction(func):
         return True
-    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]
-    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]
+    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
+    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
         return True
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
