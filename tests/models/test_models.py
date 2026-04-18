@@ -46,7 +46,7 @@ def test_user_field_mapping() -> None:
     """The User model should map camelCase fields to snake_case attributes."""
     user_data = {
         "username": "testuser",
-        "colorGroup": "purple",
+        "colorGroup": "p",
         "gender": "f",
         "inFanclub": True,
         "isMod": True,
@@ -56,7 +56,7 @@ def test_user_field_mapping() -> None:
     user = User.model_validate(user_data)
 
     assert user.username == "testuser"
-    assert user.color_group == "purple"
+    assert user.color_group == "p"
     assert user.gender == "f"
     assert user.in_fanclub is True
     assert user.is_mod is True
