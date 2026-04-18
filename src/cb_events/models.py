@@ -188,9 +188,10 @@ class User(BaseEventModel):
         """Coerce empty string subgender to None.
 
         Returns:
-            None if v is an empty string, otherwise v unchanged.
+            None if the input is an empty string, otherwise returns the input
+            value unchanged.
         """
-        if not v:
+        if isinstance(v, str) and not v:
             return None
         return v
 
