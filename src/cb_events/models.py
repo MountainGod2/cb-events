@@ -29,7 +29,14 @@ import logging
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    ValidationError,
+    field_validator,
+)
 from pydantic.alias_generators import to_camel
 from typing_extensions import override
 
@@ -118,21 +125,30 @@ class User(BaseEventModel):
     username: str
     """Display name of the user."""
     color_group: str | None = None
-    """Color group of the user."""
+    """Color group of the user.
+
+    Known values: ``"o"`` (owner), ``"m"`` (moderator), ``"f"`` (fanclub),
+    ``"l"`` (dark purple), ``"p"`` (light purple), ``"tr"`` (dark blue),
+    ``"t"`` (light blue), ``"g"`` (grey).
+    """
     fc_auto_renew: bool = False
-    """Whether the user has enabled fan club auto-renewal."""
+    """Whether the user's fanclub membership is a recurring subscription."""
     gender: str | None = None
-    """Gender of the user."""
+    """Gender of the user.
+
+    Known values: ``"m"`` (male), ``"f"`` (female), ``"c"`` (couple),
+    ``"t"`` (trans).
+    """
     has_darkmode: bool = False
     """Whether the user has dark mode enabled."""
     has_tokens: bool = False
-    """Whether the user has tokens."""
+    """Whether the user has at least 1 token."""
     in_fanclub: bool = False
     """Whether the user is in the fan club."""
     in_private_show: bool = False
-    """Whether the user is in a private show."""
+    """Whether the user is in the broadcaster's private show."""
     is_broadcasting: bool = False
-    """Whether the user is broadcasting."""
+    """Whether the user is currently broadcasting."""
     is_follower: bool = False
     """Whether the user is a follower."""
     is_mod: bool = False
@@ -144,11 +160,40 @@ class User(BaseEventModel):
     is_spying: bool = False
     """Whether the user is spying on a private show."""
     language: str | None = None
-    """Language preference of the user."""
-    recent_tips: Literal["none", "some", "lots", "tons"] | None = None
-    """Recent tips information."""
-    subgender: str | None = None
-    """Subgender of the user."""
+    """User's preferred language.
+
+    Known values: ``"de"`` (German), ``"en"`` (English), ``"es"`` (Spanish),
+    ``"fr"`` (French), ``"it"`` (Italian), ``"ja"`` (Japanese),
+    ``"ko"`` (Korean), ``"pl"`` (Polish), ``"pt"`` (Portuguese),
+    ``"ru"`` (Russian), ``"zh"`` (Chinese).
+    """
+    recent_tips: Literal["none", "few", "some", "lots", "tons"] | None = None
+    """How much the user has tipped recently.
+
+    Possible values: ``"none"`` (no recent tips, no tokens — grey username),
+    ``"few"`` (few or no recent tips, has tokens — light blue),
+    ``"some"`` (some recent tips — dark blue), ``"lots"`` (lots — purple),
+    ``"tons"`` (tons — dark purple).
+    """
+    subgender: Literal["tf", "tm", "tn"] | None = None
+    """Subgender of the user (only set when ``gender`` is ``"t"`` / trans).
+
+    Possible values: ``"tf"`` (transfemme), ``"tm"`` (transmasc),
+    ``"tn"`` (non-binary). ``None`` when the user is not trans.
+    """
+
+    @field_validator("subgender", mode="before")
+    @classmethod
+    def _empty_subgender_to_none(cls, v: object) -> object:
+        """Coerce empty string subgender to None.
+
+        Returns:
+            None if the input is an empty string, otherwise returns the input
+            value unchanged.
+        """
+        if isinstance(v, str) and not v:
+            return None
+        return v
 
 
 class Message(BaseEventModel):
@@ -271,14 +316,20 @@ class Event(BaseEventModel):
         )
 
     @property
-    def broadcaster(self) -> str | None:
-        """Broadcaster username if present."""
+    def broadcaster(self) -> str:
+        """Broadcaster username."""
         cache = self._cache
         cached = cache.get("broadcaster", _SENTINEL)
         if cached is not _SENTINEL:
-            return cast("str | None", cached)
+            return cast("str", cached)
         value: object | None = self.data.get("broadcaster")
-        result = value if isinstance(value, str) and value else None
+        if not isinstance(value, str) or not value:
+            logger.warning(
+                "Missing or invalid broadcaster in event %s", self.id
+            )
+            result = ""
+        else:
+            result = value
         cache["broadcaster"] = result
         return result
 
