@@ -151,54 +151,6 @@ def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     return truncate_text(text, limit=limit)
 
 
-def _normalize_host_entry(candidate: str | None) -> str | None:
-    """Normalise a host candidate to a lowercase hostname string.
-
-    Args:
-        candidate: URL, bare hostname, or None.
-
-    Returns:
-        Lowercase hostname string, or None if nothing usable can be extracted.
-    """
-    if candidate is None:
-        return None
-    host_text = candidate.strip()
-    if not host_text:
-        return None
-
-    parsed = urlparse(host_text)
-    if parsed.hostname:
-        return parsed.hostname.lower()
-
-    trimmed = host_text.split("/", 1)[0]
-    trimmed = trimmed.split("@", 1)[-1]
-    trimmed = trimmed.split(":", 1)[0]
-    trimmed = trimmed.strip()
-    return trimmed.lower() or None
-
-
-def _build_allowed_hosts(
-    base_url: str, extra_hosts: tuple[str, ...] | None
-) -> set[str]:
-    """Build the set of permitted hostnames for nextUrl redirection.
-
-    Args:
-        base_url: The client's base API endpoint URL.
-        extra_hosts: Additional hosts to allow, as configured by the caller.
-
-    Returns:
-        Set of lowercase hostnames that are allowed in nextUrl responses.
-    """
-    hosts: set[str] = set()
-    if host := _normalize_host_entry(base_url):
-        hosts.add(host)
-    if extra_hosts:
-        for entry in extra_hosts:
-            if host := _normalize_host_entry(entry):
-                hosts.add(host)
-    return hosts
-
-
 def _log_validation_error(
     item: object,
     exc: ValidationError,
@@ -307,7 +259,6 @@ class EventClient:
     """
 
     __slots__: tuple[str, ...] = (
-        "_allowed_next_hosts",
         "_base_origin",
         "_next_url",
         "_polling_lock",
@@ -368,11 +319,6 @@ class EventClient:
             self._base_origin = self.base_url
         self.session: ClientSession | None = None
         self._next_url: str | None = None
-
-        self._allowed_next_hosts: set[str] = _build_allowed_hosts(
-            self.base_url,
-            self.config.next_url_allowed_hosts,
-        )
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=DEFAULT_MAX_RATE,
@@ -725,27 +671,22 @@ class EventClient:
             raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
+        allowed_host = urlparse(self.base_url).hostname
         if not hostname:
             logger.error(
                 "Received nextUrl without hostname for user %s",
                 self.username,
             )
-            msg = (
-                "Invalid nextUrl host. Allow via "
-                "ClientConfig.next_url_allowed_hosts."
-            )
+            msg = "Invalid nextUrl host."
             raise EventsError(msg, response_text=response_text)
 
-        if hostname.lower() not in self._allowed_next_hosts:
+        if hostname.lower() != allowed_host:
             logger.error(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
                 self.username,
             )
-            msg = (
-                "Invalid nextUrl host. Allow via "
-                "ClientConfig.next_url_allowed_hosts."
-            )
+            msg = "Invalid nextUrl host."
             raise EventsError(msg, response_text=response_text)
 
         return absolute

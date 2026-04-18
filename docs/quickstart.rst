@@ -38,8 +38,6 @@ Quick Start
 Event Types
 -----------
 
-Available event types:
-
 - ``TIP`` — User sends a tip
 - ``FANCLUB_JOIN`` — User joins fan club
 - ``MEDIA_PURCHASE`` — User purchases media
