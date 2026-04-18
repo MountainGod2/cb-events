@@ -141,7 +141,7 @@ event.broadcaster   # Broadcaster username string
 | `bg_color`   | `str \| None` | Background color                                              |
 | `font`       | `str \| None` | Font style                                                    |
 | `orig`       | `str \| None` | Original (untranslated) message                               |
-| `is_private` | `bool`        | `True` if both `from_user` and `to_user` are set _(property)_ |
+| `is_private` | `bool`        | `True` for private messages directed to a specific user       |
 
 ### `Media`
 
