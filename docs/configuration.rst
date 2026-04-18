@@ -16,7 +16,7 @@ Client Configuration
        retry_backoff=1.0,            # Initial backoff (seconds)
        retry_factor=2.0,             # Backoff multiplier
        retry_max_delay=30.0,         # Max retry delay (seconds)
-       next_url_allowed_hosts=None,  # Tuple of allowed hostnames for next_url
+
    )
 
    client = EventClient(username, token, config=config)
@@ -51,26 +51,9 @@ Retries on 429, 5xx, Cloudflare 521-524. Never retries 401/403.
 Validation Mode
 ---------------
 
-Lenient mode (default):
+``strict_validation=False`` (default): skips invalid events and logs a warning.
 
-.. code-block:: python
-
-   config = ClientConfig(strict_validation=False)
-
-skips invalid events and logs them as a warning.
-
-Strict mode:
-
-.. code-block:: python
-
-   config = ClientConfig(strict_validation=True)
-
-Raises ``pydantic.ValidationError`` on invalid event data. Non-strict paths still raise :class:`~cb_events.exceptions.EventsError`.
-
-.. note::
-
-   In production, ``strict_validation=False`` is often safer: a bad payload is skipped and
-   logged rather than crashing the listener.
+``strict_validation=True``: raises ``pydantic.ValidationError`` on invalid event data.
 
 Testbed Environment
 -------------------
@@ -112,27 +95,6 @@ Shared Rate Limiter
    client1 = EventClient(username1, token1, rate_limiter=limiter)
    client2 = EventClient(username2, token2, rate_limiter=limiter)
    client3 = EventClient(username3, token3, rate_limiter=limiter)
-
-Allowed Hosts
--------------
-
-``next_url_allowed_hosts`` restricts which hostnames are permitted in ``nextUrl``
-redirects. Default ``None`` allows only the appropriate base API host:
-``eventsapi.chaturbate.com`` by default or ``events.testbed.cb.dev`` when
-``use_testbed=True``.
-
-Pass a tuple to add extra permitted hostnames:
-
-.. code-block:: python
-
-   config = ClientConfig(
-       next_url_allowed_hosts=("custom.example.com",)
-   )
-
-.. warning::
-
-   An explicit tuple **extends** the allowlist; it does not replace the base
-   host. Keep this as restrictive as possible.
 
 Logging
 -------

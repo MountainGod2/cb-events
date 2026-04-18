@@ -50,6 +50,7 @@ Documentation
 
    installation
    quickstart
+   event_models
    configuration
    error_handling
 

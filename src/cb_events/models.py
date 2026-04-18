@@ -145,7 +145,7 @@ class User(BaseEventModel):
     """Whether the user is spying on a private show."""
     language: str | None = None
     """Language preference of the user."""
-    recent_tips: str | None = None
+    recent_tips: Literal["none", "some", "lots", "tons"] | None = None
     """Recent tips information."""
     subgender: str | None = None
     """Subgender of the user."""
