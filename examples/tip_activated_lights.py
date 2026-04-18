@@ -8,7 +8,33 @@
 # ]
 # ///
 
-"""CLI for setting up and managing tip-activated Philips Hue lights."""
+"""CLI for setting up and managing tip-activated Philips Hue lights.
+
+This script connects to the Chaturbate Events API to monitor for tip events,
+and controls Philips Hue lights based on tip messages. It includes commands for
+registering a new Hue app key and discovering bridges on the local network.
+
+
+Usage:
+    1. Set up environment variables (or use CLI options):
+        - CB_USERNAME: Chaturbate username
+        - CB_TOKEN: Chaturbate API token
+        - HUE_IP: Hue bridge IP address (optional if using discovery)
+        - HUE_APP_KEY: Hue app key (register with the 'register' command)
+        - TIP_THRESHOLD: Minimum tokens for activating lights (default: 35)
+        - LIGHT_NAMES: Comma-separated list of light names to control (default: all)
+        - BRIGHTNESS: Brightness level for light effects (default: 100.0)
+        - COLOR_TIMEOUT: Seconds before reverting color changes (default: 600.0)
+
+    2. Register the app with the Hue bridge to get an app key:
+        uv run examples/tip_activated_lights.py register
+
+    3. Run the main script to start monitoring tips and controlling lights:
+        uv run examples/tip_activated_lights.py run
+
+    4. Optionally, discover Hue bridges on the network:
+        uv run examples/tip_activated_lights.py discover
+"""  # noqa: E501
 
 import asyncio
 import contextlib

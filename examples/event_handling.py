@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Example script demonstrating event handling with cb-events library."""
+"""Example script demonstrating event handling with cb-events."""
 
 import asyncio
 import logging
@@ -178,7 +178,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
     try:
         asyncio.run(main())
