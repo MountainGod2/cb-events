@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v8.0.1 (2026-04-18)
+
+### Bug Fixes
+
+- **models**: Improve handling of empty string subgender
+  ([#115](https://github.com/MountainGod2/cb-events/pull/115),
+  [`f1f0ece`](https://github.com/MountainGod2/cb-events/commit/f1f0ece80e7e7ffb7d87472811454c94b8df65cf))
+
+### Chores
+
+- **event_handling**: Allow env log level configuration
+  ([#115](https://github.com/MountainGod2/cb-events/pull/115),
+  [`f1f0ece`](https://github.com/MountainGod2/cb-events/commit/f1f0ece80e7e7ffb7d87472811454c94b8df65cf))
+
+### Refactoring
+
+- **event_handling**: Improve log level configuration
+  ([#115](https://github.com/MountainGod2/cb-events/pull/115),
+  [`f1f0ece`](https://github.com/MountainGod2/cb-events/commit/f1f0ece80e7e7ffb7d87472811454c94b8df65cf))
+
+- **models**: Simplify user model field descriptions
+  ([#115](https://github.com/MountainGod2/cb-events/pull/115),
+  [`f1f0ece`](https://github.com/MountainGod2/cb-events/commit/f1f0ece80e7e7ffb7d87472811454c94b8df65cf))
+
+
 ## v8.0.0 (2026-04-18)
 
 ### Chores
