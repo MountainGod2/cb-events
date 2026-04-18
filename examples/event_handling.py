@@ -176,9 +176,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_level_name = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+    log_level = logging.getLevelNamesMapping().get(log_level_name, logging.INFO)
     logging.basicConfig(
-        level=getattr(logging, log_level, logging.INFO),
+        level=log_level,
         format="%(asctime)s - %(message)s",
     )
 
