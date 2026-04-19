@@ -132,16 +132,16 @@ event.broadcaster   # Broadcaster username string
 
 ### `Message`
 
-| Field        | Type          | Description                                                   |
-| ------------ | ------------- | ------------------------------------------------------------- |
-| `message`    | `str`         | Message content                                               |
-| `from_user`  | `str \| None` | Sender username                                               |
-| `to_user`    | `str \| None` | Recipient username                                            |
-| `color`      | `str \| None` | Text color                                                    |
-| `bg_color`   | `str \| None` | Background color                                              |
-| `font`       | `str \| None` | Font style                                                    |
-| `orig`       | `str \| None` | Original (untranslated) message                               |
-| `is_private` | `bool`        | `True` for private messages directed to a specific user       |
+| Field        | Type          | Description                                             |
+| ------------ | ------------- | ------------------------------------------------------- |
+| `message`    | `str`         | Message content                                         |
+| `from_user`  | `str \| None` | Sender username                                         |
+| `to_user`    | `str \| None` | Recipient username                                      |
+| `color`      | `str \| None` | Text color                                              |
+| `bg_color`   | `str \| None` | Background color                                        |
+| `font`       | `str \| None` | Font style                                              |
+| `orig`       | `str \| None` | Original (untranslated) message                         |
+| `is_private` | `bool`        | `True` for private messages directed to a specific user |
 
 ### `Media`
 
@@ -163,7 +163,12 @@ event.broadcaster   # Broadcaster username string
 `AuthError` is a subclass of `EventsError` — `except EventsError` catches both. Put `AuthError` first if you need to distinguish them.
 
 ```python
+import logging
+import sys
+
 from cb_events import AuthError, EventsError
+
+logger = logging.getLogger(__name__)
 
 try:
     async with EventClient(username, token) as client:
@@ -171,10 +176,12 @@ try:
             await router.dispatch(event)
 except AuthError:
     # Authentication failed (401/403) — never retried
-    pass
+    logger.error("Invalid credentials — check username and token")
+    sys.exit(1)
 except EventsError as e:
     # All other API/network errors — check e.status_code, e.response_text
-    pass
+    logger.error("API error %s: %s", e.status_code, e.response_text)
+    raise
 ```
 
 **Retries:** 429, 5xx, Cloudflare 521-524. Not retriable: 401/403.
