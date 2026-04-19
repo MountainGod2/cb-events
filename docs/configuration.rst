@@ -58,6 +58,10 @@ Validation Mode
 Testbed Environment
 -------------------
 
+Register a free account at `https://www.testbed.cb.dev <https://www.testbed.cb.dev>`_.
+New accounts come with preloaded tokens so you can test features and apps immediately.
+Generate an API token the same way as a live account, then set ``use_testbed=True``:
+
 .. code-block:: python
 
    config = ClientConfig(use_testbed=True)

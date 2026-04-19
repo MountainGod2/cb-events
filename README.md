@@ -65,7 +65,7 @@ from cb_events import ClientConfig
 
 config = ClientConfig(
     timeout=10,                   # Server long-poll timeout (seconds)
-    use_testbed=False,            # Use testbed endpoint with test tokens
+    use_testbed=False,            # Use testbed endpoint (https://www.testbed.cb.dev)
     strict_validation=False,      # False skips & logs invalid events; True raises.
     retry_attempts=8,             # Total attempts (initial + retries)
     retry_backoff=1.0,            # Initial backoff (seconds)
@@ -75,6 +75,8 @@ config = ClientConfig(
 
 client = EventClient(username, token, config=config)
 ```
+
+> **Testbed:** Register at <https://www.testbed.cb.dev>. New accounts include preloaded tokens for testing. Generate an API token the same way as a live account, then pass `use_testbed=True` with those credentials.
 
 ## Rate Limiting
 
