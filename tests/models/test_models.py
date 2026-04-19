@@ -42,6 +42,24 @@ def test_event_properties_parsed() -> None:
     assert event.user.username == "tipper"
 
 
+@pytest.mark.parametrize(
+    ("raw_subgender", "expected"),
+    [
+        ("", None),  # empty string → None
+        ("tf", "tf"),  # valid value passes through
+        ("tm", "tm"),
+        ("tn", "tn"),
+        (None, None),  # None passes through unchanged
+    ],
+)
+def test_user_subgender_validator(
+    raw_subgender: str | None, expected: str | None
+) -> None:
+    """Empty-string subgender should coerce to None; valid values pass through."""
+    user = User.model_validate({"username": "u", "subgender": raw_subgender})
+    assert user.subgender == expected
+
+
 def test_user_field_mapping() -> None:
     """The User model should map camelCase fields to snake_case attributes."""
     user_data = {
