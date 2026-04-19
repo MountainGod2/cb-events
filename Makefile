@@ -1,4 +1,4 @@
-.PHONY: install sync format check check-all fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-clean docs-serve docs-linkcheck trivy help all
+.PHONY: install sync format check check-all fix type-check lint test test-cov pre-commit build dev-setup ci clean docs docs-serve docs-linkcheck trivy help all
 
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 
