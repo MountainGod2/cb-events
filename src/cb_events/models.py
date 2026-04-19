@@ -46,9 +46,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
-_SENTINEL: object = object()
-"""Module-level sentinel for cache-miss detection."""
-
 
 class EventType(str, Enum):
     """Event types from the Chaturbate Events API.
@@ -264,6 +261,10 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
+_SENTINEL: object = object()
+"""Sentinel for cache-miss detection in :class:`Event` property accessors."""
+
+
 class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
@@ -316,18 +317,18 @@ class Event(BaseEventModel):
         )
 
     @property
-    def broadcaster(self) -> str:
-        """Broadcaster username."""
+    def broadcaster(self) -> str | None:
+        """Broadcaster username, or ``None`` if missing or invalid."""
         cache = self._cache
         cached = cache.get("broadcaster", _SENTINEL)
         if cached is not _SENTINEL:
-            return cast("str", cached)
+            return cast("str | None", cached)
         value: object | None = self.data.get("broadcaster")
         if not isinstance(value, str) or not value:
             logger.warning(
                 "Missing or invalid broadcaster in event %s", self.id
             )
-            result = ""
+            result = None
         else:
             result = value
         cache["broadcaster"] = result

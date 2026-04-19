@@ -67,11 +67,13 @@ Multiple Handlers
 
    @router.on(EventType.TIP)
    async def log_tip(event: Event) -> None:
-       logging.info(f"Tip received: {event.tip.tokens}")
+       if event.tip:
+           logging.info(f"Tip received: {event.tip.tokens}")
 
    @router.on(EventType.TIP)
    async def thank_tipper(event: Event) -> None:
-       await send_thank_you(event.user.username)
+       if event.user:
+           await send_thank_you(event.user.username)
 
 .. note::
 

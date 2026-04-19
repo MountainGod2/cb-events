@@ -36,13 +36,15 @@ router = Router()
 @router.on(EventType.BROADCAST_START)
 async def handle_broadcast_start(event: Event) -> None:
     """Handle broadcast start events."""
-    logger.info("Broadcast started for %s", event.broadcaster)
+    if event.broadcaster:
+        logger.info("Broadcast started for %s", event.broadcaster)
 
 
 @router.on(EventType.BROADCAST_STOP)
 async def handle_broadcast_stop(event: Event) -> None:
     """Handle broadcast stop events."""
-    logger.info("Broadcast stopped for %s", event.broadcaster)
+    if event.broadcaster:
+        logger.info("Broadcast stopped for %s", event.broadcaster)
 
 
 @router.on(EventType.USER_ENTER)
