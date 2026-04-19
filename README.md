@@ -99,30 +99,30 @@ event.tip           # Tip object (TIP only)
 event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
 event.media         # Media object (MEDIA_PURCHASE)
 event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
-event.broadcaster   # Broadcaster username string
+event.broadcaster   # Broadcaster username string or None
 ```
 
 ### `User`
 
-| Field             | Type                                              | Description                   |
-| ----------------- | ------------------------------------------------- | ----------------------------- |
-| `username`        | `str`                                             | Display name                  |
-| `in_fanclub`      | `bool`                                            | In fan club                   |
-| `is_mod`          | `bool`                                            | Moderator                     |
-| `is_follower`     | `bool`                                            | Follower                      |
-| `is_owner`        | `bool`                                            | Room owner                    |
-| `has_tokens`      | `bool`                                            | Has tokens                    |
-| `is_broadcasting` | `bool`                                            | Is broadcasting               |
-| `in_private_show` | `bool`                                            | In private show               |
-| `is_spying`       | `bool`                                            | Spying on a private show      |
-| `is_silenced`     | `bool`                                            | Silenced                      |
-| `has_darkmode`    | `bool`                                            | Dark mode enabled             |
-| `fc_auto_renew`   | `bool`                                            | Fan club auto-renewal enabled |
-| `color_group`     | `str \| None`                                     | Color group                   |
-| `gender`          | `str \| None`                                     | Gender                        |
-| `language`        | `str \| None`                                     | Language preference           |
-| `recent_tips`     | `Literal["none", "some", "lots", "tons"] \| None` | Recent tip activity level     |
-| `subgender`       | `str \| None`                                     | Subgender                     |
+| Field             | Type                                                     | Description                   |
+| ----------------- | -------------------------------------------------------- | ----------------------------- |
+| `username`        | `str`                                                    | Display name                  |
+| `in_fanclub`      | `bool`                                                   | In fan club                   |
+| `is_mod`          | `bool`                                                   | Moderator                     |
+| `is_follower`     | `bool`                                                   | Follower                      |
+| `is_owner`        | `bool`                                                   | Room owner                    |
+| `has_tokens`      | `bool`                                                   | Has tokens                    |
+| `is_broadcasting` | `bool`                                                   | Is broadcasting               |
+| `in_private_show` | `bool`                                                   | In private show               |
+| `is_spying`       | `bool`                                                   | Spying on a private show      |
+| `is_silenced`     | `bool`                                                   | Silenced                      |
+| `has_darkmode`    | `bool`                                                   | Dark mode enabled             |
+| `fc_auto_renew`   | `bool`                                                   | Fan club auto-renewal enabled |
+| `color_group`     | `str \| None`                                            | Color group                   |
+| `gender`          | `str \| None`                                            | Gender                        |
+| `language`        | `str \| None`                                            | Language preference           |
+| `recent_tips`     | `Literal["none", "few", "some", "lots", "tons"] \| None` | Recent tip activity level     |
+| `subgender`       | `str \| None`                                            | Subgender                     |
 
 ### `Tip`
 
