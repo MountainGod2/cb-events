@@ -130,3 +130,8 @@ suppress_warnings: list[str] = [
     "ref.python",
     "ref.obj",
 ]
+
+linkcheck_ignore: list[str] = [
+    r"https://github\.com/MountainGod2/cb-events/commit/.*",
+    r"https://github\.com/MountainGod2/cb-events/pull/.*",
+]
