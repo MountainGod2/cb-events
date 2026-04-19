@@ -10,7 +10,7 @@ Property accessors return the nested model or ``None`` if absent or wrong event 
    event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
    event.media         # Media object (MEDIA_PURCHASE)
    event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
-   event.broadcaster   # Broadcaster username string
+   event.broadcaster   # Broadcaster username string, or None if missing
 
 .. warning::
 
@@ -79,7 +79,7 @@ Carried by most event types. Check ``event.user`` before accessing fields.
      - ``str | None``
      - Language preference of the user.
    * - ``recent_tips``
-     - ``Literal["none", "some", "lots", "tons"] | None``
+     - ``Literal["none", "few", "some", "lots", "tons"] | None``
      - Recent tip activity level.
    * - ``subgender``
      - ``str | None``
