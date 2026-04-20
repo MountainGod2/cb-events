@@ -109,6 +109,7 @@ commit_parser = "conventional"
 commit_author = "MountainGod2 <admin@reid.ca>"
 changelog_file = "CHANGELOG.md"
 output_format = "md"
+upload_to_vcs_release = false
 
 [tool.semantic_release.commit_parser_options]
 minor_tags = ["feat"]
