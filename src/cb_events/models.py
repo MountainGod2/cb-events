@@ -323,7 +323,7 @@ class Event(BaseEventModel):
         cached = cache.get("broadcaster", _SENTINEL)
         if cached is not _SENTINEL:
             return cast("str | None", cached)
-        value: object | None = self.data.get("broadcaster")  # pylint: disable=no-member
+        value: object | None = self.data.get("broadcaster")
         if not isinstance(value, str) or not value:
             logger.warning(
                 "Missing or invalid broadcaster in event %s", self.id
@@ -388,7 +388,7 @@ class Event(BaseEventModel):
         if cached is not _SENTINEL:
             return cast("_BaseEventModelT | None", cached)
 
-        payload: object | None = self.data.get(key)  # pylint: disable=no-member
+        payload: object | None = self.data.get(key)
         if payload is None:
             cache[key] = None
             return None
