@@ -116,8 +116,9 @@ patch_tags = ["fix", "perf"]
 parse_squash_commits = true
 ignore_merge_commits = true
 
-[tool.semantic_release.exclude_commit_patterns]
-patterns = [
+[tool.semantic_release.changelog]
+# Recommended patterns for conventional commits parser that is scope aware
+exclude_commit_patterns = [
     '''chore(?:\([^)]*?\))?: .+''',
     '''ci(?:\([^)]*?\))?: .+''',
     '''docs(?:\([^)]*?\))?: .+''',
@@ -165,9 +166,9 @@ future-annotations = true
 "tests/conftest.py" = [
     "D", # Allow missing docstrings
 ]
-"tests/router/test_router.py" = [
+"tests/test_router.py" = [
     "ARG001", # Allow unused arguments
-    "RUF029", # Allow unused handlers
+    "RUF029", # Allow async without await
 ]
 
 [tool.ruff.lint.pydocstyle]
