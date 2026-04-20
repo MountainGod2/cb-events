@@ -39,6 +39,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import signal
 from dataclasses import dataclass, field
 from typing import NamedTuple
@@ -133,9 +134,17 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _env_int(name: str, default: int) -> int:
+    """Return *name* from the environment as an int, or *default*."""
+    try:
+        return int(os.environ[name])
+    except (KeyError, ValueError):
+        return default
+
+
 def _color_from_message(message: str) -> str | None:
     """Return the first known colour word found in *message*, or ``None``."""
-    words = message.lower().split()
+    words = re.findall(r"\b\w+\b", message.lower())
     return next((word for word in words if word in COLOR_XY), None)
 
 
@@ -340,7 +349,9 @@ def _register_signal_handlers(task: asyncio.Task[object]) -> None:
             loop.add_signal_handler(sig, task.cancel)
     except NotImplementedError:
         for sig in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(sig, lambda _s, _f: task.cancel())
+            signal.signal(
+                sig, lambda _s, _f: loop.call_soon_threadsafe(task.cancel)
+            )
 
 
 async def run_app(*, testbed: bool) -> None:
@@ -361,7 +372,7 @@ async def run_app(*, testbed: bool) -> None:
 
     hue_ip = os.getenv("HUE_IP", DEFAULT_HUE_IP)
     hue_app_key = os.getenv("HUE_APP_KEY", DEFAULT_HUE_APP_KEY)
-    tip_threshold = int(os.getenv("TIP_THRESHOLD") or DEFAULT_TIP_THRESHOLD)
+    tip_threshold = _env_int("TIP_THRESHOLD", DEFAULT_TIP_THRESHOLD)
     light_config = _load_light_config()
 
     logger.info("Hue bridge IP: %s", hue_ip)
