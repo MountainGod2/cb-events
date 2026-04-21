@@ -14,7 +14,7 @@ dependencies = [
     "aiohttp>=3.13.5",
     "aiolimiter>=1.2.1",
     "pydantic>=2.13.0",
-    "stamina>=25.2.0",
+    "stamina>=26.1.0",
     "typing-extensions>=4.15.0",
 ]
 dynamic = ["readme"]
