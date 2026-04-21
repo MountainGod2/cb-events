@@ -1,5 +1,5 @@
 .PHONY: all install dev-setup \
-        format fix check type-check lint check-all pre-commit bandit trivy \
+        format fix check type-check lint check-all pre-commit bandit trivy pip-audit security \
         test test-cov test-e2e \
         build ci clean \
         docs docs-serve docs-linkcheck \
@@ -45,12 +45,17 @@ check-all:
 pre-commit:
 	uv run pre-commit run --all-files
 
+security: bandit pip-audit trivy
+
 bandit:
 	uv run bandit -r src/ -f sarif -o bandit.sarif
 
+pip-audit:
+	uv run pip-audit
+
 trivy:
 	@command -v trivy >/dev/null 2>&1 || { \
-		echo "Trivy not found. Install: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"; \
+		echo "Trivy not found. Install: https://trivy.dev/docs/latest/getting-started/installation/"; \
 		exit 1; \
 	}
 	trivy fs --severity HIGH,CRITICAL --format table .
@@ -79,7 +84,7 @@ docs-linkcheck:
 build:
 	uv build
 
-ci: check type-check lint bandit test-cov
+ci: check type-check lint security test-cov
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -92,7 +97,7 @@ help:
 	@echo "Setup:        install       dev-setup"
 	@echo "Quality:      fix           format        check"
 	@echo "              type-check    lint          check-all     pre-commit"
-	@echo "Security:     bandit        trivy"
+	@echo "Security:     security      bandit        trivy         pip-audit"
 	@echo "Testing:      test          test-cov      test-e2e"
 	@echo "Docs:         docs          docs-serve    docs-linkcheck"
 	@echo "Release:      build         ci            clean"
