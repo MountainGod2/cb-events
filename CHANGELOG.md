@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v8.0.4 (2026-04-21)
+
+### Bug Fixes
+
+- **runtime**: Update dependency stamina to v26
+  ([`1734acc`](https://github.com/MountainGod2/cb-events/commit/1734acc86be039182dea441dfc61d7ae62dc2507))
+
+
 ## v8.0.3 (2026-04-21)
 
 ### Bug Fixes
