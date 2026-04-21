@@ -51,6 +51,7 @@ coverage.xml
 .pytest_cache/
 cover/
 junit.xml
+bandit.sarif
 
 # Translations
 *.mo
