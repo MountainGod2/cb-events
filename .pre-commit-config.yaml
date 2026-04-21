@@ -64,7 +64,7 @@ repos:
         name: check readthedocs config
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.111.0
+    rev: 43.113.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
@@ -87,7 +87,7 @@ repos:
         types_or: [text]
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.23.1
+    rev: v1.24.1
     hooks:
       - id: zizmor
         name: zizmor security check
