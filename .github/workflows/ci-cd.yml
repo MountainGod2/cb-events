@@ -140,6 +140,9 @@ jobs:
       - name: Sync security dependencies
         run: uv sync --group=security --frozen
 
+      - name: Run pip-audit
+        run: make pip-audit
+
       - name: Run Bandit
         run: make bandit
 
