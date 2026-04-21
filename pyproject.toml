@@ -48,7 +48,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { cb-events = false, pytest = false }
+exclude-newer-package = { cb-events = false }
 fork-strategy = "requires-python"
 default-groups = []
 constraint-dependencies = ["pygments>=2.20.0", "requests>=2.33.0"]
