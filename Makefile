@@ -1,5 +1,5 @@
 .PHONY: all install dev-setup \
-        format fix check type-check lint check-all pre-commit bandit trivy pip-audit security \
+        format fix check type-check lint check-all pre-commit bandit trivy pip-audit zizmor security \
         test test-cov test-e2e \
         build ci clean \
         docs docs-serve docs-linkcheck \
@@ -45,10 +45,13 @@ check-all:
 pre-commit:
 	uv run pre-commit run --all-files
 
-security: bandit pip-audit trivy
+security: bandit pip-audit trivy zizmor
 
 bandit:
 	uv run bandit -r src/ -f sarif -o bandit.sarif
+
+zizmor:
+	uv run zizmor --format=sarif . > zizmor.sarif
 
 pip-audit:
 	uv run pip-audit
@@ -97,7 +100,7 @@ help:
 	@echo "Setup:        install       dev-setup"
 	@echo "Quality:      fix           format        check"
 	@echo "              type-check    lint          check-all     pre-commit"
-	@echo "Security:     security      bandit        trivy         pip-audit"
+	@echo "Security:     security      bandit        trivy         pip-audit     zizmor"
 	@echo "Testing:      test          test-cov      test-e2e"
 	@echo "Docs:         docs          docs-serve    docs-linkcheck"
 	@echo "Release:      build         ci            clean"
