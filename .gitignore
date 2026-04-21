@@ -51,7 +51,10 @@ coverage.xml
 .pytest_cache/
 cover/
 junit.xml
+
+# Transient files from code analysis tools
 bandit.sarif
+zizmor.sarif
 
 # Translations
 *.mo
