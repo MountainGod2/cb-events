@@ -57,7 +57,7 @@ constraint-dependencies = ["pygments>=2.20.0", "requests>=2.33.0"]
 docs = { requires-python = ">=3.12" }
 
 [dependency-groups]
-dev = [{ include-group = "lint" }, { include-group = "test" }]
+dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
 lint = [
     "basedpyright==1.39.0",
     "pre-commit==4.5.1",
@@ -65,6 +65,7 @@ lint = [
     "pylint-pydantic==0.4.1",
     "ruff==0.15.10",
 ]
+typecheck = ["basedpyright==1.39.0"]
 test = [
     "aioresponses==0.7.8",
     "pytest==9.0.3",
@@ -118,7 +119,7 @@ parse_squash_commits = true
 ignore_merge_commits = true
 
 [tool.semantic_release.changelog]
-# Recommended patterns for conventional commits parser that is scope aware
+# Recommended patterns for conventional commits parser
 exclude_commit_patterns = [
     '''chore(?:\([^)]*?\))?: .+''',
     '''ci(?:\([^)]*?\))?: .+''',
