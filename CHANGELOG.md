@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v8.0.3 (2026-04-21)
+
+### Bug Fixes
+
+- **runtime**: Update dependency pydantic to >=2.13.0
+  ([`9a48ce8`](https://github.com/MountainGod2/cb-events/commit/9a48ce845d114882a7e2ceaa0be2f7a60b6dc618))
+
+
 ## v8.0.2 (2026-04-20)
 
 ### Bug Fixes
