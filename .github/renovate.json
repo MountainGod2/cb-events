@@ -142,7 +142,8 @@
       "labels": ["dependencies", "ci"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "ci"
+      "semanticCommitScope": "ci",
+      "versioning": "semver"
     },
     {
       "description": "Dockerfile updates",
