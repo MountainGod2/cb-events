@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
 FROM dhi.io/python:3-alpine3.23-dev@sha256:52ea9e4208617baf9800049bc25da9b822f96458be036c45ea728b32828e9502 AS builder
 
 ENV LANG=C.UTF-8
