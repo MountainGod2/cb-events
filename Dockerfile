@@ -1,11 +1,14 @@
 # syntax=docker/dockerfile:1@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
 FROM dhi.io/python:3-alpine3.23-dev@sha256:52ea9e4208617baf9800049bc25da9b822f96458be036c45ea728b32828e9502 AS builder
 
-ENV LANG=C.UTF-8
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
-ENV UV_NO_CACHE=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_FROZEN=1 \
+    UV_NO_CACHE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_PYTHON=python3 \
+    VIRTUAL_ENV=/opt/venv
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.7-alpine3.23-dhi@sha256:350b0fef4d0aaf34d854cb5b0f56c950e79a3cfbf6f01c5d334b920a1cf40ad0 \
     /usr/local/bin/uv /usr/local/bin/uv
@@ -15,15 +18,15 @@ WORKDIR /app
 COPY uv.lock pyproject.toml README.md ./
 COPY src/ ./src/
 
-RUN uv venv /opt/venv && \
-    uv sync --frozen --group=examples && \
+RUN uv venv && \
+    uv sync --group=examples && \
     uv build && \
-    uv pip install --python /opt/venv/bin/python --no-cache-dir dist/*.whl
+    uv pip install dist/*.whl
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 
-ENV PATH="/opt/venv/bin:${PATH}"
-ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 COPY --chown=1000:1000 examples/event_handling.py /app/
