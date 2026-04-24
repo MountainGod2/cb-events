@@ -50,7 +50,8 @@ repos:
     hooks:
       - id: pip-audit
         name: pip audit security scan
-        entry: uv run --all-groups pip-audit -l
+        # TODO: Remove --ignore-vuln CVE-2026-3219 once a patched pip version is released
+        entry: uv run --all-groups pip-audit -l --ignore-vuln CVE-2026-3219
         language: system
         pass_filenames: false
         always_run: true
