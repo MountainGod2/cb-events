@@ -54,7 +54,8 @@ zizmor:
 	uv run zizmor --format=sarif . > zizmor.sarif
 
 pip-audit:
-	uv run pip-audit
+	# TODO: Remove --ignore-vuln CVE-2026-3219 once a patched pip version is released
+	uv run pip-audit --ignore-vuln CVE-2026-3219
 
 trivy:
 	@command -v trivy >/dev/null 2>&1 || { \
