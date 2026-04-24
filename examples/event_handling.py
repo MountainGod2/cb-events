@@ -187,6 +187,9 @@ if __name__ == "__main__":
 
     try:
         asyncio.run(main())
-    except (AuthError, EventsError):
-        logger.exception("An error occurred")
+    except AuthError:
+        logger.info("Check your credentials and try again.")
+        sys.exit(1)
+    except EventsError:
+        logger.exception("An error occurred.")
         sys.exit(1)
