@@ -38,7 +38,7 @@ check-all:
 		uv run --python $$version --group lint ruff format --check || exit 1; \
 		uv run --python $$version --group lint ruff check || exit 1; \
 		uv run --python $$version --group lint pylint ./src || exit 1; \
-		uv run --python $$version --group typecheck basedpyright || exit 1; \
+		uv run --python $$version --group lint basedpyright || exit 1; \
 		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
 	done
 
@@ -88,7 +88,7 @@ docs-linkcheck:
 build:
 	uv build
 
-ci: check type-check lint security test-cov
+ci: lint security test-cov
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

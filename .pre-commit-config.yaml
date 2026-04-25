@@ -92,3 +92,16 @@ repos:
     hooks:
       - id: zizmor
         name: zizmor security check
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.7
+    hooks:
+      - id: uv-lock
+        name: uv lockfile update
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.7
+    hooks:
+      - id: uv-export
+        name: uv export requirements
+        args: ["--frozen", "--output-file=requirements.txt", "--no-hashes"]
