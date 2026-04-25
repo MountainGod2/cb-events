@@ -59,13 +59,13 @@ docs = { requires-python = ">=3.12" }
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "typecheck" }, { include-group = "test" }]
 lint = [
-    "basedpyright==1.39.1",
+    "basedpyright==1.39.2",
     "pre-commit==4.5.1",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
     "ruff==0.15.11",
 ]
-typecheck = ["basedpyright==1.39.1"]
+typecheck = ["basedpyright==1.39.2"]
 test = [
     "aioresponses==0.7.8",
     "pytest==9.0.3",
