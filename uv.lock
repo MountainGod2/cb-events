@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-18T14:09:21.782518042Z"
+exclude-newer = "2026-04-18T14:12:18.150062126Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -337,7 +337,7 @@ filecache = [
 
 [[package]]
 name = "cb-events"
-version = "8.0.5"
+version = "8.0.6"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
