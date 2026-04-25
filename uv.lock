@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-18T01:57:27.728583981Z"
+exclude-newer = "2026-04-18T14:09:21.782518042Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -399,7 +399,7 @@ test = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.13.5" },
     { name = "aiolimiter", specifier = ">=1.2.1" },
-    { name = "pydantic", specifier = ">=2.13.1" },
+    { name = "pydantic", specifier = ">=2.13.2" },
     { name = "stamina", specifier = ">=26.1.0" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
