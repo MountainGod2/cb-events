@@ -54,6 +54,7 @@ junit.xml
 
 # Transient files from code analysis tools
 bandit.sarif
+trivy.sarif
 zizmor.sarif
 
 # Translations

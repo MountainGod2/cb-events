@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-18T02:15:29.233583662Z"
+exclude-newer = "2026-04-18T01:57:27.728583981Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -394,9 +394,6 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
 ]
-typecheck = [
-    { name = "basedpyright" },
-]
 
 [package.metadata]
 requires-dist = [
@@ -450,7 +447,6 @@ test = [
     { name = "pytest-cov", specifier = "==7.1.0" },
     { name = "pytest-mock", specifier = "==3.15.1" },
 ]
-typecheck = [{ name = "basedpyright", specifier = "==1.39.2" }]
 
 [[package]]
 name = "certifi"
