@@ -13,7 +13,7 @@ requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.13.5",
     "aiolimiter>=1.2.1",
-    "pydantic>=2.13.2",
+    "pydantic>=2.13.3",
     "stamina>=26.1.0",
     "typing-extensions>=4.15.0",
 ]
@@ -48,10 +48,10 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { cb-events = false }
+exclude-newer-package = { cb-events = false , GitPython = false }  # TODO: Remove GitPython exclusion once age requirement is met
 fork-strategy = "requires-python"
 default-groups = []
-constraint-dependencies = ["pygments>=2.20.0", "requests>=2.33.0"]
+constraint-dependencies = ["pygments>=2.20.0", "requests>=2.33.0", "GitPython>=3.1.47"]
 
 [tool.uv.dependency-groups]
 docs = { requires-python = ">=3.12" }
