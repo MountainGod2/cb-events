@@ -29,9 +29,9 @@ propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-pydantic==2.13.2
+pydantic==2.13.3
     # via cb-events
-pydantic-core==2.46.2
+pydantic-core==2.46.3
     # via pydantic
 stamina==26.1.0
     # via cb-events
