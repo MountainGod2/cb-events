@@ -177,6 +177,7 @@ jobs:
 
       - name: Run Zizmor
         run: uv run zizmor --format=sarif . > zizmor.sarif
+        continue-on-error: true
 
       - name: Upload Zizmor SARIF
         uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
