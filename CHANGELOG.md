@@ -2,6 +2,18 @@
 
 <!-- version list -->
 
+## v8.0.7 (2026-04-27)
+
+### Bug Fixes
+
+- **deps**: Add GitPython constraint ([#141](https://github.com/MountainGod2/cb-events/pull/141),
+  [`28ee76c`](https://github.com/MountainGod2/cb-events/commit/28ee76c3e72064d868f3f1254beb9bec5bdcd3fd))
+
+- **runtime**: Update dependency pydantic to >=2.13.3
+  ([#141](https://github.com/MountainGod2/cb-events/pull/141),
+  [`28ee76c`](https://github.com/MountainGod2/cb-events/commit/28ee76c3e72064d868f3f1254beb9bec5bdcd3fd))
+
+
 ## v8.0.6 (2026-04-25)
 
 ### Bug Fixes
