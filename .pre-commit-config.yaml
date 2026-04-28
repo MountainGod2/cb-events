@@ -21,40 +21,14 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.2
+  - repo: https://github.com/adhtruong/mirrors-typos
+    rev: v1.45.1
     hooks:
-      - id: pyupgrade
-        name: pyupgrade
-        args: [--py310-plus]
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.11
-    hooks:
-      # Run the linter.
-      - id: ruff-check
-        args: [--fix, --exit-non-zero-on-fix]
-      # Run the formatter.
-      - id: ruff-format
-
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.4
-    hooks:
-      - id: bandit
-        name: bandit security check
-        args: [-c, pyproject.toml]
-        additional_dependencies: ["bandit[toml]"]
-        exclude: ^tests/
-
-  - repo: local
-    hooks:
-      - id: pip-audit
-        name: pip audit security scan
-        # TODO: Remove --ignore-vuln CVE-2026-3219 once a patched pip version is released
-        entry: uv run --all-groups pip-audit -l --ignore-vuln CVE-2026-3219
-        language: system
-        pass_filenames: false
-        always_run: true
+      - id: typos
+        name: typos spell check
+        args: [--format=brief]
+        exclude: ^(uv\.lock|\.git/|CHANGELOG\.md)
+        types_or: [text]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.37.1
@@ -70,22 +44,28 @@ repos:
       - id: renovate-config-validator
         args: [--strict]
 
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
     hooks:
-      - id: conventional-pre-commit
-        name: conventional commit check
-        stages: [commit-msg]
-        args: [--strict, --force-scope]
+      - id: pyupgrade
+        name: pyupgrade
+        args: [--py310-plus]
 
-  - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.45.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
     hooks:
-      - id: typos
-        name: typos spell check
-        args: [--format=brief]
-        exclude: ^(uv\.lock|\.git/|CHANGELOG\.md)
-        types_or: [text]
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+        name: bandit security check
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        exclude: ^tests/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.24.1
@@ -93,12 +73,33 @@ repos:
       - id: zizmor
         name: zizmor security check
 
+  # --- Code quality ---
+  - repo: local
+    hooks:
+      - id: pip-audit
+        name: pip audit security scan
+        # TODO: Remove --ignore-vuln CVE-2026-3219 once a patched pip version is released
+        entry: uv run --all-groups pip-audit -l --ignore-vuln CVE-2026-3219
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: xenon
+        name: xenon complexity check
+        entry: uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests
+        language: system
+        pass_filenames: false
+        types: [python]
+
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.11.7
     hooks:
       - id: uv-lock
         name: uv lockfile update
 
-      - id: uv-export
-        name: uv export requirements
-        args: ["--frozen", "--output-file=requirements.txt", "--no-hashes"]
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        name: conventional commit check
+        stages: [commit-msg]
+        args: [--strict, --force-scope]
