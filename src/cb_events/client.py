@@ -622,6 +622,13 @@ class EventClient:
                 base_for_join = f"{self.base_url.rstrip('/')}/"
             absolute = urljoin(base_for_join, stripped)
             return absolute, urlparse(absolute)
+        if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
+            scheme = (
+                urlparse(self._base_origin).scheme
+                or urlparse(self.base_url).scheme
+            )
+            absolute = f"{scheme}:{stripped}"
+            return absolute, urlparse(absolute)
         return stripped, parsed
 
     def _validate_next_url(
