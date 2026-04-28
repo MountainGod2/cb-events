@@ -73,7 +73,6 @@ repos:
       - id: zizmor
         name: zizmor security check
 
-  # --- Code quality ---
   - repo: local
     hooks:
       - id: pip-audit
