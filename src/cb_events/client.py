@@ -36,6 +36,7 @@ from .models import Event
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Sequence
     from types import TracebackType
+    from urllib.parse import ParseResult
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
@@ -604,6 +605,32 @@ class EventClient:
 
         return self._parse_json_response(text)
 
+    def _resolve_absolute_url(self, stripped: str) -> tuple[str, ParseResult]:
+        """Resolve a potentially-relative nextUrl to an absolute URL.
+
+        Args:
+            stripped: Stripped nextUrl string from the API response.
+
+        Returns:
+            Tuple of (absolute URL string, parsed ParseResult).
+        """
+        parsed = urlparse(stripped)
+        if not parsed.scheme and not parsed.netloc:
+            if stripped.startswith("/"):
+                base_for_join = f"{self._base_origin.rstrip('/')}/"
+            else:
+                base_for_join = f"{self.base_url.rstrip('/')}/"
+            absolute = urljoin(base_for_join, stripped)
+            return absolute, urlparse(absolute)
+        if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
+            scheme = (
+                urlparse(self._base_origin).scheme
+                or urlparse(self.base_url).scheme
+            )
+            absolute = f"{scheme}:{stripped}"
+            return absolute, urlparse(absolute)
+        return stripped, parsed
+
     def _validate_next_url(
         self,
         next_url: object,
@@ -623,9 +650,8 @@ class EventClient:
 
         Raises:
             EventsError: If nextUrl is present but not a non-empty string, has
-            an unsupported scheme, or references a hostname not permitted by
-            ClientConfig.next_url_allowed_hosts (the base API host is always
-            permitted).
+            an unsupported scheme, or references a hostname other than the
+            base API host.
         """
         if next_url is None:
             return None
@@ -650,15 +676,7 @@ class EventClient:
             )
             raise EventsError(invalid_next_url_msg, response_text=response_text)
 
-        absolute = stripped
-        parsed = urlparse(stripped)
-        if not parsed.scheme and not parsed.netloc:
-            if stripped.startswith("/"):
-                base_for_join = f"{self._base_origin.rstrip('/')}/"
-            else:
-                base_for_join = f"{self.base_url.rstrip('/')}/"
-            absolute = urljoin(base_for_join, stripped)
-            parsed = urlparse(absolute)
+        absolute, parsed = self._resolve_absolute_url(stripped)
 
         scheme = parsed.scheme
         if scheme not in {"http", "https"}:

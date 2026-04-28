@@ -31,6 +31,7 @@ type-check:
 
 lint: check type-check
 	uv run pylint ./src
+	uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
 
 check-all:
 	@for version in $(PYTHON_VERSIONS); do \
@@ -41,6 +42,7 @@ check-all:
 		uv run --python $$version --group lint basedpyright || exit 1; \
 		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
 	done
+	uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
 
 pre-commit:
 	uv run pre-commit run --all-files
