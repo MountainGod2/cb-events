@@ -85,7 +85,7 @@ repos:
         always_run: true
       - id: xenon
         name: xenon complexity check
-        entry: uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests
+        entry: uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
         language: system
         pass_filenames: false
         types: [python]
