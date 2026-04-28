@@ -31,6 +31,7 @@ type-check:
 
 lint: check type-check
 	uv run pylint ./src
+	uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
 
 check-all:
 	@for version in $(PYTHON_VERSIONS); do \
