@@ -60,7 +60,7 @@ docs = { requires-python = ">=3.12" }
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
     "basedpyright==1.39.3",
-    "pre-commit==4.5.1",
+    "pre-commit==4.6.0",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
     "ruff==0.15.11",
