@@ -31,7 +31,7 @@ type-check:
 
 lint: check type-check
 	uv run pylint ./src
-	uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
+	uv run xenon --max-absolute B --max-modules A --ignore tests .
 
 check-all:
 	@for version in $(PYTHON_VERSIONS); do \
@@ -41,8 +41,8 @@ check-all:
 		uv run --python $$version --group lint pylint ./src || exit 1; \
 		uv run --python $$version --group lint basedpyright || exit 1; \
 		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
+		uv run --python $$version --group lint xenon --max-absolute B --max-modules A --ignore tests . || exit 1; \
 	done
-	uv run --with xenon xenon --max-absolute B --max-modules A --ignore tests .
 
 pre-commit:
 	uv run pre-commit run --all-files
@@ -64,7 +64,7 @@ trivy:
 		echo "Trivy not found. Install: https://trivy.dev/docs/latest/getting-started/installation/"; \
 		exit 1; \
 	}
-	trivy fs --severity HIGH,CRITICAL --format table .
+	trivy fs --severity HIGH,CRITICAL --include-dev-deps --scanners vuln --format table .
 	trivy config --severity HIGH,CRITICAL --format table .
 
 test:
