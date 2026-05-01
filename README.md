@@ -102,63 +102,7 @@ event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
 event.broadcaster   # Broadcaster username string or None
 ```
 
-### `User`
-
-| Field             | Type                                                     | Description                   |
-| ----------------- | -------------------------------------------------------- | ----------------------------- |
-| `username`        | `str`                                                    | Display name                  |
-| `in_fanclub`      | `bool`                                                   | In fan club                   |
-| `is_mod`          | `bool`                                                   | Moderator                     |
-| `is_follower`     | `bool`                                                   | Follower                      |
-| `is_owner`        | `bool`                                                   | Room owner                    |
-| `has_tokens`      | `bool`                                                   | Has tokens                    |
-| `is_broadcasting` | `bool`                                                   | Is broadcasting               |
-| `in_private_show` | `bool`                                                   | In private show               |
-| `is_spying`       | `bool`                                                   | Spying on a private show      |
-| `is_silenced`     | `bool`                                                   | Silenced                      |
-| `has_darkmode`    | `bool`                                                   | Dark mode enabled             |
-| `fc_auto_renew`   | `bool`                                                   | Fan club auto-renewal enabled |
-| `color_group`     | `str \| None`                                            | Color group                   |
-| `gender`          | `str \| None`                                            | Gender                        |
-| `language`        | `str \| None`                                            | Language preference           |
-| `recent_tips`     | `Literal["none", "few", "some", "lots", "tons"] \| None` | Recent tip activity level     |
-| `subgender`       | `str \| None`                                            | Subgender                     |
-
-### `Tip`
-
-| Field     | Type          | Description                          |
-| --------- | ------------- | ------------------------------------ |
-| `tokens`  | `int`         | Number of tokens tipped              |
-| `is_anon` | `bool`        | Anonymous tip                        |
-| `message` | `str \| None` | Optional message attached to the tip |
-
-### `Message`
-
-| Field        | Type          | Description                                             |
-| ------------ | ------------- | ------------------------------------------------------- |
-| `message`    | `str`         | Message content                                         |
-| `from_user`  | `str \| None` | Sender username                                         |
-| `to_user`    | `str \| None` | Recipient username                                      |
-| `color`      | `str \| None` | Text color                                              |
-| `bg_color`   | `str \| None` | Background color                                        |
-| `font`       | `str \| None` | Font style                                              |
-| `orig`       | `str \| None` | Original (untranslated) message                         |
-| `is_private` | `bool`        | `True` for private messages directed to a specific user |
-
-### `Media`
-
-| Field    | Type                  | Description                  |
-| -------- | --------------------- | ---------------------------- |
-| `id`     | `str`                 | Media identifier             |
-| `name`   | `str`                 | Media name                   |
-| `type`   | `"video" \| "photos"` | Media type                   |
-| `tokens` | `int`                 | Tokens spent on the purchase |
-
-### `RoomSubject`
-
-| Field     | Type  | Description                |
-| --------- | ----- | -------------------------- |
-| `subject` | `str` | Updated room subject/title |
+[See full docs for additional details](https://cb-events.readthedocs.io/latest/event_models.html).
 
 ## Error Handling
 
