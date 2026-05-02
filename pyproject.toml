@@ -63,7 +63,7 @@ lint = [
     "pre-commit==4.6.0",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
-    "ruff==0.15.11",
+    "ruff==0.15.12",
     "xenon==0.9.3",
 ]
 test = [
