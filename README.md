@@ -9,6 +9,10 @@ Async Python client for the Chaturbate Events API.
 [![Builds](https://img.shields.io/github/actions/workflow/status/MountainGod2/cb-events/ci-cd.yml?label=builds)](https://github.com/MountainGod2/cb-events/actions/workflows/ci-cd.yml)
 [![License](https://img.shields.io/github/license/MountainGod2/cb-events?label=license)](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
 
+## Requirements
+
+Python 3.10+
+
 ## Installation
 
 ```bash
@@ -54,9 +58,24 @@ For usage examples, see the [examples folder](https://github.com/MountainGod2/cb
 > [!NOTE]
 > Generate an API token at https://chaturbate.com/statsapi/authtoken/ with `Events API` scope.
 
-## Event Types
+## Working with Events
+
+### Event Types
 
 `TIP` · `FANCLUB_JOIN` · `MEDIA_PURCHASE` · `CHAT_MESSAGE` · `PRIVATE_MESSAGE` · `USER_ENTER` · `USER_LEAVE` · `FOLLOW` · `UNFOLLOW` · `BROADCAST_START` · `BROADCAST_STOP` · `ROOM_SUBJECT_CHANGE`
+
+### Event Object
+
+```python
+event.user          # User object (most events)
+event.tip           # Tip object (TIP only)
+event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
+event.media         # Media object (MEDIA_PURCHASE)
+event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
+event.broadcaster   # Broadcaster username string or None
+```
+
+[See full docs for additional details](https://cb-events.readthedocs.io/latest/event_models.html).
 
 ## Configuration
 
@@ -78,7 +97,7 @@ client = EventClient(username, token, config=config)
 
 > **Testbed:** Register at <https://www.testbed.cb.dev>. New accounts include preloaded tokens for testing. Generate an API token the same way as a live account, then pass `use_testbed=True` with those credentials.
 
-## Rate Limiting
+### Rate Limiting
 
 Default: 2000 req/60s per client. Multiple clients each get an independent
 budget unless a shared limiter is passed:
@@ -90,19 +109,6 @@ limiter = AsyncLimiter(max_rate=2000, time_period=60)
 client1 = EventClient(username1, token1, rate_limiter=limiter)
 client2 = EventClient(username2, token2, rate_limiter=limiter)
 ```
-
-## Event Properties
-
-```python
-event.user          # User object (most events)
-event.tip           # Tip object (TIP only)
-event.message       # Message object (CHAT_MESSAGE, PRIVATE_MESSAGE)
-event.media         # Media object (MEDIA_PURCHASE)
-event.room_subject  # RoomSubject object (ROOM_SUBJECT_CHANGE)
-event.broadcaster   # Broadcaster username string or None
-```
-
-[See full docs for additional details](https://cb-events.readthedocs.io/latest/event_models.html).
 
 ## Error Handling
 
@@ -150,10 +156,6 @@ DEBUG:cb_events.client:Polling https://eventsapi.chaturbate.com/events/user/****
 DEBUG:cb_events.client:Received 1 events for user
 DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
 ```
-
-## Requirements
-
-Python 3.10+
 
 ## Star History
 
