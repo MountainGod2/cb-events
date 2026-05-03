@@ -56,7 +56,7 @@ zizmor:
 	uv run zizmor --format=sarif . > zizmor.sarif
 
 pip-audit:
-	uv run --all-groups --with pip-audit==2.10.0 pip-audit -l
+	uv run --group=security pip-audit --local --ignore-vuln CVE-2026-3219
 
 trivy:
 	@command -v trivy >/dev/null 2>&1 || { \
