@@ -155,6 +155,16 @@ DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handle
 
 Python 3.10+
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=mountaingod2%2Fcb-events&type=timeline&logscale=&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&theme=dark&logscale&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&logscale&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&logscale&legend=top-left" />
+ </picture>
+</a>
+
 ## License
 
 MIT
