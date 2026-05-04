@@ -849,7 +849,13 @@ class EventClient:
 
         Yields:
             Event instances as they are received from the API.
-        """
+
+        Raises:
+            EventsError: Propagated from poll() when all retry attempts are
+                exhausted or an unrecoverable error occurs (e.g. invalid JSON,
+                unexpected response format).
+            AuthError: Propagated from poll() on HTTP 401/403.
+        """  # noqa: DOC502
         while True:
             events = await self.poll()
             for event in events:
@@ -870,8 +876,10 @@ class EventClient:
             session: ClientSession | None = self.session
             self.session = None
             self._next_url = None
-        if session is not None:
-            try:
-                await session.close()
-            except (ClientError, OSError, RuntimeError) as e:
-                logger.warning("Error closing session: %s", e, exc_info=True)
+            if session is not None:
+                try:
+                    await session.close()
+                except (ClientError, OSError, RuntimeError) as e:
+                    logger.warning(
+                        "Error closing session: %s", e, exc_info=True
+                    )
