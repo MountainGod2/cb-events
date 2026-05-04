@@ -262,7 +262,7 @@ class RoomSubject(BaseEventModel):
 
 
 _SENTINEL: object = object()
-"""Sentinel for cache-miss detection in :class:`Event` property accessors."""
+"""Sentinel for cache-miss detection in Event property accessors."""
 
 
 class Event(BaseEventModel):
