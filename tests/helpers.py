@@ -9,11 +9,7 @@ from cb_events import EventType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-CORE_EVENT_TYPES: tuple[EventType, ...] = (
-    EventType.TIP,
-    EventType.FOLLOW,
-    EventType.CHAT_MESSAGE,
-)
+CORE_EVENT_TYPES: tuple[EventType, ...] = tuple(EventType)
 
 TESTBED_BASE_URL = (
     "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
@@ -24,14 +20,14 @@ def make_event(
     method: EventType = EventType.TIP,
     *,
     event_id: str = "evt-1",
-    object: dict[str, Any] | None = None,  # noqa: A002
+    data: dict[str, Any] | None = None,
     **overrides: Any,
 ) -> dict[str, Any]:
     """Return a baseline event payload for the provided method."""
     payload: dict[str, Any] = {
         "method": method.value,
         "id": event_id,
-        "object": object or {},
+        "object": data or {},
     }
     payload.update(overrides)
     return payload

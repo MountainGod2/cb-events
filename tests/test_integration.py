@@ -4,7 +4,6 @@ import asyncio
 import os
 import re
 from importlib.metadata import version
-from typing import Any
 
 import pytest
 from aioresponses import aioresponses
@@ -31,7 +30,7 @@ async def test_client_router_workflow(
 ) -> None:
     """Test the end-to-end workflow of receiving events and dispatching them through the router."""
     router = Router()
-    events_received: list[Any] = []
+    events_received: list[str | Event] = []
 
     @router.on(EventType.TIP)
     async def handle_tip(event: Event) -> None:
@@ -44,9 +43,7 @@ async def test_client_router_workflow(
         events_received.append(f"any:{event.type}")
 
     event_data = make_response([
-        make_event(
-            EventType.TIP, event_id="1", object={"tip": {"tokens": 100}}
-        ),
+        make_event(EventType.TIP, event_id="1", data={"tip": {"tokens": 100}}),
         make_event(EventType.FOLLOW, event_id="2"),
         make_event(EventType.BROADCAST_START, event_id="3"),
     ])
@@ -58,10 +55,13 @@ async def test_client_router_workflow(
             await router.dispatch(event)
 
     assert len(events_received) == 4
-    assert events_received[0] == "any:tip"
-    assert events_received[1].type == EventType.TIP
-    assert events_received[2] == "any:follow"
-    assert events_received[3] == "any:broadcastStart"
+
+    wildcard_calls = [e for e in events_received if isinstance(e, str)]
+    specific_calls = [e for e in events_received if isinstance(e, Event)]
+
+    assert wildcard_calls == ["any:tip", "any:follow", "any:broadcastStart"]
+    assert len(specific_calls) == 1
+    assert specific_calls[0].type == EventType.TIP
 
 
 async def test_client_context_manager_lifecycle() -> None:
