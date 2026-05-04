@@ -1,8 +1,10 @@
 """Core tests for client initialization, configuration and utils."""
 
+from unittest.mock import AsyncMock
 from urllib.parse import quote
 
 import pytest
+from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
 
 from cb_events import ClientConfig, EventClient
@@ -137,3 +139,31 @@ async def test_properties_accessible_after_close() -> None:
     await client.close()
     assert client.username == "user"
     assert client.session is None
+
+
+@pytest.mark.parametrize(
+    "exc_instance",
+    [
+        ClientError("connection reset"),
+        OSError("broken pipe"),
+        RuntimeError("event loop closed"),
+    ],
+    ids=["ClientError", "OSError", "RuntimeError"],
+)
+async def test_close_logs_warning_when_session_close_raises(
+    exc_instance: Exception,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Errors raised by session.close() should be logged as warnings, not propagated."""
+    client = EventClient("user", "test_token")
+
+    mock_session = AsyncMock()
+    mock_session.close = AsyncMock(side_effect=exc_instance)
+    client.session = mock_session  # type: ignore[assignment]
+
+    with caplog.at_level("WARNING"):
+        await client.close()
+
+    assert client.session is None
+    assert "Error closing session" in caplog.text
+    assert str(exc_instance) in caplog.text
