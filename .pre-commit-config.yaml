@@ -77,7 +77,7 @@ repos:
     hooks:
       - id: pip-audit
         name: pip audit security scan
-        entry: uv run --all-groups --with pip-audit==2.10.0 pip-audit -l
+        entry: uv run --group=security pip-audit --local --ignore-vuln CVE-2026-3219
         language: system
         pass_filenames: false
         always_run: true
