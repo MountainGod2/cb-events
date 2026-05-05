@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v8.0.8 (2026-05-05)
+
+### Bug Fixes
+
+- Add pip to constraint-dependencies ([#151](https://github.com/MountainGod2/cb-events/pull/151),
+  [`75fa17c`](https://github.com/MountainGod2/cb-events/commit/75fa17cf56f6c334789ef55f33010b7089fcfc67))
+
+
 ## v8.0.7 (2026-04-27)
 
 ### Bug Fixes

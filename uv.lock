@@ -17,7 +17,7 @@ cb-events = false
 [manifest]
 constraints = [
     { name = "gitpython", specifier = ">=3.1.47" },
-    { name = "pip", specifier = ">=26.1" },
+    { name = "pip", specifier = ">=26.1.0" },
     { name = "pygments", specifier = ">=2.20.0" },
     { name = "requests", specifier = ">=2.33.0" },
 ]
@@ -339,7 +339,7 @@ filecache = [
 
 [[package]]
 name = "cb-events"
-version = "8.0.7"
+version = "8.0.8"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
