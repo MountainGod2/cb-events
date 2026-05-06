@@ -20,7 +20,7 @@ dependencies = [
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -45,16 +45,6 @@ Documentation = "https://cb-events.readthedocs.io/latest/"
 Repository = "https://github.com/MountainGod2/cb-events.git"
 Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/MountainGod2/cb-events/issues"
-
-[tool.uv]
-exclude-newer = "1 week"
-exclude-newer-package = { cb-events = false }
-fork-strategy = "requires-python"
-default-groups = []
-constraint-dependencies = ["pygments>=2.20.0", "requests>=2.33.0", "GitPython>=3.1.47", "pip>=26.1.0"]
-
-[tool.uv.dependency-groups]
-docs = { requires-python = ">=3.12" }
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
@@ -85,6 +75,26 @@ security = ["bandit[sarif]==1.9.4", "pip-audit==2.10.0", "zizmor==1.24.1"]
 build = ["python-semantic-release==10.5.3"]
 examples = ["python-dotenv >=1.2.2"]
 
+[tool.uv]
+required-version = ">=0.11.8"
+compile-bytecode = true
+environments = ["python_version >= '3.10'"]
+fork-strategy = "requires-python"
+default-groups = []
+exclude-newer = "1 week"
+# Exclude our package from newer checks to update examples immediately
+exclude-newer-package = { cb-events = false }
+# Mitigate security vulnerabilities without needing to wait for upstream package updates
+constraint-dependencies = [
+    "pygments>=2.20.0",
+    "requests>=2.33.0",
+    "GitPython>=3.1.49",
+    "pip>=26.1.0",
+]
+
+[tool.uv.dependency-groups]
+docs = { requires-python = ">=3.12" }
+
 [tool.hatch]
 build.targets.wheel.packages = ["src/cb_events"]
 metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
@@ -95,8 +105,8 @@ metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
-# Remove `> [!NOTE]` admonitions since PyPI doesn't support them
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# Remove `> [!NOTE]` admonitions since PyPI doesn't support them
 pattern = '> \[![A-Z]+\][^\n]*\n'
 replacement = ''
 
@@ -119,7 +129,6 @@ parse_squash_commits = true
 ignore_merge_commits = true
 
 [tool.semantic_release.changelog]
-# Recommended patterns for conventional commits parser
 exclude_commit_patterns = [
     '''chore(?:\([^)]*?\))?: .+''',
     '''ci(?:\([^)]*?\))?: .+''',
@@ -141,37 +150,28 @@ preview = true
 select = ["ALL"]
 ignore = [
     "COM812", # Incompatible with ruff formatter
-    "CPY001", # Allow missing per-file copyright notices
+    "CPY001",
 ]
-unfixable = []
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = [
-    "RUF029", # Allow async without await
-    "TC",     # Allow imports outside of type-checking blocks
-]
+"examples/*" = ["RUF029", "TC"]
 "tests/*" = [
-    "ANN",     # Allow missing type annotations
-    "E501",    # Allow line length violations
-    "FBT001",  # Allow boolean-typed positional arguments
-    "PLC2701", # Allow private imports
-    "PLR0913", # Allow too many arguments
-    "PLR0917", # Allow too many positional arguments
-    "PLR2004", # Allow magic values
-    "S101",    # Allow use of assert statements
-    "S105",    # Allow hardcoded passwords
-    "S106",    # Allow hardcoded passwords
-    "SLF001",  # Allow private member access
-    "TC",      # Allow imports outside of type-checking blocks
+    "ANN",
+    "E501",
+    "FBT001",
+    "PLC2701",
+    "PLR0913",
+    "PLR0917",
+    "PLR2004",
+    "S101",
+    "S105",
+    "S106",
+    "SLF001",
+    "TC",
 ]
-"tests/conftest.py" = [
-    "D", # Allow missing docstrings
-]
-"tests/test_router.py" = [
-    "ARG001", # Allow unused arguments
-    "RUF029", # Allow async without await
-]
+"tests/conftest.py" = ["D"]
+"tests/test_router.py" = ["ARG001", "RUF029"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
