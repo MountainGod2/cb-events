@@ -679,13 +679,13 @@ class EventClient:
         absolute, parsed = self._resolve_absolute_url(stripped)
 
         scheme = parsed.scheme
-        if scheme not in {"http", "https"}:
+        if scheme != "https":
             logger.error(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
                 self.username,
             )
-            msg = "Invalid nextUrl scheme; only http/https are allowed."
+            msg = "Invalid nextUrl scheme; only https is allowed."
             raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
