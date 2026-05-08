@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v8.0.9 (2026-05-08)
+
+### Bug Fixes
+
+- **client**: Enforce HTTPS scheme for nextUrl validation
+  ([#154](https://github.com/MountainGod2/cb-events/pull/154),
+  [`a2463b9`](https://github.com/MountainGod2/cb-events/commit/a2463b92b260ec3298e7ad9b20d5c395dca692eb))
+
+
 ## v8.0.8 (2026-05-05)
 
 ### Bug Fixes
