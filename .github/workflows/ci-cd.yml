@@ -13,9 +13,6 @@ concurrency:
 
 permissions: {}
 
-env:
-  PUBLISH_REPOSITORY: MountainGod2/cb-events
-
 jobs:
   lint:
     name: Lint
@@ -40,7 +37,7 @@ jobs:
         run: uv sync --group=lint --frozen
 
       - name: Verify lockfile is up to date
-        run: uv lock --check
+        run: uv lock
 
       - name: Run ruff & make lint
         run: |
@@ -367,7 +364,7 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       needs.build.outputs.released == 'true' &&
-      github.repository == vars.PUBLISH_REPOSITORY
+      github.repository == 'MountainGod2/cb-events'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
