@@ -7,7 +7,6 @@ name = "cb-events"
 version = "8.0.9"
 description = "Async Python client for the Chaturbate Events API."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
-maintainers = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
@@ -83,14 +82,9 @@ fork-strategy = "requires-python"
 default-groups = []
 exclude-newer = "1 week"
 # Exclude our package from newer checks to update examples immediately
-exclude-newer-package = { cb-events = false }
+exclude-newer-package = { "cb-events" = false }
 # Mitigate security vulnerabilities without needing to wait for upstream package updates
-constraint-dependencies = [
-    "pygments>=2.20.0",
-    "requests>=2.33.0",
-    "GitPython>=3.1.49",
-    "pip>=26.1.0",
-]
+constraint-dependencies = []
 
 [tool.uv.dependency-groups]
 docs = { requires-python = ">=3.12" }
@@ -112,10 +106,7 @@ replacement = ''
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
-build_command = """
-  uv lock --upgrade-package "cb-events"
-  uv build
-"""
+build_command = "uv build"
 commit_parser = "conventional"
 commit_author = "MountainGod2 <admin@reid.ca>"
 changelog_file = "CHANGELOG.md"
@@ -192,14 +183,14 @@ max-attributes = 12
 [tool.pylint.format]
 max-line-length = 80
 
-[tool.pyright]
+[tool.basedpyright]
 include = ["src"]
 exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
 extraPaths = ["src"]
 pythonVersion = "3.10"
 
 [tool.pytest.ini_options]
-minversion = "8.0"
+minversion = "9.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -226,7 +217,7 @@ omit = ["tests/*"]
 show_missing = true
 skip_covered = true
 precision = 0
-fail_under = 80
+fail_under = 90
 
 [tool.coverage.html]
 directory = "htmlcov"
