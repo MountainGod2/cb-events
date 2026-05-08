@@ -31,7 +31,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
+          cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint dependencies
         run: uv sync --group=lint --frozen
@@ -69,7 +69,7 @@ jobs:
           version: "0.11.8"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          cache-suffix: ${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+          cache-suffix: test-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -116,7 +116,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
+          cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync security dependencies
         run: uv sync --group=security --frozen
@@ -231,7 +231,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
+          cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
         run: uv sync --group build --no-default-groups --frozen
@@ -285,7 +285,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
+          cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -335,7 +335,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
+          cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
         run: uv sync --group build --no-default-groups --frozen
