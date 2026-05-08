@@ -16,14 +16,6 @@ exclude-newer-span = "P1W"
 [options.exclude-newer-package]
 cb-events = false
 
-[manifest]
-constraints = [
-    { name = "gitpython", specifier = ">=3.1.49" },
-    { name = "pip", specifier = ">=26.1.0" },
-    { name = "pygments", specifier = ">=2.20.0" },
-    { name = "requests", specifier = ">=2.33.0" },
-]
-
 [[package]]
 name = "accessible-pygments"
 version = "0.0.5"

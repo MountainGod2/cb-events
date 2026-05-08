@@ -14,34 +14,8 @@ concurrency:
 permissions: {}
 
 jobs:
-  warm-cache:
-    name: Warm Cache
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          version: "0.11.8"
-          python-version: "3.13"
-          enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
-
-      - name: Sync dependencies
-        run: uv sync --all-groups --frozen
-
-      - name: Prune uv cache
-        run: uv cache prune --ci
-
   lint:
     name: Lint
-    needs: warm-cache
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -57,10 +31,13 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint dependencies
         run: uv sync --group=lint --frozen
+
+      - name: Verify lockfile is up to date
+        run: uv lock
 
       - name: Run ruff & make lint
         run: |
@@ -72,7 +49,7 @@ jobs:
 
   test:
     name: Test
-    needs: [warm-cache, lint]
+    needs: lint
     runs-on: ubuntu-24.04
     environment: testing
     permissions:
@@ -92,7 +69,7 @@ jobs:
           version: "0.11.8"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: ${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -123,10 +100,10 @@ jobs:
 
   security:
     name: Security
-    needs: warm-cache
     runs-on: ubuntu-24.04
     permissions:
-      security-events: write # Required to upload SARIF results to GitHub Security tab
+      contents: read
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -139,7 +116,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync security dependencies
         run: uv sync --group=security --frozen
@@ -197,7 +174,7 @@ jobs:
       actions: read
       contents: read
     env:
-      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "true" # Enable file coverage reporting on PRs
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -254,7 +231,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
         run: uv sync --group build --no-default-groups --frozen
@@ -271,15 +248,6 @@ jobs:
         with:
           name: dist
           path: dist/**
-          if-no-files-found: error
-          retention-days: 2
-
-      - name: Upload uv.lock
-        if: steps.version.outputs.released == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: uv.lock
-          path: uv.lock
           if-no-files-found: error
           retention-days: 2
 
@@ -307,7 +275,6 @@ jobs:
 
       - name: Download dist artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        id: download
         with:
           name: dist
           path: dist
@@ -318,7 +285,7 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -344,7 +311,7 @@ jobs:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}
       cancel-in-progress: false
     permissions:
-      contents: write # Required to create releases, tags, and push commits
+      contents: write
     outputs:
       released: ${{ needs.build.outputs.released }}
       version: ${{ needs.build.outputs.version }}
@@ -355,7 +322,6 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
           persist-credentials: false
 
       - name: Reset to accurate SHA
@@ -369,18 +335,10 @@ jobs:
           version: "0.11.8"
           python-version: "3.13"
           enable-cache: true
-          cache-suffix: ${{ hashFiles('uv.lock') }}
+          cache-suffix: 3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
         run: uv sync --group build --no-default-groups --frozen
-
-      - name: Download uv.lock artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: uv.lock
-
-      - name: Stage uv.lock
-        run: git add uv.lock # Needed because --skip-build won't regenerate the lock file
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
@@ -391,7 +349,6 @@ jobs:
           git_tag_gpgsign: true
 
       - name: Create release
-        id: create_release
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
@@ -404,15 +361,18 @@ jobs:
   deploy:
     name: Deploy to PyPI
     needs: [build, release]
-    if: github.ref == 'refs/heads/main' && needs.build.outputs.released == 'true' && github.repository == 'MountainGod2/cb-events'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      needs.build.outputs.released == 'true' &&
+      github.repository == 'MountainGod2/cb-events'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/project/cb-events/
     permissions:
-      attestations: write # Required to create build provenance attestations
+      attestations: write
       contents: read
-      id-token: write # Required for OIDC authentication with PyPI
+      id-token: write
     steps:
       - name: Download dist artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
