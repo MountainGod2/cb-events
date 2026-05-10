@@ -146,10 +146,11 @@ jobs:
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH
-          exit-code: 0
+          exit-code: 1
 
       - name: Upload Trivy SARIF
         uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
+        if: always()
         continue-on-error: true
         with:
           sarif_file: trivy.sarif
@@ -157,10 +158,10 @@ jobs:
 
       - name: Run Zizmor
         run: uv run zizmor --format=sarif . > zizmor.sarif
-        continue-on-error: true
 
       - name: Upload Zizmor SARIF
         uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
+        if: always()
         continue-on-error: true
         with:
           sarif_file: zizmor.sarif
@@ -206,7 +207,7 @@ jobs:
 
   build:
     name: Build
-    needs: [test, security]
+    needs: [test, security, codeql]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
