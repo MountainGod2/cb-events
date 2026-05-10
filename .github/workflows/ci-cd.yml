@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      security-events: write  # needed for uploading SARIF results to the Security tab
+      security-events: write # needed for uploading SARIF results to the Security tab
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -157,7 +157,10 @@ jobs:
           category: trivy
 
       - name: Run Zizmor
-        run: uv run zizmor --format=sarif . > zizmor.sarif
+        if: always()
+        run: |
+          set -o pipefail
+          uv run zizmor --format=sarif . > zizmor.sarif
 
       - name: Upload Zizmor SARIF
         uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
@@ -175,7 +178,7 @@ jobs:
     needs: [lint]
     runs-on: ubuntu-24.04
     permissions:
-      security-events: write  # needed for uploading SARIF results to the Security tab
+      security-events: write # needed for uploading SARIF results to the Security tab
       actions: read # needed for CodeQL Action
       contents: read # needed for CodeQL Action
     env:
@@ -324,7 +327,6 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write # needed for pushing commits/tags
-      id-token: write # needed for app token generation
     steps:
       - name: Generate release token
         id: app-token

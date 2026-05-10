@@ -82,7 +82,7 @@ fork-strategy = "requires-python"
 default-groups = []
 exclude-newer = "1 week"
 # Exclude our package from newer checks to update examples immediately
-exclude-newer-package = { "cb-events" = false , "gitpython" = false }
+exclude-newer-package = { "cb-events" = false, "gitpython" = false }
 # Mitigate security vulnerabilities without needing to wait for upstream package updates
 constraint-dependencies = ["gitpython >= 3.1.50"]
 
@@ -108,7 +108,7 @@ replacement = ''
 version_toml = ["pyproject.toml:project.version"]
 build_command = "uv build"
 commit_parser = "conventional"
-commit_author = "cb-events-release[bot] <APP_ID+cb-events-release[bot]@users.noreply.github.com>"
+commit_author = "cb-events-release[bot] <283457951+cb-events-release[bot]@users.noreply.github.com>"
 changelog_file = "CHANGELOG.md"
 output_format = "md"
 upload_to_vcs_release = false
