@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v8.0.10 (2026-05-10)
+
+### Bug Fixes
+
+- Update permissions and author for release process
+  ([#159](https://github.com/MountainGod2/cb-events/pull/159),
+  [`8556b42`](https://github.com/MountainGod2/cb-events/commit/8556b42861ff665f253a47ede87490562d40d1a9))
+
+- **ci**: Update permissions and author for release process
+  ([#159](https://github.com/MountainGod2/cb-events/pull/159),
+  [`8556b42`](https://github.com/MountainGod2/cb-events/commit/8556b42861ff665f253a47ede87490562d40d1a9))
+
+
 ## v8.0.9 (2026-05-08)
 
 ### Bug Fixes
