@@ -65,7 +65,8 @@
       ],
       "groupName": "runtime",
       "labels": ["dependencies", "core"],
-      "semanticCommitScope": "runtime"
+      "semanticCommitScope": "runtime",
+      "rangeStrategy": "widen"
     },
     {
       "description": "Development tools (testing, linting, and type checking)",
@@ -207,7 +208,7 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "automerge": true,
+    "automerge": false,
     "labels": ["dependencies", "security"],
     "assignees": ["MountainGod2"],
     "semanticCommitType": "fix",
