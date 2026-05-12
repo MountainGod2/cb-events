@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v8.1.1 (2026-05-12)
+
+### Bug Fixes
+
+- **deps**: Add requirements.txt for pip-audit scanning
+  ([#161](https://github.com/MountainGod2/cb-events/pull/161),
+  [`bd07145`](https://github.com/MountainGod2/cb-events/commit/bd0714564cadf5d9a43fa30368bbf93e7a2d9830))
+
+- **deps**: Widen supported dependency versions
+  ([#161](https://github.com/MountainGod2/cb-events/pull/161),
+  [`bd07145`](https://github.com/MountainGod2/cb-events/commit/bd0714564cadf5d9a43fa30368bbf93e7a2d9830))
+
+- **pre-commit**: Update requirements-sync entry to use bash
+  ([#161](https://github.com/MountainGod2/cb-events/pull/161),
+  [`bd07145`](https://github.com/MountainGod2/cb-events/commit/bd0714564cadf5d9a43fa30368bbf93e7a2d9830))
+
+- **renovate**: Update runtime scope and disable automerge for vulnerability alerts
+  ([#161](https://github.com/MountainGod2/cb-events/pull/161),
+  [`bd07145`](https://github.com/MountainGod2/cb-events/commit/bd0714564cadf5d9a43fa30368bbf93e7a2d9830))
+
+
 ## v8.1.0 (2026-05-10)
 
 ### Features
