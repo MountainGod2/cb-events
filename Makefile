@@ -56,7 +56,7 @@ zizmor:
 	uv run zizmor --format=sarif . > zizmor.sarif
 
 pip-audit:
-	uv run --group=security pip-audit --local
+	uv run --group=security pip-audit --local -r requirements.txt
 
 trivy:
 	@command -v trivy >/dev/null 2>&1 || { \

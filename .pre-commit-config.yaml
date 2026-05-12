@@ -77,7 +77,7 @@ repos:
     hooks:
       - id: pip-audit
         name: pip audit security scan
-        entry: uv run --group=security pip-audit --local
+        entry: uv run --group=security pip-audit --local -r requirements.txt
         language: system
         pass_filenames: false
         always_run: true
