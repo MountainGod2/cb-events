@@ -77,7 +77,7 @@ repos:
     hooks:
       - id: requirements-sync
         name: requirements.txt sync check
-        entry: uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt && git diff --exit-code -- requirements.txt
+        entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|uv\.lock)$
