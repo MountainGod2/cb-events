@@ -10,11 +10,11 @@ authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 dependencies = [
-    "aiohttp>=3.13.5",
-    "aiolimiter>=1.2.1",
-    "pydantic>=2.13.3",
-    "stamina>=26.1.0",
-    "typing-extensions>=4.15.0",
+    "aiohttp>=3.11.0",
+    "aiolimiter>=1.0.0",
+    "pydantic>=2.8.0",
+    "stamina>=25.2.0",
+    "typing-extensions>=4.14.0",
 ]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
@@ -82,9 +82,7 @@ fork-strategy = "requires-python"
 default-groups = []
 exclude-newer = "1 week"
 # Exclude our package from newer checks to update examples immediately
-exclude-newer-package = { "cb-events" = false, "gitpython" = false }
-# Mitigate security vulnerabilities without needing to wait for upstream package updates
-constraint-dependencies = ["gitpython >= 3.1.50"]
+exclude-newer-package = { "cb-events" = false }
 
 [tool.uv.dependency-groups]
 docs = { requires-python = ">=3.12" }

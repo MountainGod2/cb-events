@@ -1,5 +1,6 @@
 .PHONY: all install dev-setup \
         format fix check type-check lint check-all pre-commit bandit trivy pip-audit zizmor security \
+		requirements-export requirements-check \
         test test-cov test-e2e \
         build ci clean \
         docs docs-serve docs-linkcheck \
@@ -49,6 +50,12 @@ pre-commit:
 
 security: bandit pip-audit trivy zizmor
 
+requirements-export:
+	uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt
+
+requirements-check: requirements-export
+	git diff --exit-code -- requirements.txt
+
 bandit:
 	uv run bandit -r src/ -f sarif -o bandit.sarif
 
@@ -56,7 +63,7 @@ zizmor:
 	uv run zizmor --format=sarif . > zizmor.sarif
 
 pip-audit:
-	uv run --group=security pip-audit --local
+	uv run --group=security pip-audit -r requirements.txt
 
 trivy:
 	@command -v trivy >/dev/null 2>&1 || { \

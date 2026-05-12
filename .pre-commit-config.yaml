@@ -75,9 +75,15 @@ repos:
 
   - repo: local
     hooks:
+      - id: requirements-sync
+        name: requirements.txt sync check
+        entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
       - id: pip-audit
         name: pip audit security scan
-        entry: uv run --group=security pip-audit --local
+        entry: uv run --group=security pip-audit -r requirements.txt
         language: system
         pass_filenames: false
         always_run: true
