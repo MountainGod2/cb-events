@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v8.1.2 (2026-05-13)
+
+### Bug Fixes
+
+- **ci**: Change permissions for release job and persist bot credentials
+  ([#163](https://github.com/MountainGod2/cb-events/pull/163),
+  [`f04bb2b`](https://github.com/MountainGod2/cb-events/commit/f04bb2b9783cb4b1a0a49db9acc52d31c858327f))
+
+
 ## v8.1.1 (2026-05-12)
 
 ### Bug Fixes
