@@ -329,7 +329,7 @@ jobs:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}
       cancel-in-progress: false
     permissions:
-      contents: write # needed for pushing commits/tags
+      contents: read
     steps:
       - name: Generate release token
         id: app-token
@@ -343,7 +343,8 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
-          persist-credentials: false
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
 
       - name: Reset to accurate SHA
         env:
