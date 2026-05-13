@@ -340,7 +340,7 @@ dependencies = [
     { name = "aiolimiter" },
     { name = "pydantic" },
     { name = "stamina" },
-    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
 [package.dev-dependencies]
@@ -399,7 +399,7 @@ requires-dist = [
     { name = "aiolimiter", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2.8.0" },
     { name = "stamina", specifier = ">=25.2.0" },
-    { name = "typing-extensions", specifier = ">=4.14.0" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.14.0" },
 ]
 
 [package.metadata.requires-dev]
