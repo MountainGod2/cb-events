@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v8.1.3 (2026-05-14)
+
+### Bug Fixes
+
+- **ci**: Simplify build metadata handling
+  ([#164](https://github.com/MountainGod2/cb-events/pull/164),
+  [`d90974e`](https://github.com/MountainGod2/cb-events/commit/d90974e6ee22834683f4310fd1c80802063970a5))
+
+
 ## v8.1.2 (2026-05-13)
 
 ### Bug Fixes

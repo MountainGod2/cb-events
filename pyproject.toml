@@ -1,6 +1,6 @@
 [project]
 name = "cb-events"
-version = "8.1.2"
+version = "8.1.3"
 description = "Async Python client for the Chaturbate Events API."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
