@@ -107,7 +107,7 @@ replacement = ''
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 # Remove the Star History section
-pattern = '## Star History\n\n[^\n]*\n\n'
+pattern = '## Star History\n\n(?:(?!^## )[\s\S])*'
 replacement = ''
 
 [tool.semantic_release]
