@@ -25,12 +25,13 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Topic :: Internet",
-    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
-    "Topic :: Software Development :: Libraries",
-    "Topic :: Software Development :: Libraries :: Python Modules",
     "Framework :: AsyncIO",
     "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Topic :: Internet",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 
@@ -87,19 +88,26 @@ exclude-newer-package = { "cb-events" = false }
 [tool.uv.dependency-groups]
 docs = { requires-python = ">=3.12" }
 
-[tool.hatch]
-build.targets.wheel.packages = ["src/cb_events"]
-metadata.hooks.fancy-pypi-readme.content-type = "text/markdown"
-metadata.hooks.fancy-pypi-readme.fragments = [{ path = "README.md" }]
+[tool.hatch.build.targets.wheel]
+packages = ["src/cb_events"]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [{ path = "README.md" }]
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Replace relative links with absolute links to repository
+# Replace relative links with absolute links
 pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove `> [!NOTE]` admonitions since PyPI doesn't support them
+# Remove `> [!NOTE]` admonitions but keep the codeblocks in them
 pattern = '> \[![A-Z]+\][^\n]*\n'
+replacement = ''
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+# Remove the Star History section
+pattern = '## Star History\n\n[^\n]*\n\n'
 replacement = ''
 
 [tool.semantic_release]

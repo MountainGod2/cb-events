@@ -1,71 +1,89 @@
-.PHONY: all install dev-setup \
-        format fix check type-check lint check-all pre-commit bandit trivy pip-audit zizmor security \
-		requirements-export requirements-check \
-        test test-cov test-e2e \
-        build ci clean \
-        docs docs-serve docs-linkcheck \
-        help
+SHELL := /usr/bin/env bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := help
+.DELETE_ON_ERROR:
+MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --warn-undefined-variables
 
+UV ?= uv
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
+XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 
-all: fix format lint test
+.PHONY: all
+.PHONY: install dev-setup
+.PHONY: format fix check type-check lint check-all pre-commit
+.PHONY: security security-full bandit pip-audit trivy zizmor
+.PHONY: requirements-export requirements-check
+.PHONY: test test-cov test-e2e
+.PHONY: docs docs-serve docs-linkcheck
+.PHONY: build ci clean help
 
-install:
-	uv sync --all-groups
+all: ci ## Run CI-equivalent checks locally.
 
-dev-setup: install
-	uv python install $(PYTHON_VERSIONS)
-	uv run pre-commit install
+install: ## Install all dependency groups via uv.
+	$(UV) sync --all-groups
 
-format:
-	uv run ruff format
+dev-setup: install ## Install Python versions and pre-commit hooks.
+	$(UV) python install $(PYTHON_VERSIONS)
+	$(UV) run pre-commit install
 
-fix:
-	uv run ruff check --fix
+format: ## Format code with Ruff.
+	$(UV) run ruff format
 
-check:
-	uv run ruff format --check
-	uv run ruff check
+fix: ## Apply Ruff autofixes and format code.
+	$(UV) run ruff check --fix
+	$(UV) run ruff format
 
-type-check:
-	uv run basedpyright
+check: ## Run non-mutating style and lint checks.
+	$(UV) run ruff format --check
+	$(UV) run ruff check
 
-lint: check type-check
-	uv run pylint ./src
-	uv run xenon --max-absolute B --max-modules A --ignore tests .
+type-check: ## Run static type checks.
+	$(UV) run basedpyright
 
-check-all:
+lint: check type-check ## Run all lint/quality checks.
+	$(UV) run pylint ./src
+	$(UV) run xenon $(XENON_ARGS) .
+
+check-all: ## Run lint + tests across all supported Python versions.
 	@for version in $(PYTHON_VERSIONS); do \
 		echo "=== Python $$version ==="; \
-		uv run --python $$version --group lint ruff format --check || exit 1; \
-		uv run --python $$version --group lint ruff check || exit 1; \
-		uv run --python $$version --group lint pylint ./src || exit 1; \
-		uv run --python $$version --group lint basedpyright || exit 1; \
-		uv run --python $$version --group test pytest -q --no-cov || exit 1; \
-		uv run --python $$version --group lint xenon --max-absolute B --max-modules A --ignore tests . || exit 1; \
+		$(UV) run --python $$version --group lint ruff format --check; \
+		$(UV) run --python $$version --group lint ruff check; \
+		$(UV) run --python $$version --group lint pylint ./src; \
+		$(UV) run --python $$version --group lint basedpyright; \
+		$(UV) run --python $$version --group test pytest -q --no-cov; \
+		$(UV) run --python $$version --group lint xenon $(XENON_ARGS) .; \
 	done
 
-pre-commit:
-	uv run pre-commit run --all-files
+pre-commit: ## Run all pre-commit hooks.
+	$(UV) run pre-commit run --all-files
 
-security: bandit pip-audit trivy zizmor
+security: bandit pip-audit zizmor ## Run core security scans.
 
-requirements-export:
-	uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt
+security-full: security trivy ## Run all security scans, including Trivy.
 
-requirements-check: requirements-export
-	git diff --exit-code -- requirements.txt
+requirements-export: ## Regenerate requirements.txt from lock data.
+	$(UV) export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt
 
-bandit:
-	uv run bandit -r src/ -f sarif -o bandit.sarif
+requirements-check: ## Verify requirements.txt is up to date without changing files.
+	@tmp_file="$$(mktemp)"; \
+	trap 'rm -f "$$tmp_file"' EXIT; \
+	$(UV) export --format requirements-txt --no-hashes --no-default-groups --output-file="$$tmp_file" >/dev/null; \
+	diff -u \
+		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' requirements.txt) \
+		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' "$$tmp_file")
 
-zizmor:
-	uv run zizmor --format=sarif . > zizmor.sarif
+bandit: ## Run Bandit and emit SARIF.
+	$(UV) run bandit -r src/ -f sarif -o bandit.sarif
 
-pip-audit:
-	uv run --group=security pip-audit -r requirements.txt
+zizmor: ## Run Zizmor and emit SARIF.
+	$(UV) run zizmor --format=sarif . > zizmor.sarif
 
-trivy:
+pip-audit: ## Audit dependencies against known vulnerabilities.
+	$(UV) run --group=security pip-audit -r requirements.txt
+
+trivy: ## Run Trivy vulnerability and config scans.
 	@command -v trivy >/dev/null 2>&1 || { \
 		echo "Trivy not found. Install: https://trivy.dev/docs/latest/getting-started/installation/"; \
 		exit 1; \
@@ -73,43 +91,37 @@ trivy:
 	trivy fs --severity HIGH,CRITICAL --include-dev-deps --scanners vuln --format table .
 	trivy config --severity HIGH,CRITICAL --format table .
 
-test:
-	uv run pytest
+test: ## Run test suite.
+	$(UV) run pytest
 
-test-cov:
-	uv run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html --junitxml=junit.xml
+test-cov: ## Run tests with coverage and JUnit output.
+	$(UV) run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html --junitxml=junit.xml
 
-test-e2e:
-	uv run pytest -m e2e --no-cov
+test-e2e: ## Run end-to-end tests only.
+	$(UV) run pytest -m e2e --no-cov
 
-docs:
+docs: ## Build documentation.
 	rm -rf docs/_build docs/api
-	uv run sphinx-build -E -b html docs docs/_build/html
+	$(UV) run sphinx-build -E -b html docs docs/_build/html
 
-docs-serve: docs
+docs-serve: docs ## Build docs and serve locally on port 8000.
 	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
-	uv run python -m http.server 8000 -d docs/_build/html
+	$(UV) run python -m http.server 8000 -d docs/_build/html
 
-docs-linkcheck:
-	uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
+docs-linkcheck: ## Validate docs links.
+	$(UV) run sphinx-build -b linkcheck docs docs/_build/linkcheck
 
-build:
-	uv build
+build: ## Build source and wheel distributions.
+	$(UV) build
 
-ci: lint security test-cov
+ci: requirements-check lint security test-cov ## Run CI target locally.
 
-clean:
+clean: ## Remove caches, artifacts, and generated reports.
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.py[co]" -delete
 	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .coverage
 	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
 	rm -rf *.sarif docs/_build/ docs/api/
 
-help:
-	@echo "Setup:        install       dev-setup"
-	@echo "Quality:      fix           format        check"
-	@echo "              type-check    lint          check-all     pre-commit"
-	@echo "Security:     security      bandit        trivy         pip-audit     zizmor"
-	@echo "Testing:      test          test-cov      test-e2e"
-	@echo "Docs:         docs          docs-serve    docs-linkcheck"
-	@echo "Release:      build         ci            clean"
+help: ## Show available targets.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nAvailable targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-18s %s\n", $$1, $$2} END {print ""}' $(MAKEFILE_LIST)

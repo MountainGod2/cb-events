@@ -36,16 +36,11 @@ jobs:
       - name: Sync lint dependencies
         run: uv sync --group=lint --frozen
 
-      - name: Verify lockfile is up to date
-        run: uv lock
-
       - name: Verify requirements.txt is up to date
         run: make requirements-check
 
-      - name: Run ruff & make lint
-        run: |
-          uv run ruff format --check
-          make lint
+      - name: Run lint checks
+        run: make lint
 
       - name: Prune uv cache
         run: uv cache prune --ci
@@ -161,9 +156,7 @@ jobs:
 
       - name: Run Zizmor
         if: always()
-        run: |
-          set -o pipefail
-          uv run zizmor --format=sarif . > zizmor.sarif
+        run: make zizmor
 
       - name: Upload Zizmor SARIF
         uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4

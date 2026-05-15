@@ -28,6 +28,14 @@ Development
    cd cb-events
    make dev-setup
 
+Useful local commands:
+
+.. code-block:: bash
+
+   make help
+   make ci
+   make security-full
+
 API Token
 ---------
 
