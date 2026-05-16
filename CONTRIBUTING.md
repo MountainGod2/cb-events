@@ -16,7 +16,7 @@ Thanks for pitching in. Here’s how to help:
 1. Clone the repo.
 2. Install deps:
    ```bash
-   uv sync --all-groups
+   make install
    ```
 3. Make a branch:
    ```bash
@@ -24,7 +24,8 @@ Thanks for pitching in. Here’s how to help:
    ```
 4. Run checks:
    ```bash
-   uv run pre-commit && uv run pytest
+   make pre-commit
+   make ci
    ```
 5. Open a PR.
 
