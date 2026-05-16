@@ -39,7 +39,13 @@ Useful local commands:
 API Token
 ---------
 
-Generate a token at https://chaturbate.com/statsapi/authtoken/ with the **Events API** scope.
+Create a token at https://chaturbate.com/statsapi/authtoken/ with **Events API** scope.
+
+Authorization notes:
+
+- Events API access is token-based.
+- You can create multiple tokens and delete any token to revoke its access.
+- Revocation may take up to one minute after deletion.
 
 .. code-block:: bash
 
