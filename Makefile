@@ -6,6 +6,8 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --warn-undefined-variables
 
 UV ?= uv
+PYTEST ?= $(UV) run pytest
+PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 
@@ -52,7 +54,7 @@ check-all: ## Run lint + tests across all supported Python versions.
 		$(UV) run --python $$version --group lint ruff check; \
 		$(UV) run --python $$version --group lint pylint ./src; \
 		$(UV) run --python $$version --group lint basedpyright; \
-		$(UV) run --python $$version --group test pytest -q --no-cov; \
+		$(UV) run --python $$version --group test pytest -q; \
 		$(UV) run --python $$version --group lint xenon $(XENON_ARGS) .; \
 	done
 
@@ -92,13 +94,13 @@ trivy: ## Run Trivy vulnerability and config scans.
 	trivy config --severity HIGH,CRITICAL --format table .
 
 test: ## Run test suite.
-	$(UV) run pytest
+	$(PYTEST)
 
 test-cov: ## Run tests with coverage and JUnit output.
-	$(UV) run pytest --cov=src --cov-report=xml --cov-report=term --cov-report=html --junitxml=junit.xml
+	$(PYTEST) $(PYTEST_COV_ARGS)
 
 test-e2e: ## Run end-to-end tests only.
-	$(UV) run pytest -m e2e --no-cov
+	$(PYTEST) -m e2e
 
 docs: ## Build documentation.
 	rm -rf docs/_build docs/api

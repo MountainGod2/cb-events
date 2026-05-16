@@ -28,7 +28,7 @@ def test_events_error_properties_and_str(
     response_text: str | None,
     expected_str: str,
 ) -> None:
-    """EventsError should include message and optional HTTP status in its string representation, and store status_code and response_text as attributes."""
+    """EventsError should expose message and HTTP metadata fields."""
     error = EventsError(
         message, status_code=status_code, response_text=response_text
     )
@@ -86,7 +86,7 @@ def test_build_http_error_returns_base_http_status_error_for_other_codes() -> (
 
 
 def test_events_error_truncates_long_response_text() -> None:
-    """EventsError should truncate response_text longer than 200 chars to 203 characters (200 chars + '...')."""
+    """EventsError should truncate response_text values longer than 200 chars."""
     long_text = "x" * 300
     error = EventsError("Test", response_text=long_text)
 
@@ -103,7 +103,7 @@ def test_truncate_text_raises_on_negative_limit() -> None:
 
 @pytest.mark.parametrize("status_code", [401, 403])
 def test_auth_error_with_status_codes(status_code: int) -> None:
-    """AuthError should include HTTP status code in its string representation when provided."""
+    """AuthError should include the HTTP status code in its string output."""
     error = AuthError("Unauthorized", status_code=status_code)
 
     assert str(error) == f"Unauthorized (HTTP {status_code})"

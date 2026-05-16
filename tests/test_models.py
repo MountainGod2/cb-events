@@ -5,8 +5,7 @@ from typing import Any
 
 import pytest
 
-from cb_events import Event, EventType
-from cb_events.models import Message, RoomSubject, Tip, User
+from cb_events import Event, EventType, Message, RoomSubject, Tip, User
 
 
 @pytest.mark.parametrize("event_type", EventType)
@@ -55,7 +54,7 @@ def test_event_properties_parsed() -> None:
 def test_user_subgender_validator(
     raw_subgender: str | None, expected: str | None
 ) -> None:
-    """Empty-string subgender should coerce to None; valid values pass through."""
+    """Empty subgender should coerce to None while valid values pass through."""
     user = User.model_validate({"username": "u", "subgender": raw_subgender})
     assert user.subgender == expected
 
@@ -250,7 +249,7 @@ def test_event_broadcaster_property() -> None:
 
 
 def test_event_broadcaster_property_cached() -> None:
-    """Broadcaster property should return the same value on repeated access (cache hit path)."""
+    """Broadcaster property should return the same cached value on reuse."""
     event = Event.model_validate({
         "method": "broadcastStart",
         "id": "evt-bcaster-cache",

@@ -7,13 +7,12 @@ import pytest
 from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
 
-from cb_events import ClientConfig, EventClient
+from cb_events import AuthError, ClientConfig, EventClient
 from cb_events.client import (
     _mask_token,
     _mask_url,
     _parse_events,
 )
-from cb_events.exceptions import AuthError
 
 
 def test_token_masking_in_repr() -> None:
@@ -75,7 +74,7 @@ def test_mask_token_various_lengths() -> None:
 def test_parse_events_strict_and_lenient(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """_parse_events should raise in strict mode and skip invalid events in lenient mode while logging a warning."""
+    """`_parse_events` should raise in strict mode and skip invalid events in lenient mode."""
     caplog.set_level("WARNING")
     valid = {"method": "tip", "id": "1", "object": {}}
     invalid = {"method": "tip", "object": {}}
@@ -134,7 +133,7 @@ async def test_close_called_twice_does_not_raise() -> None:
 
 
 async def test_properties_accessible_after_close() -> None:
-    """Username and session state should be accessible without raising after close()."""
+    """Username and session state should remain accessible after close()."""
     client = EventClient("user", "test_token")
     await client.close()
     assert client.username == "user"
@@ -154,7 +153,7 @@ async def test_close_logs_warning_when_session_close_raises(
     exc_instance: Exception,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Errors raised by session.close() should be logged as warnings, not propagated."""
+    """Errors raised by session.close() should log warnings, not propagate."""
     client = EventClient("user", "test_token")
 
     mock_session = AsyncMock()

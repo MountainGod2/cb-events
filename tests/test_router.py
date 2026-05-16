@@ -87,7 +87,7 @@ async def test_any_handlers_run_before_specific_handlers(
 
 
 async def test_any_handler_called_for_unmatched_type(router: Router) -> None:
-    """Even if no handlers are registered for a specific event type, ``on_any`` handlers should still be called."""
+    """`on_any` handlers should run even without type-specific handlers."""
     any_handler = AsyncMock()
     router.on(EventType.TIP)(AsyncMock())
     router.on_any()(any_handler)
@@ -275,7 +275,7 @@ async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
 
 
 def test_is_async_callable_handles_missing_call_attribute() -> None:
-    """_is_async_callable should detect async __call__ despite metaclass hiding."""
+    """`_is_async_callable` should detect async __call__ despite metaclass masking."""
     handler = _MetaclassCallable()
     assert _is_async_callable(handler)
 
