@@ -101,7 +101,7 @@ pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove `> [!NOTE]` admonitions but keep the codeblocks in them
+# Remove `> [!NOTE]` admonitions but keep the codeblocks
 pattern = '> \[![A-Z]+\][^\n]*\n'
 replacement = ''
 
