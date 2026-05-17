@@ -82,8 +82,8 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
             msg = "Provide either `config` or keyword overrides, not both."
             raise ValueError(msg)
 
-        client_username = username_override or username
-        client_token = token_override or token
+        client_username = username if username_override is None else username_override
+        client_token = token if token_override is None else token_override
         events_url = make_events_url(
             client_username,
             client_token,
