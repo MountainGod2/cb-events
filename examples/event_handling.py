@@ -148,7 +148,11 @@ async def handle_any_event(event: Event) -> None:
 
 async def main() -> None:
     """Set up event handlers and start listening for events."""
-    events_url = os.getenv("CB_EVENTS_URL", "")
+    events_url = os.getenv("CB_EVENTS_URL")
+
+    if not events_url:
+        msg = "CB_EVENTS_URL environment variable is required"
+        raise RuntimeError(msg)
 
     config = ClientConfig()
 

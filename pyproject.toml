@@ -152,7 +152,7 @@ ignore = [
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = ["RUF029", "TC"]
+"examples/*" = ["RUF029", "TC", "DOC"]
 "tests/*" = [
     "ANN",
     "E501",
