@@ -33,8 +33,8 @@ jobs:
           enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
-      - name: Sync lint dependencies
-        run: uv sync --group=lint --frozen
+      - name: Sync lint and docs dependencies
+        run: uv sync --group=lint --group=docs --frozen
 
       - name: Verify requirements.txt is up to date
         run: make requirements-check
@@ -263,7 +263,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: e2e
     env:
-        CB_EVENTS_URL: ${{ secrets.CB_EVENTS_URL }}
+      CB_EVENTS_URL: ${{ secrets.CB_EVENTS_URL }}
     permissions:
       contents: read
     steps:

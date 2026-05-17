@@ -17,7 +17,7 @@ XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 .PHONY: security security-full bandit pip-audit trivy zizmor
 .PHONY: requirements-export requirements-check
 .PHONY: test test-cov test-e2e
-.PHONY: docs docs-serve docs-linkcheck
+.PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build ci clean help
 
 all: ci ## Run CI-equivalent checks locally.
@@ -39,6 +39,7 @@ fix: ## Apply Ruff autofixes and format code.
 check: ## Run non-mutating style and lint checks.
 	$(UV) run ruff format --check
 	$(UV) run ruff check
+	$(UV) run --group=docs docstrfmt --check docs
 
 type-check: ## Run static type checks.
 	$(UV) run basedpyright
@@ -112,6 +113,12 @@ docs-serve: docs ## Build docs and serve locally on port 8000.
 
 docs-linkcheck: ## Validate docs links.
 	$(UV) run sphinx-build -b linkcheck docs docs/_build/linkcheck
+
+docs-format: ## Format reStructuredText docs files.
+	$(UV) run --group=docs docstrfmt docs
+
+docs-format-check: ## Check reStructuredText docs formatting.
+	$(UV) run --group=docs docstrfmt --check docs
 
 build: ## Build source and wheel distributions.
 	$(UV) build
