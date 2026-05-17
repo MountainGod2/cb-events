@@ -24,16 +24,17 @@ from tests.helpers import make_event, make_events_url, make_response
 pytestmark = [pytest.mark.e2e]
 
 
-def is_testbed_url(url: str | None) -> bool:
-    """Return True when URL points to an explicit testbed endpoint."""
+def is_events_url(url: str | None) -> bool:
+    """Return True when URL points to a supported Events API endpoint."""
     if not url:
         return False
     parsed = urlparse(url)
     if parsed.scheme != "https":
         return False
+    allowed_hosts = {"eventsapi.chaturbate.com", "events.testbed.cb.dev"}
     hostname = (parsed.hostname or "").lower()
     path = parsed.path.lower()
-    return hostname == "events.testbed.cb.dev" or "testbed" in hostname or "testbed" in path
+    return hostname in allowed_hosts and path.startswith("/events/")
 
 
 async def test_client_router_workflow(
@@ -109,11 +110,11 @@ def test_version_attribute() -> None:
 @pytest.mark.slow
 @pytest.mark.live
 @pytest.mark.skipif(
-    not (os.getenv("CB_RUN_LIVE_TESTS") == "1" and is_testbed_url(os.getenv("CB_EVENTS_URL"))),
-    reason=("Set CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL to an HTTPS testbed URL"),
+    not (os.getenv("CB_RUN_LIVE_TESTS") == "1" and is_events_url(os.getenv("CB_EVENTS_URL"))),
+    reason=("Set CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL to an Events API URL"),
 )
-async def test_live_testbed_polling() -> None:
-    """Test against the live testbed using environment credentials."""
+async def test_live_polling() -> None:
+    """Test against the live service."""
     events_url = os.environ["CB_EVENTS_URL"]
     config = ClientConfig(
         strict_validation=False,
