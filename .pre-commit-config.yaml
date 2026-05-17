@@ -22,7 +22,7 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.46.0
+    rev: v1.46.1
     hooks:
       - id: typos
         name: typos spell check
