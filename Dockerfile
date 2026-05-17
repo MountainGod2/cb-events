@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+FROM ghcr.io/astral-sh/uv:alpine3.23-dhi@sha256:971450f29c53998aad3094ad1e07953fcb94da6577ac0c35bb56574fe765ccee AS uv
+
 FROM dhi.io/python:3-alpine3.23-dev@sha256:52ea9e4208617baf9800049bc25da9b822f96458be036c45ea728b32828e9502 AS builder
 
 ENV LANG=C.UTF-8 \
@@ -10,8 +12,7 @@ ENV LANG=C.UTF-8 \
     UV_PYTHON=python3 \
     VIRTUAL_ENV=/opt/venv
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.7-alpine3.23-dhi@sha256:350b0fef4d0aaf34d854cb5b0f56c950e79a3cfbf6f01c5d334b920a1cf40ad0 \
-    /usr/local/bin/uv /usr/local/bin/uv
+COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 
