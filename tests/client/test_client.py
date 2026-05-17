@@ -46,6 +46,14 @@ def test_token_masking_in_repr() -> None:
             "https://eventsapi.chaturbate.com/events/user/token/?timeout=10",
             "must not include query parameters",
         ),
+        (
+            "https://eventsapi.chaturbate.com:8443/events/user/token/",
+            "must not include a custom port",
+        ),
+        (
+            "https://eventsapi.chaturbate.com:abc/events/user/token/",
+            "must not include a custom port",
+        ),
     ],
 )
 def test_reject_invalid_credentials(events_url: str, message: str) -> None:

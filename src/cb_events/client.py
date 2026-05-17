@@ -139,9 +139,12 @@ def _parse_and_validate_events_url(events_url: str) -> ParseResult:
         msg = "Events URL must not include query parameters or fragments."
         raise AuthError(msg)
 
-    if parsed.port is not None:
-        msg = "Events URL must not include a custom port."
-        raise AuthError(msg)
+    custom_port_msg = "Events URL must not include a custom port."
+    try:
+        if parsed.port is not None:
+            raise AuthError(custom_port_msg)
+    except ValueError as exc:
+        raise AuthError(custom_port_msg) from exc
 
     return parsed
 
