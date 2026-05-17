@@ -28,7 +28,7 @@ async def test_client_router_workflow(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Test the end-to-end workflow of receiving events and dispatching them through the router."""
+    """Verify end-to-end polling and router dispatch behavior."""
     router = Router()
     events_received: list[str | Event] = []
 
@@ -94,9 +94,17 @@ def test_version_attribute() -> None:
 
 
 @pytest.mark.slow
+@pytest.mark.live
 @pytest.mark.skipif(
-    not (os.getenv("CB_USERNAME") and os.getenv("CB_TOKEN")),
-    reason="CB_USERNAME and CB_TOKEN must be set for live testbed test",
+    not (
+        os.getenv("CB_RUN_LIVE_TESTS") == "1"
+        and os.getenv("CB_USERNAME")
+        and os.getenv("CB_TOKEN")
+    ),
+    reason=(
+        "Set CB_RUN_LIVE_TESTS=1, CB_USERNAME, and CB_TOKEN to run live "
+        "testbed test"
+    ),
 )
 async def test_live_testbed_polling() -> None:
     """Test against the live testbed using environment credentials."""

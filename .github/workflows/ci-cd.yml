@@ -72,7 +72,7 @@ jobs:
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
 
-      - name: Run pytest
+      - name: Run tests with coverage
         run: make test-cov
 
       - name: Upload coverage metrics
