@@ -13,7 +13,7 @@ import logging
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final, NoReturn, cast
-from urllib.parse import quote, urljoin, urlparse
+from urllib.parse import quote, unquote, urljoin, urlparse
 
 import stamina
 from aiohttp import ClientSession, ClientTimeout
@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Sequence
     from types import TracebackType
     from urllib.parse import ParseResult
+
+logger = logging.getLogger(__name__)
+"""Logger for the cb_events.client module."""
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
 """Production Events API endpoint base."""
@@ -84,8 +87,11 @@ RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
 """Status message indicating API polling timeout."""
 
-logger = logging.getLogger(__name__)
-"""Logger for the cb_events.client module."""
+SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
+    "eventsapi.chaturbate.com": BASE_URL,
+    "events.testbed.cb.dev": TESTBED_URL,
+}
+"""Allowed Events API hosts mapped to canonical base URLs."""
 
 
 class _TransientError(Exception):
@@ -95,9 +101,7 @@ class _TransientError(Exception):
     status_code: int
     response_text: str
 
-    def __init__(
-        self, msg: str, *, status_code: int, response_text: str
-    ) -> None:
+    def __init__(self, msg: str, *, status_code: int, response_text: str) -> None:
         """Initialize exception with message and HTTP metadata.
 
         Args:
@@ -108,6 +112,133 @@ class _TransientError(Exception):
         super().__init__(msg)
         self.status_code = status_code
         self.response_text = response_text
+
+
+def _parse_and_validate_events_url(events_url: str) -> ParseResult:
+    """Parse the Events URL and validate top-level URL components.
+
+    Args:
+        events_url: Full Events API URL provided by upstream.
+
+    Returns:
+        ParsedResult from urlparse with validated scheme, host, and path format.
+
+    Raises:
+        AuthError: If the URL is malformed or contains invalid components.
+    """
+    if not events_url or events_url != events_url.strip():
+        msg = "Events URL must not be empty or contain leading/trailing whitespace."
+        raise AuthError(msg)
+
+    parsed = urlparse(events_url)
+    if parsed.scheme != "https":
+        msg = "Events URL must use https."
+        raise AuthError(msg)
+
+    if parsed.query or parsed.fragment:
+        msg = "Events URL must not include query parameters or fragments."
+        raise AuthError(msg)
+
+    if parsed.port is not None:
+        msg = "Events URL must not include a custom port."
+        raise AuthError(msg)
+
+    return parsed
+
+
+def _resolve_base_url(hostname: str | None) -> str:
+    """Resolve canonical base URL from a parsed hostname.
+
+    Args:
+        hostname: Hostname extracted from the parsed Events URL.
+
+    Returns:
+        Canonical base URL corresponding to the hostname.
+
+    Raises:
+        AuthError: If the hostname is not in the list of supported hosts.
+    """
+    base_url = SUPPORTED_EVENTS_HOSTS.get((hostname or "").lower())
+    if base_url is not None:
+        return base_url
+    msg = "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+    raise AuthError(msg)
+
+
+def _extract_username_token(path: str) -> tuple[str, str]:
+    """Extract and URL-decode username/token from an Events path.
+
+    Args:
+        path: Path component of the Events URL.
+
+    Returns:
+        Tuple of ``(username, token)``.
+
+    Raises:
+        AuthError: If the path does not match the expected format.
+    """
+    parts = [part for part in path.split("/") if part]
+    if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
+        msg = "Events URL must match https://<host>/events/<username>/<token>/"
+        raise AuthError(msg)
+    return unquote(parts[1]), unquote(parts[2])
+
+
+def _validate_username(username: str) -> None:
+    """Validate extracted username value.
+
+    Args:
+        username: Extracted username to validate.
+
+    Raises:
+        AuthError: If the username is empty or contains leading/trailing whitespace.
+    """
+    if username and username == username.strip():
+        return
+    msg = (
+        "Username must not be empty or contain leading/trailing "
+        "whitespace. Provide a valid Chaturbate username."
+    )
+    raise AuthError(msg)
+
+
+def _validate_token(token: str) -> None:
+    """Validate extracted token value.
+
+    Args:
+        token: Extracted token to validate.
+
+    Raises:
+        AuthError: If the token is empty or contains leading/trailing whitespace.
+    """
+    if token and token == token.strip():
+        return
+    msg = (
+        "Token must not be empty or contain leading/trailing "
+        "whitespace. Generate a valid token at "
+        "https://chaturbate.com/statsapi/authtoken/"
+    )
+    raise AuthError(msg)
+
+
+def _parse_events_url(events_url: str) -> tuple[str, str, str]:
+    """Parse and validate the Events API URL.
+
+    Args:
+        events_url: Full upstream URL containing host, username, and token.
+
+    Returns:
+        Tuple of ``(base_url, username, token)``.
+
+    Raises:
+        AuthError: If the URL is malformed or contains invalid credentials.
+    """  # noqa: DOC502
+    parsed = _parse_and_validate_events_url(events_url)
+    base_url = _resolve_base_url(parsed.hostname)
+    username, token = _extract_username_token(parsed.path)
+    _validate_username(username)
+    _validate_token(token)
+    return base_url, username, token
 
 
 def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
@@ -190,11 +321,7 @@ def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
     Returns:
         List of validated Event instances.
     """
-    return [
-        event
-        for item in raw
-        if (event := _parse_event(item, strict=strict)) is not None
-    ]
+    return [event for item in raw if (event := _parse_event(item, strict=strict)) is not None]
 
 
 def _parse_event(item: object, *, strict: bool) -> Event | None:
@@ -230,8 +357,8 @@ class EventClient:
     API returns a nextUrl to continue from the last position.
 
     Attributes:
-        username: Chaturbate username for the event feed.
-        token: API token for authentication.
+        username: Chaturbate username parsed from the Events URL.
+        token: API token parsed from the Events URL.
         config: Client configuration instance.
         base_url: API endpoint base URL.
         session: Active HTTP session (None until context entry).
@@ -239,7 +366,9 @@ class EventClient:
     Example:
         Basic polling loop::
 
-            async with EventClient("username", "token") as client:
+            async with EventClient(
+                "https://eventsapi.chaturbate.com/events/username/token/"
+            ) as client:
                 async for event in client:
                     print(f"Received {event.type}: {event.id}")
 
@@ -249,8 +378,14 @@ class EventClient:
 
             limiter = AsyncLimiter(max_rate=2000, time_period=60)
             async with (
-                EventClient("user1", "token1", rate_limiter=limiter) as c1,
-                EventClient("user2", "token2", rate_limiter=limiter) as c2,
+                EventClient(
+                    "https://eventsapi.chaturbate.com/events/user1/token1/",
+                    rate_limiter=limiter,
+                ) as c1,
+                EventClient(
+                    "https://eventsapi.chaturbate.com/events/user2/token2/",
+                    rate_limiter=limiter,
+                ) as c2,
             ):
                 # Both clients share the same rate limit pool
                 pass
@@ -271,10 +406,13 @@ class EventClient:
         "username",
     )
 
+    base_url: str
+    username: str
+    token: str
+
     def __init__(
         self,
-        username: str,
-        token: str,
+        events_url: str,
         *,
         config: ClientConfig | None = None,
         rate_limiter: AsyncLimiter | None = None,
@@ -282,40 +420,20 @@ class EventClient:
         """Initialize event client with credentials and configuration.
 
         Args:
-            username: Chaturbate username associated with the event feed.
-            token: API token generated for the username.
+            events_url: Full Events API URL provided by upstream, for
+                example ``https://eventsapi.chaturbate.com/events/<username>/<token>/``.
             config: Optional client configuration overrides.
             rate_limiter: Optional shared rate limiter to coordinate calls
                 across multiple clients.
 
         Raises:
-            AuthError: If username or token is empty or contains whitespace.
-        """
-        if not username or username != username.strip():
-            msg = (
-                "Username must not be empty or contain leading/trailing "
-                "whitespace. Provide a valid Chaturbate username."
-            )
-            raise AuthError(msg)
-        if not token or token != token.strip():
-            msg = (
-                "Token must not be empty or contain leading/trailing "
-                "whitespace. Generate a valid token at "
-                "https://chaturbate.com/statsapi/authtoken/"
-            )
-            raise AuthError(msg)
-
-        self.username: str = username
-        self.token: str = token
+            AuthError: If events_url is malformed or has invalid credentials.
+        """  # noqa: DOC502
+        self.base_url, self.username, self.token = _parse_events_url(events_url)
         self.config: ClientConfig = config or ClientConfig()
-        self.base_url: str = (
-            TESTBED_URL if self.config.use_testbed else BASE_URL
-        )
         parsed_base = urlparse(self.base_url)
         if parsed_base.scheme and parsed_base.netloc:
-            self._base_origin: str = (
-                f"{parsed_base.scheme}://{parsed_base.netloc}"
-            )
+            self._base_origin: str = f"{parsed_base.scheme}://{parsed_base.netloc}"
         else:
             self._base_origin = self.base_url
         self.session: ClientSession | None = None
@@ -333,10 +451,7 @@ class EventClient:
         Returns:
             Masked representation revealing only limited token characters.
         """
-        return (
-            f"EventClient(username='{self.username}', "
-            f"token='{_mask_token(self.token)}')"
-        )
+        return f"EventClient(username='{self.username}', token='{_mask_token(self.token)}')"
 
     async def __aenter__(self) -> Self:
         """Initialize HTTP session on context entry.
@@ -350,9 +465,7 @@ class EventClient:
         try:
             if self.session is None:
                 self.session = ClientSession(
-                    timeout=ClientTimeout(
-                        total=self.config.timeout + SESSION_TIMEOUT_BUFFER
-                    ),
+                    timeout=ClientTimeout(total=self.config.timeout + SESSION_TIMEOUT_BUFFER),
                 )
         except (ClientError, OSError, TimeoutError) as e:
             await self.close()
@@ -397,9 +510,7 @@ class EventClient:
         Returns:
             Delay in seconds before the next retry.
         """
-        sleep_seconds = self.config.retry_backoff * (
-            self.config.retry_factor ** (attempt_num - 1)
-        )
+        sleep_seconds = self.config.retry_backoff * (self.config.retry_factor ** (attempt_num - 1))
         return min(sleep_seconds, self.config.retry_max_delay)
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
@@ -457,18 +568,10 @@ class EventClient:
         msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
 
         # Unwrap _TransientError if that was the cause to avoid noise.
-        cause = (
-            None
-            if isinstance(original_exception, _TransientError)
-            else original_exception
-        )
+        cause = None if isinstance(original_exception, _TransientError) else original_exception
 
-        status_code: int | None = getattr(
-            original_exception, "status_code", None
-        )
-        response_text: str | None = getattr(
-            original_exception, "response_text", None
-        )
+        status_code: int | None = getattr(original_exception, "status_code", None)
+        response_text: str | None = getattr(original_exception, "response_text", None)
 
         if status_code is not None:
             raise build_http_error(
@@ -496,10 +599,7 @@ class EventClient:
             EventsError: If the client is not initialized or the request fails.
         """
         if self.session is None:
-            msg = (
-                "Client not initialized. Use 'async with EventClient(...)'"
-                " as a context manager."
-            )
+            msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
             raise EventsError(msg)
 
         attempts_made = 0
@@ -529,10 +629,7 @@ class EventClient:
                         return await self._perform_request_attempt(url)
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
-                        msg = (
-                            "Attempt %d/%d failed for user %s: %r. "
-                            "Retrying in %.2fs..."
-                        )
+                        msg = "Attempt %d/%d failed for user %s: %r. Retrying in %.2fs..."
                         logger.warning(
                             msg,
                             attempts_made,
@@ -623,10 +720,7 @@ class EventClient:
             absolute = urljoin(base_for_join, stripped)
             return absolute, urlparse(absolute)
         if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-            scheme = (
-                urlparse(self._base_origin).scheme
-                or urlparse(self.base_url).scheme
-            )
+            scheme = urlparse(self._base_origin).scheme or urlparse(self.base_url).scheme
             absolute = f"{scheme}:{stripped}"
             return absolute, urlparse(absolute)
         return stripped, parsed
@@ -656,9 +750,7 @@ class EventClient:
         if next_url is None:
             return None
 
-        invalid_next_url_msg = (
-            "Invalid API response: 'nextUrl' must be a non-empty string."
-        )
+        invalid_next_url_msg = "Invalid API response: 'nextUrl' must be a non-empty string."
 
         if not isinstance(next_url, str):
             logger.error(
@@ -728,10 +820,7 @@ class EventClient:
 
         data = cast("dict[str, object]", data_obj)
         status_msg = data.get("status")
-        if not (
-            isinstance(status_msg, str)
-            and TIMEOUT_STATUS_MESSAGE in status_msg.lower()
-        ):
+        if not (isinstance(status_msg, str) and TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
             return None
 
         next_url = data.get("nextUrl")
@@ -772,8 +861,7 @@ class EventClient:
 
         if not isinstance(data_obj, dict):
             msg = (
-                "Invalid API response format: expected JSON object, "
-                f"got {type(data_obj).__name__}."
+                f"Invalid API response format: expected JSON object, got {type(data_obj).__name__}."
             )
             raise EventsError(
                 msg,
@@ -880,6 +968,4 @@ class EventClient:
                 try:
                     await session.close()
                 except (ClientError, OSError, RuntimeError) as e:
-                    logger.warning(
-                        "Error closing session: %s", e, exc_info=True
-                    )
+                    logger.warning("Error closing session: %s", e, exc_info=True)

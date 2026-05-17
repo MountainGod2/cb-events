@@ -35,8 +35,7 @@ from cb_events import EventClient, EventType, Router
 
 router = Router()
 
-username = "your_username"
-token = "your_api_token"
+events_url = "https://eventsapi.chaturbate.com/events/your_username/your_api_token/"
 
 
 @router.on(EventType.TIP)
@@ -46,7 +45,7 @@ async def handle_tip(event) -> None:
 
 
 async def main() -> None:
-    async with EventClient(username, token) as client:
+    async with EventClient(events_url) as client:
         async for event in client:
             await router.dispatch(event)
 
@@ -64,7 +63,7 @@ asyncio.run(main())
 - Typed event models for tips, chat/messages, follows, broadcasts, and other event types.
 - Router handlers are registered by event type.
 - Retry and rate-limiting support.
-- Client configuration for timeouts, strict validation, and testbed usage.
+- Client configuration for timeouts, strict validation, and retries.
 
 ## Links
 

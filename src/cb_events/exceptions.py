@@ -15,7 +15,9 @@ Example:
         from cb_events import EventClient, AuthError, EventsError
 
         try:
-            async with EventClient("user", "token") as client:
+            async with EventClient(
+                "https://eventsapi.chaturbate.com/events/user/token/"
+            ) as client:
                 async for event in client:
                     pass
         except AuthError as e:
@@ -106,9 +108,7 @@ class EventsError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.response_text = (
-            truncate_text(response_text)
-            if response_text is not None
-            else response_text
+            truncate_text(response_text) if response_text is not None else response_text
         )
 
     @override
@@ -136,7 +136,9 @@ class AuthError(EventsError):
         Handling authentication errors::
 
             try:
-                async with EventClient("user", "invalid_token") as client:
+                async with EventClient(
+                    "https://eventsapi.chaturbate.com/events/user/invalid_token/"
+                ) as client:
                     await client.poll()
             except AuthError:
                 print("Invalid credentials - regenerate token")

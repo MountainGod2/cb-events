@@ -8,8 +8,7 @@ Quick Start
 
    router = Router()
 
-   username = "your_username"
-   token = "your_api_token"
+    events_url = "https://eventsapi.chaturbate.com/events/your_username/your_api_token/"
 
    @router.on(EventType.USER_ENTER)
    async def handle_user_enter(event: Event) -> None:
@@ -22,7 +21,7 @@ Quick Start
            print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
    async def main():
-       async with EventClient(username, token) as client:
+       async with EventClient(events_url) as client:
            async for event in client:
                await router.dispatch(event)
 

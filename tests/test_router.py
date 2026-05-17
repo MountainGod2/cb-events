@@ -92,9 +92,7 @@ async def test_any_handler_called_for_unmatched_type(router: Router) -> None:
     router.on(EventType.TIP)(AsyncMock())
     router.on_any()(any_handler)
 
-    follow_event = Event.model_validate(
-        make_event(EventType.FOLLOW, event_id="f")
-    )
+    follow_event = Event.model_validate(make_event(EventType.FOLLOW, event_id="f"))
     await router.dispatch(follow_event)
 
     any_handler.assert_called_once_with(follow_event)

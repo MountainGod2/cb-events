@@ -49,5 +49,4 @@ Authorization notes:
 
 .. code-block:: bash
 
-   export CB_USERNAME="your_username"
-   export CB_TOKEN="your_api_token"
+   export CB_EVENTS_URL="https://eventsapi.chaturbate.com/events/your_username/your_api_token/"

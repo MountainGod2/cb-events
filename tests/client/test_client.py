@@ -13,12 +13,13 @@ from cb_events.client import (
     _mask_url,
     _parse_events,
 )
+from tests.helpers import make_events_url
 
 
 def test_token_masking_in_repr() -> None:
     """Token should be fully masked in repr."""
     full_token = "secret_token_1234"
-    client = EventClient("user", full_token)
+    client = EventClient(make_events_url("user", full_token))
     repr_str = str(client)
 
     assert full_token not in repr_str
@@ -26,30 +27,38 @@ def test_token_masking_in_repr() -> None:
 
 
 @pytest.mark.parametrize(
-    ("username", "token", "message"),
+    ("events_url", "message"),
     [
-        ("", "token", "Username must not be empty or contain"),
-        (" user ", "token", "Username must not be empty or contain"),
-        ("user", "", "Token must not be empty or contain"),
-        ("user", " token ", "Token must not be empty or contain"),
+        ("", "Events URL must not be empty or contain"),
+        (
+            "http://eventsapi.chaturbate.com/events/user/token/",
+            "Events URL must use https",
+        ),
+        (
+            "https://example.com/events/user/token/",
+            "Events URL host is not supported",
+        ),
+        (
+            "https://eventsapi.chaturbate.com/events/user/",
+            "Events URL must match",
+        ),
+        (
+            "https://eventsapi.chaturbate.com/events/user/token/?timeout=10",
+            "must not include query parameters",
+        ),
     ],
 )
-def test_reject_invalid_credentials(
-    username: str, token: str, message: str
-) -> None:
-    """Invalid credentials should raise an ``AuthError`` with guidance."""
+def test_reject_invalid_credentials(events_url: str, message: str) -> None:
+    """Invalid URLs should raise an ``AuthError`` with guidance."""
     with pytest.raises(AuthError, match=message):
-        EventClient(username, token)
+        EventClient(events_url)
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:
     """_mask_url should mask both plain and percent-encoded tokens in URLs."""
     token = "super_secret_token_1234"
     encoded = quote(token, safe="")
-    url = (
-        f"https://events.testbed.cb.dev/events/user/{token}/"
-        f"?t={token}&encoded={encoded}"
-    )
+    url = f"https://events.testbed.cb.dev/events/user/{token}/?t={token}&encoded={encoded}"
 
     masked = _mask_url(url, token)
 
@@ -114,7 +123,10 @@ def test_eventclient_build_url_and_repr() -> None:
     """
     token = "super_secret_token_1234"
     username = "username"
-    client = EventClient(username, token, config=ClientConfig(use_testbed=True))
+    client = EventClient(
+        make_events_url(username, token),
+        config=ClientConfig(),
+    )
 
     url = client._build_url()
     assert quote(username, safe="") in url
@@ -127,14 +139,14 @@ def test_eventclient_build_url_and_repr() -> None:
 
 async def test_close_called_twice_does_not_raise() -> None:
     """Calling close() twice should be a no-op on the second call."""
-    client = EventClient("user", "test_token")
+    client = EventClient(make_events_url("user", "test_token"))
     await client.close()
     await client.close()
 
 
 async def test_properties_accessible_after_close() -> None:
     """Username and session state should remain accessible after close()."""
-    client = EventClient("user", "test_token")
+    client = EventClient(make_events_url("user", "test_token"))
     await client.close()
     assert client.username == "user"
     assert client.session is None
@@ -154,7 +166,7 @@ async def test_close_logs_warning_when_session_close_raises(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Errors raised by session.close() should log warnings, not propagate."""
-    client = EventClient("user", "test_token")
+    client = EventClient(make_events_url("user", "test_token"))
 
     mock_session = AsyncMock()
     mock_session.close = AsyncMock(side_effect=exc_instance)

@@ -51,9 +51,7 @@ def test_event_properties_parsed() -> None:
         (None, None),  # None passes through unchanged
     ],
 )
-def test_user_subgender_validator(
-    raw_subgender: str | None, expected: str | None
-) -> None:
+def test_user_subgender_validator(raw_subgender: str | None, expected: str | None) -> None:
     """Empty subgender should coerce to None while valid values pass through."""
     user = User.model_validate({"username": "u", "subgender": raw_subgender})
     assert user.subgender == expected
@@ -231,8 +229,7 @@ def test_event_property_validation_errors_logged(
     warning_records = [
         r
         for r in caplog.records
-        if r.levelname == "WARNING"
-        and f"{log_msg} in event {event_id}" in r.getMessage()
+        if r.levelname == "WARNING" and f"{log_msg} in event {event_id}" in r.getMessage()
     ]
     assert len(warning_records) == 1
 
@@ -274,8 +271,7 @@ def test_event_broadcaster_missing_returns_none(
 
     assert event.broadcaster is None
     assert any(
-        "Missing or invalid broadcaster in event evt-bcaster-missing"
-        in r.getMessage()
+        "Missing or invalid broadcaster in event evt-bcaster-missing" in r.getMessage()
         for r in caplog.records
         if r.levelname == "WARNING"
     )

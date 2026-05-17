@@ -13,7 +13,10 @@ Example:
             retry_attempts=5,
             strict_validation=False,
         )
-        async with EventClient("user", "token", config=config) as client:
+        async with EventClient(
+            "https://eventsapi.chaturbate.com/events/user/token/",
+            config=config,
+        ) as client:
             async for event in client:
                 print(event)
 """
@@ -27,14 +30,12 @@ from typing_extensions import Self
 class ClientConfig(BaseModel):
     """Immutable configuration for EventClient behavior.
 
-    Controls timeouts, retry logic, validation strictness, and API endpoint
-    selection.
+    Controls timeouts, retry logic, and validation strictness.
 
     Example:
         Lenient configuration for development::
 
             config = ClientConfig(
-                use_testbed=True,
                 strict_validation=False,
                 retry_attempts=3,
             )
@@ -48,9 +49,6 @@ class ClientConfig(BaseModel):
 
     timeout: int = Field(default=10, gt=0)
     """Server long-poll timeout in seconds."""
-
-    use_testbed: bool = False
-    """Use the testbed API instead of production."""
 
     strict_validation: bool = False
     """Raise on invalid events vs. skip and log."""

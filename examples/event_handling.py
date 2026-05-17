@@ -110,9 +110,7 @@ async def handle_tip(event: Event) -> None:
     """Handle tip events."""
     if event.user and event.tip:
         anon_text = "anonymously " if event.tip.is_anon else ""
-        clean_message = (
-            event.tip.message.removeprefix("| ") if event.tip.message else ""
-        )
+        clean_message = event.tip.message.removeprefix("| ") if event.tip.message else ""
         message_text = f"with message: {clean_message}" if clean_message else ""
         logger.info(
             "%s sent %s tokens %s",
@@ -150,11 +148,9 @@ async def handle_any_event(event: Event) -> None:
 
 async def main() -> None:
     """Set up event handlers and start listening for events."""
-    username = os.getenv("CB_USERNAME", "")
-    token = os.getenv("CB_TOKEN", "")
-    use_testbed = os.getenv("CB_USE_TESTBED", "false").lower() == "true"
+    events_url = os.getenv("CB_EVENTS_URL", "")
 
-    config = ClientConfig(use_testbed=use_testbed)
+    config = ClientConfig()
 
     loop = asyncio.get_running_loop()
     task = asyncio.current_task()
@@ -163,12 +159,10 @@ async def main() -> None:
             loop.add_signal_handler(sig, task.cancel)
     except NotImplementedError:
         for sig in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(
-                sig, lambda _s, _f: task.cancel() if task is not None else None
-            )
+            signal.signal(sig, lambda _s, _f: task.cancel() if task is not None else None)
 
     try:
-        async with EventClient(username, token, config=config) as client:
+        async with EventClient(events_url, config=config) as client:
             logger.info("Listening for events... (Ctrl+C to stop)")
 
             async for event in client:

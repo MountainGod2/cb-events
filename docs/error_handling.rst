@@ -23,8 +23,10 @@ Basic Error Handling
 
    from cb_events import EventClient, EventsError
 
+   events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+
    try:
-       async with EventClient(username, token) as client:
+       async with EventClient(events_url) as client:
            async for event in client:
                await router.dispatch(event)
    except EventsError as e:
@@ -41,8 +43,10 @@ Authentication Errors
 
    from cb_events import EventClient, AuthError, EventsError
 
+   events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+
    try:
-       async with EventClient(username, token) as client:
+       async with EventClient(events_url) as client:
            async for event in client:
                await router.dispatch(event)
    except AuthError as e:
@@ -76,7 +80,7 @@ Lenient mode (default) skips invalid events and logs them as a warning:
 .. code-block:: python
 
    config = ClientConfig(strict_validation=False)
-   async with EventClient(username, token, config=config) as client:
+    async with EventClient(events_url, config=config) as client:
        async for event in client:
            await router.dispatch(event)
 
@@ -85,7 +89,7 @@ Strict mode raises ``pydantic.ValidationError`` on invalid event data:
 .. code-block:: python
 
    config = ClientConfig(strict_validation=True)
-   client = EventClient(username, token, config=config)
+    client = EventClient(events_url, config=config)
 
    try:
        async for event in client:
@@ -115,6 +119,8 @@ Graceful Shutdown
    import signal
    from cb_events import EventClient
 
+    events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+
    async def main():
        loop = asyncio.get_running_loop()
        task = asyncio.current_task()
@@ -122,7 +128,7 @@ Graceful Shutdown
            loop.add_signal_handler(sig, task.cancel)
 
        try:
-           async with EventClient(username, token) as client:
+           async with EventClient(events_url) as client:
                async for event in client:
                    await router.dispatch(event)
        except asyncio.CancelledError:
@@ -147,8 +153,10 @@ Network Errors
 
    from cb_events import EventsError
 
+   events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+
    try:
-       async with EventClient(username, token) as client:
+       async with EventClient(events_url) as client:
            async for event in client:
                await router.dispatch(event)
    except EventsError as e:
@@ -166,13 +174,15 @@ Example
    import logging
    from cb_events import EventClient, AuthError, EventsError
 
+   events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+
    logging.basicConfig(level=logging.INFO)
    logger = logging.getLogger(__name__)
 
    async def run_client():
        while True:
            try:
-               async with EventClient(username, token) as client:
+               async with EventClient(events_url) as client:
                    logger.info("Connected to Events API")
                    async for event in client:
                        await router.dispatch(event)

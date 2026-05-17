@@ -325,9 +325,7 @@ class Event(BaseEventModel):
             return cast("str | None", cached)
         value: object | None = self.data.get("broadcaster")
         if not isinstance(value, str) or not value:
-            logger.warning(
-                "Missing or invalid broadcaster in event %s", self.id
-            )
+            logger.warning("Missing or invalid broadcaster in event %s", self.id)
             result = None
         else:
             result = value
@@ -397,8 +395,7 @@ class Event(BaseEventModel):
             result = loader(payload)
         except ValidationError as exc:
             fields: set[str] = {
-                ".".join(str(p) for p in e.get("loc", ())) or key
-                for e in exc.errors()
+                ".".join(str(p) for p in e.get("loc", ())) or key for e in exc.errors()
             }
             logger.warning(
                 "Invalid %s in event %s (invalid fields: %s)",

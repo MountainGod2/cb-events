@@ -15,6 +15,7 @@ from cb_events import (
     EventClient,
     Router,
 )
+from tests.helpers import make_events_url
 
 
 class EventClientFactory(Protocol):
@@ -83,14 +84,17 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
 
         client_username = username_override or username
         client_token = token_override or token
+        events_url = make_events_url(
+            client_username,
+            client_token,
+            use_testbed=use_testbed,
+        )
 
         if config is None:
-            config_kwargs = {"use_testbed": use_testbed, **config_overrides}
+            config_kwargs = {**config_overrides}
             config = ClientConfig.model_validate(config_kwargs)
 
-        async with EventClient(
-            client_username, client_token, config=config
-        ) as client:
+        async with EventClient(events_url, config=config) as client:
             yield client
 
     return _factory

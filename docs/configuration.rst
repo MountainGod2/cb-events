@@ -10,7 +10,6 @@ Client Configuration
 
    config = ClientConfig(
        timeout=10,                   # Server long-poll timeout (seconds)
-       use_testbed=False,            # Use testbed endpoint
        strict_validation=False,      # Raise on invalid events vs. skip
        retry_attempts=8,             # Total attempts (initial + retries)
        retry_backoff=1.0,            # Initial backoff (seconds)
@@ -19,7 +18,7 @@ Client Configuration
 
    )
 
-   client = EventClient(username, token, config=config)
+   client = EventClient(events_url, config=config)
 
 Timeout Settings
 ----------------
@@ -55,19 +54,19 @@ Validation Mode
 
 ``strict_validation=True``: raises ``pydantic.ValidationError`` on invalid event data.
 
-Testbed Environment
--------------------
+Environment Selection
+---------------------
 
-Register a free account at `https://www.testbed.cb.dev <https://www.testbed.cb.dev>`_.
-New accounts come with preloaded tokens so you can test features and apps immediately.
-Generate an API token the same way as a live account, then set ``use_testbed=True``:
+Pass the upstream URL directly to ``EventClient``. Hostname determines
+production vs testbed automatically.
 
 .. code-block:: python
 
-   config = ClientConfig(use_testbed=True)
-   client = EventClient(username, token, config=config)
+   prod_url = "https://eventsapi.chaturbate.com/events/username/token/"
+   testbed_url = "https://events.testbed.cb.dev/events/username/token/"
 
-Connects to ``https://events.testbed.cb.dev/events``.
+   prod_client = EventClient(prod_url)
+   testbed_client = EventClient(testbed_url)
 
 Rate Limiting
 -------------
@@ -82,7 +81,7 @@ Custom Rate Limiter
    from aiolimiter import AsyncLimiter
 
    limiter = AsyncLimiter(max_rate=1000, time_period=60)
-   client = EventClient(username, token, rate_limiter=limiter)
+   client = EventClient(events_url, rate_limiter=limiter)
 
 Shared Rate Limiter
 ~~~~~~~~~~~~~~~~~~~
@@ -96,9 +95,9 @@ Shared Rate Limiter
 
    limiter = AsyncLimiter(max_rate=2000, time_period=60)
 
-   client1 = EventClient(username1, token1, rate_limiter=limiter)
-   client2 = EventClient(username2, token2, rate_limiter=limiter)
-   client3 = EventClient(username3, token3, rate_limiter=limiter)
+   client1 = EventClient(url1, rate_limiter=limiter)
+   client2 = EventClient(url2, rate_limiter=limiter)
+   client3 = EventClient(url3, rate_limiter=limiter)
 
 Logging
 -------

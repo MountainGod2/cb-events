@@ -11,9 +11,24 @@ if TYPE_CHECKING:
 
 CORE_EVENT_TYPES: tuple[EventType, ...] = tuple(EventType)
 
-TESTBED_BASE_URL = (
-    "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
-)
+TESTBED_EVENTS_URL = "https://events.testbed.cb.dev/events/test_user/test_token/"
+
+TESTBED_POLL_URL = "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
+
+
+def make_events_url(
+    username: str,
+    token: str,
+    *,
+    use_testbed: bool = True,
+) -> str:
+    """Build a combined upstream Events URL for a username/token pair.
+
+    Returns:
+        A string URL in the format expected by ``EventClient``.
+    """
+    host = "events.testbed.cb.dev" if use_testbed else "eventsapi.chaturbate.com"
+    return f"https://{host}/events/{username}/{token}/"
 
 
 def make_event(

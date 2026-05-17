@@ -35,7 +35,8 @@ Example
            print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
    async def main():
-       async with EventClient(username, token) as client:
+          events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+          async with EventClient(events_url) as client:
            async for event in client:
                await router.dispatch(event)
 

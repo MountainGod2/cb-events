@@ -22,7 +22,9 @@ Example:
                 print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 
         async def main() -> None:
-            async with EventClient("username", "token") as client:
+            async with EventClient(
+                "https://eventsapi.chaturbate.com/events/username/token/"
+            ) as client:
                 async for event in client:
                     await router.dispatch(event)
 

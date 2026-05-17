@@ -18,7 +18,6 @@ async def test_exponential_backoff_schedule_and_clamping(
     stamina.set_testing(True, attempts=4)
 
     config = ClientConfig(
-        use_testbed=True,
         retry_attempts=10,
         retry_backoff=0.01,
         retry_factor=2.0,
@@ -46,7 +45,6 @@ async def test_exception_retries_until_success_with_testing_cap(
     stamina.set_testing(True, attempts=3)
 
     config = ClientConfig(
-        use_testbed=True,
         retry_attempts=10,
         retry_backoff=0.01,
         retry_factor=2.0,
@@ -79,7 +77,6 @@ async def test_testing_mode_caps_attempts(
     stamina.set_testing(True, attempts=2)
 
     config = ClientConfig(
-        use_testbed=True,
         retry_attempts=10,
         retry_backoff=0.01,
         retry_factor=3.0,
@@ -104,7 +101,7 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     aioresponses_mock.get(testbed_url_pattern, status=502)
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
-    config = ClientConfig(use_testbed=True, retry_attempts=2, retry_backoff=0.0)
+    config = ClientConfig(retry_attempts=2, retry_backoff=0.0)
     async with event_client_factory(config=config) as client:
         events = await client.poll()
 
