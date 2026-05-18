@@ -15,7 +15,7 @@
     :alt: License
 
 .. image:: https://img.shields.io/readthedocs/cb-events
-    :target: https://cb-events.readthedocs.io/
+    :target: https://cb-events.readthedocs.io/latest/
     :alt: Documentation
 
 Async Python client for the Chaturbate Events API.
