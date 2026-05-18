@@ -61,6 +61,7 @@ test = [
     "pytest-mock==3.15.1",
 ]
 docs = [
+    "docstrfmt==2.0.2",
     "furo==2025.12.19",
     "myst-parser==5.0.0",
     "sphinx==9.1.0",
@@ -138,7 +139,7 @@ exclude_commit_patterns = [
 
 [tool.ruff]
 target-version = "py310"
-line-length = 80
+line-length = 100
 indent-width = 4
 
 [tool.ruff.lint]
@@ -151,7 +152,7 @@ ignore = [
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = ["RUF029", "TC"]
+"examples/*" = ["RUF029", "TC", "DOC"]
 "tests/*" = [
     "ANN",
     "E501",
@@ -186,7 +187,7 @@ load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 max-attributes = 12
 
 [tool.pylint.format]
-max-line-length = 80
+max-line-length = 100
 
 [tool.basedpyright]
 include = ["src"]
@@ -202,7 +203,7 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = ["--strict-markers", "--strict-config", "--tb=short", "-ra"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "e2e: marks tests requiring external services",
+    "e2e: marks end-to-end workflow tests",
     "live: marks tests requiring explicit opt-in live credentials",
 ]
 

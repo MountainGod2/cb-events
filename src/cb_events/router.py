@@ -133,9 +133,7 @@ class Router:
         """Initialize router with an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
 
-    def _register(
-        self, key: EventType | None, func: HandlerFunc
-    ) -> HandlerFunc:
+    def _register(self, key: EventType | None, func: HandlerFunc) -> HandlerFunc:
         """Validate and register a handler function.
 
         Args:

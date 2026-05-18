@@ -35,19 +35,15 @@ async def test_rate_limit_error(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """HTTP 429 responses should surface as :class:`RateLimitError`."""
-    aioresponses_mock.get(
-        testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded"
-    )
-    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
+    aioresponses_mock.get(testbed_url_pattern, status=429, repeat=True, body="Rate limit exceeded")
+    config = ClientConfig(retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(RateLimitError, match=r"HTTP 429"):
             await client.poll()
 
 
-@pytest.mark.parametrize(
-    "status_code", [500, 502, 503, 504, 521, 522, 523, 524]
-)
+@pytest.mark.parametrize("status_code", [500, 502, 503, 504, 521, 522, 523, 524])
 async def test_server_error_after_retry_exhaustion(
     status_code: int,
     event_client_factory: EventClientFactory,
@@ -56,7 +52,7 @@ async def test_server_error_after_retry_exhaustion(
 ) -> None:
     """Retryable server failures should raise `ServerError` after retries."""
     aioresponses_mock.get(testbed_url_pattern, status=status_code, repeat=True)
-    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
+    config = ClientConfig(retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(ServerError, match=rf"HTTP {status_code}"):
@@ -69,9 +65,7 @@ async def test_invalid_json_response(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Invalid JSON payloads should raise :class:`EventsError`."""
-    aioresponses_mock.get(
-        testbed_url_pattern, status=200, body="Not valid JSON"
-    )
+    aioresponses_mock.get(testbed_url_pattern, status=200, body="Not valid JSON")
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="Invalid JSON response"):
@@ -84,9 +78,7 @@ async def test_timeout_payload_not_mapping(
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
     """Timeout payloads that are not JSON objects should raise EventsError."""
-    aioresponses_mock.get(
-        testbed_url_pattern, status=400, payload=["unexpected"]
-    )
+    aioresponses_mock.get(testbed_url_pattern, status=400, payload=["unexpected"])
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="HTTP 400"):
@@ -118,12 +110,10 @@ async def test_network_error_wrapped(
         exception=ClientError("Connection reset by peer"),
         repeat=True,
     )
-    config = ClientConfig(use_testbed=True, retry_attempts=1, retry_backoff=0.0)
+    config = ClientConfig(retry_attempts=1, retry_backoff=0.0)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(
-            EventsError, match=r"Failed to fetch events after 1 attempt"
-        ):
+        with pytest.raises(EventsError, match=r"Failed to fetch events after 1 attempt"):
             await client.poll()
 
 
@@ -159,7 +149,6 @@ async def test_network_errors_exhaust_retries(
     """Different network error types should exhaust retries properly."""
     aioresponses_mock.get(testbed_url_pattern, exception=exc, repeat=True)
     config = ClientConfig(
-        use_testbed=True,
         retry_attempts=retry_attempts,
         retry_backoff=retry_backoff,
         retry_factor=retry_factor,

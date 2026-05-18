@@ -29,9 +29,7 @@ def test_events_error_properties_and_str(
     expected_str: str,
 ) -> None:
     """EventsError should expose message and HTTP metadata fields."""
-    error = EventsError(
-        message, status_code=status_code, response_text=response_text
-    )
+    error = EventsError(message, status_code=status_code, response_text=response_text)
 
     assert str(error) == expected_str
     assert error.status_code == status_code
@@ -75,9 +73,7 @@ def test_build_http_error_returns_specific_subclasses(
     assert error.status_code == status_code
 
 
-def test_build_http_error_returns_base_http_status_error_for_other_codes() -> (
-    None
-):
+def test_build_http_error_returns_base_http_status_error_for_other_codes() -> None:
     """Unexpected statuses should fall back to HttpStatusError."""
     error = build_http_error("Request failed", status_code=302)
 

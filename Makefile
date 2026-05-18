@@ -16,8 +16,8 @@ XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 .PHONY: format fix check type-check lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor
 .PHONY: requirements-export requirements-check
-.PHONY: test test-cov test-e2e
-.PHONY: docs docs-serve docs-linkcheck
+.PHONY: test test-cov test-e2e test-live
+.PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build ci clean help
 
 all: ci ## Run CI-equivalent checks locally.
@@ -39,6 +39,7 @@ fix: ## Apply Ruff autofixes and format code.
 check: ## Run non-mutating style and lint checks.
 	$(UV) run ruff format --check
 	$(UV) run ruff check
+	$(UV) run --group=docs docstrfmt --check docs
 
 type-check: ## Run static type checks.
 	$(UV) run basedpyright
@@ -93,17 +94,20 @@ trivy: ## Run Trivy vulnerability and config scans.
 	trivy fs --severity HIGH,CRITICAL --include-dev-deps --scanners vuln --format table .
 	trivy config --severity HIGH,CRITICAL --format table .
 
-test: ## Run test suite.
-	$(PYTEST)
+test: ## Run test suite (excluding live tests).
+	$(PYTEST) -m "not live"
 
-test-cov: ## Run tests with coverage and JUnit output.
-	$(PYTEST) $(PYTEST_COV_ARGS)
+test-cov: ## Run tests with coverage and JUnit output (excluding live tests).
+	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-e2e: ## Run end-to-end tests only.
-	$(PYTEST) -m e2e
+test-e2e: ## Run mocked end-to-end tests.
+	$(PYTEST) -m "e2e and not live"
+
+test-live: ## Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL).
+	$(PYTEST) -m "live and e2e"
 
 docs: ## Build documentation.
-	rm -rf docs/_build docs/api
+	rm -rf docs/_build docs/api docs/html_local_check
 	$(UV) run sphinx-build -E -b html docs docs/_build/html
 
 docs-serve: docs ## Build docs and serve locally on port 8000.
@@ -112,6 +116,12 @@ docs-serve: docs ## Build docs and serve locally on port 8000.
 
 docs-linkcheck: ## Validate docs links.
 	$(UV) run sphinx-build -b linkcheck docs docs/_build/linkcheck
+
+docs-format: ## Format reStructuredText docs files.
+	$(UV) run --group=docs docstrfmt docs
+
+docs-format-check: ## Check reStructuredText docs formatting.
+	$(UV) run --group=docs docstrfmt --check docs
 
 build: ## Build source and wheel distributions.
 	$(UV) build
@@ -123,7 +133,7 @@ clean: ## Remove caches, artifacts, and generated reports.
 	find . -name "*.py[co]" -delete
 	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .coverage
 	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
-	rm -rf *.sarif docs/_build/ docs/api/
+	rm -rf *.sarif docs/_build/ docs/api/ docs/html_local_check/
 
 help: ## Show available targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nAvailable targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-18s %s\n", $$1, $$2} END {print ""}' $(MAKEFILE_LIST)

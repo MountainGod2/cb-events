@@ -16,8 +16,7 @@ registering a new Hue app key and discovering bridges on the local network.
 
 Usage:
     1. Set up environment variables (or use CLI options):
-        - CB_USERNAME: Chaturbate username
-        - CB_TOKEN: Chaturbate API token
+        - CB_EVENTS_URL: Full Chaturbate Events API URL
         - HUE_IP: Hue bridge IP address (optional if using discovery)
         - HUE_APP_KEY: Hue app key (register with the 'register' command)
         - TIP_THRESHOLD: Minimum tokens for activating lights (default: 35)
@@ -33,7 +32,7 @@ Usage:
 
     4. Optionally, discover Hue bridges on the local network:
         uv run examples/tip_activated_lights.py discover
-"""  # noqa: E501
+"""
 
 import asyncio
 import contextlib
@@ -118,9 +117,7 @@ def setup_logging() -> None:
     logging.basicConfig(
         level=logging.INFO,
         format="%(message)s",
-        handlers=[
-            RichHandler(rich_tracebacks=True, tracebacks_show_locals=True)
-        ],
+        handlers=[RichHandler(rich_tracebacks=True, tracebacks_show_locals=True)],
     )
     logging.getLogger("aiohttp").setLevel(logging.WARNING)
     logging.getLogger("aiohue").setLevel(logging.WARNING)
@@ -154,11 +151,7 @@ def _load_light_config() -> LightConfig:
     Returns:
         LightConfig: The loaded configuration.
     """
-    lights = [
-        name.strip()
-        for name in os.getenv("LIGHT_NAMES", "").split(",")
-        if name.strip()
-    ]
+    lights = [name.strip() for name in os.getenv("LIGHT_NAMES", "").split(",") if name.strip()]
     return LightConfig(
         brightness=_env_float("BRIGHTNESS", DEFAULT_BRIGHTNESS),
         color_timeout=_env_float("COLOR_TIMEOUT", DEFAULT_COLOR_TIMEOUT),
@@ -179,9 +172,7 @@ class HueController:
     how many intermediate colour changes have been requested.
     """
 
-    def __init__(
-        self, bridge: HueBridgeV2, config: LightConfig | None = None
-    ) -> None:
+    def __init__(self, bridge: HueBridgeV2, config: LightConfig | None = None) -> None:
         """Initialize the HueController with a bridge and optional config."""
         self.bridge = bridge
         self.config = config or LightConfig()
@@ -202,8 +193,7 @@ class HueController:
         return [
             light.id
             for light in self.bridge.lights
-            if not self.config.lights
-            or light.metadata.name in self.config.lights  # ty:ignore[unresolved-attribute]
+            if not self.config.lights or light.metadata.name in self.config.lights  # ty:ignore[unresolved-attribute]
         ]
 
     def _capture_states(self) -> dict[str, LightState]:
@@ -221,9 +211,7 @@ class HueController:
                 on=light.on.on if light.on else False,
                 brightness=light.dimming.brightness if light.dimming else None,
                 color_xy=(
-                    (light.color.xy.x, light.color.xy.y)
-                    if light.color and light.color.xy
-                    else None
+                    (light.color.xy.x, light.color.xy.y) if light.color and light.color.xy else None
                 ),
             )
         return states
@@ -304,9 +292,7 @@ class HueController:
                 await self._color_timer
 
         for light_id in self._light_ids:
-            await self._set_light_color(
-                light_id, xy, transition_time=self.config.transition_time
-            )
+            await self._set_light_color(light_id, xy, transition_time=self.config.transition_time)
         logger.info("Lights set to %s", color)
 
         self._color_timer = asyncio.create_task(
@@ -349,25 +335,19 @@ def _register_signal_handlers(task: asyncio.Task[object]) -> None:
             loop.add_signal_handler(sig, task.cancel)
     except NotImplementedError:
         for sig in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(
-                sig, lambda _s, _f: loop.call_soon_threadsafe(task.cancel)
-            )
+            signal.signal(sig, lambda _s, _f: loop.call_soon_threadsafe(task.cancel))
 
 
-async def run_app(*, testbed: bool) -> None:
+async def run_app() -> None:
     """Connect to the Hue bridge and start processing tip events.
-
-    Args:
-        testbed: Whether to use the Chaturbate testbed environment.
 
     Raises:
         RuntimeError: If called outside a running event loop task.
-        ValueError: If ``CB_USERNAME`` or ``CB_TOKEN`` are not set.
+        ValueError: If ``CB_EVENTS_URL`` is not set.
     """
-    username = os.getenv("CB_USERNAME")
-    token = os.getenv("CB_TOKEN")
-    if not username or not token:
-        msg = "CB_USERNAME and CB_TOKEN must be set"
+    events_url = os.getenv("CB_EVENTS_URL")
+    if not events_url:
+        msg = "Set CB_EVENTS_URL"
         raise ValueError(msg)
 
     hue_ip = os.getenv("HUE_IP", DEFAULT_HUE_IP)
@@ -382,7 +362,7 @@ async def run_app(*, testbed: bool) -> None:
     )
 
     router = Router()
-    client_config = ClientConfig(use_testbed=testbed)
+    client_config = ClientConfig()
 
     # Register cancellation signals so Ctrl-C / SIGTERM shuts down cleanly.
     current_task = asyncio.current_task()
@@ -398,19 +378,13 @@ async def run_app(*, testbed: bool) -> None:
 
             @router.on(EventType.TIP)
             async def handle_tip(event: Event) -> None:
-                if (
-                    not event.tip
-                    or event.tip.tokens < tip_threshold
-                    or not event.tip.message
-                ):
+                if not event.tip or event.tip.tokens < tip_threshold or not event.tip.message:
                     return
                 color = _color_from_message(event.tip.message)
                 if color:
                     await hue.set_color(color)
 
-            async with EventClient(
-                username, token, config=client_config
-            ) as client:
+            async with EventClient(events_url, config=client_config) as client:
                 async for event in client:
                     await router.dispatch(event)
     except asyncio.CancelledError:
@@ -428,19 +402,14 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option(
-    "--testbed", is_flag=True, help="Use the Chaturbate testbed environment."
-)
-def run(*, testbed: bool) -> None:
+def run() -> None:
     """Start monitoring tips and activating lights."""
     setup_logging()
     load_dotenv()
     try:
-        asyncio.run(run_app(testbed=testbed))
+        asyncio.run(run_app())
     except AuthError:
-        logger.exception(
-            "Authentication failed — check CB_USERNAME and CB_TOKEN."
-        )
+        logger.exception("Authentication failed - check CB_EVENTS_URL.")
     except Exception:
         logger.exception("Fatal error occurred")
     finally:
@@ -451,10 +420,7 @@ def run(*, testbed: bool) -> None:
 @click.option(
     "--host",
     default=None,
-    help=(
-        "Hue bridge IP or hostname"
-        " (defaults to HUE_IP env var or auto-discovery)."
-    ),
+    help=("Hue bridge IP or hostname (defaults to HUE_IP env var or auto-discovery)."),
 )
 @click.option(
     "--env-file",

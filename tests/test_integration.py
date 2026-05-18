@@ -4,6 +4,7 @@ import asyncio
 import os
 import re
 from importlib.metadata import version
+from urllib.parse import urlparse
 
 import pytest
 from aioresponses import aioresponses
@@ -18,9 +19,22 @@ from cb_events import (
     __version__,
 )
 from tests.conftest import EventClientFactory
-from tests.helpers import make_event, make_response
+from tests.helpers import make_event, make_events_url, make_response
 
 pytestmark = [pytest.mark.e2e]
+
+
+def is_events_url(url: str | None) -> bool:
+    """Return True when URL points to a supported Events API endpoint."""
+    if not url:
+        return False
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return False
+    allowed_hosts = {"eventsapi.chaturbate.com", "events.testbed.cb.dev"}
+    hostname = (parsed.hostname or "").lower()
+    path = parsed.path.lower()
+    return hostname in allowed_hosts and path.startswith("/events/")
 
 
 async def test_client_router_workflow(
@@ -66,7 +80,7 @@ async def test_client_router_workflow(
 
 async def test_client_context_manager_lifecycle() -> None:
     """Context manager should open and close the internal session."""
-    client = EventClient("test_user", "test_token")
+    client = EventClient(make_events_url("test_user", "test_token"))
     assert client.session is None
 
     async with client:
@@ -96,22 +110,13 @@ def test_version_attribute() -> None:
 @pytest.mark.slow
 @pytest.mark.live
 @pytest.mark.skipif(
-    not (
-        os.getenv("CB_RUN_LIVE_TESTS") == "1"
-        and os.getenv("CB_USERNAME")
-        and os.getenv("CB_TOKEN")
-    ),
-    reason=(
-        "Set CB_RUN_LIVE_TESTS=1, CB_USERNAME, and CB_TOKEN to run live "
-        "testbed test"
-    ),
+    not (os.getenv("CB_RUN_LIVE_TESTS") == "1" and is_events_url(os.getenv("CB_EVENTS_URL"))),
+    reason=("Set CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL to an Events API URL"),
 )
-async def test_live_testbed_polling() -> None:
-    """Test against the live testbed using environment credentials."""
-    username = os.environ["CB_USERNAME"]
-    token = os.environ["CB_TOKEN"]
+async def test_live_polling() -> None:
+    """Test against the live service."""
+    events_url = os.environ["CB_EVENTS_URL"]
     config = ClientConfig(
-        use_testbed=True,
         strict_validation=False,
         retry_attempts=3,
         retry_backoff=1.0,
@@ -119,7 +124,10 @@ async def test_live_testbed_polling() -> None:
         retry_max_delay=5.0,
     )
 
-    async with EventClient(username, token, config=config) as client:
+    async with EventClient(
+        events_url,
+        config=config,
+    ) as client:
         events = await client.poll()
 
     assert isinstance(events, list)

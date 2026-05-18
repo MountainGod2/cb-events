@@ -75,6 +75,11 @@ repos:
 
   - repo: local
     hooks:
+      - id: format-docs-rst
+        name: format docs rst files
+        entry: uv run --group=docs docstrfmt
+        language: system
+        files: ^docs/.*\.rst$
       - id: requirements-sync
         name: requirements.txt sync check
         entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt && git diff --exit-code -- requirements.txt'

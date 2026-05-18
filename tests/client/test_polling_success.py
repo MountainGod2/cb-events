@@ -102,7 +102,7 @@ async def test_strict_validation_raises_on_invalid_event(
         "nextUrl": None,
     }
     aioresponses_mock.get(testbed_url_pattern, payload=response)
-    config = ClientConfig(use_testbed=True, strict_validation=True)
+    config = ClientConfig(strict_validation=True)
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(ValidationError):
@@ -123,7 +123,7 @@ async def test_lenient_validation_skips_invalid_events(
         "nextUrl": None,
     }
     aioresponses_mock.get(testbed_url_pattern, payload=response)
-    config = ClientConfig(use_testbed=True, strict_validation=False)
+    config = ClientConfig(strict_validation=False)
 
     async with event_client_factory(config=config) as client:
         events = await client.poll()
