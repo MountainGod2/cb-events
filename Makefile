@@ -104,7 +104,7 @@ test-e2e: ## Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
 
 test-live: ## Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL).
-	$(PYTEST) -m live
+	$(PYTEST) -m "live and e2e"
 
 docs: ## Build documentation.
 	rm -rf docs/_build docs/api
