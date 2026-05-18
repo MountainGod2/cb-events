@@ -2,6 +2,60 @@
 
 <!-- version list -->
 
+## v9.0.0 (2026-05-18)
+
+### Features
+
+- Switch to URL-based Events API configuration
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **pre-commit**: Add docstrfmt for formatting RST files
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+### Refactoring
+
+- **ci**: Streamline CI/CD workflow and commands
+  ([#165](https://github.com/MountainGod2/cb-events/pull/165),
+  [`8504aad`](https://github.com/MountainGod2/cb-events/commit/8504aada03ebae85d6bb71a7122bd05f7081b390))
+
+- **client**: Improve validation for events URL port
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **examples**: Require CB_EVENTS_URL ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **readme**: Add Star History section with chart
+  ([#165](https://github.com/MountainGod2/cb-events/pull/165),
+  [`8504aad`](https://github.com/MountainGod2/cb-events/commit/8504aada03ebae85d6bb71a7122bd05f7081b390))
+
+- **readme**: Simplify note admonitions in substitutions
+  ([#165](https://github.com/MountainGod2/cb-events/pull/165),
+  [`8504aad`](https://github.com/MountainGod2/cb-events/commit/8504aada03ebae85d6bb71a7122bd05f7081b390))
+
+- **readme**: Update pattern to remove Star History section
+  ([#165](https://github.com/MountainGod2/cb-events/pull/165),
+  [`8504aad`](https://github.com/MountainGod2/cb-events/commit/8504aada03ebae85d6bb71a7122bd05f7081b390))
+
+- **tests**: Improve event client factory logic and add testbed URL check
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **tests**: Update e2e test marker description
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **tests**: Update test-live command to include e2e
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+- **tests**: Update URL validation for events API
+  ([#167](https://github.com/MountainGod2/cb-events/pull/167),
+  [`93c7e80`](https://github.com/MountainGod2/cb-events/commit/93c7e8041e1c2bc53925bbc9c3a087c70b34ac1d))
+
+
 ## v8.1.3 (2026-05-14)
 
 ### Bug Fixes
