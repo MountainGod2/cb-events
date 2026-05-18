@@ -16,7 +16,7 @@ XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 .PHONY: format fix check type-check lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor
 .PHONY: requirements-export requirements-check
-.PHONY: test test-cov test-e2e
+.PHONY: test test-cov test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build ci clean help
 
@@ -94,14 +94,17 @@ trivy: ## Run Trivy vulnerability and config scans.
 	trivy fs --severity HIGH,CRITICAL --include-dev-deps --scanners vuln --format table .
 	trivy config --severity HIGH,CRITICAL --format table .
 
-test: ## Run test suite.
-	$(PYTEST)
+test: ## Run test suite (excluding live tests).
+	$(PYTEST) -m "not live"
 
-test-cov: ## Run tests with coverage and JUnit output.
-	$(PYTEST) $(PYTEST_COV_ARGS)
+test-cov: ## Run tests with coverage and JUnit output (excluding live tests).
+	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-e2e: ## Run end-to-end tests only.
-	$(PYTEST) -m e2e
+test-e2e: ## Run mocked end-to-end tests.
+	$(PYTEST) -m "e2e and not live"
+
+test-live: ## Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL).
+	$(PYTEST) -m live
 
 docs: ## Build documentation.
 	rm -rf docs/_build docs/api
