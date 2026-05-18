@@ -203,7 +203,7 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = ["--strict-markers", "--strict-config", "--tb=short", "-ra"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "e2e: marks tests requiring external services",
+    "e2e: marks end-to-end workflow tests",
     "live: marks tests requiring explicit opt-in live credentials",
 ]
 
