@@ -107,7 +107,7 @@ test-live: ## Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVE
 	$(PYTEST) -m "live and e2e"
 
 docs: ## Build documentation.
-	rm -rf docs/_build docs/api
+	rm -rf docs/_build docs/api docs/html_local_check
 	$(UV) run sphinx-build -E -b html docs docs/_build/html
 
 docs-serve: docs ## Build docs and serve locally on port 8000.
@@ -133,7 +133,7 @@ clean: ## Remove caches, artifacts, and generated reports.
 	find . -name "*.py[co]" -delete
 	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .coverage
 	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
-	rm -rf *.sarif docs/_build/ docs/api/
+	rm -rf *.sarif docs/_build/ docs/api/ docs/html_local_check/
 
 help: ## Show available targets.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nAvailable targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-18s %s\n", $$1, $$2} END {print ""}' $(MAKEFILE_LIST)
