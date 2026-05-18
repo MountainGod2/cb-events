@@ -257,12 +257,13 @@ jobs:
         run: uv cache prune --ci
 
   e2e:
-    name: E2E Tests
+    name: Live E2E Tests
     needs: build
     if: needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
     environment: e2e
     env:
+      CB_RUN_LIVE_TESTS: "1"
       CB_EVENTS_URL: ${{ secrets.CB_EVENTS_URL }}
     permissions:
       contents: read
@@ -294,8 +295,8 @@ jobs:
       - name: Install built wheel
         run: uv pip install dist/cb_events-*.whl
 
-      - name: Run E2E tests
-        run: make test-e2e
+      - name: Run live E2E tests
+        run: make test-live
 
       - name: Prune uv cache
         run: uv cache prune --ci
