@@ -19,19 +19,19 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-idna==3.13
+idna==3.14
     # via yarl
 multidict==6.7.1
     # via
     #   aiohttp
     #   yarl
-propcache==0.4.1
+propcache==0.5.2
     # via
     #   aiohttp
     #   yarl
-pydantic==2.13.3
+pydantic==2.13.4
     # via cb-events
-pydantic-core==2.46.3
+pydantic-core==2.46.4
     # via pydantic
 stamina==26.1.0
     # via cb-events
