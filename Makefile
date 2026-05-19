@@ -73,9 +73,7 @@ requirements-check: ## Verify requirements.txt is up to date without changing fi
 	@tmp_file="$$(mktemp)"; \
 	trap 'rm -f "$$tmp_file"' EXIT; \
 	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
-	diff -u \
-		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' requirements.txt) \
-		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' "$$tmp_file")
+	diff -u requirements.txt "$$tmp_file"
 
 bandit: ## Run Bandit and emit SARIF.
 	$(UV) run bandit -r src/ -f sarif -o bandit.sarif
