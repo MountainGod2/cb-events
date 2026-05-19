@@ -45,7 +45,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
-    "basedpyright==1.39.3",
+    "basedpyright==1.39.4",
     "pre-commit==4.6.0",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
