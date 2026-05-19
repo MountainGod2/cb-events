@@ -28,7 +28,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
@@ -64,7 +64,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-suffix: test-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
@@ -114,7 +114,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
@@ -232,7 +232,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
@@ -284,7 +284,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
@@ -336,7 +336,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          version: "0.11.12"
+          version: "0.11.13"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
