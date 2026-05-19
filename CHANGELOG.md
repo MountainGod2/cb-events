@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v9.0.1 (2026-05-19)
+
+### Bug Fixes
+
+- **makefile**: Simplify requirements-check command
+  ([#175](https://github.com/MountainGod2/cb-events/pull/175),
+  [`9a97ef0`](https://github.com/MountainGod2/cb-events/commit/9a97ef0c1c6c0649eaf0077dae02c04c090191ab))
+
+
 ## v9.0.0 (2026-05-18)
 
 ### Features
