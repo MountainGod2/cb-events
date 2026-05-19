@@ -67,12 +67,12 @@ security: bandit pip-audit zizmor ## Run core security scans.
 security-full: security trivy ## Run all security scans, including Trivy.
 
 requirements-export: ## Regenerate requirements.txt from lock data.
-	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --output-file=requirements.txt
+	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt
 
 requirements-check: ## Verify requirements.txt is up to date without changing files.
 	@tmp_file="$$(mktemp)"; \
 	trap 'rm -f "$$tmp_file"' EXIT; \
-	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --output-file="$$tmp_file" >/dev/null; \
+	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
 	diff -u \
 		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' requirements.txt) \
 		<(sed -E 's|^(#    uv export .*--output-file=).*|\1requirements.txt|' "$$tmp_file")

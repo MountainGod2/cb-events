@@ -123,19 +123,26 @@ jobs:
         run: uv sync --group=security --frozen
 
       - name: Run pip-audit
+        id: pip_audit
+        continue-on-error: true
         run: make pip-audit
 
       - name: Run Bandit
+        id: bandit
+        continue-on-error: true
         run: make bandit
 
       - name: Upload Bandit SARIF
         uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
+        if: always()
         continue-on-error: true
         with:
           sarif_file: bandit.sarif
           category: bandit
 
       - name: Run Trivy
+        id: trivy
+        continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.70.0
@@ -155,7 +162,9 @@ jobs:
           category: trivy
 
       - name: Run Zizmor
+        id: zizmor
         if: always()
+        continue-on-error: true
         run: make zizmor
 
       - name: Upload Zizmor SARIF
@@ -167,7 +176,22 @@ jobs:
           category: zizmor
 
       - name: Prune uv cache
+        if: always()
         run: uv cache prune --ci
+
+      - name: Security gate
+        if: >-
+          ${{
+            always() && (
+              steps.pip_audit.outcome != 'success' ||
+              steps.bandit.outcome != 'success' ||
+              steps.trivy.outcome != 'success' ||
+              steps.zizmor.outcome != 'success'
+            )
+          }}
+        run: |
+          echo "::error::One or more security scanners failed (pip-audit, Bandit, Trivy, or Zizmor)."
+          exit 1
 
   codeql:
     name: CodeQL (${{ matrix.language }})
