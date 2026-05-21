@@ -16,9 +16,9 @@ XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 .PHONY: format fix check type-check lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor
 .PHONY: requirements-export requirements-check
-.PHONY: test test-cov test-e2e test-live
+.PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
-.PHONY: build ci clean help
+.PHONY: build ci ci-lower-bounds clean help
 
 all: ci ## Run CI-equivalent checks locally.
 
@@ -98,6 +98,10 @@ test: ## Run test suite (excluding live tests).
 test-cov: ## Run tests with coverage and JUnit output (excluding live tests).
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
+test-cov-lowest-direct: ## Resolve lowest direct dependency bounds, then run tests with coverage.
+	$(UV) sync --group=test --resolution lowest-direct --upgrade
+	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
+
 test-e2e: ## Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
 
@@ -125,6 +129,8 @@ build: ## Build source and wheel distributions.
 	$(UV) build
 
 ci: requirements-check lint security test-cov ## Run CI target locally.
+
+ci-lower-bounds: requirements-check lint security test-cov-lowest-direct ## Run CI checks with lowest direct dependency bounds.
 
 clean: ## Remove caches, artifacts, and generated reports.
 	find . -type d -name "__pycache__" -exec rm -rf {} +

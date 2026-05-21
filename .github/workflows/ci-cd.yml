@@ -46,7 +46,7 @@ jobs:
         run: uv cache prune --ci
 
   test:
-    name: Test
+    name: Test (${{ matrix.python-version }}, ${{ matrix.resolution }})
     needs: lint
     runs-on: ubuntu-24.04
     environment: testing
@@ -55,6 +55,10 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        resolution: ["highest"]
+        include:
+          - python-version: "3.10"
+            resolution: "lowest-direct"
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -67,21 +71,27 @@ jobs:
           version: "0.11.14"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          cache-suffix: test-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+          cache-suffix: test-${{ matrix.python-version }}-${{ matrix.resolution }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
+        if: ${{ matrix.resolution == 'highest' }}
         run: uv sync --group=test --frozen
 
       - name: Run tests with coverage
+        if: ${{ matrix.resolution == 'highest' }}
         run: make test-cov
+
+      - name: Run tests with lowest direct dependency bounds
+        if: ${{ matrix.resolution == 'lowest-direct' }}
+        run: make test-cov-lowest-direct
 
       - name: Upload coverage metrics
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         continue-on-error: true
         with:
           files: coverage.xml
-          flags: ${{ matrix.python-version }}
-          name: coverage-${{ matrix.python-version }}
+          flags: ${{ matrix.python-version }}-${{ matrix.resolution }}
+          name: coverage-${{ matrix.python-version }}-${{ matrix.resolution }}
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: coverage
