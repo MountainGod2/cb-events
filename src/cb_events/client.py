@@ -398,7 +398,9 @@ class EventClient:
     """
 
     __slots__: tuple[str, ...] = (
+        "_base_hostname",
         "_base_origin",
+        "_base_scheme",
         "_next_url",
         "_polling_lock",
         "_rate_limiter",
@@ -435,10 +437,12 @@ class EventClient:
         self.base_url, self.username, self.token = _parse_events_url(events_url)
         self.config: ClientConfig = config or ClientConfig()
         parsed_base = urlparse(self.base_url)
+        self._base_scheme: str = parsed_base.scheme
         if parsed_base.scheme and parsed_base.netloc:
             self._base_origin: str = f"{parsed_base.scheme}://{parsed_base.netloc}"
         else:
             self._base_origin = self.base_url
+        self._base_hostname: str | None = parsed_base.hostname
         self.session: ClientSession | None = None
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
@@ -606,7 +610,6 @@ class EventClient:
             raise EventsError(msg)
 
         attempts_made = 0
-        last_delay: float = 0.0
         retriable_exc_types = (
             ClientError,
             TimeoutError,
@@ -615,11 +618,9 @@ class EventClient:
         )
 
         def _should_retry(exc: Exception) -> bool | float:
-            nonlocal last_delay
             if not isinstance(exc, retriable_exc_types):
                 return False
-            last_delay = self._next_sleep_for_attempt(attempts_made)
-            return last_delay
+            return self._next_sleep_for_attempt(attempts_made)
 
         try:
             async for attempt in stamina.retry_context(
@@ -632,6 +633,7 @@ class EventClient:
                         return await self._perform_request_attempt(url)
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
+                        delay = self._next_sleep_for_attempt(attempts_made)
                         msg = "Attempt %d/%d failed for user %s: %r. Retrying in %.2fs..."
                         logger.warning(
                             msg,
@@ -639,7 +641,7 @@ class EventClient:
                             self.config.retry_attempts,
                             self.username,
                             exc,
-                            last_delay,
+                            delay,
                         )
                     raise
 
@@ -650,7 +652,8 @@ class EventClient:
             )
 
         msg = "Unexpected error in request loop"
-        raise EventsError(msg)
+        # Should never reach here
+        raise EventsError(msg)  # pragma: no cover
 
     def _process_response(self, status: int, text: str) -> list[Event]:
         """Process HTTP response and extract events.
@@ -723,7 +726,7 @@ class EventClient:
             absolute = urljoin(base_for_join, stripped)
             return absolute, urlparse(absolute)
         if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-            scheme = urlparse(self._base_origin).scheme or urlparse(self.base_url).scheme
+            scheme = self._base_scheme
             absolute = f"{scheme}:{stripped}"
             return absolute, urlparse(absolute)
         return stripped, parsed
@@ -784,7 +787,7 @@ class EventClient:
             raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
-        allowed_host = urlparse(self.base_url).hostname
+        allowed_host = self._base_hostname
         if not hostname:
             logger.error(
                 "Received nextUrl without hostname for user %s",
@@ -947,6 +950,11 @@ class EventClient:
                 unexpected response format).
             AuthError: Propagated from poll() on HTTP 401/403.
         """  # noqa: DOC502
+        # The loop is naturally throttled: the server holds each long-poll
+        # connection open for config.timeout seconds before responding. Empty
+        # results are therefore infrequent under normal conditions. If the server
+        # begins returning empty responses immediately (e.g. during an outage),
+        # the rate limiter provides a backstop.
         while True:
             events = await self.poll()
             for event in events:

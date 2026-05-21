@@ -51,6 +51,7 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
     """
     try:
         await handler(event)
+    # BaseException (including CancelledError) intentionally propagates
     except Exception:  # pylint: disable=broad-exception-caught
         logger.exception(
             "Handler %s failed for event %s (type: %s)",
