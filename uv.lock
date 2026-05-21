@@ -17,7 +17,6 @@ exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
 cb-events = false
-idna = false
 
 [[package]]
 name = "accessible-pygments"
