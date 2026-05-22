@@ -35,6 +35,9 @@ from typing_extensions import override
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
 """HTTP status codes indicating authentication failures."""
 
+CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
+"""Cloudflare status codes treated as server-side failures."""
+
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
@@ -193,31 +196,11 @@ def build_http_error(
         status code, with message and HTTP details included.
     """
     if status_code in AUTH_ERROR_STATUS_CODES:
-        return AuthError(
-            message,
-            status_code=status_code,
-            response_text=response_text,
-        )
+        return AuthError(message, status_code=status_code, response_text=response_text)
     if status_code == _RATE_LIMIT_STATUS_CODE:
-        return RateLimitError(
-            message,
-            status_code=status_code,
-            response_text=response_text,
-        )
+        return RateLimitError(message, status_code=status_code, response_text=response_text)
     if 400 <= status_code < 500:  # noqa: PLR2004
-        return ClientRequestError(
-            message,
-            status_code=status_code,
-            response_text=response_text,
-        )
-    if 500 <= status_code < 600:  # noqa: PLR2004
-        return ServerError(
-            message,
-            status_code=status_code,
-            response_text=response_text,
-        )
-    return HttpStatusError(
-        message,
-        status_code=status_code,
-        response_text=response_text,
-    )
+        return ClientRequestError(message, status_code=status_code, response_text=response_text)
+    if 500 <= status_code < 600 or status_code in CF_SERVER_ERROR_CODES:  # noqa: PLR2004
+        return ServerError(message, status_code=status_code, response_text=response_text)
+    return HttpStatusError(message, status_code=status_code, response_text=response_text)
