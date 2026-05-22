@@ -94,8 +94,13 @@ SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
 """Allowed Events API hosts mapped to canonical base URLs."""
 
 
-class _TransientError(Exception):
-    """Internal exception for triggering retries on bad status codes."""
+class _RetryableStatusError(Exception):
+    """Internal data-carrier exception for retryable HTTP status failures.
+
+    The retry loop retries this type via ``stamina.retry_context(on=...)``.
+    It exists to carry ``status_code`` and ``response_text`` so
+    ``_raise_request_failure`` can preserve HTTP details in the final error.
+    """
 
     __slots__: tuple[str, ...] = ("response_text", "status_code")
     status_code: int
@@ -508,18 +513,6 @@ class EventClient:
             f"{quote(self.token, safe='')}/?timeout={self.config.timeout}"
         )
 
-    def _next_sleep_for_attempt(self, attempt_num: int) -> float:
-        """Compute capped exponential backoff delay for the given attempt.
-
-        Args:
-            attempt_num: 1-based attempt number for which to compute the delay.
-
-        Returns:
-            Delay in seconds before the next retry.
-        """
-        sleep_seconds = self.config.retry_backoff * (self.config.retry_factor ** (attempt_num - 1))
-        return min(sleep_seconds, self.config.retry_max_delay)
-
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
         """Perform one HTTP attempt and surface retryable status failures.
 
@@ -531,7 +524,7 @@ class EventClient:
 
         Raises:
             EventsError: If the client session is unexpectedly unavailable.
-            _TransientError: If the response status should trigger a retry.
+            _RetryableStatusError: If the response status should trigger a retry.
         """
         if self.session is None:
             msg = "Client session unexpectedly unavailable"
@@ -544,7 +537,7 @@ class EventClient:
 
         if status in RETRY_STATUS_CODES:
             msg = f"HTTP {status}"
-            raise _TransientError(msg, status_code=status, response_text=text)
+            raise _RetryableStatusError(msg, status_code=status, response_text=text)
 
         return status, text
 
@@ -574,11 +567,14 @@ class EventClient:
         attempt_label = "attempt" if attempts_made == 1 else "attempts"
         msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
 
-        # Unwrap _TransientError if that was the cause to avoid noise.
-        cause = None if isinstance(original_exception, _TransientError) else original_exception
+        status_code: int | None = None
+        response_text: str | None = None
+        cause: Exception | None = original_exception
 
-        status_code: int | None = getattr(original_exception, "status_code", None)
-        response_text: str | None = getattr(original_exception, "response_text", None)
+        if isinstance(original_exception, _RetryableStatusError):
+            status_code = original_exception.status_code
+            response_text = original_exception.response_text
+            cause = None
 
         if status_code is not None:
             raise build_http_error(
@@ -614,18 +610,18 @@ class EventClient:
             ClientError,
             TimeoutError,
             OSError,
-            _TransientError,
+            _RetryableStatusError,
         )
-
-        def _should_retry(exc: Exception) -> bool | float:
-            if not isinstance(exc, retriable_exc_types):
-                return False
-            return self._next_sleep_for_attempt(attempts_made)
 
         try:
             async for attempt in stamina.retry_context(
-                on=_should_retry,
+                on=retriable_exc_types,
                 attempts=self.config.retry_attempts,
+                timeout=None,
+                wait_initial=self.config.retry_backoff,
+                wait_max=self.config.retry_max_delay,
+                wait_jitter=0.0,
+                wait_exp_base=self.config.retry_factor,
             ):
                 attempts_made = attempt.num
                 try:
@@ -633,15 +629,13 @@ class EventClient:
                         return await self._perform_request_attempt(url)
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
-                        delay = self._next_sleep_for_attempt(attempts_made)
-                        msg = "Attempt %d/%d failed for user %s: %r. Retrying in %.2fs..."
+                        msg = "Attempt %d/%d failed for user %s: %r. Retrying..."
                         logger.warning(
                             msg,
                             attempts_made,
                             self.config.retry_attempts,
                             self.username,
                             exc,
-                            delay,
                         )
                     raise
 

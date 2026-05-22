@@ -171,6 +171,11 @@ class User(BaseEventModel):
     ``"few"`` (few or no recent tips, has tokens — light blue),
     ``"some"`` (some recent tips — dark blue), ``"lots"`` (lots — purple),
     ``"tons"`` (tons — dark purple).
+
+    Note:
+        The value ``"none"`` is truthy. Compare explicitly with
+        ``recent_tips is None`` (field absent) versus
+        ``recent_tips == "none"`` (present but no tips).
     """
     subgender: Literal["tf", "tm", "tn"] | None = None
     """Subgender of the user (only set when ``gender`` is ``"t"`` / trans).
@@ -297,6 +302,7 @@ class Event(BaseEventModel):
     """Unique identifier for the event."""
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
+    # PrivateAttr is exempt from frozen - mutation is intentional.
     _cache: dict[str, object] = PrivateAttr(default_factory=dict)
 
     @property

@@ -160,7 +160,11 @@ class ClientRequestError(HttpStatusError):
 
 
 class RateLimitError(HttpStatusError):
-    """HTTP 429 rate-limiting failure."""
+    """HTTP 429 rate-limiting failure.
+
+    Only raised after all retry attempts are exhausted; the client retries
+    429 responses automatically per ``ClientConfig.retry_attempts``.
+    """
 
     __slots__: tuple[str, ...] = ()
 
