@@ -25,6 +25,7 @@ from typing_extensions import Self, override
 from .config import ClientConfig
 from .exceptions import (
     AUTH_ERROR_STATUS_CODES,
+    CF_SERVER_ERROR_CODES,
     TRUNCATE_LENGTH,
     AuthError,
     EventsError,
@@ -59,28 +60,13 @@ SESSION_TIMEOUT_BUFFER: Final[int] = 5
 TOKEN_VISIBLE_CHARS: Final[int] = 0
 """Number of trailing token characters to reveal in logs (0 = fully masked)."""
 
-CF_ORIGIN_DOWN: Final[int] = 521
-"""Cloudflare status code indicating the origin server is down."""
-
-CF_CONNECTION_TIMEOUT: Final[int] = 522
-"""Cloudflare status code indicating a connection timeout to the origin."""
-
-CF_ORIGIN_UNREACHABLE: Final[int] = 523
-"""Cloudflare status code indicating the origin is unreachable."""
-
-CF_TIMEOUT_OCCURRED: Final[int] = 524
-"""Cloudflare status code indicating a timeout occurred."""
-
 RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
     HTTPStatus.SERVICE_UNAVAILABLE.value,
     HTTPStatus.GATEWAY_TIMEOUT.value,
     HTTPStatus.TOO_MANY_REQUESTS.value,
-    CF_ORIGIN_DOWN,  # Cloudflare: origin down
-    CF_CONNECTION_TIMEOUT,  # Cloudflare: connection timeout
-    CF_ORIGIN_UNREACHABLE,  # Cloudflare: origin unreachable
-    CF_TIMEOUT_OCCURRED,  # Cloudflare: timeout occurred
+    *CF_SERVER_ERROR_CODES,
 })
 """HTTP status codes that trigger exponential backoff retries."""
 
@@ -474,11 +460,13 @@ class EventClient:
         Raises:
             EventsError: If session creation fails.
         """
+        if self.session is not None:
+            msg = "Client is already open. Use a new instance or exit the current context first."
+            raise EventsError(msg)
         try:
-            if self.session is None:
-                self.session = ClientSession(
-                    timeout=ClientTimeout(total=self.config.timeout + SESSION_TIMEOUT_BUFFER),
-                )
+            self.session = ClientSession(
+                timeout=ClientTimeout(total=self.config.timeout + SESSION_TIMEOUT_BUFFER),
+            )
         except (ClientError, OSError, TimeoutError) as e:
             await self.close()
             msg = "Failed to create HTTP session."
@@ -505,6 +493,10 @@ class EventClient:
 
         Returns:
             Fully qualified URL for the upcoming API request.
+
+        Note:
+            Timeout is only set as a query parameter on the initial URL; subsequent URLs from the
+            API use the nextUrl and are expected to already include any necessary parameters.
         """
         if self._next_url:
             return self._next_url
@@ -969,8 +961,8 @@ class EventClient:
             session: ClientSession | None = self.session
             self.session = None
             self._next_url = None
-            if session is not None:
-                try:
-                    await session.close()
-                except (ClientError, OSError, RuntimeError) as e:
-                    logger.warning("Error closing session: %s", e, exc_info=True)
+        if session is not None:
+            try:
+                await session.close()
+            except (ClientError, OSError, RuntimeError) as e:
+                logger.warning("Error closing session: %s", e, exc_info=True)
