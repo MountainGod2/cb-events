@@ -124,8 +124,8 @@ class Router:
             await router.dispatch(event)
 
     Note:
-        Wildcard handlers (registered via on_any()) execute before
-        type-specific handlers for each event.
+        Wildcard handlers (registered via on_any()) execute before type-specific handlers for each
+        event to support logging or preprocessing regardless of event type.
     """
 
     __slots__: tuple[str, ...] = ("_handlers",)
