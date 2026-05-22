@@ -1,8 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events ==9.0.1",
-#     "python-dotenv ==1.2.2",
+#     "cb-events ==9.0.1",  # Pinned to a specific version for reproducible docker builds
 # ]
 # ///
 
@@ -13,8 +12,6 @@ import logging
 import os
 import signal
 import sys
-
-from dotenv import load_dotenv
 
 from cb_events import (
     AuthError,
@@ -28,7 +25,6 @@ from cb_events.exceptions import EventsError
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
 
 router = Router()
 

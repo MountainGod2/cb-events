@@ -17,12 +17,10 @@ COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 WORKDIR /app
 
 COPY uv.lock pyproject.toml README.md ./
-COPY src/ ./src/
+RUN uv venv && uv sync --no-dev --no-install-project
 
-RUN uv venv && \
-    uv sync --group=examples && \
-    uv build && \
-    uv pip install dist/*.whl
+COPY src/ ./src/
+RUN uv build && uv pip install dist/*.whl
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 
