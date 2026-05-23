@@ -287,7 +287,9 @@ class Event(BaseEventModel):
                     print(f"From: {user.username}")
 
     Note:
-        Failures to parse nested data are logged as a warning and return None.
+        Failures to parse nested model data are logged as a warning and return
+        None. Scalar convenience accessors, such as ``broadcaster``, return
+        None quietly when the value is missing or invalid.
 
     Warning:
         All string fields in event data (e.g. ``message.message``,
@@ -325,18 +327,7 @@ class Event(BaseEventModel):
     @property
     def broadcaster(self) -> str | None:
         """Broadcaster username, or ``None`` if missing or invalid."""
-        cache = self._cache
-        cached = cache.get("broadcaster", _SENTINEL)
-        if cached is not _SENTINEL:
-            return cast("str | None", cached)
-        value: object | None = self.data.get("broadcaster")
-        if not isinstance(value, str) or not value:
-            logger.warning("Missing or invalid broadcaster in event %s", self.id)
-            result = None
-        else:
-            result = value
-        cache["broadcaster"] = result
-        return result
+        return self._extract_non_empty_string("broadcaster")
 
     @property
     def tip(self) -> Tip | None:
@@ -364,6 +355,35 @@ class Event(BaseEventModel):
             lambda v: RoomSubject.model_validate({"subject": v}),
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
         )
+
+    def _extract_non_empty_string(self, key: str) -> str | None:
+        """Extract a non-empty string from event data.
+
+        Results are cached so repeated access avoids repeated dictionary
+        lookups and validation.
+
+        Args:
+            key: Key within data to look up.
+
+        Returns:
+            The string value, or None if the value is missing, empty, or not a
+            string.
+        """
+        cache_key = f"str:{key}"
+
+        cache = self._cache
+        cached = cache.get(cache_key, _SENTINEL)
+        if cached is not _SENTINEL:
+            return cast("str | None", cached)
+
+        value: object | None = self.data.get(key)
+        if isinstance(value, str) and value:
+            result: str | None = value
+        else:
+            result = None
+
+        cache[cache_key] = result
+        return result
 
     def _extract(
         self,

@@ -467,7 +467,7 @@ class EventClient:
             self.session = ClientSession(
                 timeout=ClientTimeout(total=self.config.timeout + SESSION_TIMEOUT_BUFFER),
             )
-        except (ClientError, OSError, TimeoutError) as e:
+        except (ClientError, OSError, RuntimeError, TimeoutError) as e:
             await self.close()
             msg = "Failed to create HTTP session."
             raise EventsError(msg) from e
