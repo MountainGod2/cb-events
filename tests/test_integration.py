@@ -9,7 +9,6 @@ import pytest
 from aioresponses import aioresponses
 
 from cb_events import (
-    AuthError,
     ClientConfig,
     Event,
     EventClient,
@@ -18,6 +17,7 @@ from cb_events import (
     __version__,
 )
 from cb_events.client import _parse_events_url
+from cb_events.exceptions import AuthError
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_events_url, make_response
 
@@ -29,7 +29,7 @@ def _is_valid_events_url(url: str | None) -> bool:
         return False
     try:
         _parse_events_url(url)
-    except Exception:  # noqa: BLE001
+    except AuthError:
         return False
     return True
 
