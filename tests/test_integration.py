@@ -4,13 +4,11 @@ import asyncio
 import os
 import re
 from importlib.metadata import version
-from urllib.parse import urlparse
 
 import pytest
 from aioresponses import aioresponses
 
 from cb_events import (
-    AuthError,
     ClientConfig,
     Event,
     EventClient,
@@ -18,23 +16,22 @@ from cb_events import (
     Router,
     __version__,
 )
+from cb_events.client import _parse_events_url
+from cb_events.exceptions import AuthError
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_events_url, make_response
 
 pytestmark = [pytest.mark.e2e]
 
 
-def is_events_url(url: str | None) -> bool:
-    """Return True when URL points to a supported Events API endpoint."""
+def _is_valid_events_url(url: str | None) -> bool:
     if not url:
         return False
-    parsed = urlparse(url)
-    if parsed.scheme != "https":
+    try:
+        _parse_events_url(url)
+    except AuthError:
         return False
-    allowed_hosts = {"eventsapi.chaturbate.com", "events.testbed.cb.dev"}
-    hostname = (parsed.hostname or "").lower()
-    path = parsed.path.lower()
-    return hostname in allowed_hosts and path.startswith("/events/")
+    return True
 
 
 async def test_client_router_workflow(
@@ -110,7 +107,9 @@ def test_version_attribute() -> None:
 @pytest.mark.slow
 @pytest.mark.live
 @pytest.mark.skipif(
-    not (os.getenv("CB_RUN_LIVE_TESTS") == "1" and is_events_url(os.getenv("CB_EVENTS_URL"))),
+    not (
+        _is_valid_events_url(os.getenv("CB_EVENTS_URL")) and os.getenv("CB_RUN_LIVE_TESTS") == "1"
+    ),
     reason=("Set CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL to an Events API URL"),
 )
 async def test_live_polling() -> None:

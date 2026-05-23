@@ -90,7 +90,8 @@ class EventType(str, Enum):
     def __str__(self) -> str:
         """Return the raw API value for string formatting.
 
-        This preserves the previous StrEnum behavior on Python 3.10.
+        Ensures str(member) returns the API value string rather than 'EventType.MEMBER' across all
+        supported Python versions."
         """
         return self.value
 

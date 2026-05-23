@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import sys
 from pathlib import Path
 
@@ -13,17 +12,14 @@ SRC_DIR: Path = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from cb_events import __version__  # noqa: E402
+
 project = "cb-events"
 author = "MountainGod2"
 project_copyright = "2025, MountainGod2"
 language = "en"
 
-try:
-    version: str = importlib.metadata.version("cb-events")
-except importlib.metadata.PackageNotFoundError:
-    from cb_events import __version__
-
-    version = __version__
+version: str = __version__
 release: str = version
 
 extensions: list[str] = [
@@ -54,7 +50,7 @@ html_show_sourcelink = False
 html_copy_source = False
 html_last_updated_fmt = "%b %d, %Y"
 
-html_theme_options: dict[str, str | dict[str, str] | bool] = {
+html_theme_options: dict[str, dict[str, str] | bool] = {
     "light_css_variables": {
         "color-brand-primary": "#7C4DFF",
         "color-brand-content": "#7C4DFF",
@@ -118,8 +114,6 @@ copybutton_only_copy_prompt_lines = False
 nitpicky = True
 nitpick_ignore: list[tuple[str, str]] = [
     ("py:class", "aiolimiter.AsyncLimiter"),
-    ("py:class", "Event"),
-    ("py:class", "Handler"),
     ("py:class", "HandlerFunc"),
     ("py:class", "Ellipsis"),
     ("py:obj", "BaseEventModel"),

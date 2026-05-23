@@ -68,7 +68,7 @@ async def test_invalid_json_response(
     aioresponses_mock.get(testbed_url_pattern, status=200, body="Not valid JSON")
 
     async with event_client_factory() as client:
-        with pytest.raises(EventsError, match="Invalid JSON response"):
+        with pytest.raises(EventsError, match=r"Invalid JSON: Expecting value."):
             await client.poll()
 
 

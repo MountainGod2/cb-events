@@ -66,7 +66,7 @@ class ClientConfig(BaseModel):
     """Maximum delay between retries in seconds."""
 
     @model_validator(mode="after")
-    def _check_delays(self) -> Self:
+    def validate_delays(self) -> Self:
         """Validate retry delay configuration.
 
         Returns:
