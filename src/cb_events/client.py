@@ -10,9 +10,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Mapping
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Final, NoReturn, cast
+from typing import TYPE_CHECKING, ClassVar, Final, NoReturn, TypeGuard
 from urllib.parse import quote, unquote, urljoin, urlparse
 
 import stamina
@@ -88,7 +87,7 @@ class _RetryableStatusError(Exception):
     ``_raise_request_failure`` can preserve HTTP details in the final error.
     """
 
-    __slots__: tuple[str, ...] = ("response_text", "status_code")
+    __slots__: ClassVar[tuple[str, ...]] = ("response_text", "status_code")
     status_code: int
     response_text: str
 
@@ -178,40 +177,20 @@ def _extract_username_token(path: str) -> tuple[str, str]:
     return unquote(parts[1]), unquote(parts[2])
 
 
-def _validate_username(username: str) -> None:
-    """Validate extracted username value.
+def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
+    """Raise AuthError if value is empty or has leading/trailing whitespace.
 
     Args:
-        username: Extracted username to validate.
+        value: The string value to validate.
+        field: Name of the field being validated, used in error messages.
+        hint: Additional hint to include in the error message.
 
     Raises:
-        AuthError: If the username is empty or contains leading/trailing whitespace.
+        AuthError: If the value is empty or contains leading/trailing whitespace.
     """
-    if username and username == username.strip():
+    if value and value == value.strip():
         return
-    msg = (
-        "Username must not be empty or contain leading/trailing "
-        "whitespace. Provide a valid Chaturbate username."
-    )
-    raise AuthError(msg)
-
-
-def _validate_token(token: str) -> None:
-    """Validate extracted token value.
-
-    Args:
-        token: Extracted token to validate.
-
-    Raises:
-        AuthError: If the token is empty or contains leading/trailing whitespace.
-    """
-    if token and token == token.strip():
-        return
-    msg = (
-        "Token must not be empty or contain leading/trailing "
-        "whitespace. Generate a valid token at "
-        "https://chaturbate.com/statsapi/authtoken/"
-    )
+    msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
     raise AuthError(msg)
 
 
@@ -223,15 +202,18 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
 
     Returns:
         Tuple of ``(base_url, username, token)``.
-
-    Raises:
-        AuthError: If the URL is malformed or contains invalid credentials.
-    """  # noqa: DOC502
+    """
     parsed = _parse_and_validate_events_url(events_url)
     base_url = _resolve_base_url(parsed.hostname)
     username, token = _extract_username_token(parsed.path)
-    _validate_username(username)
-    _validate_token(token)
+    _validate_non_empty_stripped(
+        username, field="Username", hint="Provide a valid Chaturbate username."
+    )
+    _validate_non_empty_stripped(
+        token,
+        field="Token",
+        hint="Generate a valid token at https://chaturbate.com/statsapi/authtoken/",
+    )
     return base_url, username, token
 
 
@@ -264,17 +246,54 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-def _response_snippet(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
-    """Truncate response text for safe logging.
+def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
+    """Return True when value is a JSON object represented as a dict.
 
     Args:
-        text: Raw response body to truncate.
-        limit: Maximum number of characters to retain.
+        value: Value to validate.
 
     Returns:
-        Text truncated to ``limit`` characters with ellipsis if needed.
+        True when value is a JSON object represented as ``dict[str, object]``.
     """
-    return truncate_text(text, limit=limit)
+    return isinstance(value, dict)
+
+
+def _is_object_list(value: object) -> TypeGuard[list[object]]:
+    """Return True when value is a JSON array represented as a Python list.
+
+    Args:
+        value: Value to validate.
+
+    Returns:
+        True when value is a list of JSON-compatible Python objects.
+    """
+    return isinstance(value, list)
+
+
+def _parse_json_object(text: str) -> dict[str, object]:
+    """Parse text as a JSON object.
+
+    Args:
+        text: Raw response body expected to contain a JSON object.
+
+    Returns:
+        Parsed JSON object.
+
+    Raises:
+        EventsError: If JSON is invalid or the top-level value is not an object.
+    """
+    try:
+        data: object = json.loads(text)  # pyright: ignore[reportAny]
+    except json.JSONDecodeError as exc:
+        msg = f"Invalid JSON: {exc.msg}."
+        raise EventsError(msg, response_text=text) from exc
+    if not _is_json_object(data):
+        msg = f"Expected JSON object, got {type(data).__name__}."
+        raise EventsError(
+            msg,
+            response_text=text,
+        )
+    return data
 
 
 def _log_validation_error(
@@ -287,11 +306,7 @@ def _log_validation_error(
         item: Raw object that failed validation.
         exc: The ValidationError raised during parsing.
     """
-    event_id = (
-        cast("Mapping[str, object]", item).get("id", "<unknown>")
-        if isinstance(item, Mapping)
-        else "<unknown>"
-    )
+    event_id = item.get("id", "<unknown>") if _is_json_object(item) else "<unknown>"
     fields: set[str] = set()
     for detail in exc.errors():
         location = detail.get("loc")
@@ -388,7 +403,7 @@ class EventClient:
         Not thread-safe. Must be used as an async context manager.
     """
 
-    __slots__: tuple[str, ...] = (
+    __slots__: ClassVar[tuple[str, ...]] = (
         "_base_hostname",
         "_base_origin",
         "_base_scheme",
@@ -421,10 +436,7 @@ class EventClient:
             config: Optional client configuration overrides.
             rate_limiter: Optional shared rate limiter to coordinate calls
                 across multiple clients.
-
-        Raises:
-            AuthError: If events_url is malformed or has invalid credentials.
-        """  # noqa: DOC502
+        """
         self.base_url, self.username, self.token = _parse_events_url(events_url)
         self.config: ClientConfig = config or ClientConfig()
         parsed_base = urlparse(self.base_url)
@@ -612,7 +624,6 @@ class EventClient:
                 timeout=None,
                 wait_initial=self.config.retry_backoff,
                 wait_max=self.config.retry_max_delay,
-                wait_jitter=0.0,
                 wait_exp_base=self.config.retry_factor,
             ):
                 attempts_made = attempt.num
@@ -638,7 +649,6 @@ class EventClient:
             )
 
         msg = "Unexpected error in request loop"
-        # Should never reach here
         raise EventsError(msg)  # pragma: no cover
 
     def _process_response(self, status: int, text: str) -> list[Event]:
@@ -653,8 +663,7 @@ class EventClient:
 
         Raises:
             AuthError: For HTTP 401/403 responses.
-            EventsError: For other non-200 responses or when response format is
-                invalid. Includes HTTP metadata when available.
+            EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
         """  # noqa: DOC501, DOC502
         if status in AUTH_ERROR_STATUS_CODES:
             logger.warning(
@@ -677,7 +686,7 @@ class EventClient:
             return []
 
         if status != HTTPStatus.OK:
-            snippet = _response_snippet(text)
+            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
             logger.error(
                 "HTTP %d for user %s: %s",
                 status,
@@ -803,14 +812,10 @@ class EventClient:
             The extracted nextUrl if found and valid, otherwise None.
         """
         try:
-            data_obj: object = json.loads(text)  # pyright: ignore[reportAny]
-        except json.JSONDecodeError:
+            data = _parse_json_object(text)
+        except EventsError:
             return None
 
-        if not isinstance(data_obj, dict):
-            return None
-
-        data = cast("dict[str, object]", data_obj)
         status_msg = data.get("status")
         if not (isinstance(status_msg, str) and TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
             return None
@@ -841,26 +846,13 @@ class EventClient:
             EventsError: If JSON is invalid or response format is wrong.
         """
         try:
-            data_obj: object = json.loads(text)  # pyright: ignore[reportAny]
-        except json.JSONDecodeError as exc:
-            snippet = _response_snippet(text)
-            logger.exception("Failed to parse JSON: %s", snippet)
-            msg = f"Invalid JSON response from API: {exc.msg}."
-            raise EventsError(
-                msg,
-                response_text=text,
-            ) from exc
+            data = _parse_json_object(text)
+        except EventsError as exc:
+            if isinstance(exc.__cause__, json.JSONDecodeError):
+                snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
+                logger.exception("Failed to parse JSON: %s", snippet)
+            raise
 
-        if not isinstance(data_obj, dict):
-            msg = (
-                f"Invalid API response format: expected JSON object, got {type(data_obj).__name__}."
-            )
-            raise EventsError(
-                msg,
-                response_text=text,
-            )
-
-        data = cast("dict[str, object]", data_obj)
         # Extract events and nextUrl
         self._next_url = self._validate_next_url(
             data.get("nextUrl"),
@@ -868,7 +860,7 @@ class EventClient:
         )
         if "events" in data:
             raw_events_obj: object = data["events"]
-            if not isinstance(raw_events_obj, list):
+            if not _is_object_list(raw_events_obj):
                 msg = (
                     "Invalid API response format: 'events' must be a list. "
                     "Each item must be an object."
@@ -877,7 +869,7 @@ class EventClient:
                     msg,
                     response_text=text,
                 )
-            raw_events_list: list[object] = cast("list[object]", raw_events_obj)
+            raw_events_list = raw_events_obj
         else:
             raw_events_list = []
 
@@ -903,11 +895,7 @@ class EventClient:
 
         Returns:
             List of events received, or an empty list on timeout.
-
-        Raises:
-            EventsError: If the client is not initialized or the request fails.
-            AuthError: If authentication fails (HTTP 401/403).
-        """  # noqa: DOC502
+        """
         async with self._polling_lock:
             url = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
@@ -929,13 +917,7 @@ class EventClient:
 
         Yields:
             Event instances as they are received from the API.
-
-        Raises:
-            EventsError: Propagated from poll() when all retry attempts are
-                exhausted or an unrecoverable error occurs (e.g. invalid JSON,
-                unexpected response format).
-            AuthError: Propagated from poll() on HTTP 401/403.
-        """  # noqa: DOC502
+        """
         # The loop is naturally throttled: the server holds each long-poll
         # connection open for config.timeout seconds before responding. Empty
         # results are therefore infrequent under normal conditions. If the server

@@ -33,6 +33,8 @@ Example:
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .client import EventClient
 from .config import ClientConfig
 from .exceptions import (
@@ -45,9 +47,14 @@ from .exceptions import (
 )
 from .models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from .router import HandlerFunc, Router
-from .version import __version__
 
-__all__: tuple[str, ...] = (
+try:  # noqa: RUF067
+    __version__: str = version("cb-events")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "0.0.0"
+
+
+__all__: list[str] = [
     "AuthError",
     "ClientConfig",
     "ClientRequestError",
@@ -66,4 +73,4 @@ __all__: tuple[str, ...] = (
     "Tip",
     "User",
     "__version__",
-)
+]

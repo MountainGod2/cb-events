@@ -110,7 +110,7 @@ def test_parse_json_response_rejects_non_object() -> None:
     """Top-level JSON arrays should be rejected."""
     client = EventClient(make_events_url("user", "token"))
 
-    with pytest.raises(EventsError, match="expected JSON object"):
+    with pytest.raises(EventsError, match=r"(?i)expected JSON object"):
         client._parse_json_response("[]")
 
 
