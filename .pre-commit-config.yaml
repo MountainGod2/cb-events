@@ -52,7 +52,7 @@ repos:
         args: [--py310-plus]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12
+    rev: v0.15.13
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
@@ -68,7 +68,7 @@ repos:
         exclude: ^tests/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.24.1
+    rev: v1.25.0
     hooks:
       - id: zizmor
         name: zizmor security check
