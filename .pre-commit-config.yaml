@@ -68,7 +68,7 @@ repos:
         exclude: ^tests/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.25.0
+    rev: v1.25.1
     hooks:
       - id: zizmor
         name: zizmor security check
