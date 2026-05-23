@@ -168,17 +168,6 @@
       "semanticCommitScope": "examples"
     },
     {
-      "description": "Examples dependency group (pyproject.toml)",
-      "matchManagers": ["pep621"],
-      "matchPackageNames": ["python-dotenv", "rich"],
-      "groupName": "examples-deps",
-      "labels": ["dependencies", "examples"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true,
-      "autoApprove": true,
-      "semanticCommitScope": "examples-deps"
-    },
-    {
       "description": "cb-events package in examples scripts",
       "matchManagers": ["pep723"],
       "matchPackageNames": ["cb-events"],

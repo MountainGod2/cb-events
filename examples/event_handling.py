@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events ==9.0.1",  # Pinned to a specific version for reproducible docker builds
+#     "cb-events >=9.0.1"
 # ]
 # ///
 

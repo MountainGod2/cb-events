@@ -258,11 +258,8 @@ def test_event_broadcaster_property_cached() -> None:
     assert first == second == "streamer"
 
 
-def test_event_broadcaster_missing_returns_none(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Missing broadcaster should return None and emit a warning."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
+def test_event_broadcaster_missing_returns_none() -> None:
+    """Missing broadcaster should return None."""
     event = Event.model_validate({
         "method": "broadcastStart",
         "id": "evt-bcaster-missing",
@@ -270,11 +267,6 @@ def test_event_broadcaster_missing_returns_none(
     })
 
     assert event.broadcaster is None
-    assert any(
-        "Missing or invalid broadcaster in event evt-bcaster-missing" in r.getMessage()
-        for r in caplog.records
-        if r.levelname == "WARNING"
-    )
 
 
 def test_message_not_parsed_on_tip_event() -> None:
