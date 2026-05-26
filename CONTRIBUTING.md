@@ -23,16 +23,18 @@ Thanks for pitching in. Here’s how to help:
    git checkout -b my-change
    ```
 4. Run checks:
+
    ```bash
    make pre-commit
    make ci
    ```
+
    Optional advanced checks:
 
-```bash
-make help
-make check-all
-```
+   ```bash
+   make help
+   make check-all
+   ```
 
 5. Open a PR.
 
