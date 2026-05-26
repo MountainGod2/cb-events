@@ -67,7 +67,7 @@ asyncio.run(main())
 
 ## Links
 
-- [Documentation](https://cb-events.readthedocs.io/latest/)
+- [Documentation](https://mountaingod2.github.io/cb-events/)
 - [Examples](https://github.com/MountainGod2/cb-events/tree/main/examples)
 - [Changelog](https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md)
 - [PyPI](https://pypi.org/project/cb-events/)
@@ -86,6 +86,6 @@ asyncio.run(main())
 
 MIT
 
----
+______________________________________________________________________
 
 Not affiliated with Chaturbate.
