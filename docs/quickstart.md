@@ -63,6 +63,8 @@ async def handle_all(event: Event) -> None:
 ## Multiple Handlers
 
 ```python
+import logging
+
 @router.on(EventType.TIP)
 async def log_tip(event: Event) -> None:
     if event.tip:
@@ -72,10 +74,11 @@ async def log_tip(event: Event) -> None:
 @router.on(EventType.TIP)
 async def thank_tipper(event: Event) -> None:
     if event.user:
-        await send_thank_you(event.user.username)
+        print(f"Thanks for the tip, {event.user.username}!")
 ```
 
 !!! note
-Handlers run sequentially in registration order. Regular handler exceptions are
-logged and dispatch continues. A failing handler does not stop other handlers.
-`asyncio.CancelledError` always propagates immediately.
+
+    Handlers run sequentially in registration order. Regular handler exceptions are
+    logged and dispatch continues. A failing handler does not stop other handlers.
+    `asyncio.CancelledError` always propagates immediately.

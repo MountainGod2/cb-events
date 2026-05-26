@@ -105,7 +105,7 @@
     {
       "description": "Documentation tools (Zensical and plugins)",
       "matchPackageNames": [
-        "mdformat",
+        "mdformat-mkdocs",
         "zensical",
         "mkdocstrings-python",
         "pymdown-extensions"
