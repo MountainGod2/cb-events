@@ -17,9 +17,9 @@ Catch `AuthError` first if you need separate handling.
 ## Basic Error Handling
 
 ```python
-from cb_events import EventClient, EventRouter, EventsError
+from cb_events import EventClient, EventsError, Router
 
-router = EventRouter()
+router = Router()
 
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
@@ -38,9 +38,9 @@ except EventsError as err:
 `AuthError` (`401`/`403`) is never retried.
 
 ```python
-from cb_events import AuthError, EventClient, EventRouter, EventsError
+from cb_events import AuthError, EventClient, EventsError, Router
 
-router = EventRouter()
+router = Router()
 
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
@@ -76,9 +76,9 @@ config = ClientConfig(
 Lenient mode (default) skips invalid events and logs a warning.
 
 ```python
-from cb_events import ClientConfig, EventClient, EventRouter
+from cb_events import ClientConfig, EventClient, Router
 
-router = EventRouter()
+router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
 config = ClientConfig(strict_validation=False)
@@ -91,9 +91,9 @@ Strict mode raises `pydantic.ValidationError` on invalid event data.
 
 ```python
 import pydantic
-from cb_events import ClientConfig, EventClient, EventRouter
+from cb_events import ClientConfig, EventClient, Router
 
-router = EventRouter()
+router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
 config = ClientConfig(strict_validation=True)
@@ -109,9 +109,9 @@ except pydantic.ValidationError as err:
 ## Handler Errors
 
 ```python
-from cb_events import Event, EventRouter, EventType
+from cb_events import Event, EventType, Router
 
-router = EventRouter()
+router = Router()
 
 @router.on(EventType.TIP)
 async def buggy_handler(event: Event) -> None:
@@ -128,9 +128,9 @@ async def working_handler(event: Event) -> None:
 ```python
 import asyncio
 import signal
-from cb_events import EventClient, EventRouter
+from cb_events import EventClient, Router
 
-router = EventRouter()
+router = Router()
 
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
@@ -153,16 +153,17 @@ asyncio.run(main())
 ```
 
 !!! note
-`loop.add_signal_handler()` is Unix-only and raises `NotImplementedError` on
-Windows. For cross-platform support, catch `NotImplementedError` and use another
-cancellation strategy such as `signal.signal()` with an `asyncio.Event`.
+
+    `loop.add_signal_handler()` is Unix-only and raises `NotImplementedError` on
+    Windows. For cross-platform support, catch `NotImplementedError` and use another
+    cancellation strategy such as `signal.signal()` with an `asyncio.Event`.
 
 ## Network Errors
 
 ```python
-from cb_events import EventClient, EventRouter, EventsError
+from cb_events import EventClient, EventsError, Router
 
-router = EventRouter()
+router = Router()
 
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
@@ -182,13 +183,13 @@ except EventsError as err:
 ```python
 import asyncio
 import logging
-from cb_events import AuthError, EventClient, EventRouter, EventsError
+from cb_events import AuthError, EventClient, EventsError, Router
 
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-router = EventRouter()
+router = Router()
 
 
 async def run_client() -> None:

@@ -78,8 +78,9 @@ client = EventClient(events_url, rate_limiter=limiter)
 ### Shared Rate Limiter
 
 !!! warning
-Each client gets its own independent budget by default. Multiple clients without
-a shared limiter multiply the effective request rate.
+
+    Each client gets its own independent budget by default. Multiple clients without
+    a shared limiter multiply the effective request rate.
 
 ```python
 limiter = AsyncLimiter(max_rate=2000, time_period=60)

@@ -5,36 +5,41 @@ Thanks for pitching in. Here’s how to help:
 ## Ways to Contribute
 
 - **Bug?**
-  - Describe your OS, Python version, and how to trigger it.
+    - Describe your OS, Python version, and how to trigger it.
 - **Feature idea?**
-  - Open an issue or PR.
+    - Open an issue or PR.
 - **Docs unclear?**
-  - PRs for docs, comments, or examples are always welcome.
+    - PRs for docs, comments, or examples are always welcome.
 
 ## Setup
 
 1. Clone the repo.
+
 2. Bootstrap the development environment:
-   ```bash
-   make setup
-   ```
+
+    ```bash
+    make setup
+    ```
+
 3. Make a branch:
-   ```bash
-   git checkout -b my-change
-   ```
+
+    ```bash
+    git checkout -b my-change
+    ```
+
 4. Run checks:
 
-   ```bash
-   make pre-commit
-   make ci
-   ```
+    ```bash
+    make pre-commit
+    make ci
+    ```
 
-   Optional advanced checks:
+    Optional advanced checks:
 
-   ```bash
-   make help
-   make check-all
-   ```
+    ```bash
+    make help
+    make check-all
+    ```
 
 5. Open a PR.
 

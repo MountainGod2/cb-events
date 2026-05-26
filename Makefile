@@ -39,7 +39,7 @@ fix: ## Public: Apply Ruff autofixes and format code.
 lint: ## Public: Run linting, static checks, docs formatting checks, and complexity checks.
 	$(UV) run ruff format --check
 	$(UV) run ruff check
-	$(UV) run --group=docs mdformat --check --exclude docs/changelog.md docs README.md
+	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
 	$(UV) run pylint ./src
@@ -100,10 +100,10 @@ docs-linkcheck: ## Advanced: Validate docs links.
 	$(UV) run --group=docs zensical build --strict
 
 docs-format: ## Advanced: Format Markdown docs files.
-	$(UV) run --group=docs mdformat --exclude docs/changelog.md docs README.md
+	$(UV) run --group=docs mdformat docs README.md
 
 docs-format-check: ## Advanced: Check Markdown docs formatting.
-	$(UV) run --group=docs mdformat --check --exclude docs/changelog.md docs README.md
+	$(UV) run --group=docs mdformat --check docs README.md
 
 build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
