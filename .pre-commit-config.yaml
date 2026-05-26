@@ -35,8 +35,6 @@ repos:
     hooks:
       - id: check-github-workflows
         name: check github workflows
-      - id: check-readthedocs
-        name: check readthedocs config
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
     rev: 43.150.0
@@ -75,11 +73,11 @@ repos:
 
   - repo: local
     hooks:
-      - id: format-docs-rst
-        name: format docs rst files
-        entry: uv run --group=docs docstrfmt
+      - id: format-docs-markdown
+        name: format docs markdown files
+        entry: uv run --group=docs mdformat
         language: system
-        files: ^docs/.*\.rst$
+        files: ^(docs/.*\.md|README\.md)$
       - id: requirements-sync
         name: requirements.txt sync check
         entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
