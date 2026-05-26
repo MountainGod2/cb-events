@@ -11,80 +11,123 @@ PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
 
-.PHONY: all
-.PHONY: install dev-setup
-.PHONY: format fix check type-check lint check-all pre-commit
+.PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor
 .PHONY: requirements-export requirements-check
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build ci ci-lower-bounds clean help
 
-all: ci ## Run CI-equivalent checks locally.
+# Public targets are intended for day-to-day contributor workflows.
+# Advanced targets are occasional utility tasks.
+# Internal targets are mostly CI plumbing and low-level building blocks.
 
-install: ## Install all dependency groups via uv.
+# --- Public targets ---
+
+setup: ## Public: Bootstrap local development tooling (dependencies, Python versions, pre-commit hooks).
 	$(UV) sync --all-groups
-
-dev-setup: install ## Install Python versions and pre-commit hooks.
 	$(UV) python install $(PYTHON_VERSIONS)
 	$(UV) run pre-commit install
 
-format: ## Format code with Ruff.
+format: ## Public: Format code with Ruff.
 	$(UV) run ruff format
 
-fix: ## Apply Ruff autofixes and format code.
+fix: ## Public: Apply Ruff autofixes and format code.
 	$(UV) run ruff check --fix
 	$(UV) run ruff format
 
-check: ## Run non-mutating style and lint checks.
+lint: ## Public: Run linting, static checks, docs formatting checks, and complexity checks.
 	$(UV) run ruff format --check
 	$(UV) run ruff check
-	$(UV) run --group=docs docstrfmt --check docs
-
-type-check: ## Run static type checks.
+	$(UV) run --group=docs mdformat --check docs README.md
+	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
-
-lint: check type-check ## Run all lint/quality checks.
 	$(UV) run pylint ./src
 	$(UV) run xenon $(XENON_ARGS) .
 
-check-all: ## Run lint + tests across all supported Python versions.
-	@for version in $(PYTHON_VERSIONS); do \
+test: ## Public: Run test suite (excluding live tests).
+	$(PYTEST) -m "not live"
+
+security: bandit pip-audit zizmor ## Public: Run core security scans.
+
+docs: ## Public: Build documentation.
+	rm -rf site docs/html_local_check
+	$(UV) run --group=docs zensical build --strict
+
+ci: requirements-check lint security test-cov ## Public: Run CI-equivalent checks locally.
+
+clean: ## Public: Remove caches, artifacts, and generated reports.
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -name "*.py[co]" -delete
+	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .coverage
+	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
+	rm -rf *.sarif site/ docs/html_local_check/
+
+help: ## Public: Show available public and advanced targets.
+	@awk 'BEGIN {printf "\nPublic targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*## Public:/ {split($$0, parts, ":.*## Public: "); printf "  %-18s %s\n", parts[1], parts[2]} END {print ""}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {printf "Advanced targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*## Advanced:/ {split($$0, parts, ":.*## Advanced: "); printf "  %-18s %s\n", parts[1], parts[2]} END {print ""}' $(MAKEFILE_LIST)
+
+# --- Advanced targets ---
+
+check-all: ## Advanced: Run lint + tests across supported Python versions in isolated temp envs.
+	@tmp_root="$$(mktemp -d)"; \
+	trap 'rm -rf "$$tmp_root"' EXIT INT TERM; \
+	for version in $(PYTHON_VERSIONS); do \
 		echo "=== Python $$version ==="; \
-		$(UV) run --python $$version --group lint ruff format --check; \
-		$(UV) run --python $$version --group lint ruff check; \
-		$(UV) run --python $$version --group lint pylint ./src; \
-		$(UV) run --python $$version --group lint basedpyright; \
-		$(UV) run --python $$version --group test pytest -q; \
-		$(UV) run --python $$version --group lint xenon $(XENON_ARGS) .; \
+		env_dir="$$tmp_root/py$$version"; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) sync --python "$$version" --group lint --group test --frozen; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff format --check; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff check; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint pylint ./src; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint basedpyright; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint xenon $(XENON_ARGS) .; \
 	done
 
-pre-commit: ## Run all pre-commit hooks.
+pre-commit: ## Public: Run all pre-commit hooks.
 	$(UV) run pre-commit run --all-files
 
-security: bandit pip-audit zizmor ## Run core security scans.
+security-full: security trivy ## Advanced: Run all security scans, including Trivy.
 
-security-full: security trivy ## Run all security scans, including Trivy.
-
-requirements-export: ## Regenerate requirements.txt from lock data.
+requirements-export: ## Advanced: Regenerate requirements.txt from lock data.
 	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt
 
-requirements-check: ## Verify requirements.txt is up to date without changing files.
+docs-serve: docs ## Advanced: Build docs and serve locally on port 8000.
+	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
+	$(UV) run --group=docs zensical serve --dev-addr 127.0.0.1:8000
+
+docs-linkcheck: ## Advanced: Validate docs links.
+	$(UV) run --group=docs zensical build --strict
+
+docs-format: ## Advanced: Format Markdown docs files.
+	$(UV) run --group=docs mdformat docs README.md
+
+docs-format-check: ## Advanced: Check Markdown docs formatting.
+	$(UV) run --group=docs mdformat --check docs README.md
+
+build: ## Advanced: Build source and wheel distributions.
+	$(UV) build
+
+ci-lower-bounds: requirements-check lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
+
+# --- Internal targets ---
+
+requirements-check: ## Internal: Verify requirements.txt is up to date without changing files.
 	@tmp_file="$$(mktemp)"; \
 	trap 'rm -f "$$tmp_file"' EXIT; \
 	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
 	diff -u requirements.txt "$$tmp_file"
 
-bandit: ## Run Bandit and emit SARIF.
+bandit: ## Internal: Run Bandit and emit SARIF.
 	$(UV) run bandit -r src/ -f sarif -o bandit.sarif
 
-zizmor: ## Run Zizmor and emit SARIF.
+zizmor: ## Internal: Run Zizmor and emit SARIF.
 	$(UV) run zizmor --format=sarif . > zizmor.sarif
 
-pip-audit: ## Audit dependencies against known vulnerabilities.
+pip-audit: ## Internal: Audit dependencies against known vulnerabilities.
 	$(UV) run --group=security pip-audit -r requirements.txt
 
-trivy: ## Run Trivy vulnerability and config scans.
+trivy: ## Internal: Run Trivy vulnerability and config scans.
 	@command -v trivy >/dev/null 2>&1 || { \
 		echo "Trivy not found. Install: https://trivy.dev/docs/latest/getting-started/installation/"; \
 		exit 1; \
@@ -92,52 +135,15 @@ trivy: ## Run Trivy vulnerability and config scans.
 	trivy fs --severity HIGH,CRITICAL --include-dev-deps --scanners vuln --format table .
 	trivy config --severity HIGH,CRITICAL --format table .
 
-test: ## Run test suite (excluding live tests).
-	$(PYTEST) -m "not live"
-
-test-cov: ## Run tests with coverage and JUnit output (excluding live tests).
+test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live tests).
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-cov-lowest-direct: ## Resolve lowest direct dependency bounds, then run tests with coverage.
+test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
 	$(UV) sync --group=test --resolution lowest-direct --upgrade
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-e2e: ## Run mocked end-to-end tests.
+test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
 
-test-live: ## Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL).
+test-live: ## Internal: Run live end-to-end tests (requires CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL).
 	$(PYTEST) -m "live and e2e"
-
-docs: ## Build documentation.
-	rm -rf docs/_build docs/api docs/html_local_check
-	$(UV) run sphinx-build -E -b html docs docs/_build/html
-
-docs-serve: docs ## Build docs and serve locally on port 8000.
-	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
-	$(UV) run python -m http.server 8000 -d docs/_build/html
-
-docs-linkcheck: ## Validate docs links.
-	$(UV) run sphinx-build -b linkcheck docs docs/_build/linkcheck
-
-docs-format: ## Format reStructuredText docs files.
-	$(UV) run --group=docs docstrfmt docs
-
-docs-format-check: ## Check reStructuredText docs formatting.
-	$(UV) run --group=docs docstrfmt --check docs
-
-build: ## Build source and wheel distributions.
-	$(UV) build
-
-ci: requirements-check lint security test-cov ## Run CI target locally.
-
-ci-lower-bounds: requirements-check lint security test-cov-lowest-direct ## Run CI checks with lowest direct dependency bounds.
-
-clean: ## Remove caches, artifacts, and generated reports.
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -name "*.py[co]" -delete
-	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .coverage
-	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
-	rm -rf *.sarif docs/_build/ docs/api/ docs/html_local_check/
-
-help: ## Show available targets.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nAvailable targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-18s %s\n", $$1, $$2} END {print ""}' $(MAKEFILE_LIST)

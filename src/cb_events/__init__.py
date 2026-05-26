@@ -3,10 +3,10 @@
 Provides automatic retries, rate limiting, and type-safe event handling.
 
 Key Components:
-    EventClient: Async context manager for API polling.
-    Router: Decorator-based event dispatcher.
-    Event: Type-safe event model with nested data accessors.
-    ClientConfig: Immutable configuration for client behavior.
+    - EventClient: Async context manager for API polling.
+    - Router: Decorator-based event dispatcher.
+    - Event: Type-safe event model with nested data accessors.
+    - ClientConfig: Immutable configuration for client behavior.
 
 Example:
     Basic usage with event routing::

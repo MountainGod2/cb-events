@@ -14,9 +14,9 @@ Thanks for pitching in. Here’s how to help:
 ## Setup
 
 1. Clone the repo.
-2. Install deps:
+2. Bootstrap the development environment:
    ```bash
-   make install
+   make setup
    ```
 3. Make a branch:
    ```bash
@@ -27,6 +27,13 @@ Thanks for pitching in. Here’s how to help:
    make pre-commit
    make ci
    ```
+   Optional advanced checks:
+
+```bash
+make help
+make check-all
+```
+
 5. Open a PR.
 
 ## PR Checklist
