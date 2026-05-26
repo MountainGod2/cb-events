@@ -77,6 +77,8 @@ jobs:
         run: uv sync --group=test --frozen
 
       - name: Run tests with coverage
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.python-version }}
         run: make test-cov
 
       - name: Upload coverage data artifact
@@ -84,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-data-py${{ matrix.python-version }}
-          path: .coverage*
+          path: .coverage.${{ matrix.python-version }}
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 2
