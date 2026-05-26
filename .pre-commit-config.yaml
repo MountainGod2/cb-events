@@ -78,6 +78,7 @@ repos:
         entry: uv run --group=docs mdformat
         language: system
         files: ^(docs/.*\.md|README\.md)$
+        exclude: ^docs/changelog\.md$
       - id: requirements-sync
         name: requirements.txt sync check
         entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
