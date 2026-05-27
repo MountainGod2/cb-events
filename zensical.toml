@@ -44,7 +44,7 @@ paths = ["src"]
 docstring_style = "google"
 merge_init_into_class = true
 show_source = false
-heading_level = 3
+heading_level = 4
 filters = ["!^_[^_]"]
 
 [project.markdown_extensions.admonition]
