@@ -35,7 +35,6 @@ make test
 Optional advanced commands:
 
 ```bash
-make help
 make security-full
 make check-all
 ```

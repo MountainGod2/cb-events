@@ -1,3 +1,7 @@
+______________________________________________________________________
+
+## title: Home
+
 # cb-events
 
 [![PyPI](https://img.shields.io/pypi/v/cb-events)](https://pypi.org/project/cb-events/)
@@ -15,12 +19,10 @@ from cb_events import Event, EventClient, EventType, Router
 
 router = Router()
 
-
 @router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-
 
 async def main() -> None:
     events_url = "https://eventsapi.chaturbate.com/events/username/token/"
@@ -36,4 +38,3 @@ asyncio.run(main())
 
 - [GitHub Repository](https://github.com/MountainGod2/cb-events)
 - [PyPI Package](https://pypi.org/project/cb-events/)
-- [Changelog](https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md)

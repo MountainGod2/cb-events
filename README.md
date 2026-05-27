@@ -1,4 +1,4 @@
-# CB Events
+# cb-events
 
 Async Python client for the Chaturbate Events API.
 

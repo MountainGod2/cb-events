@@ -12,11 +12,9 @@ nav = [
     { "Event Models" = "event_models.md" },
     { "Configuration" = "configuration.md" },
     { "Error Handling" = "error_handling.md" },
-    { "Changelog" = "changelog.md" },
     { "API Reference" = [
         { "Overview" = "api/index.md" },
         { "Modules" = [
-            { "cb_events" = "api/cb_events.md" },
             { "client" = "api/client.md" },
             { "config" = "api/config.md" },
             { "exceptions" = "api/exceptions.md" },
@@ -24,6 +22,7 @@ nav = [
             { "router" = "api/router.md" },
         ] },
     ] },
+    { "Changelog" = "changelog.md" },
 ]
 
 [project.theme]
