@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -103,7 +103,7 @@ class BaseEventModel(BaseModel):
     camelCase to snake_case conversion and immutability.
     """
 
-    model_config = ConfigDict(  # pyright: ignore[reportUnannotatedClassAttribute] # pylint: disable=line-too-long
+    model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
@@ -267,7 +267,7 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_SENTINEL: object = object()
+_SENTINEL: Final[object] = object()
 """Sentinel for cache-miss detection in Event property accessors."""
 
 
