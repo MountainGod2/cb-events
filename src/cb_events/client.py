@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 from http import HTTPStatus
-from typing import TYPE_CHECKING, ClassVar, Final, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
 from urllib.parse import quote, unquote, urljoin, urlparse
 
 import stamina
@@ -87,7 +87,7 @@ class _RetryableStatusError(Exception):
     ``_raise_request_failure`` can preserve HTTP details in the final error.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = ("response_text", "status_code")
+    __slots__: tuple[str, ...] = ("response_text", "status_code")
     status_code: int
     response_text: str
 
@@ -375,11 +375,14 @@ class EventClient:
     Example:
         Basic polling loop::
 
-            async with EventClient(
-                "https://eventsapi.chaturbate.com/events/username/token/"
-            ) as client:
-                async for event in client:
-                    print(f"Received {event.type}: {event.id}")
+            try:
+                async with EventClient("https://...") as client:
+                    async for event in client:
+                        print(f"Received {event.type}: {event.id}")
+            except AuthError:
+                print("Invalid credentials")
+            except EventsError as e:
+                print(f"Stream failed: {e}")
 
         Shared rate limiting across multiple clients::
 
@@ -403,7 +406,7 @@ class EventClient:
         Not thread-safe. Must be used as an async context manager.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = (
+    __slots__: tuple[str, ...] = (
         "_base_hostname",
         "_base_origin",
         "_base_scheme",
@@ -907,6 +910,10 @@ class EventClient:
     def __aiter__(self) -> AsyncIterator[Event]:
         """Implement async iteration over events.
 
+        Delegates to ``_stream()``. Exceptions from ``_stream()`` propagate
+        through the ``async for`` loop to the caller - they are not converted
+        to ``StopAsyncIteration``.
+
         Returns:
             Async iterator that yields Event instances indefinitely.
         """
@@ -915,14 +922,19 @@ class EventClient:
     async def _stream(self) -> AsyncGenerator[Event]:
         """Generate events continuously from the API.
 
+        Runs indefinitely until cancelled or a terminal error occurs. Transient
+        failures (network errors, 5xx responses) are retried automatically per
+        ``config.retry_attempts`` before surfacing.
+
         Yields:
             Event instances as they are received from the API.
+
+        Note:
+            The loop is naturally throttled: the server holds each long-poll connection open for
+            ``config.timeout`` seconds before responding. Empty results are therefore infrequent
+            under normal conditions. If the server begins returning empty responses immediately
+            (e.g. during an outage), the rate limiter provides a backstop.
         """
-        # The loop is naturally throttled: the server holds each long-poll
-        # connection open for config.timeout seconds before responding. Empty
-        # results are therefore infrequent under normal conditions. If the server
-        # begins returning empty responses immediately (e.g. during an outage),
-        # the rate limiter provides a backstop.
         while True:
             events = await self.poll()
             for event in events:
