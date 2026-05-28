@@ -191,8 +191,8 @@ class Router:
         Args:
             event: Event instance to dispatch to registered handlers.
         """
-        any_handlers = self._handlers.get(None, ())
-        typed_handlers = self._handlers.get(event.type, ())
+        any_handlers = tuple(self._handlers.get(None, ()))
+        typed_handlers = tuple(self._handlers.get(event.type, ()))
 
         if not any_handlers and not typed_handlers:
             return
