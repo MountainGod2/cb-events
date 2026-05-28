@@ -947,12 +947,16 @@ class EventClient:
         Yields:
             Event instances as they are received from the API.
 
+        Raises:
+            AuthError: If authentication fails (e.g. invalid token).
+            EventsError: If a non-retryable error occurs or retries are exhausted.
+
         Note:
             The loop is naturally throttled: the server holds each long-poll connection open for
             ``config.timeout`` seconds before responding. Empty results are therefore infrequent
             under normal conditions. If the server begins returning empty responses immediately
             (e.g. during an outage), the rate limiter provides a backstop.
-        """
+        """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
         while True:
             events = await self.poll()
             for event in events:
