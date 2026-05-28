@@ -729,6 +729,27 @@ class EventClient:
             return absolute, urlparse(absolute)
         return stripped, parsed
 
+    def _reject_next_url(
+        self,
+        log_msg: str,
+        *args: object,
+        exc_msg: str,
+        response_text: str,
+    ) -> NoReturn:
+        """Log nextUrl validation error and raise a standardized EventsError.
+
+        Args:
+            log_msg: Log message format string with placeholders for args.
+            *args: Arguments to format into the log message.
+            exc_msg: Error message for the raised EventsError.
+            response_text: Original response body for error diagnostics.
+
+        Raises:
+            EventsError: Always raised with the provided exc_msg and response_text.
+        """
+        logger.error(log_msg, *args, self.username)
+        raise EventsError(exc_msg, response_text=response_text)
+
     def _validate_next_url(
         self,
         next_url: object,
@@ -750,58 +771,55 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
             an unsupported scheme, or references a hostname other than the
             base API host.
-        """
+        """  # noqa: DOC502 # Static analysis may not recognize raised EventsError
         if next_url is None:
             return None
 
         invalid_next_url_msg = "Invalid API response: 'nextUrl' must be a non-empty string."
 
         if not isinstance(next_url, str):
-            logger.error(
+            self._reject_next_url(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
-                self.username,
+                exc_msg=invalid_next_url_msg,
+                response_text=response_text,
             )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         stripped = next_url.strip()
         if not stripped:
-            logger.error(
+            self._reject_next_url(
                 "Received empty nextUrl from API for user %s",
-                self.username,
+                exc_msg=invalid_next_url_msg,
+                response_text=response_text,
             )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         absolute, parsed = self._resolve_absolute_url(stripped)
 
         scheme = parsed.scheme
         if scheme != "https":
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
-                self.username,
+                exc_msg="Invalid nextUrl scheme; only https is allowed.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl scheme; only https is allowed."
-            raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
         allowed_host = self._base_hostname
         if not hostname:
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl without hostname for user %s",
-                self.username,
+                exc_msg="Invalid nextUrl host.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl host."
-            raise EventsError(msg, response_text=response_text)
 
         if hostname.lower() != allowed_host:
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
-                self.username,
+                exc_msg="Invalid nextUrl host.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl host."
-            raise EventsError(msg, response_text=response_text)
 
         return absolute
 
