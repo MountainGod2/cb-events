@@ -275,7 +275,7 @@ class HueController:
 
         Any pending revert timer is cancelled and restarted so the timeout
         always counts from the most recent tip, and the target is always the
-        original startup state — not whichever colour was active before
+        original startup state - not whichever colour was active before
         this call.
         """
         xy = COLOR_XY.get(color.strip().lower())
@@ -436,7 +436,7 @@ def register(host: str | None, env_file: str) -> None:
     async def _register() -> None:
         bridge_host = host or os.getenv("HUE_IP")
         if not bridge_host:
-            logger.info("No host provided — running bridge discovery...")
+            logger.info("No host provided - running bridge discovery...")
             bridges = await discover_nupnp()
             if not bridges:
                 msg = "No Hue bridges found on the network."
@@ -452,7 +452,7 @@ def register(host: str | None, env_file: str) -> None:
         set_key(env_file, "HUE_IP", bridge_host)
         set_key(env_file, "HUE_APP_KEY", app_key)
         click.echo(f"\nSuccess! App key saved to {env_file}")
-        click.echo("Store this key safely — it does not expire.")
+        click.echo("Store this key safely - it does not expire.")
 
     try:
         asyncio.run(_register())

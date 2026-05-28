@@ -224,7 +224,7 @@ def test_event_property_validation_errors_logged(
     })
 
     assert getattr(event, attr_name) is None
-    # Access again — result is cached, so no additional warning is expected
+    # Access again. Result is cached, so no additional warning is expected
     assert getattr(event, attr_name) is None
     warning_records = [
         r
