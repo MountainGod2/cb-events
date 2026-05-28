@@ -82,7 +82,7 @@ jobs:
         run: make test-cov
 
       - name: Upload coverage data artifact
-        if: ${{ !cancelled() && contains(fromJSON('["3.12", "3.13", "3.14"]'), matrix.python-version) }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-data-py${{ matrix.python-version }}
@@ -125,7 +125,7 @@ jobs:
         run: uv cache prune --ci
 
   coverage-summary:
-    name: Coverage Summary (3.12-3.14)
+    name: Coverage Summary
     needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -166,7 +166,7 @@ jobs:
           {
             echo "## Coverage Summary"
             echo
-            echo "Combined branch coverage for Python 3.12, 3.13, and 3.14."
+            echo "Combined branch coverage for supported Python versions."
             echo
             echo '```text'
             cat coverage-report.txt
