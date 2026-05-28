@@ -23,6 +23,8 @@ Example:
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
@@ -45,7 +47,7 @@ class ClientConfig(BaseModel):
         configuration values.
     """
 
-    model_config = ConfigDict(frozen=True)  # pyright: ignore[reportUnannotatedClassAttribute] # pylint: disable=line-too-long
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
     timeout: int = Field(default=10, gt=0)
     """Server long-poll timeout in seconds."""

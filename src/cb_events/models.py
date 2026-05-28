@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -103,7 +103,7 @@ class BaseEventModel(BaseModel):
     camelCase to snake_case conversion and immutability.
     """
 
-    model_config = ConfigDict(  # pyright: ignore[reportUnannotatedClassAttribute] # pylint: disable=line-too-long
+    model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
@@ -168,10 +168,10 @@ class User(BaseEventModel):
     recent_tips: Literal["none", "few", "some", "lots", "tons"] | None = None
     """How much the user has tipped recently.
 
-    Possible values: ``"none"`` (no recent tips, no tokens — grey username),
-    ``"few"`` (few or no recent tips, has tokens — light blue),
-    ``"some"`` (some recent tips — dark blue), ``"lots"`` (lots — purple),
-    ``"tons"`` (tons — dark purple).
+    Possible values: ``"none"`` (no recent tips, no tokens - grey username),
+    ``"few"`` (few or no recent tips, has tokens - light blue),
+    ``"some"`` (some recent tips - dark blue), ``"lots"`` (lots - purple),
+    ``"tons"`` (tons - dark purple).
 
     Note:
         The value ``"none"`` is truthy. Compare explicitly with
@@ -267,7 +267,7 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_SENTINEL: object = object()
+_SENTINEL: Final[object] = object()
 """Sentinel for cache-miss detection in Event property accessors."""
 
 
@@ -275,7 +275,7 @@ class Event(BaseEventModel):
     """Event from the Chaturbate Events API.
 
     The main event container that wraps all event types. Use the typed
-    properties to access nested data safely—they return None if data is missing
+    properties to access nested data safely-they return None if data is missing
     or invalid for the event type.
 
     Example:

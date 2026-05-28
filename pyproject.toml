@@ -80,9 +80,6 @@ compile-bytecode = true
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
 default-groups = []
-exclude-newer = "1 week"
-# Exclude our package from newer checks to update examples immediately
-exclude-newer-package = { "cb-events" = false }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]

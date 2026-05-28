@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 from http import HTTPStatus
-from typing import TYPE_CHECKING, ClassVar, Final, NoReturn, TypeGuard
+from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
 from urllib.parse import quote, unquote, urljoin, urlparse
 
 import stamina
@@ -87,7 +87,7 @@ class _RetryableStatusError(Exception):
     ``_raise_request_failure`` can preserve HTTP details in the final error.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = ("response_text", "status_code")
+    __slots__: tuple[str, ...] = ("response_text", "status_code")
     status_code: int
     response_text: str
 
@@ -375,11 +375,14 @@ class EventClient:
     Example:
         Basic polling loop::
 
-            async with EventClient(
-                "https://eventsapi.chaturbate.com/events/username/token/"
-            ) as client:
-                async for event in client:
-                    print(f"Received {event.type}: {event.id}")
+            try:
+                async with EventClient("https://...") as client:
+                    async for event in client:
+                        print(f"Received {event.type}: {event.id}")
+            except AuthError:
+                print("Invalid credentials")
+            except EventsError as e:
+                print(f"Stream failed: {e}")
 
         Shared rate limiting across multiple clients::
 
@@ -403,7 +406,7 @@ class EventClient:
         Not thread-safe. Must be used as an async context manager.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = (
+    __slots__: tuple[str, ...] = (
         "_base_hostname",
         "_base_origin",
         "_base_scheme",
@@ -726,6 +729,27 @@ class EventClient:
             return absolute, urlparse(absolute)
         return stripped, parsed
 
+    def _reject_next_url(
+        self,
+        log_msg: str,
+        *args: object,
+        exc_msg: str,
+        response_text: str,
+    ) -> NoReturn:
+        """Log nextUrl validation error and raise a standardized EventsError.
+
+        Args:
+            log_msg: Log message format string with placeholders for args.
+            *args: Arguments to format into the log message.
+            exc_msg: Error message for the raised EventsError.
+            response_text: Original response body for error diagnostics.
+
+        Raises:
+            EventsError: Always raised with the provided exc_msg and response_text.
+        """
+        logger.error(log_msg, *args, self.username)
+        raise EventsError(exc_msg, response_text=response_text)
+
     def _validate_next_url(
         self,
         next_url: object,
@@ -747,58 +771,55 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
             an unsupported scheme, or references a hostname other than the
             base API host.
-        """
+        """  # noqa: DOC502 # Static analysis may not recognize raised EventsError
         if next_url is None:
             return None
 
         invalid_next_url_msg = "Invalid API response: 'nextUrl' must be a non-empty string."
 
         if not isinstance(next_url, str):
-            logger.error(
+            self._reject_next_url(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
-                self.username,
+                exc_msg=invalid_next_url_msg,
+                response_text=response_text,
             )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         stripped = next_url.strip()
         if not stripped:
-            logger.error(
+            self._reject_next_url(
                 "Received empty nextUrl from API for user %s",
-                self.username,
+                exc_msg=invalid_next_url_msg,
+                response_text=response_text,
             )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         absolute, parsed = self._resolve_absolute_url(stripped)
 
         scheme = parsed.scheme
         if scheme != "https":
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
-                self.username,
+                exc_msg="Invalid nextUrl scheme; only https is allowed.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl scheme; only https is allowed."
-            raise EventsError(msg, response_text=response_text)
 
         hostname = parsed.hostname
         allowed_host = self._base_hostname
         if not hostname:
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl without hostname for user %s",
-                self.username,
+                exc_msg="Invalid nextUrl host.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl host."
-            raise EventsError(msg, response_text=response_text)
 
         if hostname.lower() != allowed_host:
-            logger.error(
+            self._reject_next_url(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
-                self.username,
+                exc_msg="Invalid nextUrl host.",
+                response_text=response_text,
             )
-            msg = "Invalid nextUrl host."
-            raise EventsError(msg, response_text=response_text)
 
         return absolute
 
@@ -907,6 +928,10 @@ class EventClient:
     def __aiter__(self) -> AsyncIterator[Event]:
         """Implement async iteration over events.
 
+        Delegates to ``_stream()``. Exceptions from ``_stream()`` propagate
+        through the ``async for`` loop to the caller - they are not converted
+        to ``StopAsyncIteration``.
+
         Returns:
             Async iterator that yields Event instances indefinitely.
         """
@@ -915,14 +940,23 @@ class EventClient:
     async def _stream(self) -> AsyncGenerator[Event]:
         """Generate events continuously from the API.
 
+        Runs indefinitely until cancelled or a terminal error occurs. Transient
+        failures (network errors, 5xx responses) are retried automatically per
+        ``config.retry_attempts`` before surfacing.
+
         Yields:
             Event instances as they are received from the API.
-        """
-        # The loop is naturally throttled: the server holds each long-poll
-        # connection open for config.timeout seconds before responding. Empty
-        # results are therefore infrequent under normal conditions. If the server
-        # begins returning empty responses immediately (e.g. during an outage),
-        # the rate limiter provides a backstop.
+
+        Raises:
+            AuthError: If authentication fails (e.g. invalid token).
+            EventsError: If a non-retryable error occurs or retries are exhausted.
+
+        Note:
+            The loop is naturally throttled: the server holds each long-poll connection open for
+            ``config.timeout`` seconds before responding. Empty results are therefore infrequent
+            under normal conditions. If the server begins returning empty responses immediately
+            (e.g. during an outage), the rate limiter provides a backstop.
+        """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
         while True:
             events = await self.poll()
             for event in events:

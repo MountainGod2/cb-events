@@ -42,13 +42,6 @@ repos:
       - id: renovate-config-validator
         args: [--strict]
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.2
-    hooks:
-      - id: pyupgrade
-        name: pyupgrade
-        args: [--py310-plus]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.13
     hooks:
@@ -78,18 +71,22 @@ repos:
         entry: uv run --group=docs mdformat
         language: system
         files: ^(docs/.*\.md|README\.md)$
+
       - id: requirements-sync
         name: requirements.txt sync check
         entry: bash -c 'uv export --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|uv\.lock)$
+
       - id: pip-audit
         name: pip audit security scan
         entry: uv run --group=security pip-audit -r requirements.txt
         language: system
         pass_filenames: false
         always_run: true
+        files: ^(pyproject\.toml|uv\.lock|requirements\.txt)$
+
       - id: xenon
         name: xenon complexity check
         entry: uv run --group=lint xenon --max-absolute B --max-modules A --ignore tests .

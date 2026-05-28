@@ -1,54 +1,86 @@
 # Contributing to cb-events
 
-Thanks for pitching in. Here’s how to help:
-
-## Ways to Contribute
-
-- **Bug?**
-    - Describe your OS, Python version, and how to trigger it.
-- **Feature idea?**
-    - Open an issue or PR.
-- **Docs unclear?**
-    - PRs for docs, comments, or examples are always welcome.
-
 ## Setup
 
-1. Clone the repo.
+Requires [uv](https://docs.astral.sh/uv/).
 
-2. Bootstrap the development environment:
+```bash
+make setup
+```
 
-    ```bash
-    make setup
-    ```
+This installs all dependency groups, the supported Python versions, and the pre-commit hooks.
+`make setup` is equivalent to `uv sync --all-groups` followed by Python version installs and
+pre-commit setup - either works if you want to handle those steps yourself.
 
-3. Make a branch:
+## Common Commands
 
-    ```bash
-    git checkout -b my-change
-    ```
+```bash
+make format       # format code
+make fix          # format + apply lint autofixes
+make lint         # lint, type-check, complexity
+make test         # run tests (excludes live)
+make test-cov     # tests with coverage report
+make pre-commit   # run all pre-commit hooks
+make ci           # full local CI equivalent (lint + security + test-cov)
+make check-all    # lint + tests across all supported Python versions
+make help         # list all targets
+```
 
-4. Run checks:
+## Tests
 
-    ```bash
-    make pre-commit
-    make ci
-    ```
+```bash
+make test                    # default: excludes @pytest.mark.live
+make test-cov-lowest-direct  # resolve lowest dep bounds, then test
+make check-all               # isolated envs for each supported Python version
+```
 
-    Optional advanced checks:
+Live end-to-end tests require explicit opt-in:
 
-    ```bash
-    make help
-    make check-all
-    ```
+```bash
+CB_RUN_LIVE_TESTS=1 CB_EVENTS_URL="https://eventsapi.chaturbate.com/events/user/token/" \
+  make test-live
+```
 
-5. Open a PR.
+## Dependency Management
+
+The lock file is maintained by Renovate, which opens automated PRs weekly. You don't
+normally need to touch it. If you need to pull in a specific package ahead of the next
+update:
+
+```bash
+uv lock --upgrade-package aiohttp
+```
+
+If you change `pyproject.toml`, regenerate `requirements.txt` (CI checks it's in sync):
+
+```bash
+make requirements-export
+```
+
+## Commit Messages
+
+[Conventional Commits](https://www.conventionalcommits.org/) format is enforced. A scope
+is required:
+
+```text
+feat(router): add handler priority support
+fix(client): handle empty nextUrl in timeout response
+docs(readme): clarify token generation
+```
+
+Types: `feat` → minor bump, `fix`/`perf` → patch bump. Breaking changes: add `!` or a
+`BREAKING CHANGE:` footer.
+
+## Releases
+
+Automated via python-semantic-release on merge to `main`. No manual steps required.
 
 ## PR Checklist
 
-- Add or update tests if needed.
-- Update docs for new/changed features.
-- Make sure it works on all supported OSes and Python versions.
+- Tests added or updated for any changed behaviour
+- Docstrings and docs updated for any changed public API
+- `make ci` passes locally
 
 ## Code of Conduct
 
-Be decent. By contributing, you agree to our Code of Conduct.
+By contributing, you agree to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).

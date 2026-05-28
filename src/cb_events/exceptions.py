@@ -28,11 +28,15 @@ Example:
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Final
 
 from typing_extensions import override
 
-AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({401, 403})
+AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
+    HTTPStatus.UNAUTHORIZED.value,
+    HTTPStatus.FORBIDDEN.value,
+})
 """HTTP status codes indicating authentication failures."""
 
 CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
@@ -41,7 +45,7 @@ CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum characters stored in response_text to limit PII exposure in logs."""
 
-_RATE_LIMIT_STATUS_CODE: Final[int] = 429
+_RATE_LIMIT_STATUS_CODE: Final[int] = HTTPStatus.TOO_MANY_REQUESTS.value
 """HTTP status code indicating rate-limiting failures."""
 
 
