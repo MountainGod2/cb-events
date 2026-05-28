@@ -62,7 +62,7 @@ make requirements-export
 [Conventional Commits](https://www.conventionalcommits.org/) format is enforced. A scope
 is required:
 
-```
+```text
 feat(router): add handler priority support
 fix(client): handle empty nextUrl in timeout response
 docs(readme): clarify token generation
