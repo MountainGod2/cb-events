@@ -28,6 +28,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 from inspect import getattr_static, iscoroutinefunction
+from itertools import chain
 from typing import TYPE_CHECKING, TypeAlias
 
 from .models import Event
@@ -190,20 +191,20 @@ class Router:
         Args:
             event: Event instance to dispatch to registered handlers.
         """
-        handlers = [
-            *self._handlers.get(None, []),
-            *self._handlers.get(event.type, []),
-        ]
+        any_handlers = self._handlers.get(None, ())
+        typed_handlers = self._handlers.get(event.type, ())
 
-        if not handlers:
+        if not any_handlers and not typed_handlers:
             return
+
+        handler_count = len(any_handlers) + len(typed_handlers)
 
         logger.debug(
             "Dispatching %s event %s to %d handlers",
             event.type,
             event.id,
-            len(handlers),
+            handler_count,
         )
 
-        for handler in handlers:
+        for handler in chain(any_handlers, typed_handlers):
             await _dispatch_handler(handler, event)
