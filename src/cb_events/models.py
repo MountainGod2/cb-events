@@ -405,7 +405,7 @@ class Event(BaseEventModel):
         Returns:
             Validated model instance or None if unavailable or invalid.
         """
-        if allowed_types and self.type not in allowed_types:
+        if allowed_types is not None and self.type not in allowed_types:
             return None
 
         cache = self._cache
