@@ -7,7 +7,7 @@ import pytest
 from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
 
-from cb_events import AuthError, ClientConfig, EventClient
+from cb_events import AuthError, ClientConfig, EventClient, EventsError
 from cb_events.client import (
     _mask_token,
     _mask_url,
@@ -158,6 +158,27 @@ async def test_properties_accessible_after_close() -> None:
     await client.close()
     assert client.username == "user"
     assert client.session is None
+
+
+async def test_poll_after_close_raises_terminal_state() -> None:
+    """Polling after close should fail with a terminal lifecycle error."""
+    client = EventClient(make_events_url("user", "test_token"))
+    await client.close()
+
+    with pytest.raises(EventsError, match="closing or closed"):
+        await client.poll()
+
+
+async def test_enter_after_close_raises_terminal_state() -> None:
+    """A closed client should not support re-entry."""
+    client = EventClient(make_events_url("user", "test_token"))
+
+    async with client:
+        pass
+
+    with pytest.raises(EventsError, match="cannot be reopened"):
+        async with client:
+            pass
 
 
 @pytest.mark.parametrize(
