@@ -11,10 +11,6 @@ if TYPE_CHECKING:
 
 CORE_EVENT_TYPES: tuple[EventType, ...] = tuple(EventType)
 
-TESTBED_EVENTS_URL = "https://events.testbed.cb.dev/events/test_user/test_token/"
-
-TESTBED_POLL_URL = "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
-
 
 def make_events_url(
     username: str,

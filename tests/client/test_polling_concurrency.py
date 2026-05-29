@@ -8,7 +8,9 @@ from aioresponses import aioresponses
 
 from cb_events import EventClient, EventsError, EventType
 from tests.conftest import EventClientFactory
-from tests.helpers import TESTBED_POLL_URL, make_event, make_response
+from tests.helpers import make_event, make_response
+
+TESTBED_POLL_URL = "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
 
 
 async def test_concurrent_polls_serialized(
