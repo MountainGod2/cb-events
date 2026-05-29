@@ -9,12 +9,19 @@ on:
         required: true
       RELEASE_APP_PRIVATE_KEY:
         required: true
+  workflow_dispatch:
+    inputs:
+      publish_tag:
+        description: Existing git tag to publish from (for retrying PyPI upload)
+        required: true
+        type: string
 
 permissions: {}
 
 jobs:
   build:
     name: Build
+    if: github.event_name == 'workflow_call'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -68,7 +75,7 @@ jobs:
   e2e:
     name: Live E2E Tests
     needs: build
-    if: needs.build.outputs.released == 'true'
+    if: github.event_name == 'workflow_call' && needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: e2e
@@ -105,8 +112,31 @@ jobs:
       - name: Install built wheel
         run: uv pip install dist/cb_events-*.whl
 
+      - name: Validate live test inputs
+        run: |
+          if [[ -z "${CB_EVENTS_URL:-}" ]]; then
+            echo "::error::CB_EVENTS_URL is empty."
+            exit 1
+          fi
+          uv run --no-sync python - <<'PY'
+          import os
+          import sys
+
+          from cb_events.client import _parse_events_url
+          from cb_events.exceptions import AuthError
+
+          events_url = os.environ.get("CB_EVENTS_URL", "")
+          try:
+              _parse_events_url(events_url)
+          except AuthError as exc:
+              print(f"::error::Invalid CB_EVENTS_URL: {exc}")
+              sys.exit(1)
+          PY
+
       - name: Run live E2E tests
-        run: make test-live
+        env:
+          UV_NO_SYNC: "1"
+        run: make test-live PYTEST="uv run --no-sync pytest"
 
       - name: Prune uv cache
         if: always()
@@ -115,7 +145,7 @@ jobs:
   release:
     name: Release
     needs: [build, e2e]
-    if: needs.build.outputs.released == 'true'
+    if: github.event_name == 'workflow_call' && needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: release
@@ -174,7 +204,7 @@ jobs:
   deploy:
     name: Deploy to PyPI
     needs: [build, release]
-    if: needs.build.outputs.released == 'true'
+    if: github.event_name == 'workflow_call' && needs.build.outputs.released == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
@@ -198,6 +228,55 @@ jobs:
           print-hash: true
           verbose: true
           attestations: true
+          skip-existing: true
+
+      - name: Generate build provenance
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: dist/*
+
+  publish-only:
+    name: Publish Existing Tag to PyPI
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/cb-events/
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout existing tag
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.publish_tag }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.15"
+          python-version: "3.13"
+          enable-cache: false
+          cache-suffix: publish-only-3.13-${{ hashFiles('uv.lock') }}
+
+      - name: Sync build dependencies
+        run: uv sync --group build --no-default-groups --frozen
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          packages-dir: dist
+          print-hash: true
+          verbose: true
+          attestations: true
+          skip-existing: true
 
       - name: Generate build provenance
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
