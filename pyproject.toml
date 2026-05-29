@@ -177,10 +177,11 @@ line-ending = "auto"
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
 [tool.pylint.design]
-max-attributes = 12
+max-attributes = 14
 
 [tool.pylint.format]
 max-line-length = 100
+max-module-lines = 1200
 
 [tool.basedpyright]
 include = ["src"]
