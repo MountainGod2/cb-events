@@ -136,7 +136,7 @@ async def handle_media_purchase(event: Event) -> None:
         )
 
 
-@router.on_any()
+@router.on_any
 async def handle_any_event(event: Event) -> None:
     """Handle any event (for debugging purposes)."""
     logger.debug("Event received: %s", event.type)

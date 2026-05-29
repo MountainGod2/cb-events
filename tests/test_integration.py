@@ -48,7 +48,7 @@ async def test_client_router_workflow(
         await asyncio.sleep(0)
         events_received.append(event)
 
-    @router.on_any()
+    @router.on_any
     async def handle_any(event: Event) -> None:
         await asyncio.sleep(0)
         events_received.append(f"any:{event.type}")
