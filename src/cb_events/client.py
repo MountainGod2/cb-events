@@ -451,7 +451,10 @@ class EventClient:
             rate_limiter: Optional shared rate limiter to coordinate calls
                 across multiple clients.
         """
-        self.base_url, self.username, self.token = _parse_events_url(events_url)
+        base_url, username, token = _parse_events_url(events_url)
+        self.base_url: str = base_url
+        self.username: str = username
+        self.token: str = token
         self.config: ClientConfig = config or ClientConfig()
         parsed_base = urlparse(self.base_url)
         self._base_scheme: str = parsed_base.scheme
@@ -1022,7 +1025,7 @@ class EventClient:
         poll_task = self._active_poll_task
         current_task = asyncio.current_task()
         if poll_task is not None and poll_task is not current_task and not poll_task.done():
-            poll_task.cancel()
+            _ = poll_task.cancel()
             with suppress(asyncio.CancelledError, EventsError):
                 await poll_task
 
