@@ -34,7 +34,7 @@ from .exceptions import (
 from .models import Event
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+    from collections.abc import AsyncGenerator, Sequence
     from types import TracebackType
     from urllib.parse import ParseResult
 
@@ -921,19 +921,7 @@ class EventClient:
             status, text = await self._request(url)
             return self._process_response(status, text)
 
-    def __aiter__(self) -> AsyncIterator[Event]:
-        """Implement async iteration over events.
-
-        Delegates to ``_stream()``. Exceptions from ``_stream()`` propagate
-        through the ``async for`` loop to the caller - they are not converted
-        to ``StopAsyncIteration``.
-
-        Returns:
-            Async iterator that yields Event instances indefinitely.
-        """
-        return self._stream()
-
-    async def _stream(self) -> AsyncGenerator[Event]:
+    async def __aiter__(self) -> AsyncGenerator[Event]:
         """Generate events continuously from the API.
 
         Runs indefinitely until cancelled or a terminal error occurs. Transient
