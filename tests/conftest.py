@@ -32,8 +32,6 @@ class EventClientFactory(Protocol):
 
 @pytest.fixture(autouse=True)
 def reset_stamina_state() -> Iterator[None]:
-    stamina.set_active(True)
-    stamina.set_testing(False)
     yield
     stamina.set_active(True)
     stamina.set_testing(False)
