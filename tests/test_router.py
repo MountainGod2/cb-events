@@ -35,12 +35,30 @@ async def test_dispatch_to_any_handler(
     method: EventType,
 ) -> None:
     """Handlers via ``on_any`` receive events regardless of type."""
-    router.on_any()(mock_handler)
+    router.on_any(mock_handler)
     event = Event.model_validate(make_event(method, event_id="test"))
 
     await router.dispatch(event)
 
     mock_handler.assert_called_once_with(event)
+
+
+@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
+async def test_dispatch_to_any_handler_with_bare_decorator(
+    router: Router,
+    method: EventType,
+) -> None:
+    """``@router.on_any`` should register and receive all event types."""
+    seen: list[str] = []
+
+    @router.on_any
+    async def any_handler(event: Event) -> None:
+        seen.append(event.id)
+
+    event = Event.model_validate(make_event(method, event_id="test"))
+    await router.dispatch(event)
+
+    assert seen == [event.id]
 
 
 async def test_dispatch_calls_multiple_handlers_in_order(
@@ -149,6 +167,15 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
     with pytest.raises(TypeError, match="must be async"):
 
         @router.on_any()  # pyright: ignore[reportArgumentType]
+        def sync_handler(event: Event) -> None:
+            pass
+
+
+def test_reject_non_async_handler_on_any_bare_decorator(router: Router) -> None:
+    """Registering a non-async handler with on_any should raise TypeError."""
+    with pytest.raises(TypeError, match="must be async"):
+
+        @router.on_any  # pyright: ignore[reportArgumentType]
         def sync_handler(event: Event) -> None:
             pass
 

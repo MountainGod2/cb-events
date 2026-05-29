@@ -55,7 +55,7 @@ mountaingod2 tipped 100 tokens
 ## Catch-All Handler
 
 ```python
-@router.on_any()
+@router.on_any
 async def handle_all(event: Event) -> None:
     print(f"Event type: {event.type}")
 ```

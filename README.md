@@ -6,7 +6,7 @@ Async Python client for the Chaturbate Events API.
 [![Tag](https://img.shields.io/github/v/tag/MountainGod2/cb-events)](https://github.com/MountainGod2/cb-events/releases)
 [![Python](https://img.shields.io/pypi/pyversions/cb-events)](https://pypi.org/project/cb-events/)
 [![OpenSSF Best Practices](https://img.shields.io/cii/summary/12375?label=openssf%20best%20practices)](https://www.bestpractices.dev/en/projects/12375)
-[![Builds](https://img.shields.io/github/actions/workflow/status/MountainGod2/cb-events/ci-cd.yml?label=builds)](https://github.com/MountainGod2/cb-events/actions/workflows/ci-cd.yml)
+[![Builds](https://img.shields.io/github/actions/workflow/status/MountainGod2/cb-events/release.yml?label=builds)](https://github.com/MountainGod2/cb-events/actions/workflows/release.yml)
 [![License](https://img.shields.io/github/license/MountainGod2/cb-events?label=license)](https://github.com/MountainGod2/cb-events/blob/main/LICENSE)
 
 Provides event polling, typed models, retries, and routing.

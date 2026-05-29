@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import suppress
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
 from urllib.parse import quote, unquote, urljoin, urlparse
@@ -34,7 +35,7 @@ from .exceptions import (
 from .models import Event
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+    from collections.abc import AsyncGenerator, Sequence
     from types import TracebackType
     from urllib.parse import ParseResult
 
@@ -71,6 +72,17 @@ RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 
 TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
 """Status message indicating API polling timeout."""
+
+CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
+"""Error message raised when polling is attempted during shutdown."""
+
+CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
+    "Client is closed and cannot be reopened. Create a new EventClient instance."
+)
+"""Error message raised when entering a client after it has been closed."""
+
+POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
+"""Error message raised when close() cancels an in-flight poll()."""
 
 SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "eventsapi.chaturbate.com": BASE_URL,
@@ -407,9 +419,12 @@ class EventClient:
     """
 
     __slots__: tuple[str, ...] = (
+        "_active_poll_task",
         "_base_hostname",
         "_base_origin",
         "_base_scheme",
+        "_closed_event",
+        "_closing_event",
         "_next_url",
         "_polling_lock",
         "_rate_limiter",
@@ -419,10 +434,6 @@ class EventClient:
         "token",
         "username",
     )
-
-    base_url: str
-    username: str
-    token: str
 
     def __init__(
         self,
@@ -440,7 +451,10 @@ class EventClient:
             rate_limiter: Optional shared rate limiter to coordinate calls
                 across multiple clients.
         """
-        self.base_url, self.username, self.token = _parse_events_url(events_url)
+        base_url, username, token = _parse_events_url(events_url)
+        self.base_url: str = base_url
+        self.username: str = username
+        self.token: str = token
         self.config: ClientConfig = config or ClientConfig()
         parsed_base = urlparse(self.base_url)
         self._base_scheme: str = parsed_base.scheme
@@ -450,6 +464,9 @@ class EventClient:
             self._base_origin = self.base_url
         self._base_hostname: str | None = parsed_base.hostname
         self.session: ClientSession | None = None
+        self._active_poll_task: asyncio.Task[object] | None = None
+        self._closing_event: asyncio.Event = asyncio.Event()
+        self._closed_event: asyncio.Event = asyncio.Event()
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
@@ -475,6 +492,8 @@ class EventClient:
         Raises:
             EventsError: If session creation fails.
         """
+        if self._closed_event.is_set():
+            raise EventsError(CLIENT_CLOSED_ENTER_MESSAGE)
         if self.session is not None:
             msg = "Client is already open. Use a new instance or exit the current context first."
             raise EventsError(msg)
@@ -729,10 +748,11 @@ class EventClient:
             return absolute, urlparse(absolute)
         return stripped, parsed
 
+    @staticmethod
     def _reject_next_url(
-        self,
         log_msg: str,
         *args: object,
+        username: str,
         exc_msg: str,
         response_text: str,
     ) -> NoReturn:
@@ -741,13 +761,14 @@ class EventClient:
         Args:
             log_msg: Log message format string with placeholders for args.
             *args: Arguments to format into the log message.
+            username: Username to include explicitly in log output.
             exc_msg: Error message for the raised EventsError.
             response_text: Original response body for error diagnostics.
 
         Raises:
             EventsError: Always raised with the provided exc_msg and response_text.
         """
-        logger.error(log_msg, *args, self.username)
+        logger.error(log_msg, *args, username)
         raise EventsError(exc_msg, response_text=response_text)
 
     def _validate_next_url(
@@ -781,6 +802,7 @@ class EventClient:
             self._reject_next_url(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
+                username=self.username,
                 exc_msg=invalid_next_url_msg,
                 response_text=response_text,
             )
@@ -789,6 +811,7 @@ class EventClient:
         if not stripped:
             self._reject_next_url(
                 "Received empty nextUrl from API for user %s",
+                username=self.username,
                 exc_msg=invalid_next_url_msg,
                 response_text=response_text,
             )
@@ -800,6 +823,7 @@ class EventClient:
             self._reject_next_url(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
+                username=self.username,
                 exc_msg="Invalid nextUrl scheme; only https is allowed.",
                 response_text=response_text,
             )
@@ -809,6 +833,7 @@ class EventClient:
         if not hostname:
             self._reject_next_url(
                 "Received nextUrl without hostname for user %s",
+                username=self.username,
                 exc_msg="Invalid nextUrl host.",
                 response_text=response_text,
             )
@@ -817,6 +842,7 @@ class EventClient:
             self._reject_next_url(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
+                username=self.username,
                 exc_msg="Invalid nextUrl host.",
                 response_text=response_text,
             )
@@ -916,28 +942,45 @@ class EventClient:
 
         Returns:
             List of events received, or an empty list on timeout.
+
+        Raises:
+            EventsError: If shutdown has started or if close() cancels this poll.
+            asyncio.CancelledError: If the polling task is cancelled externally.
+
+        Note:
+            Holds ``_polling_lock`` for the full request so ``_next_url`` progression remains
+            serialized and ``session`` is not detached mid-poll. ``close`` may cancel an active
+            poll task, then waits for lock handoff to complete state reset.
         """
+        if self._closing_event.is_set() or self._closed_event.is_set():
+            raise EventsError(CLIENT_CLOSING_MESSAGE)
+
+        current_task = asyncio.current_task()
+        if current_task is None:
+            msg = "Unable to resolve current asyncio task."
+            raise EventsError(msg)
+
         async with self._polling_lock:
+            if self._closing_event.is_set() or self._closed_event.is_set():
+                raise EventsError(CLIENT_CLOSING_MESSAGE)
+
+            self._active_poll_task = current_task
             url = self._build_url()
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Polling %s", _mask_url(url, self.token))
 
-            status, text = await self._request(url)
-            return self._process_response(status, text)
+            try:
+                status, text = await self._request(url)
+                return self._process_response(status, text)
+            except asyncio.CancelledError:
+                if self._closing_event.is_set():
+                    raise EventsError(POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
+                raise
+            finally:
+                if self._active_poll_task is current_task:
+                    self._active_poll_task = None
 
-    def __aiter__(self) -> AsyncIterator[Event]:
-        """Implement async iteration over events.
-
-        Delegates to ``_stream()``. Exceptions from ``_stream()`` propagate
-        through the ``async for`` loop to the caller - they are not converted
-        to ``StopAsyncIteration``.
-
-        Returns:
-            Async iterator that yields Event instances indefinitely.
-        """
-        return self._stream()
-
-    async def _stream(self) -> AsyncGenerator[Event]:
+    async def __aiter__(self) -> AsyncGenerator[Event]:
         """Generate events continuously from the API.
 
         Runs indefinitely until cancelled or a terminal error occurs. Transient
@@ -970,15 +1013,34 @@ class EventClient:
         context manager.
 
         Note:
-            After calling close(), the client must be re-entered via
-            async with before making further requests.
+            Close marks the client as terminal state. Re-entry is not supported;
+            create a new client instance after close().
         """
+        if self._closed_event.is_set():
+            return
+
+        self._closing_event.set()
+
+        # Cancel any in-flight poll task first so lock handoff is fast on shutdown.
+        poll_task = self._active_poll_task
+        current_task = asyncio.current_task()
+        if poll_task is not None and poll_task is not current_task and not poll_task.done():
+            _ = poll_task.cancel()
+            with suppress(asyncio.CancelledError, EventsError):
+                await poll_task
+
+        # Two-phase close:
+        # - Under lock: detach session and reset poll state.
+        # - Outside lock: await session.close() so lock is not held on I/O.
         async with self._polling_lock:
             session: ClientSession | None = self.session
             self.session = None
             self._next_url = None
+            self._active_poll_task = None
         if session is not None:
             try:
-                await session.close()
+                await asyncio.shield(session.close())
             except (ClientError, OSError, RuntimeError) as e:
                 logger.warning("Error closing session: %s", e, exc_info=True)
+
+        self._closed_event.set()

@@ -3,11 +3,14 @@
 import asyncio
 import re
 
+import pytest
 from aioresponses import aioresponses
 
-from cb_events import EventType
+from cb_events import EventClient, EventsError, EventType
 from tests.conftest import EventClientFactory
-from tests.helpers import TESTBED_POLL_URL, make_event, make_response
+from tests.helpers import make_event, make_response
+
+TESTBED_POLL_URL = "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
 
 
 async def test_concurrent_polls_serialized(
@@ -36,3 +39,30 @@ async def test_concurrent_polls_serialized(
     assert len(results) == 3
     assert all(len(events) == 1 and events[0].type == EventType.TIP for events in results)
     assert [events[0].id for events in results] == ["1", "2", "3"]
+
+
+async def test_close_cancels_inflight_poll(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Close should cancel a running poll and finish without waiting for long I/O."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        started.set()
+        await release.wait()
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+        poll_task = asyncio.create_task(client.poll())
+        await started.wait()
+
+        await client.close()
+
+        with pytest.raises(EventsError, match="client is closing"):
+            await poll_task
+
+        assert client.session is None

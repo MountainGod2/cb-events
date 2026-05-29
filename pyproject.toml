@@ -49,7 +49,7 @@ lint = [
     "pre-commit==4.6.0",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
-    "ruff==0.15.13",
+    "ruff==0.15.14",
     "xenon==0.9.3",
 ]
 test = [
@@ -173,14 +173,18 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
+[tool.ruff.lint.pylint]
+max-statements-in-try = 10
+
 [tool.pylint.main]
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
 [tool.pylint.design]
-max-attributes = 12
+max-attributes = 14
 
 [tool.pylint.format]
 max-line-length = 100
+max-module-lines = 1200
 
 [tool.basedpyright]
 include = ["src"]

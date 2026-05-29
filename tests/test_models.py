@@ -301,3 +301,22 @@ def test_room_subject_not_parsed_when_other_event_type() -> None:
     })
 
     assert event.room_subject is None
+
+
+def test_extract_with_empty_allowed_types_returns_none() -> None:
+    """An explicit empty allow-list should prevent extraction."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-empty-allow-list",
+        "object": {"tip": {"tokens": 42}},
+    })
+
+    called = False
+
+    def loader(_: object) -> Tip:
+        nonlocal called
+        called = True
+        return Tip.model_validate({"tokens": 1})
+
+    assert event._extract("tip", loader, allowed_types=()) is None
+    assert called is False

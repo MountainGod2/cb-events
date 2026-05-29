@@ -18,7 +18,7 @@ Example:
         async def handle_tip(event: Event) -> None:
             print(f"Tip received: {event.id}")
 
-        @router.on_any()
+        @router.on_any
         async def log_all(event: Event) -> None:
             print(f"Event: {event.type}")
 """
@@ -29,7 +29,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from inspect import getattr_static, iscoroutinefunction
 from itertools import chain
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, overload
 
 from .models import Event
 
@@ -118,14 +118,14 @@ class Router:
             async def handle_tip(event: Event) -> None:
                 print(f"Tip: {event.tip.tokens if event.tip else 0}")
 
-            @router.on_any()
+            @router.on_any
             async def log_event(event: Event) -> None:
                 print(f"Event received: {event.type}")
 
             await router.dispatch(event)
 
     Note:
-        Wildcard handlers (registered via on_any()) execute before type-specific handlers for each
+        Wildcard handlers (registered via on_any) execute before type-specific handlers for each
         event to support logging or preprocessing regardless of event type.
     """
 
@@ -169,15 +169,31 @@ class Router:
 
         return decorator
 
-    def on_any(self) -> Callable[[HandlerFunc], HandlerFunc]:
+    @overload
+    def on_any(self, func: None = None) -> Callable[[HandlerFunc], HandlerFunc]: ...
+
+    @overload
+    def on_any(self, func: HandlerFunc) -> HandlerFunc: ...
+
+    def on_any(
+        self,
+        func: HandlerFunc | None = None,
+    ) -> Callable[[HandlerFunc], HandlerFunc] | HandlerFunc:
         """Register handler for all event types.
 
-        Returns:
-            Decorator that registers the handler and returns it unchanged.
-        """
+        Supports both ``@router.on_any`` and ``@router.on_any()`` usage.
 
-        def decorator(func: HandlerFunc) -> HandlerFunc:
+        Args:
+            func: Optional handler when used as ``@router.on_any``.
+
+        Returns:
+            Registered handler when ``func`` is provided, otherwise a decorator.
+        """
+        if func is not None:
             return self._register(None, func)
+
+        def decorator(handler: HandlerFunc) -> HandlerFunc:
+            return self._register(None, handler)
 
         return decorator
 
