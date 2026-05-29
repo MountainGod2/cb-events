@@ -21,8 +21,6 @@ from cb_events.exceptions import AuthError
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_events_url, make_response
 
-pytestmark = [pytest.mark.e2e]
-
 
 def _is_valid_events_url(url: str | None) -> bool:
     if not url:
@@ -34,6 +32,7 @@ def _is_valid_events_url(url: str | None) -> bool:
     return True
 
 
+@pytest.mark.e2e
 async def test_client_router_workflow(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
@@ -105,6 +104,7 @@ def test_version_attribute() -> None:
 
 
 @pytest.mark.slow
+@pytest.mark.e2e
 @pytest.mark.live
 @pytest.mark.skipif(
     not (
