@@ -420,10 +420,6 @@ class EventClient:
         "username",
     )
 
-    base_url: str
-    username: str
-    token: str
-
     def __init__(
         self,
         events_url: str,
