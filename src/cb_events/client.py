@@ -725,10 +725,11 @@ class EventClient:
             return absolute, urlparse(absolute)
         return stripped, parsed
 
+    @staticmethod
     def _reject_next_url(
-        self,
         log_msg: str,
         *args: object,
+        username: str,
         exc_msg: str,
         response_text: str,
     ) -> NoReturn:
@@ -737,13 +738,14 @@ class EventClient:
         Args:
             log_msg: Log message format string with placeholders for args.
             *args: Arguments to format into the log message.
+            username: Username to include explicitly in log output.
             exc_msg: Error message for the raised EventsError.
             response_text: Original response body for error diagnostics.
 
         Raises:
             EventsError: Always raised with the provided exc_msg and response_text.
         """
-        logger.error(log_msg, *args, self.username)
+        logger.error(log_msg, *args, username)
         raise EventsError(exc_msg, response_text=response_text)
 
     def _validate_next_url(
@@ -777,6 +779,7 @@ class EventClient:
             self._reject_next_url(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
+                username=self.username,
                 exc_msg=invalid_next_url_msg,
                 response_text=response_text,
             )
@@ -785,6 +788,7 @@ class EventClient:
         if not stripped:
             self._reject_next_url(
                 "Received empty nextUrl from API for user %s",
+                username=self.username,
                 exc_msg=invalid_next_url_msg,
                 response_text=response_text,
             )
@@ -796,6 +800,7 @@ class EventClient:
             self._reject_next_url(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
+                username=self.username,
                 exc_msg="Invalid nextUrl scheme; only https is allowed.",
                 response_text=response_text,
             )
@@ -805,6 +810,7 @@ class EventClient:
         if not hostname:
             self._reject_next_url(
                 "Received nextUrl without hostname for user %s",
+                username=self.username,
                 exc_msg="Invalid nextUrl host.",
                 response_text=response_text,
             )
@@ -813,6 +819,7 @@ class EventClient:
             self._reject_next_url(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
+                username=self.username,
                 exc_msg="Invalid nextUrl host.",
                 response_text=response_text,
             )
