@@ -324,6 +324,7 @@ jobs:
     name: Release Pipeline
     needs: [test, test-lowest-direct, coverage-summary, security, codeql]
     if: >-
+      github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       github.repository == 'MountainGod2/cb-events'
     uses: ./.github/workflows/release.yml
