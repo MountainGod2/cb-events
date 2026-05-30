@@ -42,6 +42,17 @@ Carried by most event types. Check `event.user` before accessing fields.
 | `recent_tips`     | `Optional[Literal["none", "few", "some", "lots", "tons"]]`                            | Recent tip activity level.                    |
 | `subgender`       | `Optional[Literal["tf", "tm", "tn"]]`                                                 | Subgender of the user.                        |
 
+!!! warning
+
+    `recent_tips` may be the string `"none"`, which is truthy in Python.
+    Do not use `if user.recent_tips:` to detect missing data.
+    Compare explicitly:
+
+    ```python
+    user.recent_tips == "none"  # literal value
+    user.recent_tips is None      # field is absent
+    ```
+
 ## Tip
 
 Present on `TIP` events only. Access via `event.tip`.
