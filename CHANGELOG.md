@@ -1,6 +1,112 @@
 # CHANGELOG
 
-<!-- version list -->
+
+## v9.0.2 (2026-05-30)
+
+### Bug Fixes
+
+- **models**: Handle None in allowed_types check
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+### Refactoring
+
+- **client**: Consolidate retry status codes and session management
+  ([#189](https://github.com/MountainGod2/cb-events/pull/189),
+  [`e6d19fa`](https://github.com/MountainGod2/cb-events/commit/e6d19fa62207c082252f2f41d3839a0279b99490))
+
+- **client**: Extract nextUrl validation logging
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **client**: Implement terminal state checks
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **client**: Improve validation and error handling
+  ([#194](https://github.com/MountainGod2/cb-events/pull/194),
+  [`421af0f`](https://github.com/MountainGod2/cb-events/commit/421af0ff112432a3af0eca83ee39ba003dd7f6ed))
+
+- **client**: Improve variable assignment in EventClient
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **client**: Include username in error logging
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **client**: Remove unused attributes from EventClient
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **client**: Rename exception for retryable status errors
+  ([#185](https://github.com/MountainGod2/cb-events/pull/185),
+  [`fb8a648`](https://github.com/MountainGod2/cb-events/commit/fb8a648f77c3647f4a4e2cea40c20c9bb3b2d611))
+
+- **client**: Simplify async iterator implementation
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **client**: Simplify type hints and improve error handling
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **client**: Update URL parsing and error handling
+  ([#181](https://github.com/MountainGod2/cb-events/pull/181),
+  [`b3cf7c2`](https://github.com/MountainGod2/cb-events/commit/b3cf7c27560d36c23aebf2cbae8051d341f6014c))
+
+- **docker**: Add Docker example and update event handling
+  ([#193](https://github.com/MountainGod2/cb-events/pull/193),
+  [`7c4908a`](https://github.com/MountainGod2/cb-events/commit/7c4908a6dae37f768ecef1bc1c51b0e4043f2fb4))
+
+- **docker**: Move Docker example and configuration
+  ([#193](https://github.com/MountainGod2/cb-events/pull/193),
+  [`7c4908a`](https://github.com/MountainGod2/cb-events/commit/7c4908a6dae37f768ecef1bc1c51b0e4043f2fb4))
+
+- **docker**: Update Dockerfile build process
+  ([#187](https://github.com/MountainGod2/cb-events/pull/187),
+  [`51bb2b4`](https://github.com/MountainGod2/cb-events/commit/51bb2b402a783d1e5cd535803c5585dfc5da710c))
+
+- **docs**: Restructure error handling examples
+  ([#203](https://github.com/MountainGod2/cb-events/pull/203),
+  [`dca6931`](https://github.com/MountainGod2/cb-events/commit/dca693106b3350c1a976c37aa682f446d5072c82))
+
+- **exceptions**: Simplify error handling for Cloudflare codes
+  ([#189](https://github.com/MountainGod2/cb-events/pull/189),
+  [`e6d19fa`](https://github.com/MountainGod2/cb-events/commit/e6d19fa62207c082252f2f41d3839a0279b99490))
+
+- **exceptions**: Use HTTPStatus for error codes
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **model_config**: Update type hints for class settings
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **router**: Convert handlers to tuples for consistency
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **router**: Improve event handler dispatch logic
+  ([#207](https://github.com/MountainGod2/cb-events/pull/207),
+  [`c9c20c9`](https://github.com/MountainGod2/cb-events/commit/c9c20c96e0ae003a42dc719d9673a0a1f96950c0))
+
+- **router**: Update on_any decorator usage
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **tests**: Improve error handling in URL validation
+  ([#194](https://github.com/MountainGod2/cb-events/pull/194),
+  [`421af0f`](https://github.com/MountainGod2/cb-events/commit/421af0ff112432a3af0eca83ee39ba003dd7f6ed))
+
+- **tests**: Move TESTBED_POLL_URL to test file
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
+- **tests**: Remove redundant stamina state setup
+  ([#212](https://github.com/MountainGod2/cb-events/pull/212),
+  [`d19069b`](https://github.com/MountainGod2/cb-events/commit/d19069b315d9c2bdbed430af1b78e23b667429b5))
+
 
 ## v9.0.1 (2026-05-19)
 
