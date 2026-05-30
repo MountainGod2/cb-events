@@ -994,6 +994,11 @@ class EventClient:
             ``config.timeout`` seconds before responding. Empty results are therefore infrequent
             under normal conditions. If the server begins returning empty responses immediately
             (e.g. during an outage), the rate limiter provides a backstop.
+
+            Poll position is tracked via ``nextUrl`` across iterations. Each
+            successful poll validates and stores the response ``nextUrl`` in
+            internal state, and the next loop iteration resumes from that URL
+            instead of rebuilding the initial credentials URL.
         """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
         while True:
             events = await self._poll()
