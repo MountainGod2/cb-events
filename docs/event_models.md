@@ -18,6 +18,30 @@ event.broadcaster  # Broadcaster username string, or None if missing
     this library. Escape or validate values before using them in HTML, SQL, or shell
     contexts.
 
+## Field Availability By Event
+
+Use this quick reference to distinguish fields that exist on every event envelope
+from nested fields that depend on the event type.
+
+### Present On All Events
+
+| API field | Python accessor | Type                | Notes                                               |
+| --------- | --------------- | ------------------- | --------------------------------------------------- |
+| `method`  | `event.type`    | `EventType`         | Event category (for example `TIP`, `CHAT_MESSAGE`). |
+| `id`      | `event.id`      | `str`               | Unique event identifier.                            |
+| `object`  | `event.data`    | `dict[str, object]` | Raw event payload map.                              |
+
+### Event-Specific Nested Fields
+
+| Python accessor      | Backing payload key  | Present for event type(s)                                                                                    |
+| -------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `event.tip`          | `object.tip`         | `TIP`                                                                                                        |
+| `event.message`      | `object.message`     | `CHAT_MESSAGE`, `PRIVATE_MESSAGE`                                                                            |
+| `event.media`        | `object.media`       | `MEDIA_PURCHASE`                                                                                             |
+| `event.room_subject` | `object.subject`     | `ROOM_SUBJECT_CHANGE`                                                                                        |
+| `event.user`         | `object.user`        | Not restricted by event type; available when the payload includes valid user data (most user-driven events). |
+| `event.broadcaster`  | `object.broadcaster` | Not restricted by event type; available when the payload includes a non-empty broadcaster string.            |
+
 ## User
 
 Carried by most event types. Check `event.user` before accessing fields.
