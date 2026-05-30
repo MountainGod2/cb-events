@@ -112,6 +112,21 @@ class BaseEventModel(BaseModel):
 
 _BaseEventModelT = TypeVar("_BaseEventModelT", bound=BaseEventModel)
 
+UserColorGroup = Literal["o", "m", "f", "l", "p", "tr", "t", "g"]
+"""Known values for :attr:`User.color_group`."""
+
+UserGender = Literal["m", "f", "c", "t"]
+"""Known values for :attr:`User.gender`."""
+
+UserLanguage = Literal["de", "en", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "zh"]
+"""Known values for :attr:`User.language`."""
+
+UserRecentTips = Literal["none", "few", "some", "lots", "tons"]
+"""Known values for :attr:`User.recent_tips`."""
+
+UserSubgender = Literal["tf", "tm", "tn"]
+"""Known values for :attr:`User.subgender`."""
+
 
 class User(BaseEventModel):
     """User information attached to events.
@@ -122,7 +137,7 @@ class User(BaseEventModel):
 
     username: str
     """Display name of the user."""
-    color_group: str | None = None
+    color_group: UserColorGroup | None = None
     """Color group of the user.
 
     Known values: ``"o"`` (owner), ``"m"`` (moderator), ``"f"`` (fanclub),
@@ -131,7 +146,7 @@ class User(BaseEventModel):
     """
     fc_auto_renew: bool = False
     """Whether the user's fanclub membership is a recurring subscription."""
-    gender: str | None = None
+    gender: UserGender | None = None
     """Gender of the user.
 
     Known values: ``"m"`` (male), ``"f"`` (female), ``"c"`` (couple),
@@ -157,7 +172,7 @@ class User(BaseEventModel):
     """Whether the user is silenced."""
     is_spying: bool = False
     """Whether the user is spying on a private show."""
-    language: str | None = None
+    language: UserLanguage | None = None
     """User's preferred language.
 
     Known values: ``"de"`` (German), ``"en"`` (English), ``"es"`` (Spanish),
@@ -165,7 +180,7 @@ class User(BaseEventModel):
     ``"ko"`` (Korean), ``"pl"`` (Polish), ``"pt"`` (Portuguese),
     ``"ru"`` (Russian), ``"zh"`` (Chinese).
     """
-    recent_tips: Literal["none", "few", "some", "lots", "tons"] | None = None
+    recent_tips: UserRecentTips | None = None
     """How much the user has tipped recently.
 
     Possible values: ``"none"`` (no recent tips, no tokens - grey username),
@@ -178,7 +193,7 @@ class User(BaseEventModel):
         ``recent_tips is None`` (field absent) versus
         ``recent_tips == "none"`` (present but no tips).
     """
-    subgender: Literal["tf", "tm", "tn"] | None = None
+    subgender: UserSubgender | None = None
     """Subgender of the user (only set when ``gender`` is ``"t"`` / trans).
 
     Possible values: ``"tf"`` (transfemme), ``"tm"`` (transmasc),

@@ -22,25 +22,25 @@ event.broadcaster  # Broadcaster username string, or None if missing
 
 Carried by most event types. Check `event.user` before accessing fields.
 
-| Field             | Type                                                       | Description                                   |
-| ----------------- | ---------------------------------------------------------- | --------------------------------------------- |
-| `username`        | `str`                                                      | Display name of the user.                     |
-| `in_fanclub`      | `bool`                                                     | Whether the user is in the fan club.          |
-| `is_mod`          | `bool`                                                     | Whether the user is a moderator.              |
-| `is_follower`     | `bool`                                                     | Whether the user is a follower.               |
-| `is_owner`        | `bool`                                                     | Whether the user is the room owner.           |
-| `has_tokens`      | `bool`                                                     | Whether the user has tokens.                  |
-| `is_broadcasting` | `bool`                                                     | Whether the user is currently broadcasting.   |
-| `in_private_show` | `bool`                                                     | Whether the user is in a private show.        |
-| `is_spying`       | `bool`                                                     | Whether the user is spying on a private show. |
-| `is_silenced`     | `bool`                                                     | Whether the user is silenced.                 |
-| `has_darkmode`    | `bool`                                                     | Whether the user has dark mode enabled.       |
-| `fc_auto_renew`   | `bool`                                                     | Whether fan club auto-renewal is enabled.     |
-| `color_group`     | `Optional[str]`                                            | Color group of the user.                      |
-| `gender`          | `Optional[str]`                                            | Gender of the user.                           |
-| `language`        | `Optional[str]`                                            | Language preference of the user.              |
-| `recent_tips`     | `Optional[Literal["none", "few", "some", "lots", "tons"]]` | Recent tip activity level.                    |
-| `subgender`       | `Optional[Literal["tf", "tm", "tn"]]`                      | Subgender of the user.                        |
+| Field             | Type                                                                                  | Description                                   |
+| ----------------- | ------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `username`        | `str`                                                                                 | Display name of the user.                     |
+| `in_fanclub`      | `bool`                                                                                | Whether the user is in the fan club.          |
+| `is_mod`          | `bool`                                                                                | Whether the user is a moderator.              |
+| `is_follower`     | `bool`                                                                                | Whether the user is a follower.               |
+| `is_owner`        | `bool`                                                                                | Whether the user is the room owner.           |
+| `has_tokens`      | `bool`                                                                                | Whether the user has tokens.                  |
+| `is_broadcasting` | `bool`                                                                                | Whether the user is currently broadcasting.   |
+| `in_private_show` | `bool`                                                                                | Whether the user is in a private show.        |
+| `is_spying`       | `bool`                                                                                | Whether the user is spying on a private show. |
+| `is_silenced`     | `bool`                                                                                | Whether the user is silenced.                 |
+| `has_darkmode`    | `bool`                                                                                | Whether the user has dark mode enabled.       |
+| `fc_auto_renew`   | `bool`                                                                                | Whether fan club auto-renewal is enabled.     |
+| `color_group`     | `Optional[Literal["o", "m", "f", "l", "p", "tr", "t", "g"]]`                          | Color group of the user.                      |
+| `gender`          | `Optional[Literal["m", "f", "c", "t"]]`                                               | Gender of the user.                           |
+| `language`        | `Optional[Literal["de", "en", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "zh"]]` | Language preference of the user.              |
+| `recent_tips`     | `Optional[Literal["none", "few", "some", "lots", "tons"]]`                            | Recent tip activity level.                    |
+| `subgender`       | `Optional[Literal["tf", "tm", "tn"]]`                                                 | Subgender of the user.                        |
 
 ## Tip
 
