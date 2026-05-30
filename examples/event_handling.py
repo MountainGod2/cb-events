@@ -8,10 +8,12 @@
 """Example script demonstrating event handling with cb-events."""
 
 import asyncio
+import contextlib
 import logging
 import os
 import signal
 import sys
+import threading
 
 from cb_events import (
     AuthError,
@@ -142,6 +144,15 @@ async def handle_any_event(event: Event) -> None:
     logger.debug("Event received: %s", event.type)
 
 
+async def stream_events(events_url: str, config: ClientConfig) -> None:
+    """Poll events and dispatch each one to registered handlers."""
+    async with EventClient(events_url, config=config) as client:
+        logger.info("Listening for events... (Ctrl+C to stop)")
+
+        async for event in client:
+            await router.dispatch(event)
+
+
 async def main() -> None:
     """Set up event handlers and start listening for events."""
     events_url = os.getenv("CB_EVENTS_URL")
@@ -152,23 +163,38 @@ async def main() -> None:
 
     config = ClientConfig()
 
-    loop = asyncio.get_running_loop()
-    task = asyncio.current_task()
-    try:
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, task.cancel)
-    except NotImplementedError:
-        for sig in (signal.SIGTERM, signal.SIGINT):
-            signal.signal(sig, lambda _s, _f: task.cancel() if task is not None else None)
+    event_loop = asyncio.get_running_loop()
+    shutdown_event = asyncio.Event()
+    stream_task = asyncio.create_task(stream_events(events_url, config))
 
-    try:
-        async with EventClient(events_url, config=config) as client:
-            logger.info("Listening for events... (Ctrl+C to stop)")
+    def request_shutdown(*_: object) -> None:
+        event_loop.call_soon_threadsafe(shutdown_event.set)
 
-            async for event in client:
-                await router.dispatch(event)
-    except asyncio.CancelledError:
+    if threading.current_thread() is threading.main_thread():
+        try:
+            event_loop.add_signal_handler(signal.SIGTERM, request_shutdown)
+            event_loop.add_signal_handler(signal.SIGINT, request_shutdown)
+        except (NotImplementedError, RuntimeError):
+            signal.signal(signal.SIGTERM, request_shutdown)
+            signal.signal(signal.SIGINT, request_shutdown)
+
+    shutdown_wait_task = asyncio.create_task(shutdown_event.wait())
+    done, _ = await asyncio.wait(
+        {stream_task, shutdown_wait_task},
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    if shutdown_wait_task in done:
+        stream_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await stream_task
         logger.info("Shutting down")
+    else:
+        await stream_task
+
+    shutdown_wait_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await shutdown_wait_task
 
 
 if __name__ == "__main__":

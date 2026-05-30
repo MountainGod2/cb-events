@@ -14,33 +14,7 @@ EventsError (base)
 `AuthError` is a subclass of `EventsError`, so `except EventsError` catches both.
 Catch `AuthError` first if you need separate handling.
 
-## Basic Error Handling
-
-```python
-import asyncio
-from cb_events import EventClient, EventsError, Router
-
-router = Router()
-events_url = "https://eventsapi.chaturbate.com/events/username/token/"
-
-
-async def main() -> None:
-    try:
-        async with EventClient(events_url) as client:
-            async for event in client:
-                await router.dispatch(event)
-    except EventsError as err:
-        print(f"Error: {err}")
-        print(f"Status code: {err.status_code}")
-        print(f"Response: {err.response_text}")
-
-
-asyncio.run(main())
-```
-
-## Authentication Errors
-
-`AuthError` (`401`/`403`) is never retried.
+## Recommended Pattern
 
 ```python
 import asyncio
@@ -56,80 +30,37 @@ async def main() -> None:
             async for event in client:
                 await router.dispatch(event)
     except AuthError as err:
+        # Bad credentials / revoked token (401/403)
         print(f"Authentication failed: {err} (status {err.status_code})")
     except EventsError as err:
-        print(f"API error: {err}")
+        # Other API/network errors
+        print(f"Event API error: {err}")
 
 
 asyncio.run(main())
 ```
 
-## Automatic Retries
+## Retry Behavior
 
-Retriable: `429`, `500`, `502`, `503`, `504`, `521-524`.
+Built-in retries are enabled by default.
 
-Not retriable: `401`, `403`, and other `4xx` statuses.
+- Retried: `429`, `500`, `502`, `503`, `504`, `521-524`
+- Not retried: `401`, `403`, and other `4xx` statuses
 
-```python
-from cb_events import ClientConfig
+If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
-config = ClientConfig(
-    retry_attempts=5,  # Total attempts (1 initial + 4 retries)
-    retry_backoff=1.0,  # Initial delay (seconds)
-    retry_factor=2.0,  # Exponential multiplier
-    retry_max_delay=30.0,  # Cap delay at 30s
-)
-```
+## Validation Mode
 
-## Validation Errors
+`strict_validation=False` (default): skip invalid events and log a warning.
 
-Lenient mode (default) skips invalid events and logs a warning.
+`strict_validation=True`: raise `pydantic.ValidationError` on invalid events.
 
-```python
-import asyncio
-from cb_events import ClientConfig, EventClient, Router
+Use strict mode when you prefer fail-fast behavior and already handle those exceptions.
 
-router = Router()
-events_url = "https://eventsapi.chaturbate.com/events/username/token/"
+## Handler Exceptions
 
-config = ClientConfig(strict_validation=False)
-
-
-async def main() -> None:
-    async with EventClient(events_url, config=config) as client:
-        async for event in client:
-            await router.dispatch(event)
-
-
-asyncio.run(main())
-```
-
-Strict mode raises `pydantic.ValidationError` on invalid event data.
-
-```python
-import asyncio
-import pydantic
-from cb_events import ClientConfig, EventClient, Router
-
-router = Router()
-events_url = "https://eventsapi.chaturbate.com/events/username/token/"
-
-config = ClientConfig(strict_validation=True)
-
-
-async def main() -> None:
-    try:
-        async with EventClient(events_url, config=config) as client:
-            async for event in client:
-                await router.dispatch(event)
-    except pydantic.ValidationError as err:
-        print(f"Invalid event data: {err}")
-
-
-asyncio.run(main())
-```
-
-## Handler Errors
+Handler exceptions are logged and dispatch continues to the next handler.
+`asyncio.CancelledError` is re-raised immediately.
 
 ```python
 from cb_events import Event, EventType, Router
@@ -151,33 +82,54 @@ async def working_handler(event: Event) -> None:
 
 ```python
 import asyncio
+import contextlib
 import signal
+import threading
 from cb_events import EventClient, Router
 
 router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
 
+async def stream_events() -> None:
+    async with EventClient(events_url) as client:
+        async for event in client:
+            await router.dispatch(event)
+
+
 async def main() -> None:
-    loop = asyncio.get_running_loop()
-    task = asyncio.current_task()
+    event_loop = asyncio.get_running_loop()
+    shutdown_event = asyncio.Event()
+    stream_task = asyncio.create_task(stream_events())
 
-    def _cancel_task(*_: object) -> None:
-        if task is not None:
-            task.cancel()
+    def _request_shutdown(*_: object) -> None:
+        event_loop.call_soon_threadsafe(shutdown_event.set)
 
-    for sig in (signal.SIGTERM, signal.SIGINT):
+    if threading.current_thread() is threading.main_thread():
         try:
-            loop.add_signal_handler(sig, _cancel_task)
-        except NotImplementedError:
-            signal.signal(sig, _cancel_task)
+            event_loop.add_signal_handler(signal.SIGTERM, _request_shutdown)
+            event_loop.add_signal_handler(signal.SIGINT, _request_shutdown)
+        except (NotImplementedError, RuntimeError):
+            # Windows fallback
+            signal.signal(signal.SIGTERM, _request_shutdown)
+            signal.signal(signal.SIGINT, _request_shutdown)
 
-    try:
-        async with EventClient(events_url) as client:
-            async for event in client:
-                await router.dispatch(event)
-    except asyncio.CancelledError:
-        print("Shutting down")
+    shutdown_task = asyncio.create_task(shutdown_event.wait())
+    done, _ = await asyncio.wait(
+        {stream_task, shutdown_task},
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    if shutdown_task in done:
+        stream_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await stream_task
+    else:
+        # Propagate client errors
+        await stream_task
+
+    shutdown_task.cancel()
+    print("Shutting down")
 
 
 asyncio.run(main())
@@ -185,70 +137,6 @@ asyncio.run(main())
 
 !!! note
 
-    `loop.add_signal_handler()` is Unix-only and raises `NotImplementedError` on
-    Windows. For cross-platform support, catch `NotImplementedError` and use another
-    cancellation strategy such as `signal.signal()` with an `asyncio.Event`.
-
-## Network Errors
-
-```python
-import asyncio
-from cb_events import EventClient, EventsError, Router
-
-router = Router()
-events_url = "https://eventsapi.chaturbate.com/events/username/token/"
-
-
-async def main() -> None:
-    try:
-        async with EventClient(events_url) as client:
-            async for event in client:
-                await router.dispatch(event)
-    except EventsError as err:
-        if err.status_code:
-            print(f"API error: {err.status_code}")
-        else:
-            print(f"Network error: {err}")
-
-
-asyncio.run(main())
-```
-
-## Combined Example
-
-```python
-import asyncio
-import signal
-from cb_events import AuthError, EventClient, EventsError, Router
-
-router = Router()
-events_url = "https://eventsapi.chaturbate.com/events/username/token/"
-
-
-async def main() -> None:
-    loop = asyncio.get_running_loop()
-    stop = asyncio.Event()
-
-    def _stop(*_: object) -> None:
-        stop.set()
-
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        try:
-            loop.add_signal_handler(sig, _stop)
-        except NotImplementedError:
-            signal.signal(sig, _stop)
-
-    try:
-        async with EventClient(events_url) as client:
-            async for event in client:
-                await router.dispatch(event)
-                if stop.is_set():
-                    break
-    except AuthError as err:
-        print(f"Authentication failed: {err}")
-    except EventsError as err:
-        print(f"API/network error: {err}")
-
-
-asyncio.run(main())
-```
+    If the client runs in a worker thread, do not register OS signals there.
+    Trigger shutdown by calling `shutdown_event.set()` (or
+    `event_loop.call_soon_threadsafe(shutdown_event.set)`) from your host application.
