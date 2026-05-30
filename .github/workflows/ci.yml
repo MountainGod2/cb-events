@@ -319,20 +319,3 @@ jobs:
         uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           category: "/language:${{ matrix.language }}"
-
-  release:
-    name: Release Pipeline
-    needs: [test, test-lowest-direct, coverage-summary, security, codeql]
-    if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      github.repository == 'MountainGod2/cb-events'
-    uses: ./.github/workflows/release.yml
-    secrets:
-      CB_EVENTS_URL: ${{ secrets.CB_EVENTS_URL }}
-      RELEASE_APP_CLIENT_ID: ${{ secrets.RELEASE_APP_CLIENT_ID }}
-      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-    permissions:
-      attestations: write
-      contents: read
-      id-token: write
