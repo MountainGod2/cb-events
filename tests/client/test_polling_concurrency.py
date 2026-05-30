@@ -34,7 +34,7 @@ async def test_concurrent_polls_serialized(
     aioresponses_mock.get(next_url_2, payload=responses[2])
 
     async with event_client_factory() as client:
-        results = await asyncio.gather(client.poll(), client.poll(), client.poll())
+        results = await asyncio.gather(client._poll(), client._poll(), client._poll())
 
     assert len(results) == 3
     assert all(len(events) == 1 and events[0].type == EventType.TIP for events in results)
@@ -57,7 +57,7 @@ async def test_close_cancels_inflight_poll(
     monkeypatch.setattr(EventClient, "_request", _slow_request)
 
     async with event_client_factory() as client:
-        poll_task = asyncio.create_task(client.poll())
+        poll_task = asyncio.create_task(client._poll())
         await started.wait()
 
         await client.close()

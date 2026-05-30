@@ -157,7 +157,7 @@ async def test_poll_debug_logs_masked_url(
 
     caplog.set_level("DEBUG", logger="cb_events.client")
     async with client:
-        events = await client.poll()
+        events = await client._poll()
 
     assert events == []
     assert "Polling https://events.testbed.cb.dev/events/test_user/" in caplog.text

@@ -32,7 +32,7 @@ async def test_exception_retries_until_success_with_testing_cap(
     )
 
     async with event_client_factory(config=config) as client:
-        events = await client.poll()
+        events = await client._poll()
 
     assert len(events) == 1
 
@@ -68,7 +68,7 @@ async def test_testing_mode_caps_attempts(
             EventsError,
             match=r"Failed to fetch events after 2 attempts",
         ):
-            await client.poll()
+            await client._poll()
 
 
 async def test_retries_on_retry_status_codes_then_succeeds(
@@ -83,7 +83,7 @@ async def test_retries_on_retry_status_codes_then_succeeds(
 
     config = ClientConfig(retry_attempts=2, retry_backoff=0.0)
     async with event_client_factory(config=config) as client:
-        events = await client.poll()
+        events = await client._poll()
 
     assert len(events) == 1
     assert events[0].type == EventType.TIP
