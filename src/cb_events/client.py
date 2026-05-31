@@ -934,11 +934,11 @@ class EventClient:
 
         return events
 
-    async def poll(self) -> list[Event]:
-        """Poll the API for new events.
+    async def _poll(self) -> list[Event]:
+        """Fetch a single batch of events from the API.
 
-        Makes a single request to the Events API and returns any available
-        events. Updates _next_url from each response for subsequent polls.
+        Internal helper used by the async iterator. Makes one request and
+        updates _next_url from the response for the next request.
 
         Returns:
             List of events received, or an empty list on timeout.
@@ -946,11 +946,6 @@ class EventClient:
         Raises:
             EventsError: If shutdown has started or if close() cancels this poll.
             asyncio.CancelledError: If the polling task is cancelled externally.
-
-        Note:
-            Holds ``_polling_lock`` for the full request so ``_next_url`` progression remains
-            serialized and ``session`` is not detached mid-poll. ``close`` may cancel an active
-            poll task, then waits for lock handoff to complete state reset.
         """
         if self._closing_event.is_set() or self._closed_event.is_set():
             raise EventsError(CLIENT_CLOSING_MESSAGE)
@@ -999,9 +994,14 @@ class EventClient:
             ``config.timeout`` seconds before responding. Empty results are therefore infrequent
             under normal conditions. If the server begins returning empty responses immediately
             (e.g. during an outage), the rate limiter provides a backstop.
+
+            Poll position is tracked via ``nextUrl`` across iterations. Each
+            successful poll validates and stores the response ``nextUrl`` in
+            internal state, and the next loop iteration resumes from that URL
+            instead of rebuilding the initial credentials URL.
         """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
         while True:
-            events = await self.poll()
+            events = await self._poll()
             for event in events:
                 yield event
 

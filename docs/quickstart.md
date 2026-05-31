@@ -37,6 +37,16 @@ mountaingod2 entered the room
 mountaingod2 tipped 100 tokens
 ```
 
+## Long Polling and `nextUrl`
+
+The Events API uses long polling and returns a `nextUrl` cursor on each request.
+`EventClient` follows that cursor automatically, so your position in the stream is
+tracked for you while you keep iterating.
+
+Avoid restarting the client in the middle of a live stream. A restart creates a
+new polling session, which can reset cursor position and lead to missed or
+duplicate events.
+
 ## Event Types
 
 - `TIP`: User sends a tip.

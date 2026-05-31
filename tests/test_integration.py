@@ -60,7 +60,7 @@ async def test_client_router_workflow(
     aioresponses_mock.get(testbed_url_pattern, payload=event_data)
 
     async with event_client_factory() as client:
-        events = await client.poll()
+        events = await client._poll()
         for event in events:
             await router.dispatch(event)
 
@@ -94,7 +94,7 @@ async def test_authentication_error_propagation(
 
     async with event_client_factory(token_override="bad_token") as client:
         with pytest.raises(AuthError):
-            await client.poll()
+            await client._poll()
 
 
 def test_version_attribute() -> None:
@@ -127,7 +127,7 @@ async def test_live_polling() -> None:
         events_url,
         config=config,
     ) as client:
-        events = await client.poll()
+        events = await client._poll()
 
     assert isinstance(events, list)
     for event in events:

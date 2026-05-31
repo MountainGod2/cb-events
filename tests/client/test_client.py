@@ -166,7 +166,7 @@ async def test_poll_after_close_raises_terminal_state() -> None:
     await client.close()
 
     with pytest.raises(EventsError, match="closing or closed"):
-        await client.poll()
+        await client._poll()
 
 
 async def test_enter_after_close_raises_terminal_state() -> None:

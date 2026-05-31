@@ -26,7 +26,7 @@ async def test_poll_raises_auth_error_on_401(
 
     async with event_client_factory() as client:
         with pytest.raises(AuthError):
-            await client.poll()
+            await client._poll()
 
 
 async def test_rate_limit_error(
@@ -40,7 +40,7 @@ async def test_rate_limit_error(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(RateLimitError, match=r"HTTP 429"):
-            await client.poll()
+            await client._poll()
 
 
 @pytest.mark.parametrize("status_code", [500, 502, 503, 504, 521, 522, 523, 524])
@@ -56,7 +56,7 @@ async def test_server_error_after_retry_exhaustion(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(ServerError, match=rf"HTTP {status_code}"):
-            await client.poll()
+            await client._poll()
 
 
 async def test_invalid_json_response(
@@ -69,7 +69,7 @@ async def test_invalid_json_response(
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match=r"Invalid JSON: Expecting value."):
-            await client.poll()
+            await client._poll()
 
 
 async def test_timeout_payload_not_mapping(
@@ -82,7 +82,7 @@ async def test_timeout_payload_not_mapping(
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="HTTP 400"):
-            await client.poll()
+            await client._poll()
 
 
 async def test_events_payload_not_list(
@@ -96,7 +96,7 @@ async def test_events_payload_not_list(
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match="events' must be a list"):
-            await client.poll()
+            await client._poll()
 
 
 async def test_network_error_wrapped(
@@ -114,7 +114,7 @@ async def test_network_error_wrapped(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match=r"Failed to fetch events after 1 attempt"):
-            await client.poll()
+            await client._poll()
 
 
 @pytest.mark.parametrize(
@@ -156,4 +156,4 @@ async def test_network_errors_exhaust_retries(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError, match=match):
-            await client.poll()
+            await client._poll()

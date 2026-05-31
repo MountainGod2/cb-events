@@ -45,9 +45,14 @@ attempted for `401` or `403`.
 
 ## Validation Mode
 
-`strict_validation=False` (default): skips invalid events and logs a warning.
+!!! note "Choosing a validation mode"
 
-`strict_validation=True`: raises `pydantic.ValidationError` on invalid event data.
+    `strict_validation=False` (default) skips invalid events and logs a warning.
+    In practice, this mainly matters if the upstream API schema changes or a
+    malformed payload appears. However, the API has historically been stable.
+
+    `strict_validation=True` raises `pydantic.ValidationError` instead, which
+    gives fail-fast behavior but requires your code to handle those exceptions.
 
 ## Environment Selection
 

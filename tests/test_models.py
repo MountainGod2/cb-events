@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
 
@@ -76,6 +77,38 @@ def test_user_field_mapping() -> None:
     assert user.in_fanclub is True
     assert user.is_mod is True
     assert user.is_follower is True
+
+
+@pytest.mark.parametrize(
+    ("field_name", "valid_value"),
+    [
+        ("colorGroup", "p"),
+        ("gender", "f"),
+        ("language", "en"),
+        ("recentTips", "some"),
+        ("subgender", "tf"),
+    ],
+)
+def test_user_literal_fields_accept_known_values(field_name: str, valid_value: str) -> None:
+    """Literal-constrained user fields should accept known API values."""
+    user = User.model_validate({"username": "u", field_name: valid_value})
+    assert user.username == "u"
+
+
+@pytest.mark.parametrize(
+    ("field_name", "invalid_value"),
+    [
+        ("colorGroup", "owner"),
+        ("gender", "x"),
+        ("language", "sv"),
+        ("recentTips", "many"),
+        ("subgender", "xx"),
+    ],
+)
+def test_user_literal_fields_reject_unknown_values(field_name: str, invalid_value: str) -> None:
+    """Literal-constrained user fields should reject unknown values."""
+    with pytest.raises(ValidationError):
+        User.model_validate({"username": "u", field_name: invalid_value})
 
 
 @pytest.mark.parametrize(

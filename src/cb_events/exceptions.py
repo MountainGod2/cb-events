@@ -81,7 +81,11 @@ class EventsError(Exception):
         Inspecting error details::
 
             try:
-                events = await client.poll()
+                async with EventClient(
+                    "https://eventsapi.chaturbate.com/events/user/token/"
+                ) as client:
+                    async for _event in client:
+                        pass
             except EventsError as e:
                 if e.status_code == 429:
                     print("Rate limited, backing off...")
@@ -146,7 +150,8 @@ class AuthError(EventsError):
                 async with EventClient(
                     "https://eventsapi.chaturbate.com/events/user/invalid_token/"
                 ) as client:
-                    await client.poll()
+                    async for _event in client:
+                        pass
             except AuthError:
                 print("Invalid credentials - regenerate token")
     """
