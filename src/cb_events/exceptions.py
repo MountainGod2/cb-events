@@ -11,23 +11,23 @@ from typing import Final
 
 from typing_extensions import override
 
-_AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
+AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.UNAUTHORIZED.value,
     HTTPStatus.FORBIDDEN.value,
 })
 """Status codes mapped to AuthError."""
 
-_CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
+CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
 """Cloudflare status codes treated as server failures."""
 
-_TRUNCATE_LENGTH: Final[int] = 200
+TRUNCATE_LENGTH: Final[int] = 200
 """Maximum response_text length kept on exceptions."""
 
 _RATE_LIMIT_STATUS_CODE: Final[int] = HTTPStatus.TOO_MANY_REQUESTS.value
 """Status code mapped to RateLimitError."""
 
 
-def _truncate_text(text: str, *, limit: int = _TRUNCATE_LENGTH) -> str:
+def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
     """Truncate text with ellipsis if it exceeds the limit.
 
     Args:
@@ -41,7 +41,7 @@ def _truncate_text(text: str, *, limit: int = _TRUNCATE_LENGTH) -> str:
         ValueError: If limit is negative.
     """
     if limit < 0:
-        msg = f"_truncate_text() limit must be non-negative, got {limit}"
+        msg = f"truncate_text() limit must be non-negative, got {limit}"
         raise ValueError(msg)
     if len(text) <= limit:
         return text
@@ -81,7 +81,7 @@ class EventsError(Exception):
         super().__init__(message)
         self.status_code = status_code
         self.response_text = (
-            _truncate_text(response_text) if response_text is not None else response_text
+            truncate_text(response_text) if response_text is not None else response_text
         )
 
     @override
@@ -129,7 +129,7 @@ class ServerError(HttpStatusError):
     __slots__: tuple[str, ...] = ()
 
 
-def _build_http_error(
+def build_http_error(
     message: str,
     *,
     status_code: int,
@@ -145,12 +145,12 @@ def _build_http_error(
     Returns:
         An EventsError subclass instance with message and HTTP details.
     """
-    if status_code in _AUTH_ERROR_STATUS_CODES:
+    if status_code in AUTH_ERROR_STATUS_CODES:
         return AuthError(message, status_code=status_code, response_text=response_text)
     if status_code == _RATE_LIMIT_STATUS_CODE:
         return RateLimitError(message, status_code=status_code, response_text=response_text)
     if 400 <= status_code < 500:  # noqa: PLR2004
         return ClientRequestError(message, status_code=status_code, response_text=response_text)
-    if 500 <= status_code < 600 or status_code in _CF_SERVER_ERROR_CODES:  # noqa: PLR2004
+    if 500 <= status_code < 600 or status_code in CF_SERVER_ERROR_CODES:  # noqa: PLR2004
         return ServerError(message, status_code=status_code, response_text=response_text)
     return HttpStatusError(message, status_code=status_code, response_text=response_text)

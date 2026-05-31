@@ -19,13 +19,13 @@ from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
-    _AUTH_ERROR_STATUS_CODES,
-    _CF_SERVER_ERROR_CODES,
-    _TRUNCATE_LENGTH,
+    AUTH_ERROR_STATUS_CODES,
+    CF_SERVER_ERROR_CODES,
+    TRUNCATE_LENGTH,
     AuthError,
     EventsError,
-    _build_http_error,
-    _truncate_text,
+    build_http_error,
+    truncate_text,
 )
 from .models import Event
 
@@ -58,7 +58,7 @@ _RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.SERVICE_UNAVAILABLE.value,
     HTTPStatus.GATEWAY_TIMEOUT.value,
     HTTPStatus.TOO_MANY_REQUESTS.value,
-    *_CF_SERVER_ERROR_CODES,
+    *CF_SERVER_ERROR_CODES,
 })
 """HTTP status codes retried with exponential backoff."""
 
@@ -535,7 +535,7 @@ class EventClient:
             cause = None
 
         if status_code is not None:
-            raise _build_http_error(
+            raise build_http_error(
                 msg,
                 status_code=status_code,
                 response_text=response_text,
@@ -619,7 +619,7 @@ class EventClient:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
         """  # noqa: DOC501, DOC502
-        if status in _AUTH_ERROR_STATUS_CODES:
+        if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
                 self.username,
@@ -640,7 +640,7 @@ class EventClient:
             return []
 
         if status != HTTPStatus.OK:
-            snippet = _truncate_text(text, limit=_TRUNCATE_LENGTH)
+            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
             _logger.error(
                 "HTTP %d for user %s: %s",
                 status,
@@ -649,7 +649,7 @@ class EventClient:
             )
 
             msg = f"Request failed: {snippet}"
-            raise _build_http_error(
+            raise build_http_error(
                 msg,
                 status_code=status,
                 response_text=text,
@@ -826,7 +826,7 @@ class EventClient:
             data = _parse_json_object(text)
         except EventsError as exc:
             if isinstance(exc.__cause__, json.JSONDecodeError):
-                snippet = _truncate_text(text, limit=_TRUNCATE_LENGTH)
+                snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
                 _logger.exception("Failed to parse JSON: %s", snippet)
             raise
 

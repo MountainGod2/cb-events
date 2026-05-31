@@ -44,7 +44,14 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
 
 
 def _is_async_callable(func: object) -> bool:
-    """Return whether a callable is async or async-callable."""
+    """Check if a callable can be awaited.
+
+    Args:
+        func: Object to check for async callability.
+
+    Returns:
+        True if func is an async function or has an async __call__, False
+    """
     if iscoroutinefunction(func):
         return True
     call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]  # pylint: disable=line-too-long

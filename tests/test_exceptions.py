@@ -10,7 +10,7 @@ from cb_events import (
     RateLimitError,
     ServerError,
 )
-from cb_events.exceptions import _build_http_error, _truncate_text
+from cb_events.exceptions import build_http_error, truncate_text
 
 
 @pytest.mark.parametrize(
@@ -62,7 +62,7 @@ def test_build_http_error_returns_specific_subclasses(
     expected_type: type[EventsError],
 ) -> None:
     """HTTP statuses should map to targeted error subclasses."""
-    error = _build_http_error(
+    error = build_http_error(
         "Request failed",
         status_code=status_code,
         response_text="response",
@@ -75,7 +75,7 @@ def test_build_http_error_returns_specific_subclasses(
 
 def test_build_http_error_returns_base_http_status_error_for_other_codes() -> None:
     """Unexpected statuses should fall back to HttpStatusError."""
-    error = _build_http_error("Request failed", status_code=302)
+    error = build_http_error("Request failed", status_code=302)
 
     assert type(error) is HttpStatusError
     assert error.status_code == 302
@@ -92,9 +92,9 @@ def test_events_error_truncates_long_response_text() -> None:
 
 
 def test_truncate_text_raises_on_negative_limit() -> None:
-    """_truncate_text() should raise ValueError when limit is negative."""
-    with pytest.raises(ValueError, match="_truncate_text"):
-        _truncate_text("hello", limit=-1)
+    """truncate_text() should raise ValueError when limit is negative."""
+    with pytest.raises(ValueError, match="truncate_text"):
+        truncate_text("hello", limit=-1)
 
 
 @pytest.mark.parametrize("status_code", [401, 403])
