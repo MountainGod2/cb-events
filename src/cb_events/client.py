@@ -1,9 +1,4 @@
-"""HTTP client for the Chaturbate Events API.
-
-This module provides the EventClient class for polling events from the
-Chaturbate Events API with automatic retries, rate limiting, and credential
-handling.
-"""
+"""Async HTTP client for polling the Chaturbate Events API."""
 
 from __future__ import annotations
 
@@ -24,13 +19,13 @@ from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
-    AUTH_ERROR_STATUS_CODES,
-    CF_SERVER_ERROR_CODES,
-    TRUNCATE_LENGTH,
+    _AUTH_ERROR_STATUS_CODES,
+    _CF_SERVER_ERROR_CODES,
+    _TRUNCATE_LENGTH,
     AuthError,
     EventsError,
-    build_http_error,
-    truncate_text,
+    _build_http_error,
+    _truncate_text,
 )
 from .models import Event
 
@@ -39,64 +34,62 @@ if TYPE_CHECKING:
     from types import TracebackType
     from urllib.parse import ParseResult
 
-logger = logging.getLogger(__name__)
-"""Logger for the cb_events.client module."""
+_logger = logging.getLogger(__name__)
+"""Module logger."""
 
 BASE_URL: Final[str] = "https://eventsapi.chaturbate.com/events"
-"""Production Events API endpoint base."""
+"""Production Events API base URL."""
 
 TESTBED_URL: Final[str] = "https://events.testbed.cb.dev/events"
-"""Testbed Events API endpoint base."""
+"""Testbed Events API base URL."""
 
-DEFAULT_MAX_RATE: Final[int] = 2000
-"""Default maximum number of requests per limiter window."""
+_DEFAULT_MAX_RATE: Final[int] = 2000
+"""Default request budget per limiter window."""
 
-DEFAULT_TIME_PERIOD: Final[int] = 60
-"""Length in seconds of the limiter window used for rate limiting."""
+_DEFAULT_TIME_PERIOD: Final[int] = 60
+"""Limiter window size in seconds."""
 
-SESSION_TIMEOUT_BUFFER: Final[int] = 5
-"""Extra seconds added to aiohttp's client timeout."""
+_SESSION_TIMEOUT_BUFFER: Final[int] = 5
+"""Extra seconds added to the client timeout."""
 
-TOKEN_VISIBLE_CHARS: Final[int] = 0
-"""Number of trailing token characters to reveal in logs (0 = fully masked)."""
-
-RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
+_RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.INTERNAL_SERVER_ERROR.value,
     HTTPStatus.BAD_GATEWAY.value,
     HTTPStatus.SERVICE_UNAVAILABLE.value,
     HTTPStatus.GATEWAY_TIMEOUT.value,
     HTTPStatus.TOO_MANY_REQUESTS.value,
-    *CF_SERVER_ERROR_CODES,
+    *_CF_SERVER_ERROR_CODES,
 })
-"""HTTP status codes that trigger exponential backoff retries."""
+"""HTTP status codes retried with exponential backoff."""
 
-TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
-"""Status message indicating API polling timeout."""
+_TOKEN_VISIBLE_CHARS: Final[int] = 0
+"""Trailing token characters visible in logs (0 means fully masked)."""
 
-CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
-"""Error message raised when polling is attempted during shutdown."""
+_TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
+"""Marker text used by timeout responses."""
 
-CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
+_CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
+"""Error raised when polling while closing or closed."""
+
+_CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
     "Client is closed and cannot be reopened. Create a new EventClient instance."
 )
-"""Error message raised when entering a client after it has been closed."""
+"""Error raised when entering a client after close()."""
 
-POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
-"""Error message raised when close() cancels an in-flight poll()."""
+_POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
+"""Error raised when close() cancels an active poll."""
 
-SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
+_SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "eventsapi.chaturbate.com": BASE_URL,
     "events.testbed.cb.dev": TESTBED_URL,
 }
-"""Allowed Events API hosts mapped to canonical base URLs."""
+"""Allowed API hosts mapped to canonical base URLs."""
 
 
 class _RetryableStatusError(Exception):
-    """Internal data-carrier exception for retryable HTTP status failures.
+    """Internal exception used to retry specific HTTP statuses.
 
-    The retry loop retries this type via ``stamina.retry_context(on=...)``.
-    It exists to carry ``status_code`` and ``response_text`` so
-    ``_raise_request_failure`` can preserve HTTP details in the final error.
+    Carries status_code and response_text for later error mapping.
     """
 
     __slots__: tuple[str, ...] = ("response_text", "status_code")
@@ -104,7 +97,7 @@ class _RetryableStatusError(Exception):
     response_text: str
 
     def __init__(self, msg: str, *, status_code: int, response_text: str) -> None:
-        """Initialize exception with message and HTTP metadata.
+        """Initialize with message and HTTP metadata.
 
         Args:
             msg: Human-readable description of the transient failure.
@@ -123,7 +116,7 @@ def _parse_and_validate_events_url(events_url: str) -> ParseResult:
         events_url: Full Events API URL provided by upstream.
 
     Returns:
-        ParsedResult from urlparse with validated scheme, host, and path format.
+        ParsedResult with validated scheme, host, and path shape.
 
     Raises:
         AuthError: If the URL is malformed or contains invalid components.
@@ -163,7 +156,7 @@ def _resolve_base_url(hostname: str | None) -> str:
     Raises:
         AuthError: If the hostname is not in the list of supported hosts.
     """
-    base_url = SUPPORTED_EVENTS_HOSTS.get((hostname or "").lower())
+    base_url = _SUPPORTED_EVENTS_HOSTS.get((hostname or "").lower())
     if base_url is not None:
         return base_url
     msg = "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
@@ -177,7 +170,7 @@ def _extract_username_token(path: str) -> tuple[str, str]:
         path: Path component of the Events URL.
 
     Returns:
-        Tuple of ``(username, token)``.
+        Tuple of (username, token).
 
     Raises:
         AuthError: If the path does not match the expected format.
@@ -213,7 +206,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         events_url: Full upstream URL containing host, username, and token.
 
     Returns:
-        Tuple of ``(base_url, username, token)``.
+        Tuple of (base_url, username, token).
     """
     parsed = _parse_and_validate_events_url(events_url)
     base_url = _resolve_base_url(parsed.hostname)
@@ -229,7 +222,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     return base_url, username, token
 
 
-def _mask_token(token: str, visible: int = TOKEN_VISIBLE_CHARS) -> str:
+def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
     """Mask token for logging.
 
     Args:
@@ -259,26 +252,12 @@ def _mask_url(url: str, token: str) -> str:
 
 
 def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
-    """Return True when value is a JSON object represented as a dict.
-
-    Args:
-        value: Value to validate.
-
-    Returns:
-        True when value is a JSON object represented as ``dict[str, object]``.
-    """
+    """Return True when value is a JSON object dict."""
     return isinstance(value, dict)
 
 
 def _is_object_list(value: object) -> TypeGuard[list[object]]:
-    """Return True when value is a JSON array represented as a Python list.
-
-    Args:
-        value: Value to validate.
-
-    Returns:
-        True when value is a list of JSON-compatible Python objects.
-    """
+    """Return True when value is a JSON array list."""
     return isinstance(value, list)
 
 
@@ -325,7 +304,7 @@ def _log_validation_error(
         if not location:
             continue
         fields.add(".".join(str(part) for part in location))
-    logger.warning(
+    _logger.warning(
         "Skipping invalid event %s (invalid fields: %s)",
         event_id,
         ", ".join(sorted(fields)),
@@ -369,53 +348,10 @@ def _parse_event(item: object, *, strict: bool) -> Event | None:
 
 
 class EventClient:
-    """Async client for polling the Chaturbate Events API.
+    """Async long-poll client for Events API streams.
 
-    Streams events with automatic retries, rate limiting, and credential
-    handling. Use as an async context manager and async iterator.
-
-    This client implements long-polling with stateful URL tracking, where the
-    API returns a nextUrl to continue from the last position.
-
-    Attributes:
-        username: Chaturbate username parsed from the Events URL.
-        token: API token parsed from the Events URL.
-        config: Client configuration instance.
-        base_url: API endpoint base URL.
-        session: Active HTTP session (None until context entry).
-
-    Example:
-        Basic polling loop::
-
-            try:
-                async with EventClient("https://...") as client:
-                    async for event in client:
-                        print(f"Received {event.type}: {event.id}")
-            except AuthError:
-                print("Invalid credentials")
-            except EventsError as e:
-                print(f"Stream failed: {e}")
-
-        Shared rate limiting across multiple clients::
-
-            from aiolimiter import AsyncLimiter
-
-            limiter = AsyncLimiter(max_rate=2000, time_period=60)
-            async with (
-                EventClient(
-                    "https://eventsapi.chaturbate.com/events/user1/token1/",
-                    rate_limiter=limiter,
-                ) as c1,
-                EventClient(
-                    "https://eventsapi.chaturbate.com/events/user2/token2/",
-                    rate_limiter=limiter,
-                ) as c2,
-            ):
-                # Both clients share the same rate limit pool
-                pass
-
-    Note:
-        Not thread-safe. Must be used as an async context manager.
+    Handles URL parsing, retries, rate limiting, and nextUrl continuation.
+    Use as an async context manager and async iterator.
     """
 
     __slots__: tuple[str, ...] = (
@@ -442,14 +378,12 @@ class EventClient:
         config: ClientConfig | None = None,
         rate_limiter: AsyncLimiter | None = None,
     ) -> None:
-        """Initialize event client with credentials and configuration.
+        """Initialize a client from an Events API URL.
 
         Args:
-            events_url: Full Events API URL provided by upstream, for
-                example ``https://eventsapi.chaturbate.com/events/<username>/<token>/``.
+            events_url: Full Events API URL provided by upstream.
             config: Optional client configuration overrides.
-            rate_limiter: Optional shared rate limiter to coordinate calls
-                across multiple clients.
+            rate_limiter: Optional shared limiter for multiple clients.
         """
         base_url, username, token = _parse_events_url(events_url)
         self.base_url: str = base_url
@@ -470,13 +404,13 @@ class EventClient:
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
-            max_rate=DEFAULT_MAX_RATE,
-            time_period=DEFAULT_TIME_PERIOD,
+            max_rate=_DEFAULT_MAX_RATE,
+            time_period=_DEFAULT_TIME_PERIOD,
         )
 
     @override
     def __repr__(self) -> str:
-        """Return string representation with masked token.
+        """Return a representation with a masked token.
 
         Returns:
             Masked representation revealing only limited token characters.
@@ -484,7 +418,7 @@ class EventClient:
         return f"EventClient(username='{self.username}', token='{_mask_token(self.token)}')"
 
     async def __aenter__(self) -> Self:
-        """Initialize HTTP session on context entry.
+        """Open the HTTP session on context entry.
 
         Returns:
             Self: Client instance ready for use.
@@ -493,13 +427,13 @@ class EventClient:
             EventsError: If session creation fails.
         """
         if self._closed_event.is_set():
-            raise EventsError(CLIENT_CLOSED_ENTER_MESSAGE)
+            raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
         if self.session is not None:
             msg = "Client is already open. Use a new instance or exit the current context first."
             raise EventsError(msg)
         try:
             self.session = ClientSession(
-                timeout=ClientTimeout(total=self.config.timeout + SESSION_TIMEOUT_BUFFER),
+                timeout=ClientTimeout(total=self.config.timeout + _SESSION_TIMEOUT_BUFFER),
             )
         except (ClientError, OSError, RuntimeError, TimeoutError) as e:
             await self.close()
@@ -513,7 +447,7 @@ class EventClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Clean up session on context exit.
+        """Close resources on context exit.
 
         Args:
             exc_type: Exception type raised inside the context, if any.
@@ -523,14 +457,12 @@ class EventClient:
         await self.close()
 
     def _build_url(self) -> str:
-        """Build URL for next poll request.
+        """Build the URL for the next poll.
 
         Returns:
             Fully qualified URL for the upcoming API request.
 
-        Note:
-            Timeout is only set as a query parameter on the initial URL; subsequent URLs from the
-            API use the nextUrl and are expected to already include any necessary parameters.
+        The timeout query parameter is added only to the initial request URL.
         """
         if self._next_url:
             return self._next_url
@@ -540,7 +472,7 @@ class EventClient:
         )
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
-        """Perform one HTTP attempt and surface retryable status failures.
+        """Perform one HTTP request attempt.
 
         Args:
             url: Fully qualified endpoint to request.
@@ -550,7 +482,7 @@ class EventClient:
 
         Raises:
             EventsError: If the client session is unexpectedly unavailable.
-            _RetryableStatusError: If the response status should trigger a retry.
+            _RetryableStatusError: If the status should trigger a retry.
         """
         if self.session is None:
             msg = "Client session unexpectedly unavailable"
@@ -561,7 +493,7 @@ class EventClient:
             status = response.status
             text = await response.text()
 
-        if status in RETRY_STATUS_CODES:
+        if status in _RETRY_STATUS_CODES:
             msg = f"HTTP {status}"
             raise _RetryableStatusError(msg, status_code=status, response_text=text)
 
@@ -573,7 +505,7 @@ class EventClient:
         attempts_made: int,
         original_exception: Exception,
     ) -> NoReturn:
-        """Raise request failure with contextual details.
+        """Raise the final request error after retries.
 
         Args:
             attempts_made: Number of attempts that were made before failure.
@@ -583,7 +515,7 @@ class EventClient:
             EventsError: With details about the failure, including HTTP metadata
                 if available.
         """  # noqa: DOC501
-        logger.error(
+        _logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
             self.username,
@@ -603,7 +535,7 @@ class EventClient:
             cause = None
 
         if status_code is not None:
-            raise build_http_error(
+            raise _build_http_error(
                 msg,
                 status_code=status_code,
                 response_text=response_text,
@@ -616,7 +548,7 @@ class EventClient:
         ) from cause
 
     async def _request(self, url: str) -> tuple[int, str]:
-        """Make HTTP request with retries.
+        """Run one request with retry/backoff policy.
 
         Args:
             url: Fully qualified endpoint to request.
@@ -655,7 +587,7 @@ class EventClient:
                 except retriable_exc_types as exc:
                     if attempts_made < self.config.retry_attempts:
                         msg = "Attempt %d/%d failed for user %s: %r. Retrying..."
-                        logger.warning(
+                        _logger.warning(
                             msg,
                             attempts_made,
                             self.config.retry_attempts,
@@ -674,7 +606,7 @@ class EventClient:
         raise EventsError(msg)  # pragma: no cover
 
     def _process_response(self, status: int, text: str) -> list[Event]:
-        """Process HTTP response and extract events.
+        """Process an HTTP response and return events.
 
         Args:
             status: HTTP status code received from the API.
@@ -687,8 +619,8 @@ class EventClient:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
         """  # noqa: DOC501, DOC502
-        if status in AUTH_ERROR_STATUS_CODES:
-            logger.warning(
+        if status in _AUTH_ERROR_STATUS_CODES:
+            _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
                 self.username,
                 status,
@@ -708,8 +640,8 @@ class EventClient:
             return []
 
         if status != HTTPStatus.OK:
-            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-            logger.error(
+            snippet = _truncate_text(text, limit=_TRUNCATE_LENGTH)
+            _logger.error(
                 "HTTP %d for user %s: %s",
                 status,
                 self.username,
@@ -717,7 +649,7 @@ class EventClient:
             )
 
             msg = f"Request failed: {snippet}"
-            raise build_http_error(
+            raise _build_http_error(
                 msg,
                 status_code=status,
                 response_text=text,
@@ -726,7 +658,7 @@ class EventClient:
         return self._parse_json_response(text)
 
     def _resolve_absolute_url(self, stripped: str) -> tuple[str, ParseResult]:
-        """Resolve a potentially-relative nextUrl to an absolute URL.
+        """Resolve a nextUrl value to an absolute URL.
 
         Args:
             stripped: Stripped nextUrl string from the API response.
@@ -756,7 +688,7 @@ class EventClient:
         exc_msg: str,
         response_text: str,
     ) -> NoReturn:
-        """Log nextUrl validation error and raise a standardized EventsError.
+        """Log a nextUrl validation failure and raise EventsError.
 
         Args:
             log_msg: Log message format string with placeholders for args.
@@ -768,7 +700,7 @@ class EventClient:
         Raises:
             EventsError: Always raised with the provided exc_msg and response_text.
         """
-        logger.error(log_msg, *args, username)
+        _logger.error(log_msg, *args, username)
         raise EventsError(exc_msg, response_text=response_text)
 
     def _validate_next_url(
@@ -777,16 +709,14 @@ class EventClient:
         *,
         response_text: str,
     ) -> str | None:
-        """Validate the nextUrl value from API responses.
+        """Validate and normalize a nextUrl value from the API.
 
         Args:
             next_url: Raw nextUrl value extracted from the API response.
             response_text: Original response body for error diagnostics.
 
         Returns:
-            Sanitized nextUrl string or None when no follow-up poll is
-            required. Relative URLs are resolved against the current base API
-            endpoint.
+            Sanitized nextUrl string, or None when no follow-up poll is required.
 
         Raises:
             EventsError: If nextUrl is present but not a non-empty string, has
@@ -850,7 +780,7 @@ class EventClient:
         return absolute
 
     def _extract_next_url_from_timeout(self, text: str) -> str | None:
-        """Try to extract nextUrl from timeout responses.
+        """Extract nextUrl from timeout-style responses.
 
         Args:
             text: Raw response body from the timeout response.
@@ -864,7 +794,7 @@ class EventClient:
             return None
 
         status_msg = data.get("status")
-        if not (isinstance(status_msg, str) and TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
+        if not (isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
             return None
 
         next_url = data.get("nextUrl")
@@ -874,14 +804,14 @@ class EventClient:
         validated = self._validate_next_url(next_url, response_text=text)
         if validated is None:
             return None
-        logger.debug(
+        _logger.debug(
             "Received nextUrl from timeout response: %s",
             _mask_url(validated, self.token),
         )
         return validated
 
     def _parse_json_response(self, text: str) -> list[Event]:
-        """Parse JSON response and extract events.
+        """Parse a JSON response payload and extract events.
 
         Args:
             text: Raw HTTP response body expected to contain JSON.
@@ -896,8 +826,8 @@ class EventClient:
             data = _parse_json_object(text)
         except EventsError as exc:
             if isinstance(exc.__cause__, json.JSONDecodeError):
-                snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-                logger.exception("Failed to parse JSON: %s", snippet)
+                snippet = _truncate_text(text, limit=_TRUNCATE_LENGTH)
+                _logger.exception("Failed to parse JSON: %s", snippet)
             raise
 
         # Extract events and nextUrl
@@ -926,7 +856,7 @@ class EventClient:
         )
 
         if events:
-            logger.debug(
+            _logger.debug(
                 "Received %d events for user %s",
                 len(events),
                 self.username,
@@ -935,10 +865,9 @@ class EventClient:
         return events
 
     async def _poll(self) -> list[Event]:
-        """Fetch a single batch of events from the API.
+        """Fetch one batch of events from the API.
 
-        Internal helper used by the async iterator. Makes one request and
-        updates _next_url from the response for the next request.
+        Makes one request and updates _next_url for the next poll.
 
         Returns:
             List of events received, or an empty list on timeout.
@@ -948,7 +877,7 @@ class EventClient:
             asyncio.CancelledError: If the polling task is cancelled externally.
         """
         if self._closing_event.is_set() or self._closed_event.is_set():
-            raise EventsError(CLIENT_CLOSING_MESSAGE)
+            raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
         current_task = asyncio.current_task()
         if current_task is None:
@@ -957,30 +886,28 @@ class EventClient:
 
         async with self._polling_lock:
             if self._closing_event.is_set() or self._closed_event.is_set():
-                raise EventsError(CLIENT_CLOSING_MESSAGE)
+                raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
             self._active_poll_task = current_task
             url = self._build_url()
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug("Polling %s", _mask_url(url, self.token))
+            _logger.debug("Polling %s", _mask_url(url, self.token))
 
             try:
                 status, text = await self._request(url)
                 return self._process_response(status, text)
             except asyncio.CancelledError:
                 if self._closing_event.is_set():
-                    raise EventsError(POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
+                    raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
                 raise
             finally:
                 if self._active_poll_task is current_task:
                     self._active_poll_task = None
 
     async def __aiter__(self) -> AsyncGenerator[Event]:
-        """Generate events continuously from the API.
+        """Yield events continuously from the API.
 
-        Runs indefinitely until cancelled or a terminal error occurs. Transient
-        failures (network errors, 5xx responses) are retried automatically per
-        ``config.retry_attempts`` before surfacing.
+        Runs until cancelled or a terminal error occurs. Transient failures
+        are retried according to config.retry_attempts.
 
         Yields:
             Event instances as they are received from the API.
@@ -989,16 +916,7 @@ class EventClient:
             AuthError: If authentication fails (e.g. invalid token).
             EventsError: If a non-retryable error occurs or retries are exhausted.
 
-        Note:
-            The loop is naturally throttled: the server holds each long-poll connection open for
-            ``config.timeout`` seconds before responding. Empty results are therefore infrequent
-            under normal conditions. If the server begins returning empty responses immediately
-            (e.g. during an outage), the rate limiter provides a backstop.
-
-            Poll position is tracked via ``nextUrl`` across iterations. Each
-            successful poll validates and stores the response ``nextUrl`` in
-            internal state, and the next loop iteration resumes from that URL
-            instead of rebuilding the initial credentials URL.
+        Poll position is tracked with nextUrl between iterations.
         """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
         while True:
             events = await self._poll()
@@ -1006,15 +924,10 @@ class EventClient:
                 yield event
 
     async def close(self) -> None:
-        """Close the HTTP session and reset internal state.
+        """Close the HTTP session and reset poll state.
 
-        Releases network resources and clears the stored nextUrl. Safe to
-        call multiple times. Called automatically when exiting the async
-        context manager.
-
-        Note:
-            Close marks the client as terminal state. Re-entry is not supported;
-            create a new client instance after close().
+        Safe to call multiple times. Called automatically by context exit.
+        After close(), the instance cannot be reopened.
         """
         if self._closed_event.is_set():
             return
@@ -1041,6 +954,6 @@ class EventClient:
             try:
                 await asyncio.shield(session.close())
             except (ClientError, OSError, RuntimeError) as e:
-                logger.warning("Error closing session: %s", e, exc_info=True)
+                _logger.warning("Error closing session: %s", e, exc_info=True)
 
         self._closed_event.set()
