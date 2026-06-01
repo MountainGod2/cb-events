@@ -50,7 +50,9 @@ def _is_async_callable(func: object) -> bool:
         func: Object to check for async callability.
 
     Returns:
-        True if func is an async function or has an async __call__, False
+        True if func is an async function or has an async __call__, and False
+        if func is not an async function and does not define an async __call__
+        method (i.e., cannot be awaited).
     """
     if iscoroutinefunction(func):
         return True
