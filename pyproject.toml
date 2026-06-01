@@ -76,7 +76,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 exclude-newer = "1 week"
-required-version = ">=0.11.8"
+exclude-newer-package = { cb-events = false }
 compile-bytecode = true
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
