@@ -8,6 +8,7 @@ ENV LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
     UV_FROZEN=1 \
     UV_NO_CACHE=1 \
+    UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_PYTHON=python3 \
     VIRTUAL_ENV=/opt/venv
