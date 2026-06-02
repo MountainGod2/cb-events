@@ -1,26 +1,7 @@
-"""Event routing with decorator-based handler registration.
+"""Async event routing primitives.
 
-This module provides the Router class for dispatching events to registered
-async handlers based on event type.
-
-Module Attributes:
-    HandlerFunc: Type alias for async handler functions accepting an Event
-        and returning None.
-
-Example:
-    Basic router setup::
-
-        from cb_events import Router, EventType, Event
-
-        router = Router()
-
-        @router.on(EventType.TIP)
-        async def handle_tip(event: Event) -> None:
-            print(f"Tip received: {event.id}")
-
-        @router.on_any
-        async def log_all(event: Event) -> None:
-            print(f"Event: {event.type}")
+Provides decorator-based registration and dispatch for typed and wildcard
+event handlers.
 """
 
 from __future__ import annotations
@@ -36,7 +17,7 @@ from .models import Event
 if TYPE_CHECKING:
     from .models import EventType
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
 
 HandlerFunc: TypeAlias = Callable[[Event], Awaitable[None]]
@@ -44,7 +25,7 @@ HandlerFunc: TypeAlias = Callable[[Event], Awaitable[None]]
 
 
 async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
-    """Invoke a handler and log failures without stopping dispatch.
+    """Run one handler and log failures without stopping dispatch.
 
     Args:
         handler: Async callable that processes the event.
@@ -54,7 +35,7 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
         await handler(event)
     # BaseException (including CancelledError) intentionally propagates
     except Exception:  # pylint: disable=broad-exception-caught
-        logger.exception(
+        _logger.exception(
             "Handler %s failed for event %s (type: %s)",
             _handler_name(handler),
             event.id,
@@ -63,7 +44,16 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
 
 
 def _is_async_callable(func: object) -> bool:
-    """Return whether func produces an awaitable when invoked once."""
+    """Check if a callable can be awaited.
+
+    Args:
+        func: Object to check for async callability.
+
+    Returns:
+        True if func is an async function or has an async __call__, and False
+        if func is not an async function and does not define an async __call__
+        method (i.e., cannot be awaited).
+    """
     if iscoroutinefunction(func):
         return True
     call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
@@ -76,7 +66,7 @@ def _is_async_callable(func: object) -> bool:
 
 
 def _handler_name(handler: object) -> str:
-    """Return a safe name for logging handler failures."""
+    """Return a stable handler name for logging."""
     seen: set[int] = set()
     current = handler
 
@@ -102,48 +92,27 @@ def _handler_name(handler: object) -> str:
 
 
 class Router:
-    """Routes events to registered async handlers.
+    """Dispatch events to registered async handlers.
 
-    Provides decorator-based registration for event handlers with support for
-    both type-specific and wildcard (catch-all) handlers. Handlers execute
-    sequentially in registration order; errors are logged but do not prevent
-    subsequent handlers from running.
-
-    Example:
-        Register and dispatch handlers::
-
-            router = Router()
-
-            @router.on(EventType.TIP)
-            async def handle_tip(event: Event) -> None:
-                print(f"Tip: {event.tip.tokens if event.tip else 0}")
-
-            @router.on_any
-            async def log_event(event: Event) -> None:
-                print(f"Event received: {event.type}")
-
-            await router.dispatch(event)
-
-    Note:
-        Wildcard handlers (registered via on_any) execute before type-specific handlers for each
-        event to support logging or preprocessing regardless of event type.
+    Wildcard handlers run before type-specific handlers. Exceptions raised by
+    handlers are logged and do not stop dispatch of remaining handlers.
     """
 
     __slots__: tuple[str, ...] = ("_handlers",)
 
     def __init__(self) -> None:
-        """Initialize router with an empty handler registry."""
+        """Initialize an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
 
     def _register(self, key: EventType | None, func: HandlerFunc) -> HandlerFunc:
-        """Validate and register a handler function.
+        """Validate and register a handler.
 
         Args:
             key: Event type to register for, or None for wildcard handlers.
-            func: Async handler function to register.
+            func: Async handler to register.
 
         Returns:
-            The registered handler function unchanged.
+            The same handler object.
 
         Raises:
             TypeError: If the handler is not async.
@@ -155,7 +124,7 @@ class Router:
         return func
 
     def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
-        """Register handler for a specific event type.
+        """Register a handler for one event type.
 
         Args:
             event_type: Event category to associate with the handler.
@@ -179,9 +148,9 @@ class Router:
         self,
         func: HandlerFunc | None = None,
     ) -> Callable[[HandlerFunc], HandlerFunc] | HandlerFunc:
-        """Register handler for all event types.
+        """Register a handler for all event types.
 
-        Supports both ``@router.on_any`` and ``@router.on_any()`` usage.
+        Supports both @router.on_any and @router.on_any().
 
         Args:
             func: Optional handler when used as ``@router.on_any``.
@@ -198,7 +167,7 @@ class Router:
         return decorator
 
     async def dispatch(self, event: Event) -> None:
-        """Dispatch an event to all matching handlers.
+        """Dispatch an event to matching handlers.
 
         Executes wildcard handlers first, then type-specific handlers, in
         registration order. Handler exceptions are caught, logged, and do not
@@ -215,7 +184,7 @@ class Router:
 
         handler_count = len(any_handlers) + len(typed_handlers)
 
-        logger.debug(
+        _logger.debug(
             "Dispatching %s event %s to %d handlers",
             event.type,
             event.id,

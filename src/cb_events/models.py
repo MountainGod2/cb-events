@@ -1,26 +1,7 @@
-"""Data models for Chaturbate Events API.
+"""Pydantic event models used by cb_events.
 
-This module defines Pydantic models for deserializing and validating events
-from the Chaturbate Events API. All models are immutable (frozen) and use
-camelCase aliases to match the API's JSON format.
-
-Model Hierarchy:
-    BaseEventModel: Base class with shared configuration.
-    Event: Main event container with type and nested data.
-    User: User information attached to events.
-    Message: Chat or private message content.
-    Tip: Tip transaction details.
-    Media: Media purchase information.
-    RoomSubject: Room subject/title changes.
-
-Example:
-    Accessing nested event data::
-
-        event = Event.model_validate(api_response)
-        if event.type == EventType.TIP and event.tip:
-            print(f"Received {event.tip.tokens} tokens")
-        if event.user:
-            print(f"From: {event.user.username}")
+Models are immutable and accept camelCase API payloads while exposing
+snake_case attributes.
 """
 
 from __future__ import annotations
@@ -43,23 +24,12 @@ from typing_extensions import override
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
 class EventType(str, Enum):
-    """Event types from the Chaturbate Events API.
-
-    Each member represents a distinct event category that can be received
-    from the API. Use with Router.on() to register type-specific handlers.
-
-    Example:
-        Filtering events by type::
-
-            @router.on(EventType.TIP)
-            async def handle_tip(event: Event) -> None:
-                print(f"Tip received: {event.tip.tokens}")
-    """
+    """Event type values emitted by the API."""
 
     BROADCAST_START = "broadcastStart"
     """Broadcaster has started streaming."""
@@ -88,20 +58,15 @@ class EventType(str, Enum):
 
     @override
     def __str__(self) -> str:
-        """Return the raw API value for string formatting.
+        """Return the raw API value.
 
-        Ensures str(member) returns the API value string rather than 'EventType.MEMBER' across all
-        supported Python versions."
+        This keeps string formatting stable across Python versions.
         """
         return self.value
 
 
 class BaseEventModel(BaseModel):
-    """Base model for all event-related data structures.
-
-    Provides shared Pydantic configuration for JSON deserialization with
-    camelCase to snake_case conversion and immutability.
-    """
+    """Shared base model for event payload objects."""
 
     model_config: ClassVar[ConfigDict] = ConfigDict(
         alias_generator=to_camel,
@@ -113,32 +78,28 @@ class BaseEventModel(BaseModel):
 _BaseEventModelT = TypeVar("_BaseEventModelT", bound=BaseEventModel)
 
 UserColorGroup = Literal["o", "m", "f", "l", "p", "tr", "t", "g"]
-"""Known values for :attr:`User.color_group`."""
+"""Allowed values for User.color_group."""
 
 UserGender = Literal["m", "f", "c", "t"]
-"""Known values for :attr:`User.gender`."""
+"""Allowed values for User.gender."""
 
 UserLanguage = Literal["de", "en", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "zh"]
-"""Known values for :attr:`User.language`."""
+"""Allowed values for User.language."""
 
 UserRecentTips = Literal["none", "few", "some", "lots", "tons"]
-"""Known values for :attr:`User.recent_tips`."""
+"""Allowed values for User.recent_tips."""
 
 UserSubgender = Literal["tf", "tm", "tn"]
-"""Known values for :attr:`User.subgender`."""
+"""Allowed values for User.subgender."""
 
 
 class User(BaseEventModel):
-    """User information attached to events.
-
-    Contains details about the user who triggered the event, including
-    display name, membership status, and various flags.
-    """
+    """User metadata attached to an event."""
 
     username: str
     """Display name of the user."""
     color_group: UserColorGroup | None = None
-    """Color group of the user.
+    """User name-color group.
 
     Known values: ``"o"`` (owner), ``"m"`` (moderator), ``"f"`` (fanclub),
     ``"l"`` (dark purple), ``"p"`` (light purple), ``"tr"`` (dark blue),
@@ -147,7 +108,7 @@ class User(BaseEventModel):
     fc_auto_renew: bool = False
     """Whether the user's fanclub membership is a recurring subscription."""
     gender: UserGender | None = None
-    """Gender of the user.
+    """User gender code.
 
     Known values: ``"m"`` (male), ``"f"`` (female), ``"c"`` (couple),
     ``"t"`` (trans).
@@ -181,33 +142,27 @@ class User(BaseEventModel):
     ``"ru"`` (Russian), ``"zh"`` (Chinese).
     """
     recent_tips: UserRecentTips | None = None
-    """How much the user has tipped recently.
+    """Recent tipping activity bucket.
 
-    Possible values: ``"none"`` (no recent tips, no tokens - grey username),
-    ``"few"`` (few or no recent tips, has tokens - light blue),
-    ``"some"`` (some recent tips - dark blue), ``"lots"`` (lots - purple),
-    ``"tons"`` (tons - dark purple).
+    Possible values: "none", "few", "some", "lots", "tons".
 
     Note:
-        The value ``"none"`` is truthy. Compare explicitly with
-        ``recent_tips is None`` (field absent) versus
-        ``recent_tips == "none"`` (present but no tips).
+        The string value "none" is truthy. Compare explicitly with
+        recent_tips is None versus recent_tips == "none".
     """
     subgender: UserSubgender | None = None
-    """Subgender of the user (only set when ``gender`` is ``"t"`` / trans).
+    """Subgender code when gender is "t".
 
-    Possible values: ``"tf"`` (transfemme), ``"tm"`` (transmasc),
-    ``"tn"`` (non-binary). ``None`` when the user is not trans.
+    Possible values: "tf", "tm", "tn". None when not provided.
     """
 
     @field_validator("subgender", mode="before")
     @classmethod
     def _empty_subgender_to_none(cls, v: object) -> object:
-        """Coerce empty string subgender to None.
+        """Convert an empty subgender string to None.
 
         Returns:
-            None if the input is an empty string, otherwise returns the input
-            value unchanged.
+            None for an empty string, otherwise the input value unchanged.
         """
         if isinstance(v, str) and not v:
             return None
@@ -215,10 +170,7 @@ class User(BaseEventModel):
 
 
 class Message(BaseEventModel):
-    """Chat or private message content.
-
-    Represents message data from chatMessage and privateMessage events.
-    """
+    """Payload for chatMessage and privateMessage events."""
 
     message: str
     """Content of the message."""
@@ -242,11 +194,7 @@ class Message(BaseEventModel):
 
 
 class Tip(BaseEventModel):
-    """Tip transaction details.
-
-    Contains information about a tip event including the amount and
-    optional message.
-    """
+    """Payload for tip events."""
 
     tokens: int
     """Number of tokens tipped."""
@@ -257,10 +205,7 @@ class Tip(BaseEventModel):
 
 
 class Media(BaseEventModel):
-    """Media purchase transaction details.
-
-    Contains information about a media purchase event.
-    """
+    """Payload for mediaPurchase events."""
 
     id: str
     """Identifier of the purchased media."""
@@ -273,45 +218,24 @@ class Media(BaseEventModel):
 
 
 class RoomSubject(BaseEventModel):
-    """Room subject or title information.
-
-    Contains the updated room subject from roomSubjectChange events.
-    """
+    """Payload for roomSubjectChange events."""
 
     subject: str
     """The room subject or title."""
 
 
 _SENTINEL: Final[object] = object()
-"""Sentinel for cache-miss detection in Event property accessors."""
+"""Sentinel value for Event accessor cache misses."""
 
 
 class Event(BaseEventModel):
-    """Event from the Chaturbate Events API.
+    """Top-level event container.
 
-    The main event container that wraps all event types. Use the typed
-    properties to access nested data safely-they return None if data is missing
-    or invalid for the event type.
-
-    Example:
-        Safe access to nested data::
-
-            if event.type == EventType.TIP:
-                if tip := event.tip:
-                    print(f"Tip: {tip.tokens} tokens")
-                if user := event.user:
-                    print(f"From: {user.username}")
-
-    Note:
-        Failures to parse nested model data are logged as a warning and return
-        None. Scalar convenience accessors, such as ``broadcaster``, return
-        None quietly when the value is missing or invalid.
+    Typed convenience accessors parse nested payload fields on demand and
+    return None for missing or invalid values.
 
     Warning:
-        All string fields in event data (e.g. ``message.message``,
-        ``user.username``, ``tip.message``) originate from untrusted
-        user input and are not sanitized by this library. Escape or
-        validate them before use in HTML, SQL, or shell contexts.
+        String fields in payload data are untrusted user input.
     """
 
     type: EventType = Field(alias="method")
@@ -375,15 +299,13 @@ class Event(BaseEventModel):
     def _extract_non_empty_string(self, key: str) -> str | None:
         """Extract a non-empty string from event data.
 
-        Results are cached so repeated access avoids repeated dictionary
-        lookups and validation.
+        Results are cached after the first lookup.
 
         Args:
             key: Key within data to look up.
 
         Returns:
-            The string value, or None if the value is missing, empty, or not a
-            string.
+            The string value, or None if missing, empty, or not a string.
         """
         cache_key = f"str:{key}"
 
@@ -410,7 +332,7 @@ class Event(BaseEventModel):
     ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
 
-        Results are cached so repeated access avoids re-parsing.
+        Results are cached after the first parse.
 
         Args:
             key: Key within data to look up.
@@ -439,7 +361,7 @@ class Event(BaseEventModel):
             fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key for e in exc.errors()
             }
-            logger.warning(
+            _logger.warning(
                 "Invalid %s in event %s (invalid fields: %s)",
                 key,
                 self.id,

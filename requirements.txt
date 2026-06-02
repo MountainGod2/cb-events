@@ -1,5 +1,5 @@
 -e .
-aiohappyeyeballs==2.6.1
+aiohappyeyeballs==2.6.2
     # via aiohttp
 aiohttp==3.13.5
     # via cb-events
@@ -17,7 +17,7 @@ frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-idna==3.15
+idna==3.16
     # via yarl
 multidict==6.7.1
     # via
@@ -45,5 +45,5 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-yarl==1.23.0
+yarl==1.24.2
     # via aiohttp

@@ -1,29 +1,7 @@
-"""Exceptions for the Chaturbate Events client.
+"""Exception hierarchy for cb_events.
 
-This module defines the exception hierarchy for API errors:
-
-    EventsError: Base exception for all API failures.
-    AuthError: Authentication failures (HTTP 401/403).
-    HttpStatusError: Generic HTTP status failures.
-    ClientRequestError: HTTP 4xx failures (except auth/rate limit).
-    RateLimitError: HTTP 429 failures.
-    ServerError: HTTP 5xx and Cloudflare 52x failures.
-
-Example:
-    Handling API errors::
-
-        from cb_events import EventClient, AuthError, EventsError
-
-        try:
-            async with EventClient(
-                "https://eventsapi.chaturbate.com/events/user/token/"
-            ) as client:
-                async for event in client:
-                    pass
-        except AuthError as e:
-            print(f"Authentication failed: {e}")
-        except EventsError as e:
-            print(f"API error (HTTP {e.status_code}): {e}")
+Defines structured client and HTTP error types with optional status code and
+truncated response text.
 """
 
 from __future__ import annotations
@@ -37,16 +15,16 @@ AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.UNAUTHORIZED.value,
     HTTPStatus.FORBIDDEN.value,
 })
-"""HTTP status codes indicating authentication failures."""
+"""Status codes mapped to AuthError."""
 
 CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
-"""Cloudflare status codes treated as server-side failures."""
+"""Cloudflare status codes treated as server failures."""
 
 TRUNCATE_LENGTH: Final[int] = 200
-"""Maximum characters stored in response_text to limit PII exposure in logs."""
+"""Maximum response_text length kept on exceptions."""
 
 _RATE_LIMIT_STATUS_CODE: Final[int] = HTTPStatus.TOO_MANY_REQUESTS.value
-"""HTTP status code indicating rate-limiting failures."""
+"""Status code mapped to RateLimitError."""
 
 
 def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
@@ -57,10 +35,10 @@ def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
         limit: Maximum number of characters to retain.
 
     Returns:
-        Text truncated to ``limit`` characters with ellipsis if needed.
+        Text truncated to limit characters with ellipsis when needed.
 
     Raises:
-        ValueError: If ``limit`` is negative.
+        ValueError: If limit is negative.
     """
     if limit < 0:
         msg = f"truncate_text() limit must be non-negative, got {limit}"
@@ -71,25 +49,9 @@ def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
 
 
 class EventsError(Exception):
-    """Base exception for API failures with optional HTTP metadata.
+    """Base exception for client and API failures.
 
-    Raised for network errors, invalid responses, rate limiting, and other
-    non-authentication failures. Includes HTTP status code and response body
-    when available.
-
-    Example:
-        Inspecting error details::
-
-            try:
-                async with EventClient(
-                    "https://eventsapi.chaturbate.com/events/user/token/"
-                ) as client:
-                    async for _event in client:
-                        pass
-            except EventsError as e:
-                if e.status_code == 429:
-                    print("Rate limited, backing off...")
-                print(f"Response: {e.response_text}")
+    Carries optional HTTP status and response text details when available.
     """
 
     __slots__: tuple[str, ...] = ("response_text", "status_code")
@@ -135,54 +97,34 @@ class EventsError(Exception):
 
 
 class AuthError(EventsError):
-    """Authentication failure from the Events API.
+    """Authentication failure.
 
-    Raised when the API returns HTTP 401 (Unauthorized) or 403 (Forbidden),
-    typically indicating invalid credentials or an expired token.
-
-    Also raised during client initialization if username or token is empty
-    or contains invalid whitespace.
-
-    Example:
-        Handling authentication errors::
-
-            try:
-                async with EventClient(
-                    "https://eventsapi.chaturbate.com/events/user/invalid_token/"
-                ) as client:
-                    async for _event in client:
-                        pass
-            except AuthError:
-                print("Invalid credentials - regenerate token")
+    Raised for invalid credentials and malformed authentication URL components.
     """
 
     __slots__: tuple[str, ...] = ()
 
 
 class HttpStatusError(EventsError):
-    """Base error for non-authentication HTTP status code failures."""
+    """Base error for HTTP status failures other than auth checks."""
 
     __slots__: tuple[str, ...] = ()
 
 
 class ClientRequestError(HttpStatusError):
-    """HTTP 4xx request failure (excluding auth and rate limiting)."""
+    """HTTP 4xx failure excluding auth and rate limiting."""
 
     __slots__: tuple[str, ...] = ()
 
 
 class RateLimitError(HttpStatusError):
-    """HTTP 429 rate-limiting failure.
-
-    Only raised after all retry attempts are exhausted; the client retries
-    429 responses automatically per ``ClientConfig.retry_attempts``.
-    """
+    """HTTP 429 failure after retry attempts are exhausted."""
 
     __slots__: tuple[str, ...] = ()
 
 
 class ServerError(HttpStatusError):
-    """HTTP 5xx server-side failure."""
+    """HTTP 5xx or equivalent upstream server failure."""
 
     __slots__: tuple[str, ...] = ()
 
@@ -193,7 +135,7 @@ def build_http_error(
     status_code: int,
     response_text: str | None = None,
 ) -> EventsError:
-    """Build the most specific HTTP status error for a status code.
+    """Map a status code to the most specific error type.
 
     Args:
         message: Human-readable failure message.
@@ -201,8 +143,7 @@ def build_http_error(
         response_text: Optional response body.
 
     Returns:
-        An instance of the most specific EventsError subclass matching the
-        status code, with message and HTTP details included.
+        An EventsError subclass instance with message and HTTP details.
     """
     if status_code in AUTH_ERROR_STATUS_CODES:
         return AuthError(message, status_code=status_code, response_text=response_text)

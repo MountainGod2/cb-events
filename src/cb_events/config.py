@@ -1,24 +1,7 @@
-"""Configuration for the Chaturbate Events API client.
+"""Client configuration model for EventClient.
 
-This module provides ClientConfig for customizing client behavior including
-timeouts, retry logic, and validation strictness.
-
-Example:
-    Custom configuration::
-
-        from cb_events import ClientConfig, EventClient
-
-        config = ClientConfig(
-            timeout=30,
-            retry_attempts=5,
-            strict_validation=False,
-        )
-        async with EventClient(
-            "https://eventsapi.chaturbate.com/events/user/token/",
-            config=config,
-        ) as client:
-            async for event in client:
-                print(event)
+Defines immutable settings for polling timeout, retries, and event
+validation behavior.
 """
 
 from __future__ import annotations
@@ -30,21 +13,9 @@ from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):
-    """Immutable configuration for EventClient behavior.
+    """Immutable settings for EventClient.
 
-    Controls timeouts, retry logic, and validation strictness.
-
-    Example:
-        Lenient configuration for development::
-
-            config = ClientConfig(
-                strict_validation=False,
-                retry_attempts=3,
-            )
-
-    Note:
-        This class is immutable (frozen). Create a new instance to change
-        configuration values.
+    Controls long-poll timeout, retry backoff, and strict validation mode.
     """
 
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
@@ -69,13 +40,13 @@ class ClientConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_delays(self) -> Self:
-        """Validate retry delay configuration.
+        """Validate retry delay bounds.
 
         Returns:
-            Self: Validated configuration instance.
+            Validated configuration instance.
 
         Raises:
-            ValueError: If retry_max_delay is less than retry_backoff.
+            ValueError: If retry_max_delay is smaller than retry_backoff.
         """
         if self.retry_max_delay < self.retry_backoff:
             msg = (

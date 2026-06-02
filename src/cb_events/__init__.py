@@ -1,34 +1,7 @@
-"""Async client for the Chaturbate Events API.
+"""Public package API for cb_events.
 
-Provides automatic retries, rate limiting, and type-safe event handling.
-
-Key Components:
-    - EventClient: Async context manager for API polling.
-    - Router: Decorator-based event dispatcher.
-    - Event: Type-safe event model with nested data accessors.
-    - ClientConfig: Immutable configuration for client behavior.
-
-Example:
-    Basic usage with event routing::
-
-        import asyncio
-        from cb_events import EventClient, Router, EventType, Event
-
-        router = Router()
-
-        @router.on(EventType.TIP)
-        async def handle_tip(event: Event) -> None:
-            if event.tip and event.user:
-                print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-
-        async def main() -> None:
-            async with EventClient(
-                "https://eventsapi.chaturbate.com/events/username/token/"
-            ) as client:
-                async for event in client:
-                    await router.dispatch(event)
-
-        asyncio.run(main())
+Re-exports the client, router, models, configuration, and exceptions needed
+for typical integration code.
 """
 
 from __future__ import annotations

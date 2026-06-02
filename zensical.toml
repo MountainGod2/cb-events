@@ -45,7 +45,7 @@ docstring_style = "google"
 merge_init_into_class = true
 show_source = false
 heading_level = 4
-filters = ["!^_[^_]"]
+filters = ["!^_[^_]", "!^__.*__$", "!^build_http_error$", "!^truncate_text$"]
 
 [project.markdown_extensions.admonition]
 [project.markdown_extensions.attr_list]

@@ -89,6 +89,7 @@ async def thank_tipper(event: Event) -> None:
 
 !!! note
 
-    Handlers run sequentially in registration order. Regular handler exceptions are
-    logged and dispatch continues. A failing handler does not stop other handlers.
-    `asyncio.CancelledError` always propagates immediately.
+    Dispatch runs handlers sequentially. `on_any` handlers run first, then
+    handlers registered for the event type; within each group, handlers run in
+    registration order. Regular handler exceptions are logged and dispatch
+    continues, while `asyncio.CancelledError` propagates immediately.
