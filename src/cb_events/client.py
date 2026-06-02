@@ -618,7 +618,7 @@ class EventClient:
         Raises:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
-        """  # noqa: DOC501, DOC502
+        """  # noqa: DOC501, DOC502 # Static analysis may not recognize raised AuthError and EventsError
         if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
@@ -699,7 +699,7 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
             an unsupported scheme, or references a hostname other than the
             base API host.
-        """  # Static analysis may not recognize raised EventsError
+        """
         if next_url is None:
             return None
 
@@ -853,6 +853,11 @@ class EventClient:
         Raises:
             EventsError: If shutdown has started or if close() cancels this poll.
             asyncio.CancelledError: If the polling task is cancelled externally.
+
+        Note:
+            The polling lock is held for the entire duration of the request. This is intentional to
+            prevent concurrent polls from racing on _next_url, but means a stalled request will
+            block other callers until it finishes or is cancelled.
         """
         if self._closing_event.is_set() or self._closed_event.is_set():
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
