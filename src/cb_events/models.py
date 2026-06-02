@@ -8,13 +8,12 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    PrivateAttr,
     ValidationError,
     field_validator,
 )
@@ -224,10 +223,6 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_SENTINEL: Final[object] = object()
-"""Sentinel value for Event accessor cache misses."""
-
-
 class Event(BaseEventModel):
     """Top-level event container.
 
@@ -244,8 +239,6 @@ class Event(BaseEventModel):
     """Unique identifier for the event."""
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
-    # PrivateAttr is exempt from frozen - mutation is intentional.
-    _cache: dict[str, object] = PrivateAttr(default_factory=dict)
 
     @property
     def user(self) -> User | None:
@@ -299,29 +292,17 @@ class Event(BaseEventModel):
     def _extract_non_empty_string(self, key: str) -> str | None:
         """Extract a non-empty string from event data.
 
-        Results are cached after the first lookup.
-
         Args:
             key: Key within data to look up.
 
         Returns:
             The string value, or None if missing, empty, or not a string.
         """
-        cache_key = f"str:{key}"
-
-        cache = self._cache
-        cached = cache.get(cache_key, _SENTINEL)
-        if cached is not _SENTINEL:
-            return cast("str | None", cached)
-
         value: object | None = self.data.get(key)
         if isinstance(value, str) and value:
-            result: str | None = value
-        else:
-            result = None
+            return value
 
-        cache[cache_key] = result
-        return result
+        return None
 
     def _extract(
         self,
@@ -331,8 +312,6 @@ class Event(BaseEventModel):
         allowed_types: tuple[EventType, ...] | None = None,
     ) -> _BaseEventModelT | None:
         """Extract and validate nested model from event data.
-
-        Results are cached after the first parse.
 
         Args:
             key: Key within data to look up.
@@ -345,14 +324,8 @@ class Event(BaseEventModel):
         if allowed_types is not None and self.type not in allowed_types:
             return None
 
-        cache = self._cache
-        cached = cache.get(key, _SENTINEL)
-        if cached is not _SENTINEL:
-            return cast("_BaseEventModelT | None", cached)
-
         payload: object | None = self.data.get(key)
         if payload is None:
-            cache[key] = None
             return None
 
         try:
@@ -367,8 +340,6 @@ class Event(BaseEventModel):
                 self.id,
                 ", ".join(sorted(fields)),
             )
-            cache[key] = None
             return None
 
-        cache[key] = result
         return result
