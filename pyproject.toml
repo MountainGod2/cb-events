@@ -62,7 +62,7 @@ test = [
 ]
 docs = [
     "mdformat-mkdocs==5.1.4",
-    "mdformat-frontmatter==2.0.10",
+    "mdformat-frontmatter==2.1.2",
     "mkdocstrings-python==2.0.3",
     "pymdown-extensions==10.21.3",
     "zensical==0.0.43",
