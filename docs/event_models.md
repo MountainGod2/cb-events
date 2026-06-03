@@ -50,33 +50,33 @@ API payload keys follow camelCase equivalents of Python snake_case names.
 
 Carried by most event types. Check `event.user` before accessing fields.
 
-| Field           | Type                   | Description                                   |
-| --------------- | ---------------------- | --------------------------------------------- |
-| username        | str                    | Display name of the user.                     |
-| in_fanclub      | bool                   | Whether the user is in the fan club.          |
-| is_mod          | bool                   | Whether the user is a moderator.              |
-| is_follower     | bool                   | Whether the user is a follower.               |
-| is_owner        | bool                   | Whether the user is the room owner.           |
-| has_tokens      | bool                   | Whether the user has tokens.                  |
-| is_broadcasting | bool                   | Whether the user is currently broadcasting.   |
-| in_private_show | bool                   | Whether the user is in a private show.        |
-| is_spying       | bool                   | Whether the user is spying on a private show. |
-| is_silenced     | bool                   | Whether the user is silenced.                 |
-| has_darkmode    | bool                   | Whether the user has dark mode enabled.       |
-| fc_auto_renew   | bool                   | Whether fan club auto-renewal is enabled.     |
-| color_group     | UserColorGroup or None | Color group of the user.                      |
-| gender          | UserGender or None     | Gender of the user.                           |
-| language        | UserLanguage or None   | Language preference of the user.              |
-| recent_tips     | UserRecentTips or None | Recent tip activity level.                    |
-| subgender       | UserSubgender or None  | Subgender of the user.                        |
+| Field           | Type        | Description                                   |
+| --------------- | ----------- | --------------------------------------------- |
+| username        | str         | Display name of the user.                     |
+| in_fanclub      | bool        | Whether the user is in the fan club.          |
+| is_mod          | bool        | Whether the user is a moderator.              |
+| is_follower     | bool        | Whether the user is a follower.               |
+| is_owner        | bool        | Whether the user is the room owner.           |
+| has_tokens      | bool        | Whether the user has tokens.                  |
+| is_broadcasting | bool        | Whether the user is currently broadcasting.   |
+| in_private_show | bool        | Whether the user is in a private show.        |
+| is_spying       | bool        | Whether the user is spying on a private show. |
+| is_silenced     | bool        | Whether the user is silenced.                 |
+| has_darkmode    | bool        | Whether the user has dark mode enabled.       |
+| fc_auto_renew   | bool        | Whether fan club auto-renewal is enabled.     |
+| color_group     | str or None | Color group of the user.                      |
+| gender          | str or None | Gender of the user.                           |
+| language        | str or None | Language preference of the user.              |
+| recent_tips     | str or None | Recent tip activity level.                    |
+| subgender       | str or None | Subgender of the user.                        |
 
-User enum values:
+Known API values (non-exhaustive):
 
-- UserColorGroup: o, m, f, l, p, tr, t, g
-- UserGender: m, f, c, t
-- UserLanguage: de, en, es, fr, it, ja, ko, pl, pt, ru, zh
-- UserRecentTips: none, few, some, lots, tons
-- UserSubgender: tf, tm, tn
+- color_group: o, m, f, l, p, tr, t, g
+- gender: m, f, c, t
+- language: de, en, es, fr, it, ja, ko, pl, pt, ru, zh
+- recent_tips: none, few, some, lots, tons
+- subgender: tf, tm, tn
 
 !!! warning
 

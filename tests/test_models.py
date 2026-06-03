@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
 
@@ -90,25 +89,30 @@ def test_user_field_mapping() -> None:
     ],
 )
 def test_user_literal_fields_accept_known_values(field_name: str, valid_value: str) -> None:
-    """Literal-constrained user fields should accept known API values."""
+    """Enum-like user fields should accept known API values."""
     user = User.model_validate({"username": "u", field_name: valid_value})
     assert user.username == "u"
+    assert user.model_dump(by_alias=True)[field_name] == valid_value
 
 
 @pytest.mark.parametrize(
-    ("field_name", "invalid_value"),
+    ("field_name", "attr_name", "unknown_value"),
     [
-        ("colorGroup", "owner"),
-        ("gender", "x"),
-        ("language", "sv"),
-        ("recentTips", "many"),
-        ("subgender", "xx"),
+        ("colorGroup", "color_group", "owner"),
+        ("gender", "gender", "x"),
+        ("language", "language", "sv"),
+        ("recentTips", "recent_tips", "many"),
+        ("subgender", "subgender", "xx"),
     ],
 )
-def test_user_literal_fields_reject_unknown_values(field_name: str, invalid_value: str) -> None:
-    """Literal-constrained user fields should reject unknown values."""
-    with pytest.raises(ValidationError):
-        User.model_validate({"username": "u", field_name: invalid_value})
+def test_user_literal_fields_accept_unknown_values(
+    field_name: str,
+    attr_name: str,
+    unknown_value: str,
+) -> None:
+    """Enum-like user fields should not break on new API values."""
+    user = User.model_validate({"username": "u", field_name: unknown_value})
+    assert getattr(user, attr_name) == unknown_value
 
 
 @pytest.mark.parametrize(
@@ -257,14 +261,14 @@ def test_event_property_validation_errors_logged(
     })
 
     assert getattr(event, attr_name) is None
-    # Access again. Result is cached, so no additional warning is expected
+    # Access again. Accessors validate on every call.
     assert getattr(event, attr_name) is None
     warning_records = [
         r
         for r in caplog.records
         if r.levelname == "WARNING" and f"{log_msg} in event {event_id}" in r.getMessage()
     ]
-    assert len(warning_records) == 1
+    assert len(warning_records) == 2
 
 
 def test_event_broadcaster_property() -> None:
@@ -278,8 +282,8 @@ def test_event_broadcaster_property() -> None:
     assert event.broadcaster == "streamer"
 
 
-def test_event_broadcaster_property_cached() -> None:
-    """Broadcaster property should return the same cached value on reuse."""
+def test_event_broadcaster_property_repeated_access() -> None:
+    """Broadcaster property should be stable across repeated access."""
     event = Event.model_validate({
         "method": "broadcastStart",
         "id": "evt-bcaster-cache",

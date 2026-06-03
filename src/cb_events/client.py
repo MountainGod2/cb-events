@@ -15,7 +15,6 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
-from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
@@ -28,6 +27,19 @@ from .exceptions import (
     truncate_text,
 )
 from .models import Event
+
+if TYPE_CHECKING:
+    from typing_extensions import Self, override
+else:
+    try:
+        from typing import Self
+    except ImportError:  # pragma: no cover
+        from typing_extensions import Self
+
+    try:
+        from typing import override
+    except ImportError:  # pragma: no cover
+        from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
@@ -514,7 +526,7 @@ class EventClient:
         Raises:
             EventsError: With details about the failure, including HTTP metadata
                 if available.
-        """  # noqa: DOC501
+        """  # noqa: DOC501  # Static analysis may not recognize raised errors
         _logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
@@ -618,7 +630,7 @@ class EventClient:
         Raises:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
-        """  # noqa: DOC501, DOC502
+        """  # noqa: DOC501, DOC502 # Static analysis may not recognize raised errors
         if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
@@ -680,29 +692,6 @@ class EventClient:
             return absolute, urlparse(absolute)
         return stripped, parsed
 
-    @staticmethod
-    def _reject_next_url(
-        log_msg: str,
-        *args: object,
-        username: str,
-        exc_msg: str,
-        response_text: str,
-    ) -> NoReturn:
-        """Log a nextUrl validation failure and raise EventsError.
-
-        Args:
-            log_msg: Log message format string with placeholders for args.
-            *args: Arguments to format into the log message.
-            username: Username to include explicitly in log output.
-            exc_msg: Error message for the raised EventsError.
-            response_text: Original response body for error diagnostics.
-
-        Raises:
-            EventsError: Always raised with the provided exc_msg and response_text.
-        """
-        _logger.error(log_msg, *args, username)
-        raise EventsError(exc_msg, response_text=response_text)
-
     def _validate_next_url(
         self,
         next_url: object,
@@ -722,60 +711,78 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
             an unsupported scheme, or references a hostname other than the
             base API host.
-        """  # noqa: DOC502 # Static analysis may not recognize raised EventsError
+        """
         if next_url is None:
             return None
 
         invalid_next_url_msg = "Invalid API response: 'nextUrl' must be a non-empty string."
 
         if not isinstance(next_url, str):
-            self._reject_next_url(
+            _logger.error(
                 "Received invalid nextUrl type %s for user %s",
                 type(next_url).__name__,
-                username=self.username,
-                exc_msg=invalid_next_url_msg,
-                response_text=response_text,
+                self.username,
             )
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         stripped = next_url.strip()
         if not stripped:
-            self._reject_next_url(
+            _logger.error(
                 "Received empty nextUrl from API for user %s",
-                username=self.username,
-                exc_msg=invalid_next_url_msg,
-                response_text=response_text,
+                self.username,
             )
+            raise EventsError(invalid_next_url_msg, response_text=response_text)
 
         absolute, parsed = self._resolve_absolute_url(stripped)
 
         scheme = parsed.scheme
         if scheme != "https":
-            self._reject_next_url(
+            _logger.error(
                 "Received nextUrl with unsupported scheme %s for user %s",
                 scheme or "<missing>",
-                username=self.username,
-                exc_msg="Invalid nextUrl scheme; only https is allowed.",
+                self.username,
+            )
+            msg = "Invalid nextUrl scheme; only https is allowed."
+            raise EventsError(
+                msg,
                 response_text=response_text,
             )
 
         hostname = parsed.hostname
         allowed_host = self._base_hostname
-        if not hostname:
-            self._reject_next_url(
-                "Received nextUrl without hostname for user %s",
-                username=self.username,
-                exc_msg="Invalid nextUrl host.",
-                response_text=response_text,
+        try:
+            if parsed.port is not None:
+                _logger.error(
+                    "Received nextUrl with custom port %s for user %s",
+                    parsed.port,
+                    self.username,
+                )
+                msg = "Invalid nextUrl host."
+                raise EventsError(msg, response_text=response_text)
+        except ValueError:
+            _logger.error(  # noqa: TRY400
+                "Received nextUrl with invalid port for user %s",
+                self.username,
             )
+            msg = "Invalid nextUrl host."
+            raise EventsError(msg, response_text=response_text) from None
+
+        if not hostname:
+            _logger.error(
+                "Received nextUrl without hostname for user %s",
+                self.username,
+            )
+            msg_0 = "Invalid nextUrl host."
+            raise EventsError(msg_0, response_text=response_text)
 
         if hostname.lower() != allowed_host:
-            self._reject_next_url(
+            _logger.error(
                 "Received nextUrl host %s which is not allowed for user %s",
                 hostname,
-                username=self.username,
-                exc_msg="Invalid nextUrl host.",
-                response_text=response_text,
+                self.username,
             )
+            msg_1 = "Invalid nextUrl host."
+            raise EventsError(msg_1, response_text=response_text)
 
         return absolute
 
@@ -875,6 +882,11 @@ class EventClient:
         Raises:
             EventsError: If shutdown has started or if close() cancels this poll.
             asyncio.CancelledError: If the polling task is cancelled externally.
+
+        Note:
+            The polling lock is held for the entire duration of the request. This is intentional to
+            prevent concurrent polls from racing on _next_url, but means a stalled request will
+            block other callers until it finishes or is cancelled.
         """
         if self._closing_event.is_set() or self._closed_event.is_set():
             raise EventsError(_CLIENT_CLOSING_MESSAGE)

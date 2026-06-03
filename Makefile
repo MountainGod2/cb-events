@@ -90,7 +90,7 @@ pre-commit: ## Public: Run all pre-commit hooks.
 security-full: security trivy ## Advanced: Run all security scans, including Trivy.
 
 requirements-export: ## Advanced: Regenerate requirements.txt from lock data.
-	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt
+	$(UV) export --no-emit-workspace --no-editable --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt
 
 docs-serve: docs ## Advanced: Build docs and serve locally on port 8000.
 	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
@@ -115,7 +115,7 @@ ci-lower-bounds: requirements-check lint security test-cov-lowest-direct ## Adva
 requirements-check: ## Internal: Verify requirements.txt is up to date without changing files.
 	@tmp_file="$$(mktemp)"; \
 	trap 'rm -f "$$tmp_file"' EXIT; \
-	$(UV) export --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
+	$(UV) export --no-emit-workspace --no-editable --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
 	diff -u requirements.txt "$$tmp_file"
 
 bandit: ## Internal: Run Bandit and emit SARIF.

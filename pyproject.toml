@@ -10,7 +10,7 @@ dependencies = [
     "aiolimiter>=1.0.0",
     "pydantic>=2.8.0",
     "stamina>=25.2.0",
-    "typing-extensions>=4.12.2",
+    "typing-extensions>=4.12.2; python_version < '3.12'",
 ]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]

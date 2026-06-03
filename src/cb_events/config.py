@@ -6,10 +6,17 @@ validation behavior.
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+else:
+    try:
+        from typing import Self
+    except ImportError:  # pragma: no cover
+        from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):
