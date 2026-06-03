@@ -92,6 +92,7 @@ def test_user_literal_fields_accept_known_values(field_name: str, valid_value: s
     """Enum-like user fields should accept known API values."""
     user = User.model_validate({"username": "u", field_name: valid_value})
     assert user.username == "u"
+    assert user.model_dump(by_alias=True)[field_name] == valid_value
 
 
 @pytest.mark.parametrize(
