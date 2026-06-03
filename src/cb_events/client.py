@@ -750,6 +750,23 @@ class EventClient:
 
         hostname = parsed.hostname
         allowed_host = self._base_hostname
+        try:
+            if parsed.port is not None:
+                _logger.error(
+                    "Received nextUrl with custom port %s for user %s",
+                    parsed.port,
+                    self.username,
+                )
+                msg = "Invalid nextUrl host."
+                raise EventsError(msg, response_text=response_text)
+        except ValueError:
+            _logger.error(  # noqa: TRY400
+                "Received nextUrl with invalid port for user %s",
+                self.username,
+            )
+            msg = "Invalid nextUrl host."
+            raise EventsError(msg, response_text=response_text) from None
+
         if not hostname:
             _logger.error(
                 "Received nextUrl without hostname for user %s",
