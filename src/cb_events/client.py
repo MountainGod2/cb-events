@@ -514,7 +514,7 @@ class EventClient:
         Raises:
             EventsError: With details about the failure, including HTTP metadata
                 if available.
-        """  # noqa: DOC501
+        """  # noqa: DOC501  # Static analysis may not recognize raised errors
         _logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
@@ -618,7 +618,7 @@ class EventClient:
         Raises:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
-        """  # noqa: DOC501, DOC502 # Static analysis may not recognize raised AuthError and EventsError
+        """  # noqa: DOC501, DOC502 # Static analysis may not recognize raised errors
         if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
