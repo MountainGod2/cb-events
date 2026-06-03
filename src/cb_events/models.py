@@ -76,28 +76,13 @@ class BaseEventModel(BaseModel):
 
 _BaseEventModelT = TypeVar("_BaseEventModelT", bound=BaseEventModel)
 
-UserColorGroup = Literal["o", "m", "f", "l", "p", "tr", "t", "g"]
-"""Allowed values for User.color_group."""
-
-UserGender = Literal["m", "f", "c", "t"]
-"""Allowed values for User.gender."""
-
-UserLanguage = Literal["de", "en", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "zh"]
-"""Allowed values for User.language."""
-
-UserRecentTips = Literal["none", "few", "some", "lots", "tons"]
-"""Allowed values for User.recent_tips."""
-
-UserSubgender = Literal["tf", "tm", "tn"]
-"""Allowed values for User.subgender."""
-
 
 class User(BaseEventModel):
     """User metadata attached to an event."""
 
     username: str
     """Display name of the user."""
-    color_group: UserColorGroup | None = None
+    color_group: str | None = None
     """User name-color group.
 
     Known values: ``"o"`` (owner), ``"m"`` (moderator), ``"f"`` (fanclub),
@@ -106,7 +91,7 @@ class User(BaseEventModel):
     """
     fc_auto_renew: bool = False
     """Whether the user's fanclub membership is a recurring subscription."""
-    gender: UserGender | None = None
+    gender: str | None = None
     """User gender code.
 
     Known values: ``"m"`` (male), ``"f"`` (female), ``"c"`` (couple),
@@ -132,7 +117,7 @@ class User(BaseEventModel):
     """Whether the user is silenced."""
     is_spying: bool = False
     """Whether the user is spying on a private show."""
-    language: UserLanguage | None = None
+    language: str | None = None
     """User's preferred language.
 
     Known values: ``"de"`` (German), ``"en"`` (English), ``"es"`` (Spanish),
@@ -140,7 +125,7 @@ class User(BaseEventModel):
     ``"ko"`` (Korean), ``"pl"`` (Polish), ``"pt"`` (Portuguese),
     ``"ru"`` (Russian), ``"zh"`` (Chinese).
     """
-    recent_tips: UserRecentTips | None = None
+    recent_tips: str | None = None
     """Recent tipping activity bucket.
 
     Possible values: "none", "few", "some", "lots", "tons".
@@ -149,7 +134,7 @@ class User(BaseEventModel):
         The string value "none" is truthy. Compare explicitly with
         recent_tips is None versus recent_tips == "none".
     """
-    subgender: UserSubgender | None = None
+    subgender: str | None = None
     """Subgender code when gender is "t".
 
     Possible values: "tf", "tm", "tn". None when not provided.
