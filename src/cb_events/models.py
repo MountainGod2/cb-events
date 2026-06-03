@@ -18,7 +18,14 @@ from pydantic import (
     field_validator,
 )
 from pydantic.alias_generators import to_camel
-from typing_extensions import override
+
+if TYPE_CHECKING:
+    from typing_extensions import override
+else:
+    try:
+        from typing import override
+    except ImportError:  # pragma: no cover
+        from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable

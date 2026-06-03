@@ -7,9 +7,15 @@ truncated response text.
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
-from typing_extensions import override
+if TYPE_CHECKING:
+    from typing_extensions import override
+else:
+    try:
+        from typing import override
+    except ImportError:  # pragma: no cover
+        from typing_extensions import override
 
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.UNAUTHORIZED.value,

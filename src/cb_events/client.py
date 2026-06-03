@@ -15,7 +15,6 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
-from typing_extensions import Self, override
 
 from .config import ClientConfig
 from .exceptions import (
@@ -28,6 +27,19 @@ from .exceptions import (
     truncate_text,
 )
 from .models import Event
+
+if TYPE_CHECKING:
+    from typing_extensions import Self, override
+else:
+    try:
+        from typing import Self
+    except ImportError:  # pragma: no cover
+        from typing_extensions import Self
+
+    try:
+        from typing import override
+    except ImportError:  # pragma: no cover
+        from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
