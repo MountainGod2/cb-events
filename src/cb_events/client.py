@@ -104,7 +104,6 @@ class _RetryableStatusError(Exception):
     Carries status_code and response_text for later error mapping.
     """
 
-    __slots__: tuple[str, ...] = ("response_text", "status_code")
     status_code: int
     response_text: str
 
@@ -365,23 +364,6 @@ class EventClient:
     Handles URL parsing, retries, rate limiting, and nextUrl continuation.
     Use as an async context manager and async iterator.
     """
-
-    __slots__: tuple[str, ...] = (
-        "_active_poll_task",
-        "_base_hostname",
-        "_base_origin",
-        "_base_scheme",
-        "_closed_event",
-        "_closing_event",
-        "_next_url",
-        "_polling_lock",
-        "_rate_limiter",
-        "base_url",
-        "config",
-        "session",
-        "token",
-        "username",
-    )
 
     def __init__(
         self,

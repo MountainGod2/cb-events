@@ -98,8 +98,6 @@ class Router:
     handlers are logged and do not stop dispatch of remaining handlers.
     """
 
-    __slots__: tuple[str, ...] = ("_handlers",)
-
     def __init__(self) -> None:
         """Initialize an empty handler registry."""
         self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
@@ -175,6 +173,11 @@ class Router:
 
         Args:
             event: Event instance to dispatch to registered handlers.
+
+        Note:
+            Handlers run sequentially. A slow handler will delay all subsequent
+            ones for that event.
+
         """
         any_handlers = tuple(self._handlers.get(None, ()))
         typed_handlers = tuple(self._handlers.get(event.type, ()))

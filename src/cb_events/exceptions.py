@@ -60,8 +60,6 @@ class EventsError(Exception):
     Carries optional HTTP status and response text details when available.
     """
 
-    __slots__: tuple[str, ...] = ("response_text", "status_code")
-
     status_code: int | None
     """HTTP status code if available."""
 
@@ -108,31 +106,21 @@ class AuthError(EventsError):
     Raised for invalid credentials and malformed authentication URL components.
     """
 
-    __slots__: tuple[str, ...] = ()
-
 
 class HttpStatusError(EventsError):
     """Base error for HTTP status failures other than auth checks."""
-
-    __slots__: tuple[str, ...] = ()
 
 
 class ClientRequestError(HttpStatusError):
     """HTTP 4xx failure excluding auth and rate limiting."""
 
-    __slots__: tuple[str, ...] = ()
-
 
 class RateLimitError(HttpStatusError):
     """HTTP 429 failure after retry attempts are exhausted."""
 
-    __slots__: tuple[str, ...] = ()
-
 
 class ServerError(HttpStatusError):
     """HTTP 5xx or equivalent upstream server failure."""
-
-    __slots__: tuple[str, ...] = ()
 
 
 def build_http_error(
