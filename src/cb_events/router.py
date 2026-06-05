@@ -56,8 +56,8 @@ def _is_async_callable(func: object) -> bool:
     """
     if iscoroutinefunction(func):
         return True
-    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
-    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
+    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]
+    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]
         return True
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
