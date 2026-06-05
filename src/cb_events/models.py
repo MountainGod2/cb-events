@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -202,8 +202,11 @@ class Media(BaseEventModel):
     """Identifier of the purchased media."""
     name: str
     """Name of the purchased media."""
-    type: Literal["video", "photos"]
-    """Type of the purchased media."""
+    type: str
+    """Type of the purchased media.
+
+    Possible values: "photos", "videos".
+    """
     tokens: int
     """Number of tokens spent on the media purchase."""
 
