@@ -11,7 +11,6 @@ on:
         "CHANGELOG.md",
         "zensical.toml",
         "pyproject.toml",
-        "uv.lock",
       ]
   workflow_dispatch:
 
