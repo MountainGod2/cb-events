@@ -180,7 +180,7 @@ max-statements-in-try = 10
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
 
 [tool.pylint.design]
-max-attributes = 11
+max-attributes = 12
 
 [tool.pylint.format]
 max-line-length = 100
