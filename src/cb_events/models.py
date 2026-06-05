@@ -20,15 +20,14 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from typing_extensions import override
 else:
     try:
         from typing import override
     except ImportError:  # pragma: no cover
         from typing_extensions import override
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
@@ -205,7 +204,7 @@ class Media(BaseEventModel):
     type: str
     """Type of the purchased media.
 
-    Possible values: "photos", "videos".
+    Possible values: "photos", "video".
     """
     tokens: int
     """Number of tokens spent on the media purchase."""
