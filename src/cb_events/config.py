@@ -58,7 +58,7 @@ class ClientConfig(BaseModel):
         if self.retry_max_delay < self.retry_backoff:
             msg = (
                 f"retry_max_delay ({self.retry_max_delay}) must be >= "
-                f"retry_backoff ({self.retry_backoff}). "
+                f"retry_backoff ({self.retry_backoff})."
             )
             raise ValueError(msg)
         return self
