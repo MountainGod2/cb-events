@@ -382,13 +382,6 @@ class EventClient:
         self.username: str = username
         self.token: str = token
         self.config: ClientConfig = config or ClientConfig()
-        parsed_base = urlparse(self.base_url)
-        self._base_scheme: str = parsed_base.scheme
-        if parsed_base.scheme and parsed_base.netloc:
-            self._base_origin: str = f"{parsed_base.scheme}://{parsed_base.netloc}"
-        else:
-            self._base_origin = self.base_url
-        self._base_hostname: str | None = parsed_base.hostname
         self.session: ClientSession | None = None
         self._active_poll_task: asyncio.Task[object] | None = None
         self._closing_event: asyncio.Event = asyncio.Event()
@@ -454,7 +447,8 @@ class EventClient:
         Returns:
             Fully qualified URL for the upcoming API request.
 
-        The timeout query parameter is added only to the initial request URL.
+        Note:
+            The timeout query parameter is added only to the initial request URL.
         """
         if self._next_url:
             return self._next_url
@@ -660,17 +654,104 @@ class EventClient:
         """
         parsed = urlparse(stripped)
         if not parsed.scheme and not parsed.netloc:
-            if stripped.startswith("/"):
-                base_for_join = f"{self._base_origin.rstrip('/')}/"
-            else:
-                base_for_join = f"{self.base_url.rstrip('/')}/"
+            base_parsed = urlparse(self.base_url)
+            base_origin = (
+                f"{base_parsed.scheme}://{base_parsed.netloc}"
+                if base_parsed.scheme and base_parsed.netloc
+                else self.base_url
+            )
+            base_for_join = base_origin if stripped.startswith("/") else self.base_url
+            base_for_join = f"{base_for_join.rstrip('/')}/"
             absolute = urljoin(base_for_join, stripped)
             return absolute, urlparse(absolute)
         if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-            scheme = self._base_scheme
+            scheme = urlparse(self.base_url).scheme
             absolute = f"{scheme}:{stripped}"
             return absolute, urlparse(absolute)
         return stripped, parsed
+
+    def _require_next_url_str(
+        self,
+        next_url: object,
+        *,
+        response_text: str,
+    ) -> str:
+        msg = "Invalid API response: 'nextUrl' must be a non-empty string."
+
+        if not isinstance(next_url, str):
+            _logger.error(
+                "Received invalid nextUrl type %s for user %s",
+                type(next_url).__name__,
+                self.username,
+            )
+            raise EventsError(msg, response_text=response_text)
+
+        stripped = next_url.strip()
+        if not stripped:
+            _logger.error(
+                "Received empty nextUrl from API for user %s",
+                self.username,
+            )
+            raise EventsError(msg, response_text=response_text)
+
+        return stripped
+
+    def _validate_next_url_scheme(self, parsed: ParseResult, *, response_text: str) -> None:
+        scheme = parsed.scheme
+        if scheme == "https":
+            return
+
+        _logger.error(
+            "Received nextUrl with unsupported scheme %s for user %s",
+            scheme or "<missing>",
+            self.username,
+        )
+        msg = "Invalid nextUrl scheme; only https is allowed."
+        raise EventsError(msg, response_text=response_text)
+
+    def _validate_next_url_port(self, parsed: ParseResult, *, response_text: str) -> None:
+        try:
+            port = parsed.port
+        except ValueError:
+            _logger.error(  # noqa: TRY400
+                "Received nextUrl with invalid port for user %s",
+                self.username,
+            )
+            msg = "Invalid API response: 'nextUrl' contains an invalid port."
+            raise EventsError(msg, response_text=response_text) from None
+
+        if port is None:
+            return
+
+        _logger.error(
+            "Received nextUrl with custom port %s for user %s",
+            port,
+            self.username,
+        )
+        msg = "Invalid API response: 'nextUrl' must not contain a custom port."
+        raise EventsError(msg, response_text=response_text)
+
+    def _validate_next_url_host(self, parsed: ParseResult, *, response_text: str) -> None:
+        hostname = parsed.hostname
+        if not hostname:
+            _logger.error(
+                "Received nextUrl without hostname for user %s",
+                self.username,
+            )
+            msg = "Invalid API response: 'nextUrl' must include a hostname."
+            raise EventsError(msg, response_text=response_text)
+
+        allowed_host = (urlparse(self.base_url).hostname or "").lower()
+        if hostname.lower() == allowed_host:
+            return
+
+        _logger.error(
+            "Received nextUrl host %s which is not allowed for user %s",
+            hostname,
+            self.username,
+        )
+        msg = "Invalid API response: 'nextUrl' host is not allowed."
+        raise EventsError(msg, response_text=response_text)
 
     def _validate_next_url(
         self,
@@ -691,79 +772,16 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
             an unsupported scheme, or references a hostname other than the
             base API host.
-        """
+        """  # noqa: DOC502  # Static analysis may not recognize raised EventsError
         if next_url is None:
             return None
 
-        invalid_next_url_msg = "Invalid API response: 'nextUrl' must be a non-empty string."
-
-        if not isinstance(next_url, str):
-            _logger.error(
-                "Received invalid nextUrl type %s for user %s",
-                type(next_url).__name__,
-                self.username,
-            )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
-
-        stripped = next_url.strip()
-        if not stripped:
-            _logger.error(
-                "Received empty nextUrl from API for user %s",
-                self.username,
-            )
-            raise EventsError(invalid_next_url_msg, response_text=response_text)
-
+        stripped = self._require_next_url_str(next_url, response_text=response_text)
         absolute, parsed = self._resolve_absolute_url(stripped)
 
-        scheme = parsed.scheme
-        if scheme != "https":
-            _logger.error(
-                "Received nextUrl with unsupported scheme %s for user %s",
-                scheme or "<missing>",
-                self.username,
-            )
-            msg = "Invalid nextUrl scheme; only https is allowed."
-            raise EventsError(
-                msg,
-                response_text=response_text,
-            )
-
-        hostname = parsed.hostname
-        allowed_host = self._base_hostname
-
-        try:
-            if parsed.port is not None:
-                _logger.error(
-                    "Received nextUrl with custom port %s for user %s",
-                    parsed.port,
-                    self.username,
-                )
-                msg = "nextUrl must not contain a custom port"
-                raise EventsError(msg, response_text=response_text)
-        except ValueError:
-            _logger.error(  # noqa: TRY400
-                "Received nextUrl with invalid port for user %s",
-                self.username,
-            )
-            msg = "nextUrl contains an invalid port"
-            raise EventsError(msg, response_text=response_text) from None
-
-        if not hostname:
-            _logger.error(
-                "Received nextUrl without hostname for user %s",
-                self.username,
-            )
-            msg = "nextUrl must include a hostname"
-            raise EventsError(msg, response_text=response_text)
-
-        if hostname.lower() != allowed_host:
-            _logger.error(
-                "Received nextUrl host %s which is not allowed for user %s",
-                hostname,
-                self.username,
-            )
-            msg = "nextUrl host is not allowed"
-            raise EventsError(msg, response_text=response_text)
+        self._validate_next_url_scheme(parsed, response_text=response_text)
+        self._validate_next_url_port(parsed, response_text=response_text)
+        self._validate_next_url_host(parsed, response_text=response_text)
 
         return absolute
 
