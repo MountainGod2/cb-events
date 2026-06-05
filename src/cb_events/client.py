@@ -383,6 +383,7 @@ class EventClient:
         self.token: str = token
         self.config: ClientConfig = config or ClientConfig()
         self.session: ClientSession | None = None
+        self._parsed_base_url: ParseResult = urlparse(base_url)
         self._active_poll_task: asyncio.Task[object] | None = None
         self._closing_event: asyncio.Event = asyncio.Event()
         self._closed_event: asyncio.Event = asyncio.Event()
@@ -444,11 +445,11 @@ class EventClient:
     def _build_url(self) -> str:
         """Build the URL for the next poll.
 
-        Returns:
-            Fully qualified URL for the upcoming API request.
-
         Note:
             The timeout query parameter is added only to the initial request URL.
+
+        Returns:
+            Fully qualified URL for the upcoming API request.
         """
         if self._next_url:
             return self._next_url
@@ -654,10 +655,9 @@ class EventClient:
         """
         parsed = urlparse(stripped)
         if not parsed.scheme and not parsed.netloc:
-            base_parsed = urlparse(self.base_url)
             base_origin = (
-                f"{base_parsed.scheme}://{base_parsed.netloc}"
-                if base_parsed.scheme and base_parsed.netloc
+                f"{self._parsed_base_url.scheme}://{self._parsed_base_url.netloc}"
+                if self._parsed_base_url.scheme and self._parsed_base_url.netloc
                 else self.base_url
             )
             base_for_join = base_origin if stripped.startswith("/") else self.base_url
@@ -665,8 +665,7 @@ class EventClient:
             absolute = urljoin(base_for_join, stripped)
             return absolute, urlparse(absolute)
         if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-            scheme = urlparse(self.base_url).scheme
-            absolute = f"{scheme}:{stripped}"
+            absolute = f"{self._parsed_base_url.scheme}:{stripped}"
             return absolute, urlparse(absolute)
         return stripped, parsed
 
@@ -676,6 +675,18 @@ class EventClient:
         *,
         response_text: str,
     ) -> str:
+        """Validate that a nextUrl value is a non-empty string.
+
+        Args:
+            next_url: Raw nextUrl value extracted from the API response.
+            response_text: Original response body for error diagnostics.
+
+        Returns:
+            Stripped nextUrl string.
+
+        Raises:
+            EventsError: If next_url is not a string or is empty after stripping.
+        """
         msg = "Invalid API response: 'nextUrl' must be a non-empty string."
 
         if not isinstance(next_url, str):
@@ -697,6 +708,15 @@ class EventClient:
         return stripped
 
     def _validate_next_url_scheme(self, parsed: ParseResult, *, response_text: str) -> None:
+        """Validate that a parsed nextUrl uses the https scheme.
+
+        Args:
+            parsed: Parsed nextUrl components.
+            response_text: Original response body for error diagnostics.
+
+        Raises:
+            EventsError: If the scheme is not https.
+        """
         scheme = parsed.scheme
         if scheme == "https":
             return
@@ -710,6 +730,15 @@ class EventClient:
         raise EventsError(msg, response_text=response_text)
 
     def _validate_next_url_port(self, parsed: ParseResult, *, response_text: str) -> None:
+        """Validate that a parsed nextUrl does not include a custom port.
+
+        Args:
+            parsed: Parsed nextUrl components.
+            response_text: Original response body for error diagnostics.
+
+        Raises:
+            EventsError: If a custom or malformed port is present.
+        """
         try:
             port = parsed.port
         except ValueError:
@@ -732,6 +761,15 @@ class EventClient:
         raise EventsError(msg, response_text=response_text)
 
     def _validate_next_url_host(self, parsed: ParseResult, *, response_text: str) -> None:
+        """Validate that a parsed nextUrl hostname matches the base API host.
+
+        Args:
+            parsed: Parsed nextUrl components.
+            response_text: Original response body for error diagnostics.
+
+        Raises:
+            EventsError: If the hostname is missing or does not match the base API host.
+        """
         hostname = parsed.hostname
         if not hostname:
             _logger.error(
@@ -741,7 +779,7 @@ class EventClient:
             msg = "Invalid API response: 'nextUrl' must include a hostname."
             raise EventsError(msg, response_text=response_text)
 
-        allowed_host = (urlparse(self.base_url).hostname or "").lower()
+        allowed_host = (self._parsed_base_url.hostname or "").lower()
         if hostname.lower() == allowed_host:
             return
 
@@ -831,6 +869,8 @@ class EventClient:
         try:
             data = _parse_json_object(text)
         except EventsError as exc:
+            # Only log the snippet for JSON decode failures; other EventsError
+            # subtypes have already captured relevant context at the raise site.
             if isinstance(exc.__cause__, json.JSONDecodeError):
                 snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
                 _logger.exception("Failed to parse JSON: %s", snippet)
