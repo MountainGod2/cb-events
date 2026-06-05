@@ -29,22 +29,20 @@ from .exceptions import (
 from .models import Event
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+    from types import TracebackType
+    from urllib.parse import ParseResult
+
     from typing_extensions import Self, override
 else:
     try:
         from typing import Self
     except ImportError:  # pragma: no cover
         from typing_extensions import Self
-
     try:
         from typing import override
     except ImportError:  # pragma: no cover
         from typing_extensions import override
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Sequence
-    from types import TracebackType
-    from urllib.parse import ParseResult
 
 _logger = logging.getLogger(__name__)
 """Module logger."""
