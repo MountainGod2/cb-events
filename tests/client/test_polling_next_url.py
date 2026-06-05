@@ -43,7 +43,7 @@ async def test_disallowed_next_url_host_raises(
     aioresponses_mock.get(testbed_url_pattern, status=400, payload=timeout_response)
 
     async with event_client_factory() as client:
-        with pytest.raises(EventsError, match=r"Invalid nextUrl host"):
+        with pytest.raises(EventsError, match=r"nextUrl host is not allowed"):
             await client._poll()
 
 
@@ -83,8 +83,8 @@ async def test_relative_next_url_resolved_to_absolute(
             "http://events.testbed.cb.dev/events/test_user/test_token/",
             r"Invalid nextUrl scheme",
         ),
-        ("https:///nohost", r"Invalid nextUrl host"),
-        ("//evil.com/path", r"Invalid nextUrl host"),
+        ("https:///nohost", r"nextUrl must include a hostname"),
+        ("//evil.com/path", r"nextUrl host is not allowed"),
     ],
 )
 async def test_invalid_next_url_handling(
