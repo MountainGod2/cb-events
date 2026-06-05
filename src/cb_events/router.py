@@ -177,7 +177,6 @@ class Router:
         Note:
             Handlers run sequentially. A slow handler will delay all subsequent
             ones for that event.
-
         """
         any_handlers = tuple(self._handlers.get(None, ()))
         typed_handlers = tuple(self._handlers.get(event.type, ()))
