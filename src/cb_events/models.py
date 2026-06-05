@@ -295,7 +295,6 @@ class Event(BaseEventModel):
         value: object | None = self.data.get(key)
         if isinstance(value, str) and value:
             return value
-
         return None
 
     def _extract(
