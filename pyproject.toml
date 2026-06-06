@@ -76,7 +76,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { cb-events = false , aiohttp = false }
+exclude-newer-package = { cb-events = false }
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
 default-groups = []
