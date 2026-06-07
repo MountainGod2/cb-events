@@ -170,7 +170,7 @@ jobs:
       - name: Verify upstream is unchanged
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: bash .github/workflows/verify_upstream.sh
+        run: bash .github/scripts/verify_upstream.sh
 
       - name: Create release
         env:
