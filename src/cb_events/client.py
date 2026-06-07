@@ -416,20 +416,31 @@ class EventClient:
             EventsError: If the client has already been closed, is already
                 open, or if session creation fails.
         """
-        if self._state is _ClientState.CLOSED:
-            raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
-        if self.session is not None:
-            msg = "Client is already open. Use a new instance or exit the current context first."
-            raise EventsError(msg)
-        try:
-            self.session = ClientSession(
-                timeout=ClientTimeout(total=self.config.timeout + _SESSION_TIMEOUT_BUFFER),
-            )
-        except (ClientError, OSError, RuntimeError, TimeoutError) as e:
+        creation_error: Exception | None = None
+        async with self._polling_lock:
+            if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
+                raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
+            if self.session is not None:
+                msg = (
+                    "Client is already open. Use a new instance or exit the current context first."
+                )
+                raise EventsError(msg)
+            try:
+                self.session = ClientSession(
+                    timeout=ClientTimeout(total=self.config.timeout + _SESSION_TIMEOUT_BUFFER),
+                )
+            except (ClientError, OSError, RuntimeError, TimeoutError) as e:
+                creation_error = e
+            else:
+                return self
+
+        # Preserve the prior behavior that a failed entry transitions the client to terminal state.
+        if creation_error is not None:  # pyright:ignore[reportUnnecessaryComparison]
             await self.close()
             msg = "Failed to create HTTP session."
-            raise EventsError(msg) from e
-        return self
+            raise EventsError(msg) from creation_error
+
+        return None  # pyright:ignore[reportUnreachable]
 
     async def __aexit__(
         self,
@@ -990,30 +1001,28 @@ class EventClient:
             return
 
         self._state = _ClientState.CLOSING
+        try:  # noqa: PLW0717
+            # Cancel any in-flight poll task first so lock handoff is fast on shutdown.
+            poll_task = self._active_poll_task
+            current_task = asyncio.current_task()
+            if poll_task is not None and poll_task is not current_task and not poll_task.done():
+                _ = poll_task.cancel()
+                with suppress(asyncio.CancelledError, EventsError):
+                    await poll_task
 
-        # Cancel any in-flight poll task first so lock handoff is fast on shutdown.
-        poll_task = self._active_poll_task
-        current_task = asyncio.current_task()
-        if poll_task is not None and poll_task is not current_task and not poll_task.done():
-            _ = poll_task.cancel()
-            with suppress(asyncio.CancelledError, EventsError):
-                await poll_task
-
-        # Two-phase close:
-        # - Under lock: detach session and reset poll state.
-        # - Outside lock: await session.close() so lock is not held on I/O.
-        async with self._polling_lock:
-            session: ClientSession | None = self.session
-            self.session = None
-            self._next_url = None
-            self._active_poll_task = None
-        if session is not None:
-            try:
-                # asyncio.shield ensures session.close() runs to completion even
-                # if close() itself is cancelled from an outer task, preventing
-                # the underlying TCP connection from being abandoned mid-teardown.
-                await asyncio.shield(session.close())
-            except (ClientError, OSError, RuntimeError) as e:
-                _logger.warning("Error closing session: %s", e, exc_info=True)
-
-        self._state = _ClientState.CLOSED
+            # If outside the lock, await session.close() so it is not held on I/O.
+            async with self._polling_lock:
+                session: ClientSession | None = self.session
+                self.session = None
+                self._next_url = None
+                self._active_poll_task = None
+            if session is not None:
+                try:
+                    # asyncio.shield ensures session.close() runs to completion even
+                    # if close() itself is cancelled from an outer task, preventing
+                    # the underlying TCP connection from being abandoned mid-teardown.
+                    await asyncio.shield(session.close())
+                except (ClientError, OSError, RuntimeError) as e:
+                    _logger.warning("Error closing session: %s", e, exc_info=True)
+        finally:
+            self._state = _ClientState.CLOSED
