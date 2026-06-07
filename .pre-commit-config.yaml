@@ -71,7 +71,6 @@ repos:
         entry: uv run --group=docs mdformat
         language: system
         files: ^(docs/.*\.md|README\.md)$
-        exclude: ^docs/api/.*\.md$
 
       - id: requirements-sync
         name: requirements.txt sync check

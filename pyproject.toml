@@ -63,6 +63,7 @@ test = [
 docs = [
     "mdformat-mkdocs==5.1.4",
     "mdformat-frontmatter==2.1.2",
+    "mdformat-pyproject==0.1.1",
     "mkdocstrings-python==2.0.3",
     "pymdown-extensions==10.21.3",
     "zensical==0.0.43",
@@ -188,7 +189,7 @@ max-module-lines = 1200
 
 [tool.basedpyright]
 include = ["src"]
-exclude = ["tests", "examples", "docs", "build", "dist", ".venv","**/_compat.py"]
+exclude = ["tests", "examples", "docs", "build", "dist", ".venv", "**/_compat.py"]
 extraPaths = ["src"]
 pythonVersion = "3.10"
 
@@ -221,3 +222,8 @@ directory = "htmlcov"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
+
+[tool.mdformat]
+exclude = [
+    "docs/api/*.md"
+]
