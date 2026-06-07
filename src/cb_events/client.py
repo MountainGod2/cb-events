@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from contextlib import suppress
+from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
 from urllib.parse import quote, unquote, urljoin, urlparse
@@ -94,6 +95,19 @@ _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "events.testbed.cb.dev": TESTBED_URL,
 }
 """Allowed API hosts mapped to canonical base URLs."""
+
+
+class _ClientState(Enum):
+    """Lifecycle state of an :class:`EventClient` instance."""
+
+    OPEN = auto()
+    """Client is active and ready to poll."""
+
+    CLOSING = auto()
+    """Client is shutting down; new polls are rejected."""
+
+    CLOSED = auto()
+    """Client has been fully closed and cannot be reopened."""
 
 
 class _RetryableStatusError(Exception):
@@ -202,10 +216,9 @@ def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
     Raises:
         AuthError: If the value is empty or contains leading/trailing whitespace.
     """
-    if value and value == value.strip():
-        return
-    msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
-    raise AuthError(msg)
+    if not value or value != value.strip():
+        msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
+        raise AuthError(msg)
 
 
 def _parse_events_url(events_url: str) -> tuple[str, str, str]:
@@ -380,13 +393,12 @@ class EventClient:
         base_url, username, token = _parse_events_url(events_url)
         self.base_url: str = base_url
         self.username: str = username
-        self.token: str = token
+        self._token: str = token
         self.config: ClientConfig = config or ClientConfig()
         self.session: ClientSession | None = None
         self._parsed_base_url: ParseResult = urlparse(base_url)
         self._active_poll_task: asyncio.Task[object] | None = None
-        self._closing_event: asyncio.Event = asyncio.Event()
-        self._closed_event: asyncio.Event = asyncio.Event()
+        self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
@@ -401,7 +413,7 @@ class EventClient:
         Returns:
             Masked representation revealing only limited token characters.
         """
-        return f"EventClient(username='{self.username}', token='{_mask_token(self.token)}')"
+        return f"EventClient(username='{self.username}', token='{_mask_token(self._token)}')"
 
     async def __aenter__(self) -> Self:
         """Open the HTTP session on context entry.
@@ -410,9 +422,10 @@ class EventClient:
             Self: Client instance ready for use.
 
         Raises:
-            EventsError: If session creation fails.
+            EventsError: If the client has already been closed, is already
+                open, or if session creation fails.
         """
-        if self._closed_event.is_set():
+        if self._state is _ClientState.CLOSED:
             raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
         if self.session is not None:
             msg = "Client is already open. Use a new instance or exit the current context first."
@@ -455,7 +468,7 @@ class EventClient:
             return self._next_url
         return (
             f"{self.base_url}/{quote(self.username, safe='')}/"
-            f"{quote(self.token, safe='')}/?timeout={self.config.timeout}"
+            f"{quote(self._token, safe='')}/?timeout={self.config.timeout}"
         )
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
@@ -500,8 +513,9 @@ class EventClient:
 
         Raises:
             EventsError: With details about the failure, including HTTP metadata
-                if available.
-        """  # noqa: DOC501  # Static analysis may not recognize raised errors
+                if available. Raised as a specific subclass (e.g. RateLimitError,
+                ServerError) when the final failure was an HTTP status error.
+        """  # noqa: DOC501
         _logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
@@ -604,8 +618,9 @@ class EventClient:
 
         Raises:
             AuthError: For HTTP 401/403 responses.
-            EventsError: For other non-200 responses or invalid nextUrl in timeout responses.
-        """  # noqa: DOC501, DOC502 # Static analysis may not recognize raised errors
+            EventsError: For other non-200 responses, or when a timeout response
+                contains an invalid nextUrl.
+        """  # noqa: DOC501, DOC502
         if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
@@ -742,7 +757,7 @@ class EventClient:
         try:
             port = parsed.port
         except ValueError:
-            _logger.error(  # noqa: TRY400
+            _logger.warning(
                 "Received nextUrl with invalid port for user %s",
                 self.username,
             )
@@ -808,9 +823,9 @@ class EventClient:
 
         Raises:
             EventsError: If nextUrl is present but not a non-empty string, has
-            an unsupported scheme, or references a hostname other than the
-            base API host.
-        """  # noqa: DOC502  # Static analysis may not recognize raised EventsError
+                an unsupported scheme, contains a custom port, or references a
+                hostname other than the base API host.
+        """  # noqa: DOC502
         if next_url is None:
             return None
 
@@ -850,7 +865,7 @@ class EventClient:
             return None
         _logger.debug(
             "Received nextUrl from timeout response: %s",
-            _mask_url(validated, self.token),
+            _mask_url(validated, self._token),
         )
         return validated
 
@@ -927,7 +942,7 @@ class EventClient:
             prevent concurrent polls from racing on _next_url, but means a stalled request will
             block other callers until it finishes or is cancelled.
         """
-        if self._closing_event.is_set() or self._closed_event.is_set():
+        if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
         current_task = asyncio.current_task()
@@ -936,18 +951,18 @@ class EventClient:
             raise EventsError(msg)
 
         async with self._polling_lock:
-            if self._closing_event.is_set() or self._closed_event.is_set():
+            if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
             self._active_poll_task = current_task
             url = self._build_url()
-            _logger.debug("Polling %s", _mask_url(url, self.token))
+            _logger.debug("Polling %s", _mask_url(url, self._token))
 
             try:
                 status, text = await self._request(url)
                 return self._process_response(status, text)
             except asyncio.CancelledError:
-                if self._closing_event.is_set():
+                if self._state is _ClientState.CLOSING:
                     raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
                 raise
             finally:
@@ -968,7 +983,7 @@ class EventClient:
             EventsError: If a non-retryable error occurs or retries are exhausted.
 
         Poll position is tracked with nextUrl between iterations.
-        """  # noqa: DOC502 # Static analysis may not recognize raised AuthError and EventsError
+        """  # noqa: DOC502
         while True:
             events = await self._poll()
             for event in events:
@@ -980,10 +995,10 @@ class EventClient:
         Safe to call multiple times. Called automatically by context exit.
         After close(), the instance cannot be reopened.
         """
-        if self._closed_event.is_set():
+        if self._state is _ClientState.CLOSED:
             return
 
-        self._closing_event.set()
+        self._state = _ClientState.CLOSING
 
         # Cancel any in-flight poll task first so lock handoff is fast on shutdown.
         poll_task = self._active_poll_task
@@ -1003,8 +1018,11 @@ class EventClient:
             self._active_poll_task = None
         if session is not None:
             try:
+                # asyncio.shield ensures session.close() runs to completion even
+                # if close() itself is cancelled from an outer task, preventing
+                # the underlying TCP connection from being abandoned mid-teardown.
                 await asyncio.shield(session.close())
             except (ClientError, OSError, RuntimeError) as e:
                 _logger.warning("Error closing session: %s", e, exc_info=True)
 
-        self._closed_event.set()
+        self._state = _ClientState.CLOSED
