@@ -10,7 +10,7 @@ from cb_events import (
     RateLimitError,
     ServerError,
 )
-from cb_events.exceptions import build_http_error, truncate_text
+from cb_events._exceptions import build_http_error, truncate_text
 
 
 @pytest.mark.parametrize(

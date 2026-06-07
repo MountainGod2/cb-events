@@ -8,7 +8,7 @@ from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
 
 from cb_events import AuthError, ClientConfig, EventClient, EventsError
-from cb_events.client import (
+from cb_events._client import (
     _mask_token,
     _mask_url,
     _parse_events,

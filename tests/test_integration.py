@@ -8,15 +8,7 @@ from importlib.metadata import version
 import pytest
 from aioresponses import aioresponses
 
-from cb_events import (
-    ClientConfig,
-    Event,
-    EventClient,
-    EventType,
-    Router,
-    __version__,
-)
-from cb_events.exceptions import AuthError
+from cb_events import AuthError, ClientConfig, Event, EventClient, EventType, Router, __version__
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_events_url, make_response
 

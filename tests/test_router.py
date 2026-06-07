@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cb_events import Event, EventType, Router
-from cb_events.router import _handler_name, _is_async_callable
+from cb_events._router import _handler_name, _is_async_callable
 from tests.helpers import CORE_EVENT_TYPES, make_event
 
 

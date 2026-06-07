@@ -17,9 +17,9 @@ from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
 
-from ._compat import Self, override
-from .config import ClientConfig
-from .exceptions import (
+from ._compat import override
+from ._config import ClientConfig
+from ._exceptions import (
     AUTH_ERROR_STATUS_CODES,
     CF_SERVER_ERROR_CODES,
     TRUNCATE_LENGTH,
@@ -28,12 +28,14 @@ from .exceptions import (
     build_http_error,
     truncate_text,
 )
-from .models import Event
+from ._models import Event
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
     from types import TracebackType
     from urllib.parse import ParseResult
+
+    from ._compat import Self
 
 
 _logger = logging.getLogger(__name__)

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .client import EventClient
-from .config import ClientConfig
-from .exceptions import (
+from ._client import EventClient
+from ._config import ClientConfig
+from ._exceptions import (
     AuthError,
     ClientRequestError,
     EventsError,
@@ -18,8 +18,8 @@ from .exceptions import (
     RateLimitError,
     ServerError,
 )
-from .models import Event, EventType, Media, Message, RoomSubject, Tip, User
-from .router import HandlerFunc, Router
+from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
+from ._router import HandlerFunc, Router
 
 try:  # noqa: RUF067 # Version lookup at import time is intentional
     __version__: str = version("cb-events")

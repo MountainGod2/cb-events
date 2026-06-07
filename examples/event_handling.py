@@ -20,10 +20,10 @@ from cb_events import (
     ClientConfig,
     Event,
     EventClient,
+    EventsError,
     EventType,
     Router,
 )
-from cb_events.exceptions import EventsError
 
 logger = logging.getLogger(__name__)
 

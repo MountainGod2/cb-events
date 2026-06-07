@@ -9,7 +9,7 @@ import pytest
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventClient, EventsError
-from cb_events.client import TESTBED_URL
+from cb_events._client import TESTBED_URL
 from tests.helpers import make_events_url
 
 
@@ -38,7 +38,7 @@ async def test_aenter_wraps_session_creation_failures(
         msg = "socket init failed"
         raise OSError(msg)
 
-    monkeypatch.setattr("cb_events.client.ClientSession", _boom)
+    monkeypatch.setattr("cb_events._client.ClientSession", _boom)
     client = EventClient(make_events_url("user", "token"))
 
     with pytest.raises(EventsError, match="Failed to create HTTP session"):
@@ -132,7 +132,7 @@ def test_parse_json_response_debug_logs_event_count(
         "nextUrl": None,
     })
 
-    caplog.set_level("DEBUG", logger="cb_events.client")
+    caplog.set_level("DEBUG", logger="cb_events._client")
     events = client._parse_json_response(payload)
 
     assert len(events) == 1
@@ -155,7 +155,7 @@ async def test_poll_debug_logs_masked_url(
         payload={"events": [], "nextUrl": None},
     )
 
-    caplog.set_level("DEBUG", logger="cb_events.client")
+    caplog.set_level("DEBUG", logger="cb_events._client")
     async with client:
         events = await client._poll()
 
@@ -199,7 +199,7 @@ async def test_request_raises_unexpected_error_when_retry_context_is_empty(
         return _EmptyRetryContext()
 
     monkeypatch.setattr(
-        "cb_events.client.stamina.retry_context",
+        "cb_events._client.stamina.retry_context",
         _empty_retry_context,
     )
 

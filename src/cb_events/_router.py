@@ -12,10 +12,10 @@ from inspect import getattr_static, iscoroutinefunction
 from itertools import chain
 from typing import TYPE_CHECKING, TypeAlias, overload
 
-from .models import Event
+from ._models import Event
 
 if TYPE_CHECKING:
-    from .models import EventType
+    from ._models import EventType
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
