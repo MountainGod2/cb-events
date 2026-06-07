@@ -188,7 +188,7 @@ max-module-lines = 1200
 
 [tool.basedpyright]
 include = ["src"]
-exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
+exclude = ["tests", "examples", "docs", "build", "dist", ".venv","**/_compat.py"]
 extraPaths = ["src"]
 pythonVersion = "3.10"
 

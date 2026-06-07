@@ -11,12 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-else:
-    try:
-        from typing import Self
-    except ImportError:  # pragma: no cover
-        from typing_extensions import Self
+    from ._compat import Self
 
 
 class ClientConfig(BaseModel):

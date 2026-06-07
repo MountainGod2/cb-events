@@ -19,15 +19,10 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
+from ._compat import override
+
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from typing_extensions import override
-else:
-    try:
-        from typing import override
-    except ImportError:  # pragma: no cover
-        from typing_extensions import override
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""

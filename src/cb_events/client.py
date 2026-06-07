@@ -17,6 +17,7 @@ from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
 from pydantic import ValidationError
 
+from ._compat import Self, override
 from .config import ClientConfig
 from .exceptions import (
     AUTH_ERROR_STATUS_CODES,
@@ -34,16 +35,6 @@ if TYPE_CHECKING:
     from types import TracebackType
     from urllib.parse import ParseResult
 
-    from typing_extensions import Self, override
-else:
-    try:
-        from typing import Self
-    except ImportError:  # pragma: no cover
-        from typing_extensions import Self
-    try:
-        from typing import override
-    except ImportError:  # pragma: no cover
-        from typing_extensions import override
 
 _logger = logging.getLogger(__name__)
 """Module logger."""
@@ -962,7 +953,7 @@ class EventClient:
                 status, text = await self._request(url)
                 return self._process_response(status, text)
             except asyncio.CancelledError:
-                if self._state is _ClientState.CLOSING:
+                if self._state is _ClientState.CLOSING:  # pyright: ignore[reportUnnecessaryComparison]  # pylint: disable=line-too-long
                     raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
                 raise
             finally:
