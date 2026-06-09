@@ -10,6 +10,7 @@ from http import HTTPStatus
 from typing import Final
 
 from ._compat import override
+from ._utils import truncate_text
 
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.UNAUTHORIZED.value,
@@ -20,32 +21,8 @@ AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
 CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
 """Cloudflare status codes treated as server failures."""
 
-TRUNCATE_LENGTH: Final[int] = 200
-"""Maximum response_text length kept on exceptions."""
-
 _RATE_LIMIT_STATUS_CODE: Final[int] = HTTPStatus.TOO_MANY_REQUESTS.value
 """Status code mapped to RateLimitError."""
-
-
-def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
-    """Truncate text with ellipsis if it exceeds the limit.
-
-    Args:
-        text: Text to truncate.
-        limit: Maximum number of characters to retain.
-
-    Returns:
-        Text truncated to limit characters with ellipsis when needed.
-
-    Raises:
-        ValueError: If limit is negative.
-    """
-    if limit < 0:
-        msg = f"truncate_text() limit must be non-negative, got {limit}"
-        raise ValueError(msg)
-    if len(text) <= limit:
-        return text
-    return f"{text[:limit]}..."
 
 
 class EventsError(Exception):

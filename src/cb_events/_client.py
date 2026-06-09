@@ -22,13 +22,12 @@ from ._config import ClientConfig
 from ._exceptions import (
     AUTH_ERROR_STATUS_CODES,
     CF_SERVER_ERROR_CODES,
-    TRUNCATE_LENGTH,
     AuthError,
     EventsError,
     build_http_error,
-    truncate_text,
 )
 from ._models import Event
+from ._utils import TRUNCATE_LENGTH, truncate_text
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
