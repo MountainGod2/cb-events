@@ -179,6 +179,7 @@ max-statements-in-try = 10
 
 [tool.pylint.main]
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
+py-version = "3.10"
 
 [tool.pylint.design]
 max-attributes = 12
