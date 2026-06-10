@@ -389,7 +389,7 @@ class EventClient:
         self.config: ClientConfig = config or ClientConfig()
         self.session: ClientSession | None = None
         self._parsed_base_url: ParseResult = urlparse(base_url)
-        self._active_poll_task: asyncio.Task[object] | None = None
+        self._active_poll_tasks: set[asyncio.Task[object]] = set()
         self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
@@ -458,8 +458,11 @@ class EventClient:
         """
         await self.close()
 
-    def _build_url(self) -> str:
+    def _build_url(self, next_url: str | None = None) -> str:
         """Build the URL for the next poll.
+
+        Args:
+            next_url: Optional nextUrl snapshot to use for this request.
 
         Note:
             The timeout query parameter is added only to the initial request URL.
@@ -467,6 +470,8 @@ class EventClient:
         Returns:
             Fully qualified URL for the upcoming API request.
         """
+        if next_url:
+            return next_url
         if self._next_url:
             return self._next_url
         return (
@@ -518,7 +523,7 @@ class EventClient:
             EventsError: With details about the failure, including HTTP metadata
                 if available. Raised as a specific subclass (e.g. RateLimitError,
                 ServerError) when the final failure was an HTTP status error.
-        """  # noqa: DOC501
+        """  # noqa: DOC501  # Called functions raise EventsError on failure.
         _logger.error(
             "Request failed after %d attempts for user %s",
             attempts_made,
@@ -609,21 +614,21 @@ class EventClient:
         msg = "Unexpected error in request loop"
         raise EventsError(msg)  # pragma: no cover
 
-    def _process_response(self, status: int, text: str) -> list[Event]:
-        """Process an HTTP response and return events.
+    def _process_response(self, status: int, text: str) -> tuple[list[Event], str | None]:
+        """Process an HTTP response and return events plus the nextUrl.
 
         Args:
             status: HTTP status code received from the API.
             text: Raw response body.
 
         Returns:
-            List of parsed Event instances.
+            Tuple of (parsed Event instances, validated nextUrl).
 
         Raises:
             AuthError: For HTTP 401/403 responses.
             EventsError: For other non-200 responses, or when a timeout response
                 contains an invalid nextUrl.
-        """  # noqa: DOC501, DOC502
+        """  # noqa: DOC501,DOC502  # Called functions raise AuthError/EventsError on failure.
         if status in AUTH_ERROR_STATUS_CODES:
             _logger.warning(
                 "Authentication failed for user %s (HTTP %d)",
@@ -641,8 +646,7 @@ class EventClient:
         if status == HTTPStatus.BAD_REQUEST and (
             next_url := self._extract_next_url_from_timeout(text)
         ):
-            self._next_url = next_url
-            return []
+            return [], next_url
 
         if status != HTTPStatus.OK:
             snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
@@ -660,7 +664,7 @@ class EventClient:
                 response_text=text,
             )
 
-        return self._parse_json_response(text)
+        return self._parse_json_response_with_next_url(text)
 
     def _resolve_absolute_url(self, stripped: str) -> tuple[str, ParseResult]:
         """Resolve a nextUrl value to an absolute URL.
@@ -828,7 +832,7 @@ class EventClient:
             EventsError: If nextUrl is present but not a non-empty string, has
                 an unsupported scheme, contains a custom port, or references a
                 hostname other than the base API host.
-        """  # noqa: DOC502
+        """  # noqa: DOC502  # Called functions raise EventsError on failure.
         if next_url is None:
             return None
 
@@ -872,14 +876,14 @@ class EventClient:
         )
         return validated
 
-    def _parse_json_response(self, text: str) -> list[Event]:
-        """Parse a JSON response payload and extract events.
+    def _parse_json_response_with_next_url(self, text: str) -> tuple[list[Event], str | None]:
+        """Parse a JSON response payload and extract events with nextUrl.
 
         Args:
             text: Raw HTTP response body expected to contain JSON.
 
         Returns:
-            List of parsed Event instances.
+            Tuple of (parsed Event instances, validated nextUrl).
 
         Raises:
             EventsError: If JSON is invalid or response format is wrong.
@@ -894,8 +898,7 @@ class EventClient:
                 _logger.exception("Failed to parse JSON: %s", snippet)
             raise
 
-        # Extract events and nextUrl
-        self._next_url = self._validate_next_url(
+        next_url = self._validate_next_url(
             data.get("nextUrl"),
             response_text=text,
         )
@@ -926,6 +929,21 @@ class EventClient:
                 self.username,
             )
 
+        return events, next_url
+
+    def _parse_json_response(self, text: str) -> list[Event]:
+        """Parse a JSON response payload and extract events.
+
+        Args:
+            text: Raw HTTP response body expected to contain JSON.
+
+        Returns:
+            List of parsed Event instances.
+
+        Raises:
+            EventsError: If JSON is invalid or response format is wrong.
+        """  # noqa: DOC502  # Called functions raise EventsError on failure.
+        events, _next_url = self._parse_json_response_with_next_url(text)
         return events
 
     async def _poll(self) -> list[Event]:
@@ -941,9 +959,8 @@ class EventClient:
             asyncio.CancelledError: If the polling task is cancelled externally.
 
         Note:
-            The polling lock is held for the entire duration of the request. This is intentional to
-            prevent concurrent polls from racing on _next_url, but means a stalled request will
-            block other callers until it finishes or is cancelled.
+            The polling lock is held only while reading or writing _next_url and
+            tracking active poll tasks. HTTP I/O runs outside the lock.
         """
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
@@ -956,21 +973,34 @@ class EventClient:
         async with self._polling_lock:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
+            self._active_poll_tasks.add(current_task)
+            request_next_url = self._next_url
 
-            self._active_poll_task = current_task
-            url = self._build_url()
-            _logger.debug("Polling %s", _mask_url(url, self._token))
+        url = self._build_url(next_url=request_next_url)
+        _logger.debug("Polling %s", _mask_url(url, self._token))
 
-            try:
-                status, text = await self._request(url)
-                return self._process_response(status, text)
-            except asyncio.CancelledError:
-                if self._state is _ClientState.CLOSING:  # pyright: ignore[reportUnnecessaryComparison]  # pylint: disable=line-too-long
-                    raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
-                raise
-            finally:
-                if self._active_poll_task is current_task:
-                    self._active_poll_task = None
+        try:
+            status, text = await self._request(url)
+            events, next_url = self._process_response(status, text)
+
+            async with self._polling_lock:
+                if self._state is _ClientState.OPEN:
+                    if self._next_url == request_next_url:
+                        self._next_url = next_url
+                    else:
+                        _logger.debug(
+                            "Skipping stale nextUrl update for user %s",
+                            self.username,
+                        )
+        except asyncio.CancelledError:
+            if self._state is _ClientState.CLOSING:  # pyright: ignore[reportUnnecessaryComparison]  # pylint: disable=line-too-long
+                raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
+            raise
+        else:
+            return events
+        finally:
+            async with self._polling_lock:
+                self._active_poll_tasks.discard(current_task)
 
     async def __aiter__(self) -> AsyncGenerator[Event]:
         """Yield events continuously from the API.
@@ -986,7 +1016,7 @@ class EventClient:
             EventsError: If a non-retryable error occurs or retries are exhausted.
 
         Poll position is tracked with nextUrl between iterations.
-        """  # noqa: DOC502
+        """  # noqa: DOC502  # Called functions raise AuthError/EventsError on failure.
         while True:
             events = await self._poll()
             for event in events:
@@ -1003,11 +1033,19 @@ class EventClient:
 
         self._state = _ClientState.CLOSING
         try:  # noqa: PLW0717
-            # Cancel any in-flight poll task first so lock handoff is fast on shutdown.
-            poll_task = self._active_poll_task
             current_task = asyncio.current_task()
-            if poll_task is not None and poll_task is not current_task and not poll_task.done():
+            # Cancel in-flight poll tasks first so shutdown does not wait on long I/O.
+            async with self._polling_lock:
+                poll_tasks = [
+                    task
+                    for task in self._active_poll_tasks
+                    if task is not current_task and not task.done()
+                ]
+
+            for poll_task in poll_tasks:
                 _ = poll_task.cancel()
+
+            for poll_task in poll_tasks:
                 with suppress(asyncio.CancelledError, EventsError):
                     await poll_task
 
@@ -1016,7 +1054,7 @@ class EventClient:
                 session: ClientSession | None = self.session
                 self.session = None
                 self._next_url = None
-                self._active_poll_task = None
+                self._active_poll_tasks.clear()
             if session is not None:
                 try:
                     # asyncio.shield ensures session.close() runs to completion even
