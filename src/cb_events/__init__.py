@@ -27,7 +27,7 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 
-__all__: list[str] = [
+__all__: tuple[str, ...] = (
     "AuthError",
     "ClientConfig",
     "ClientRequestError",
@@ -46,4 +46,4 @@ __all__: list[str] = [
     "Tip",
     "User",
     "__version__",
-]
+)
