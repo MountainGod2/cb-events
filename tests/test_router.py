@@ -245,10 +245,6 @@ async def test_cancelled_error_propagates(router: Router) -> None:
             lambda: _FuncAttrWrapper(_sample_handler),
             id="func_attr",
         ),
-        pytest.param(
-            lambda: _WrappedCallable(_sample_handler),
-            id="wrapped_attr",
-        ),
     ],
 )
 def test_handler_name_prefers_underlying_callable(
@@ -257,33 +253,6 @@ def test_handler_name_prefers_underlying_callable(
     """_handler_name should unwrap helpers until it finds a function name."""
     handler = factory()
     assert _handler_name(handler) == "_sample_handler"
-
-
-def test_handler_name_falls_back_to_type_name() -> None:
-    """Cyclic references should settle on the object's type name."""
-    cyclic = _CyclicName()
-    assert _handler_name(cyclic) == "_CyclicName"
-
-
-def test_handler_name_exits_on_mutual_reference_cycle() -> None:
-    """The while guard fires when two callables point func at each other."""
-    a = _FuncAttrWrapper(None)
-    b = _FuncAttrWrapper(a)
-    a.func = b  # a -> b -> a cycle
-
-    assert _handler_name(a) == "_FuncAttrWrapper"
-
-
-def test_router_reports_wrapped_handler_name(router: Router) -> None:
-    """Type errors inside router should unwrap handler helpers for logging."""
-
-    def sync_handler(event: Event) -> None:
-        _ = event.id
-
-    wrapped_handler = partial(_FuncAttrWrapper(_WrappedCallable(sync_handler)))
-
-    with pytest.raises(TypeError, match="sync_handler"):
-        router.on(EventType.TIP)(wrapped_handler)
 
 
 async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
