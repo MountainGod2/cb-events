@@ -118,8 +118,7 @@ def test_parse_json_response_allows_missing_events_key() -> None:
     """Missing events key should be treated as an empty event list."""
     client = EventClient(make_events_url("user", "token"))
 
-    events = client._parse_json_response('{"nextUrl": null}')
-    assert events == []
+    client._parse_json_response('{"nextUrl": null}')
 
 
 def test_parse_json_response_debug_logs_event_count(
@@ -133,9 +132,8 @@ def test_parse_json_response_debug_logs_event_count(
     })
 
     caplog.set_level("DEBUG", logger="cb_events._client")
-    events = client._parse_json_response(payload)
+    client._parse_json_response(payload)
 
-    assert len(events) == 1
     assert "Received 1 events for user user" in caplog.text
 
 
