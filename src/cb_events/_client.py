@@ -446,11 +446,20 @@ class EventClient:
         """
         await self.close()
 
-    def _build_url(self, next_url: str | None = None) -> str:
+    def _build_url(
+        self,
+        next_url: str | None = None,
+        *,
+        use_cached_next_url: bool = True,
+    ) -> str:
         """Build the URL for the next poll.
 
         Args:
             next_url: Optional nextUrl snapshot to use for this request.
+            use_cached_next_url: Whether to fall back to the cached self._next_url
+                when next_url is None. Should be False when a snapshot has
+                already been captured to avoid using stale URLs from concurrent
+                updates. Defaults to True for backward compatibility.
 
         Note:
             The timeout query parameter is added only to the initial request URL.
@@ -460,7 +469,7 @@ class EventClient:
         """
         if next_url:
             return next_url
-        if self._next_url:
+        if use_cached_next_url and self._next_url:
             return self._next_url
         return (
             f"{self.base_url}/{quote(self.username, safe='')}/"
@@ -949,7 +958,10 @@ class EventClient:
             self._active_poll_tasks.add(current_task)
             request_next_url = self._next_url
 
-        url = self._build_url(next_url=request_next_url)
+        url = self._build_url(
+            next_url=request_next_url,
+            use_cached_next_url=False,
+        )
         _logger.debug("Polling %s", _mask_url(url, self._token))
 
         try:
