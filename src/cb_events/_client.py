@@ -103,25 +103,19 @@ class _ClientState(Enum):
 
 
 class _RetryableStatusError(Exception):
-    """Internal exception used to retry specific HTTP statuses.
-
-    Carries status_code and response_text for later error mapping.
-    """
-
-    status_code: int
-    response_text: str
+    """Internal exception to trigger retry for specific HTTP statuses."""
 
     def __init__(self, msg: str, *, status_code: int, response_text: str) -> None:
         """Initialize with message and HTTP metadata.
 
         Args:
-            msg: Human-readable description of the transient failure.
+            msg: Human-readable description of the failure.
             status_code: HTTP status code returned by the API.
             response_text: Raw response body returned by the API.
         """
         super().__init__(msg)
-        self.status_code = status_code
-        self.response_text = response_text
+        self.status_code: int = status_code
+        self.response_text: str = response_text
 
 
 def _parse_and_validate_events_url(events_url: str) -> ParseResult:
@@ -417,31 +411,25 @@ class EventClient:
             EventsError: If the client has already been closed, is already
                 open, or if session creation fails.
         """
-        creation_error: Exception | None = None
         async with self._polling_lock:
             if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
                 raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
             if self.session is not None:
-                msg = (
-                    "Client is already open. Use a new instance or exit the current context first."
-                )
+                msg = "Client is already open. ..."
                 raise EventsError(msg)
             try:
                 self.session = ClientSession(
                     timeout=ClientTimeout(total=self.config.timeout + _SESSION_TIMEOUT_BUFFER),
                 )
-            except (ClientError, OSError, RuntimeError, TimeoutError) as e:
-                creation_error = e
+            except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
+                # Fall through to close() and re-raise outside the lock.
+                creation_exc: Exception = exc
             else:
                 return self
 
-        # Preserve the prior behavior that a failed entry transitions the client to terminal state.
-        if creation_error is not None:  # pyright:ignore[reportUnnecessaryComparison]
-            await self.close()
-            msg = "Failed to create HTTP session."
-            raise EventsError(msg) from creation_error
-
-        return None  # pyright:ignore[reportUnreachable]
+        await self.close()
+        msg = "Failed to create HTTP session."
+        raise EventsError(msg) from creation_exc
 
     async def __aexit__(
         self,
@@ -664,7 +652,7 @@ class EventClient:
                 response_text=text,
             )
 
-        return self._parse_json_response_with_next_url(text)
+        return self._parse_json_response(text)
 
     def _resolve_absolute_url(self, stripped: str) -> tuple[str, ParseResult]:
         """Resolve a nextUrl value to an absolute URL.
@@ -876,8 +864,8 @@ class EventClient:
         )
         return validated
 
-    def _parse_json_response_with_next_url(self, text: str) -> tuple[list[Event], str | None]:
-        """Parse a JSON response payload and extract events with nextUrl.
+    def _parse_json_response(self, text: str) -> tuple[list[Event], str | None]:
+        """Parse a JSON response payload and extract events.
 
         Args:
             text: Raw HTTP response body expected to contain JSON.
@@ -930,21 +918,6 @@ class EventClient:
             )
 
         return events, next_url
-
-    def _parse_json_response(self, text: str) -> list[Event]:
-        """Parse a JSON response payload and extract events.
-
-        Args:
-            text: Raw HTTP response body expected to contain JSON.
-
-        Returns:
-            List of parsed Event instances.
-
-        Raises:
-            EventsError: If JSON is invalid or response format is wrong.
-        """  # noqa: DOC502  # Called functions raise EventsError on failure.
-        events, _next_url = self._parse_json_response_with_next_url(text)
-        return events
 
     async def _poll(self) -> list[Event]:
         """Fetch one batch of events from the API.
