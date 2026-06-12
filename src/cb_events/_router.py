@@ -84,7 +84,7 @@ class Router:
 
     def __init__(self) -> None:
         """Initialize an empty handler registry."""
-        self._any_handlers: tuple[HandlerFunc, ...] = ()
+        self._any_handlers: list[HandlerFunc] = []
         self._typed_handlers: dict[EventType, tuple[HandlerFunc, ...]] = {}
 
     def _register(self, key: EventType | None, func: HandlerFunc) -> HandlerFunc:
@@ -104,9 +104,9 @@ class Router:
             msg = f"Handler {_handler_name(func)} must be async"
             raise TypeError(msg)
         if key is None:
-            self._any_handlers = (*self._any_handlers, func)
+            self._any_handlers.append(func)
         else:
-            self._typed_handlers[key] = (*self._typed_handlers.get(key, ()), func)
+            self._typed_handlers.setdefault(key, []).append(func)
         return func
 
     def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
