@@ -85,7 +85,7 @@ class Router:
     def __init__(self) -> None:
         """Initialize an empty handler registry."""
         self._any_handlers: list[HandlerFunc] = []
-        self._typed_handlers: dict[EventType, tuple[HandlerFunc, ...]] = {}
+        self._typed_handlers: dict[EventType, list[HandlerFunc]] = {}
 
     def _register(self, key: EventType | None, func: HandlerFunc) -> HandlerFunc:
         """Validate and register a handler.
@@ -167,7 +167,7 @@ class Router:
             ones for that event.
         """
         any_handlers = self._any_handlers
-        typed_handlers = self._typed_handlers.get(event.type, ())
+        typed_handlers = self._typed_handlers.get(event.type, [])
 
         if not any_handlers and not typed_handlers:
             return
