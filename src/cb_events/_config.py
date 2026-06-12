@@ -22,7 +22,7 @@ class ClientConfig(BaseModel):
 
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
 
-    timeout: float = Field(default=10, gt=0)
+    timeout: int = Field(default=10, gt=0)
     """Server long-poll timeout in seconds."""
 
     strict_validation: bool = False
