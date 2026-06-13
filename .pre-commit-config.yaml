@@ -96,7 +96,7 @@ repos:
 
       - id: pyrefly
         name: pyrefly type check
-        entry: uv run --group=lint pyrefly check
+        entry: uv run --group=lint --group=test pyrefly check
         language: system
         pass_filenames: false
         types: [python]
