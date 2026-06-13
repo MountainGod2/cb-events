@@ -35,7 +35,7 @@ jobs:
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
-        run: uv sync --group=lint --group=docs --frozen
+        run: uv sync --group=lint --group=docs --group=test --frozen
 
       - name: Verify requirements.txt is up to date
         run: make requirements-check
