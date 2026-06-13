@@ -42,6 +42,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
+	$(UV) run pyrefly check
 	$(UV) run pylint ./src
 	$(UV) run xenon $(XENON_ARGS) .
 
@@ -80,6 +81,7 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint pylint ./src; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint basedpyright; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint pyrefly check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint xenon $(XENON_ARGS) .; \
 	done

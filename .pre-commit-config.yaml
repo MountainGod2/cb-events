@@ -94,6 +94,13 @@ repos:
         pass_filenames: false
         types: [python]
 
+      - id: pyrefly
+        name: pyrefly type check
+        entry: uv run --group=lint pyrefly check
+        language: system
+        pass_filenames: false
+        types: [python]
+
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.11.16
     hooks:

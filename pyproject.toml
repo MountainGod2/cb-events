@@ -46,6 +46,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
     "basedpyright==1.39.6",
+    "pyrefly==1.0.0",
     "pre-commit==4.6.0",
     "pylint==4.0.5",
     "pylint-pydantic==0.4.1",
@@ -226,3 +227,7 @@ directory = "htmlcov"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
+
+[tool.pyrefly]
+project-includes = ["src", "tests"]
+search-path = ["."]
