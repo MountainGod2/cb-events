@@ -301,24 +301,6 @@ class _FuncAttrOnlyWrapper:
     func: Callable[..., Awaitable[None]]
 
 
-class _WrappedCallable:
-    """Callable exposing wrapped target via __wrapped__."""
-
-    def __init__(self, func: Callable[..., object]) -> None:
-        self.__wrapped__ = func
-
-    def __call__(self, *args, **kwargs):
-        return self.__wrapped__(*args, **kwargs)
-
-
-class _CyclicName:  # noqa: B903
-    """Object whose metadata points to itself to exercise cycle guard."""
-
-    def __init__(self) -> None:
-        self.func = self
-        self.__wrapped__ = self
-
-
 class _NoCallMeta(type):
     """Metaclass that hides ``__call__`` attribute lookups."""
 
