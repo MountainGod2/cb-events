@@ -157,7 +157,7 @@ def test_reject_non_async_handler_on_decorator(router: Router) -> None:
     """Registering a non-async handler with on() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on(EventType.TIP)  # pyright: ignore[reportArgumentType]
+        @router.on(EventType.TIP)  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -166,7 +166,7 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any()  # pyright: ignore[reportArgumentType]
+        @router.on_any()  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -175,7 +175,7 @@ def test_reject_non_async_handler_on_any_bare_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any  # pyright: ignore[reportArgumentType]
+        @router.on_any  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -187,7 +187,7 @@ def test_reject_partial_sync_handler(router: Router) -> None:
         pass
 
     with pytest.raises(TypeError, match="must be async"):
-        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # pyright: ignore[reportArgumentType]
+        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # type: ignore  # noqa: PGH003
 
 
 async def test_accept_partial_async_handler(router: Router) -> None:
@@ -262,7 +262,7 @@ async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
         _ = event.id
 
     handler = _FuncAttrWrapper(base_handler)
-    router.on(EventType.TIP)(handler)
+    router.on(EventType.TIP)(handler)  # type: ignore  # noqa: PGH003
 
     event = Event.model_validate(make_event(EventType.TIP, event_id="wrapped"))
     await router.dispatch(event)

@@ -1,7 +1,8 @@
 """Core tests for client initialization, configuration and utils."""
 
+import logging
 from unittest.mock import AsyncMock
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import pytest
 from aiohttp.client_exceptions import ClientError
@@ -11,9 +12,16 @@ from cb_events import AuthError, ClientConfig, EventClient, EventsError
 from cb_events._client import (
     _mask_token,
     _mask_url,
-    _parse_events,
 )
+from cb_events._parser import ParserContext, _parse_events
 from tests.helpers import make_events_url
+
+_TEST_PARSER_CONTEXT = ParserContext(
+    username="user",
+    base_url="https://events.testbed.cb.dev/events",
+    parsed_base_url=urlparse("https://events.testbed.cb.dev/events"),
+    logger=logging.getLogger("cb_events._client"),
+)
 
 
 def test_token_masking_in_repr() -> None:
@@ -98,9 +106,13 @@ def test_parse_events_strict_and_lenient(
     invalid_non_mapping = 123
 
     with pytest.raises(ValidationError):
-        _parse_events([valid, invalid], strict=True)
+        _parse_events([valid, invalid], strict=True, context=_TEST_PARSER_CONTEXT)
 
-    events = _parse_events([valid, invalid, invalid_non_mapping], strict=False)
+    events = _parse_events(
+        [valid, invalid, invalid_non_mapping],
+        strict=False,
+        context=_TEST_PARSER_CONTEXT,
+    )
     assert len(events) == 1
     assert events[0].id == "1"
     assert "Skipping invalid event" in caplog.text
@@ -117,7 +129,7 @@ def test_parse_events_logs_invalid_fields(
         "id": "evt-xyz",
         "object": {"tip": {"tokens": "abc"}},
     }
-    events = _parse_events([invalid_nested], strict=False)
+    events = _parse_events([invalid_nested], strict=False, context=_TEST_PARSER_CONTEXT)
     assert len(events) == 1
     assert events[0].tip is None
     assert "tokens" in caplog.text

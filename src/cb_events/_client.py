@@ -3,38 +3,33 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from contextlib import suppress
 from enum import Enum, auto
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
-from urllib.parse import quote, unquote, urljoin, urlparse
+from typing import TYPE_CHECKING, Final
+from urllib.parse import quote, unquote, urlparse
 
-import stamina
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
-from pydantic import ValidationError
 
 from ._compat import override
 from ._config import ClientConfig
-from ._exceptions import (
-    AUTH_ERROR_STATUS_CODES,
-    CF_SERVER_ERROR_CODES,
-    AuthError,
-    EventsError,
-    build_http_error,
+from ._exceptions import CF_SERVER_ERROR_CODES, AuthError, EventsError
+from ._parser import (
+    ParserContext,
+    process_response,
 )
-from ._models import Event
-from ._utils import TRUNCATE_LENGTH, truncate_text
+from ._request import perform_request_attempt, request_with_retry
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Sequence
+    from collections.abc import AsyncGenerator
     from types import TracebackType
     from urllib.parse import ParseResult
 
     from ._compat import Self
+    from ._models import Event
 
 
 _logger = logging.getLogger(__name__)
@@ -68,9 +63,6 @@ _RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 _TOKEN_VISIBLE_CHARS: Final[int] = 0
 """Trailing token characters visible in logs (0 means fully masked)."""
 
-_TIMEOUT_STATUS_MESSAGE: Final[str] = "waited too long"
-"""Marker text used by timeout responses."""
-
 _CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
 """Error raised when polling while closing or closed."""
 
@@ -100,22 +92,6 @@ class _ClientState(Enum):
 
     CLOSED = auto()
     """Client has been fully closed and cannot be reopened."""
-
-
-class _RetryableStatusError(Exception):
-    """Internal exception to trigger retry for specific HTTP statuses."""
-
-    def __init__(self, msg: str, *, status_code: int, response_text: str) -> None:
-        """Initialize with message and HTTP metadata.
-
-        Args:
-            msg: Human-readable description of the failure.
-            status_code: HTTP status code returned by the API.
-            response_text: Raw response body returned by the API.
-        """
-        super().__init__(msg)
-        self.status_code: int = status_code
-        self.response_text: str = response_text
 
 
 def _parse_and_validate_events_url(events_url: str) -> ParseResult:
@@ -259,102 +235,6 @@ def _mask_url(url: str, token: str) -> str:
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
 
-def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
-    """Return True when value is a JSON object dict."""
-    return isinstance(value, dict)
-
-
-def _is_object_list(value: object) -> TypeGuard[list[object]]:
-    """Return True when value is a JSON array list."""
-    return isinstance(value, list)
-
-
-def _parse_json_object(text: str) -> dict[str, object]:
-    """Parse text as a JSON object.
-
-    Args:
-        text: Raw response body expected to contain a JSON object.
-
-    Returns:
-        Parsed JSON object.
-
-    Raises:
-        EventsError: If JSON is invalid or the top-level value is not an object.
-    """
-    try:
-        data: object = json.loads(text)  # pyright: ignore[reportAny]
-    except json.JSONDecodeError as exc:
-        msg = f"Invalid JSON: {exc.msg}."
-        raise EventsError(msg, response_text=text) from exc
-    if not _is_json_object(data):
-        msg = f"Expected JSON object, got {type(data).__name__}."
-        raise EventsError(
-            msg,
-            response_text=text,
-        )
-    return data
-
-
-def _log_validation_error(
-    item: object,
-    exc: ValidationError,
-) -> None:
-    """Log a warning for an event that failed Pydantic validation.
-
-    Args:
-        item: Raw object that failed validation.
-        exc: The ValidationError raised during parsing.
-    """
-    event_id = item.get("id", "<unknown>") if _is_json_object(item) else "<unknown>"
-    fields: set[str] = set()
-    for detail in exc.errors():
-        location = detail.get("loc")
-        if not location:
-            continue
-        fields.add(".".join(str(part) for part in location))
-    _logger.warning(
-        "Skipping invalid event %s (invalid fields: %s)",
-        event_id,
-        ", ".join(sorted(fields)),
-    )
-
-
-def _parse_events(raw: Sequence[object], *, strict: bool) -> list[Event]:
-    """Parse raw event dictionaries into Event models.
-
-    Args:
-        raw: Raw JSON-compatible objects returned by the API.
-        strict: Whether to raise ValidationError on invalid payloads.
-
-    Returns:
-        List of validated Event instances.
-    """
-    return [event for item in raw if (event := _parse_event(item, strict=strict)) is not None]
-
-
-def _parse_event(item: object, *, strict: bool) -> Event | None:
-    """Parse a single raw event object into an Event model.
-
-    Args:
-        item: Raw JSON-compatible object returned by the API.
-        strict: Whether to raise ValidationError on invalid payloads.
-
-    Returns:
-        Validated Event instance, or None when validation fails in non-strict
-        mode.
-
-    Raises:
-        ValidationError: If strict is True and validation fails.
-    """
-    try:
-        return Event.model_validate(item)
-    except ValidationError as exc:
-        if strict:
-            raise
-        _log_validation_error(item, exc)
-        return None
-
-
 class EventClient:
     """Async long-poll client for Events API streams.
 
@@ -383,6 +263,12 @@ class EventClient:
         self.config: ClientConfig = config or ClientConfig()
         self.session: ClientSession | None = None
         self._parsed_base_url: ParseResult = urlparse(base_url)
+        self._parser_context: ParserContext = ParserContext(
+            username=self.username,
+            base_url=self.base_url,
+            parsed_base_url=self._parsed_base_url,
+            logger=_logger,
+        )
         self._active_poll_tasks: set[asyncio.Task[object]] = set()
         self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
@@ -449,17 +335,11 @@ class EventClient:
     def _build_url(
         self,
         next_url: str | None = None,
-        *,
-        use_cached_next_url: bool = True,
     ) -> str:
         """Build the URL for the next poll.
 
         Args:
             next_url: Optional nextUrl snapshot to use for this request.
-            use_cached_next_url: Whether to fall back to the cached self._next_url
-                when next_url is None. Should be False when a snapshot has
-                already been captured to avoid using stale URLs from concurrent
-                updates. Defaults to True for backward compatibility.
 
         Note:
             The timeout query parameter is added only to the initial request URL.
@@ -469,8 +349,6 @@ class EventClient:
         """
         if next_url:
             return next_url
-        if use_cached_next_url and self._next_url:
-            return self._next_url
         return (
             f"{self.base_url}/{quote(self.username, safe='')}/"
             f"{quote(self._token, safe='')}/?timeout={self.config.timeout}"
@@ -487,71 +365,18 @@ class EventClient:
 
         Raises:
             EventsError: If the client session is unexpectedly unavailable.
-            _RetryableStatusError: If the status should trigger a retry.
         """
+        # Session may be set to None by close() between retry attempts.
         if self.session is None:
             msg = "Client session unexpectedly unavailable"
             raise EventsError(msg)
 
-        await self._rate_limiter.acquire()
-        async with self.session.get(url, allow_redirects=False) as response:
-            status = response.status
-            text = await response.text()
-
-        if status in _RETRY_STATUS_CODES:
-            msg = f"HTTP {status}"
-            raise _RetryableStatusError(msg, status_code=status, response_text=text)
-
-        return status, text
-
-    def _raise_request_failure(
-        self,
-        *,
-        attempts_made: int,
-        original_exception: Exception,
-    ) -> NoReturn:
-        """Raise the final request error after retries.
-
-        Args:
-            attempts_made: Number of attempts that were made before failure.
-            original_exception: The last exception raised during the request.
-
-        Raises:
-            EventsError: With details about the failure, including HTTP metadata
-                if available. Raised as a specific subclass (e.g. RateLimitError,
-                ServerError) when the final failure was an HTTP status error.
-        """  # noqa: DOC501  # Called functions raise EventsError on failure.
-        _logger.error(
-            "Request failed after %d attempts for user %s",
-            attempts_made,
-            self.username,
-            exc_info=original_exception,
+        return await perform_request_attempt(
+            session=self.session,
+            rate_limiter=self._rate_limiter,
+            url=url,
+            retry_status_codes=_RETRY_STATUS_CODES,
         )
-
-        attempt_label = "attempt" if attempts_made == 1 else "attempts"
-        msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
-
-        status_code: int | None = None
-        response_text: str | None = None
-        cause: Exception | None = original_exception
-
-        if isinstance(original_exception, _RetryableStatusError):
-            status_code = original_exception.status_code
-            response_text = original_exception.response_text
-            cause = None
-
-        if status_code is not None:
-            raise build_http_error(
-                msg,
-                status_code=status_code,
-                response_text=response_text,
-            ) from cause
-
-        raise EventsError(
-            msg,
-            status_code=status_code,
-            response_text=response_text,
-        ) from cause
 
     async def _request(self, url: str) -> tuple[int, str]:
         """Run one request with retry/backoff policy.
@@ -569,364 +394,13 @@ class EventClient:
             msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
             raise EventsError(msg)
 
-        attempts_made = 0
-        retriable_exc_types = (
-            ClientError,
-            TimeoutError,
-            OSError,
-            _RetryableStatusError,
+        return await request_with_retry(
+            url=url,
+            config=self.config,
+            username=self.username,
+            perform_attempt=self._perform_request_attempt,
+            logger=_logger,
         )
-
-        try:
-            async for attempt in stamina.retry_context(
-                on=retriable_exc_types,
-                attempts=self.config.retry_attempts,
-                timeout=None,
-                wait_initial=self.config.retry_backoff,
-                wait_max=self.config.retry_max_delay,
-                wait_exp_base=self.config.retry_factor,
-            ):
-                attempts_made = attempt.num
-                try:
-                    with attempt:
-                        return await self._perform_request_attempt(url)
-                except retriable_exc_types as exc:
-                    if attempts_made < self.config.retry_attempts:
-                        msg = "Attempt %d/%d failed for user %s: %r. Retrying..."
-                        _logger.warning(
-                            msg,
-                            attempts_made,
-                            self.config.retry_attempts,
-                            self.username,
-                            exc,
-                        )
-                    raise
-
-        except retriable_exc_types as original_exception:
-            self._raise_request_failure(
-                attempts_made=attempts_made,
-                original_exception=original_exception,
-            )
-
-        msg = "Unexpected error in request loop"
-        raise EventsError(msg)  # pragma: no cover
-
-    def _process_response(self, status: int, text: str) -> tuple[list[Event], str | None]:
-        """Process an HTTP response and return events plus the nextUrl.
-
-        Args:
-            status: HTTP status code received from the API.
-            text: Raw response body.
-
-        Returns:
-            Tuple of (parsed Event instances, validated nextUrl).
-
-        Raises:
-            AuthError: For HTTP 401/403 responses.
-            EventsError: For other non-200 responses, or when a timeout response
-                contains an invalid nextUrl.
-        """  # noqa: DOC501,DOC502  # Called functions raise AuthError/EventsError on failure.
-        if status in AUTH_ERROR_STATUS_CODES:
-            _logger.warning(
-                "Authentication failed for user %s (HTTP %d)",
-                self.username,
-                status,
-            )
-            msg = (
-                f"Authentication failed for '{self.username}'. "
-                "Verify your username and token are correct. "
-                "Generate a new token at "
-                "https://chaturbate.com/statsapi/authtoken/."
-            )
-            raise AuthError(msg, status_code=status, response_text=text)
-
-        if status == HTTPStatus.BAD_REQUEST and (
-            next_url := self._extract_next_url_from_timeout(text)
-        ):
-            return [], next_url
-
-        if status != HTTPStatus.OK:
-            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-            _logger.error(
-                "HTTP %d for user %s: %s",
-                status,
-                self.username,
-                snippet,
-            )
-
-            msg = f"Request failed: {snippet}"
-            raise build_http_error(
-                msg,
-                status_code=status,
-                response_text=text,
-            )
-
-        return self._parse_json_response(text)
-
-    def _resolve_absolute_url(self, stripped: str) -> tuple[str, ParseResult]:
-        """Resolve a nextUrl value to an absolute URL.
-
-        Args:
-            stripped: Stripped nextUrl string from the API response.
-
-        Returns:
-            Tuple of (absolute URL string, parsed ParseResult).
-        """
-        parsed = urlparse(stripped)
-        if not parsed.scheme and not parsed.netloc:
-            base_origin = (
-                f"{self._parsed_base_url.scheme}://{self._parsed_base_url.netloc}"
-                if self._parsed_base_url.scheme and self._parsed_base_url.netloc
-                else self.base_url
-            )
-            base_for_join = base_origin if stripped.startswith("/") else self.base_url
-            base_for_join = f"{base_for_join.rstrip('/')}/"
-            absolute = urljoin(base_for_join, stripped)
-            return absolute, urlparse(absolute)
-        if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-            absolute = f"{self._parsed_base_url.scheme}:{stripped}"
-            return absolute, urlparse(absolute)
-        return stripped, parsed
-
-    def _require_next_url_str(
-        self,
-        next_url: object,
-        *,
-        response_text: str,
-    ) -> str:
-        """Validate that a nextUrl value is a non-empty string.
-
-        Args:
-            next_url: Raw nextUrl value extracted from the API response.
-            response_text: Original response body for error diagnostics.
-
-        Returns:
-            Stripped nextUrl string.
-
-        Raises:
-            EventsError: If next_url is not a string or is empty after stripping.
-        """
-        msg = "Invalid API response: 'nextUrl' must be a non-empty string."
-
-        if not isinstance(next_url, str):
-            _logger.error(
-                "Received invalid nextUrl type %s for user %s",
-                type(next_url).__name__,
-                self.username,
-            )
-            raise EventsError(msg, response_text=response_text)
-
-        stripped = next_url.strip()
-        if not stripped:
-            _logger.error(
-                "Received empty nextUrl from API for user %s",
-                self.username,
-            )
-            raise EventsError(msg, response_text=response_text)
-
-        return stripped
-
-    def _validate_next_url_scheme(self, parsed: ParseResult, *, response_text: str) -> None:
-        """Validate that a parsed nextUrl uses the https scheme.
-
-        Args:
-            parsed: Parsed nextUrl components.
-            response_text: Original response body for error diagnostics.
-
-        Raises:
-            EventsError: If the scheme is not https.
-        """
-        scheme = parsed.scheme
-        if scheme == "https":
-            return
-
-        _logger.error(
-            "Received nextUrl with unsupported scheme %s for user %s",
-            scheme or "<missing>",
-            self.username,
-        )
-        msg = "Invalid nextUrl scheme; only https is allowed."
-        raise EventsError(msg, response_text=response_text)
-
-    def _validate_next_url_port(self, parsed: ParseResult, *, response_text: str) -> None:
-        """Validate that a parsed nextUrl does not include a custom port.
-
-        Args:
-            parsed: Parsed nextUrl components.
-            response_text: Original response body for error diagnostics.
-
-        Raises:
-            EventsError: If a custom or malformed port is present.
-        """
-        try:
-            port = parsed.port
-        except ValueError:
-            _logger.warning(
-                "Received nextUrl with invalid port for user %s",
-                self.username,
-            )
-            msg = "Invalid API response: 'nextUrl' contains an invalid port."
-            raise EventsError(msg, response_text=response_text) from None
-
-        if port is None:
-            return
-
-        _logger.error(
-            "Received nextUrl with custom port %s for user %s",
-            port,
-            self.username,
-        )
-        msg = "Invalid API response: 'nextUrl' must not contain a custom port."
-        raise EventsError(msg, response_text=response_text)
-
-    def _validate_next_url_host(self, parsed: ParseResult, *, response_text: str) -> None:
-        """Validate that a parsed nextUrl hostname matches the base API host.
-
-        Args:
-            parsed: Parsed nextUrl components.
-            response_text: Original response body for error diagnostics.
-
-        Raises:
-            EventsError: If the hostname is missing or does not match the base API host.
-        """
-        hostname = parsed.hostname
-        if not hostname:
-            _logger.error(
-                "Received nextUrl without hostname for user %s",
-                self.username,
-            )
-            msg = "Invalid API response: 'nextUrl' must include a hostname."
-            raise EventsError(msg, response_text=response_text)
-
-        allowed_host = (self._parsed_base_url.hostname or "").lower()
-        if hostname.lower() == allowed_host:
-            return
-
-        _logger.error(
-            "Received nextUrl host %s which is not allowed for user %s",
-            hostname,
-            self.username,
-        )
-        msg = "Invalid API response: 'nextUrl' host is not allowed."
-        raise EventsError(msg, response_text=response_text)
-
-    def _validate_next_url(
-        self,
-        next_url: object,
-        *,
-        response_text: str,
-    ) -> str | None:
-        """Validate and normalize a nextUrl value from the API.
-
-        Args:
-            next_url: Raw nextUrl value extracted from the API response.
-            response_text: Original response body for error diagnostics.
-
-        Returns:
-            Sanitized nextUrl string, or None when no follow-up poll is required.
-
-        Raises:
-            EventsError: If nextUrl is present but not a non-empty string, has
-                an unsupported scheme, contains a custom port, or references a
-                hostname other than the base API host.
-        """  # noqa: DOC502  # Called functions raise EventsError on failure.
-        if next_url is None:
-            return None
-
-        stripped = self._require_next_url_str(next_url, response_text=response_text)
-        absolute, parsed = self._resolve_absolute_url(stripped)
-
-        self._validate_next_url_scheme(parsed, response_text=response_text)
-        self._validate_next_url_port(parsed, response_text=response_text)
-        self._validate_next_url_host(parsed, response_text=response_text)
-
-        return absolute
-
-    def _extract_next_url_from_timeout(self, text: str) -> str | None:
-        """Extract nextUrl from timeout-style responses.
-
-        Args:
-            text: Raw response body from the timeout response.
-
-        Returns:
-            The extracted nextUrl if found and valid, otherwise None.
-        """
-        try:
-            data = _parse_json_object(text)
-        except EventsError:
-            return None
-
-        status_msg = data.get("status")
-        if not (isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
-            return None
-
-        next_url = data.get("nextUrl")
-        if next_url is None:
-            return None
-
-        validated = self._validate_next_url(next_url, response_text=text)
-        if validated is None:
-            return None
-        _logger.debug(
-            "Received nextUrl from timeout response: %s",
-            _mask_url(validated, self._token),
-        )
-        return validated
-
-    def _parse_json_response(self, text: str) -> tuple[list[Event], str | None]:
-        """Parse a JSON response payload and extract events.
-
-        Args:
-            text: Raw HTTP response body expected to contain JSON.
-
-        Returns:
-            Tuple of (parsed Event instances, validated nextUrl).
-
-        Raises:
-            EventsError: If JSON is invalid or response format is wrong.
-        """
-        try:
-            data = _parse_json_object(text)
-        except EventsError as exc:
-            # Only log the snippet for JSON decode failures; other EventsError
-            # subtypes have already captured relevant context at the raise site.
-            if isinstance(exc.__cause__, json.JSONDecodeError):
-                snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-                _logger.exception("Failed to parse JSON: %s", snippet)
-            raise
-
-        next_url = self._validate_next_url(
-            data.get("nextUrl"),
-            response_text=text,
-        )
-        if "events" in data:
-            raw_events_obj: object = data["events"]
-            if not _is_object_list(raw_events_obj):
-                msg = (
-                    "Invalid API response format: 'events' must be a list. "
-                    "Each item must be an object."
-                )
-                raise EventsError(
-                    msg,
-                    response_text=text,
-                )
-            raw_events_list = raw_events_obj
-        else:
-            raw_events_list = []
-
-        events = _parse_events(
-            raw_events_list,
-            strict=self.config.strict_validation,
-        )
-
-        if events:
-            _logger.debug(
-                "Received %d events for user %s",
-                len(events),
-                self.username,
-            )
-
-        return events, next_url
 
     async def _poll(self) -> list[Event]:
         """Fetch one batch of events from the API.
@@ -958,15 +432,22 @@ class EventClient:
             self._active_poll_tasks.add(current_task)
             request_next_url = self._next_url
 
-        url = self._build_url(
-            next_url=request_next_url,
-            use_cached_next_url=False,
-        )
+        url = self._build_url(next_url=request_next_url)
         _logger.debug("Polling %s", _mask_url(url, self._token))
 
         try:
             status, text = await self._request(url)
-            events, next_url = self._process_response(status, text)
+
+            events, next_url = process_response(
+                status=status,
+                text=text,
+                context=self._parser_context,
+                strict_validation=self.config.strict_validation,
+                log_next_url=lambda next_url: _logger.debug(
+                    "Received nextUrl from timeout response: %s",
+                    _mask_url(next_url, self._token),
+                ),
+            )
 
             async with self._polling_lock:
                 if self._state is _ClientState.OPEN:
@@ -978,7 +459,7 @@ class EventClient:
                             self.username,
                         )
         except asyncio.CancelledError:
-            if self._state is _ClientState.CLOSING:  # pyright: ignore[reportUnnecessaryComparison]  # pylint: disable=line-too-long
+            if self._state is not _ClientState.OPEN:
                 raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
             raise
         else:
@@ -1017,7 +498,7 @@ class EventClient:
             return
 
         self._state = _ClientState.CLOSING
-        try:  # noqa: PLW0717
+        try:  # noqa: PLW0717  # Too many statements in try block.
             current_task = asyncio.current_task()
             # Cancel in-flight poll tasks first so shutdown does not wait on long I/O.
             async with self._polling_lock:
