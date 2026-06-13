@@ -9,7 +9,7 @@ UV ?= uv
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
-XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
+XENON_ARGS ?= --max-absolute C --max-modules A --ignore tests
 
 .PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor

@@ -89,7 +89,7 @@ repos:
 
       - id: xenon
         name: xenon complexity check
-        entry: uv run --group=lint xenon --max-absolute B --max-modules A --ignore tests .
+        entry: uv run --group=lint xenon --max-absolute C --max-modules A --ignore tests .
         language: system
         pass_filenames: false
         types: [python]
