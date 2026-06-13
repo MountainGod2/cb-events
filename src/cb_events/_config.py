@@ -11,12 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-else:
-    try:
-        from typing import Self
-    except ImportError:  # pragma: no cover
-        from typing_extensions import Self
+    from ._compat import Self
 
 
 class ClientConfig(BaseModel):
@@ -58,9 +53,7 @@ class ClientConfig(BaseModel):
         if self.retry_max_delay < self.retry_backoff:
             msg = (
                 f"retry_max_delay ({self.retry_max_delay}) must be >= "
-                f"retry_backoff ({self.retry_backoff}). "
-                f"Consider setting retry_max_delay to at least "
-                f"{self.retry_backoff} or reducing retry_backoff."
+                f"retry_backoff ({self.retry_backoff})."
             )
             raise ValueError(msg)
         return self

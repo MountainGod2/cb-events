@@ -35,7 +35,7 @@ jobs:
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
-        run: uv sync --group=lint --group=docs --frozen
+        run: uv sync --group=lint --group=docs --group=test --frozen
 
       - name: Verify requirements.txt is up to date
         run: make requirements-check
@@ -51,7 +51,7 @@ jobs:
     name: Test (Python ${{ matrix.python-version }})
     needs: lint
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 10
     environment: testing
     permissions:
       contents: read
@@ -99,7 +99,7 @@ jobs:
     name: Test (Python 3.10, lowest-direct)
     needs: lint
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 10
     environment: testing
     permissions:
       contents: read

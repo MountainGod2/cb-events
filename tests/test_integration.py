@@ -8,28 +8,9 @@ from importlib.metadata import version
 import pytest
 from aioresponses import aioresponses
 
-from cb_events import (
-    ClientConfig,
-    Event,
-    EventClient,
-    EventType,
-    Router,
-    __version__,
-)
-from cb_events.client import _parse_events_url
-from cb_events.exceptions import AuthError
+from cb_events import AuthError, ClientConfig, Event, EventClient, EventType, Router, __version__
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_events_url, make_response
-
-
-def _is_valid_events_url(url: str | None) -> bool:
-    if not url:
-        return False
-    try:
-        _parse_events_url(url)
-    except AuthError:
-        return False
-    return True
 
 
 @pytest.mark.e2e
@@ -107,9 +88,7 @@ def test_version_attribute() -> None:
 @pytest.mark.e2e
 @pytest.mark.live
 @pytest.mark.skipif(
-    not (
-        _is_valid_events_url(os.getenv("CB_EVENTS_URL")) and os.getenv("CB_RUN_LIVE_TESTS") == "1"
-    ),
+    not ((os.getenv("CB_EVENTS_URL")) and os.getenv("CB_RUN_LIVE_TESTS") == "1"),
     reason=("Set CB_RUN_LIVE_TESTS=1 and CB_EVENTS_URL to an Events API URL"),
 )
 async def test_live_polling() -> None:

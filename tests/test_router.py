@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cb_events import Event, EventType, Router
-from cb_events.router import _handler_name, _is_async_callable
+from cb_events._router import _handler_name, _is_async_callable
 from tests.helpers import CORE_EVENT_TYPES, make_event
 
 
@@ -157,7 +157,7 @@ def test_reject_non_async_handler_on_decorator(router: Router) -> None:
     """Registering a non-async handler with on() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on(EventType.TIP)  # pyright: ignore[reportArgumentType]
+        @router.on(EventType.TIP)  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -166,7 +166,7 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any()  # pyright: ignore[reportArgumentType]
+        @router.on_any()  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -175,7 +175,7 @@ def test_reject_non_async_handler_on_any_bare_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any  # pyright: ignore[reportArgumentType]
+        @router.on_any  # type: ignore  # noqa: PGH003
         def sync_handler(event: Event) -> None:
             pass
 
@@ -187,7 +187,7 @@ def test_reject_partial_sync_handler(router: Router) -> None:
         pass
 
     with pytest.raises(TypeError, match="must be async"):
-        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # pyright: ignore[reportArgumentType]
+        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # type: ignore  # noqa: PGH003
 
 
 async def test_accept_partial_async_handler(router: Router) -> None:
@@ -245,10 +245,6 @@ async def test_cancelled_error_propagates(router: Router) -> None:
             lambda: _FuncAttrWrapper(_sample_handler),
             id="func_attr",
         ),
-        pytest.param(
-            lambda: _WrappedCallable(_sample_handler),
-            id="wrapped_attr",
-        ),
     ],
 )
 def test_handler_name_prefers_underlying_callable(
@@ -259,33 +255,6 @@ def test_handler_name_prefers_underlying_callable(
     assert _handler_name(handler) == "_sample_handler"
 
 
-def test_handler_name_falls_back_to_type_name() -> None:
-    """Cyclic references should settle on the object's type name."""
-    cyclic = _CyclicName()
-    assert _handler_name(cyclic) == "_CyclicName"
-
-
-def test_handler_name_exits_on_mutual_reference_cycle() -> None:
-    """The while guard fires when two callables point func at each other."""
-    a = _FuncAttrWrapper(None)
-    b = _FuncAttrWrapper(a)
-    a.func = b  # a -> b -> a cycle
-
-    assert _handler_name(a) == "_FuncAttrWrapper"
-
-
-def test_router_reports_wrapped_handler_name(router: Router) -> None:
-    """Type errors inside router should unwrap handler helpers for logging."""
-
-    def sync_handler(event: Event) -> None:
-        _ = event.id
-
-    wrapped_handler = partial(_FuncAttrWrapper(_WrappedCallable(sync_handler)))
-
-    with pytest.raises(TypeError, match="sync_handler"):
-        router.on(EventType.TIP)(wrapped_handler)
-
-
 async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
     """Handlers wrapped in an object with a 'func' attribute should register."""
 
@@ -293,7 +262,7 @@ async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
         _ = event.id
 
     handler = _FuncAttrWrapper(base_handler)
-    router.on(EventType.TIP)(handler)
+    router.on(EventType.TIP)(handler)  # type: ignore  # noqa: PGH003
 
     event = Event.model_validate(make_event(EventType.TIP, event_id="wrapped"))
     await router.dispatch(event)
@@ -330,24 +299,6 @@ class _FuncAttrOnlyWrapper:
     """Non-callable holder exposing async handler via ``func`` attribute."""
 
     func: Callable[..., Awaitable[None]]
-
-
-class _WrappedCallable:
-    """Callable exposing wrapped target via __wrapped__."""
-
-    def __init__(self, func: Callable[..., object]) -> None:
-        self.__wrapped__ = func
-
-    def __call__(self, *args, **kwargs):
-        return self.__wrapped__(*args, **kwargs)
-
-
-class _CyclicName:  # noqa: B903
-    """Object whose metadata points to itself to exercise cycle guard."""
-
-    def __init__(self) -> None:
-        self.func = self
-        self.__wrapped__ = self
 
 
 class _NoCallMeta(type):

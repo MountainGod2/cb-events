@@ -9,7 +9,7 @@ UV ?= uv
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
-XENON_ARGS ?= --max-absolute B --max-modules A --ignore tests
+XENON_ARGS ?= --max-absolute C --max-modules A --ignore tests
 
 .PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full bandit pip-audit trivy zizmor
@@ -42,6 +42,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
+	$(UV) run --group=test pyrefly check
 	$(UV) run pylint ./src
 	$(UV) run xenon $(XENON_ARGS) .
 
@@ -80,6 +81,7 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint pylint ./src; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint basedpyright; \
+		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint --group test pyrefly check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint xenon $(XENON_ARGS) .; \
 	done

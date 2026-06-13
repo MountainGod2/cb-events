@@ -12,10 +12,10 @@ from inspect import getattr_static, iscoroutinefunction
 from itertools import chain
 from typing import TYPE_CHECKING, TypeAlias, overload
 
-from .models import Event
+from ._models import Event
 
 if TYPE_CHECKING:
-    from .models import EventType
+    from ._models import EventType
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.router module."""
@@ -56,8 +56,8 @@ def _is_async_callable(func: object) -> bool:
     """
     if iscoroutinefunction(func):
         return True
-    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
-    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]  # pylint: disable=line-too-long
+    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]
+    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]
         return True
     underlying = getattr(func, "func", None)
     if callable(underlying) and underlying is not func:
@@ -66,29 +66,13 @@ def _is_async_callable(func: object) -> bool:
 
 
 def _handler_name(handler: object) -> str:
-    """Return a stable handler name for logging."""
-    seen: set[int] = set()
-    current = handler
-
-    while id(current) not in seen:
-        seen.add(id(current))
-        name: str | None = getattr(current, "__name__", None)
-        if name:
-            return name
-
-        wrapped = getattr(current, "__wrapped__", None)
-        if callable(wrapped) and wrapped is not current:
-            current = wrapped
-            continue
-
-        func_attr = getattr(current, "func", None)
-        if callable(func_attr) and func_attr is not current:
-            current = func_attr
-            continue
-
-        break
-
-    return type(current).__name__
+    """Return a handler name for logging."""
+    for attr in ("__name__", "__qualname__"):
+        if name := getattr(handler, attr, None):
+            return name  # pyright: ignore[reportAny]
+    if func := getattr(handler, "func", None):
+        return _handler_name(func)  # pyright: ignore[reportAny]
+    return type(handler).__name__
 
 
 class Router:
@@ -98,11 +82,10 @@ class Router:
     handlers are logged and do not stop dispatch of remaining handlers.
     """
 
-    __slots__: tuple[str, ...] = ("_handlers",)
-
     def __init__(self) -> None:
         """Initialize an empty handler registry."""
-        self._handlers: dict[EventType | None, list[HandlerFunc]] = {}
+        self._any_handlers: list[HandlerFunc] = []
+        self._typed_handlers: dict[EventType, list[HandlerFunc]] = {}
 
     def _register(self, key: EventType | None, func: HandlerFunc) -> HandlerFunc:
         """Validate and register a handler.
@@ -120,7 +103,10 @@ class Router:
         if not _is_async_callable(func):
             msg = f"Handler {_handler_name(func)} must be async"
             raise TypeError(msg)
-        self._handlers.setdefault(key, []).append(func)
+        if key is None:
+            self._any_handlers.append(func)
+        else:
+            self._typed_handlers.setdefault(key, []).append(func)
         return func
 
     def on(self, event_type: EventType) -> Callable[[HandlerFunc], HandlerFunc]:
@@ -175,9 +161,13 @@ class Router:
 
         Args:
             event: Event instance to dispatch to registered handlers.
+
+        Note:
+            Handlers run sequentially. A slow handler will delay all subsequent
+            ones for that event.
         """
-        any_handlers = tuple(self._handlers.get(None, ()))
-        typed_handlers = tuple(self._handlers.get(event.type, ()))
+        any_handlers = self._any_handlers
+        typed_handlers = self._typed_handlers.get(event.type, [])
 
         if not any_handlers and not typed_handlers:
             return
