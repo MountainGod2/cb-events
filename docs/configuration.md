@@ -8,10 +8,10 @@ from cb_events import ClientConfig, EventClient
 config = ClientConfig(
     timeout=10,  # Server long-poll timeout (seconds)
     strict_validation=False,  # Raise on invalid events vs skip
-    retry_attempts=8,  # Total attempts (initial + retries)
+    retry_attempts=10,  # Total attempts (initial + retries)
     retry_backoff=1.0,  # Initial backoff (seconds)
     retry_factor=2.0,  # Backoff multiplier
-    retry_max_delay=30.0,  # Max retry delay (seconds)
+    retry_max_delay=60.0,  # Max retry delay (seconds)
 )
 
 client = EventClient(events_url, config=config)
