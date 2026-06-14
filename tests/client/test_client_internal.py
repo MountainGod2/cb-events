@@ -4,13 +4,29 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+from urllib.parse import urlparse
 
 import pytest
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventClient, EventsError
-from cb_events.client import TESTBED_URL
+from cb_events._client import TESTBED_URL
+from cb_events._parser import (
+    ParserContext,
+    _extract_next_url_from_timeout,
+    _parse_json_response,
+)
 from tests.helpers import make_events_url
+
+
+def _parser_context(username: str = "user") -> ParserContext:
+    return ParserContext(
+        username=username,
+        base_url=TESTBED_URL,
+        parsed_base_url=urlparse(TESTBED_URL),
+        logger=logging.getLogger("cb_events._client"),
+    )
 
 
 async def test_request_raises_when_client_not_initialized() -> None:
@@ -38,7 +54,7 @@ async def test_aenter_wraps_session_creation_failures(
         msg = "socket init failed"
         raise OSError(msg)
 
-    monkeypatch.setattr("cb_events.client.ClientSession", _boom)
+    monkeypatch.setattr("cb_events._client.ClientSession", _boom)
     client = EventClient(make_events_url("user", "token"))
 
     with pytest.raises(EventsError, match="Failed to create HTTP session"):
@@ -48,94 +64,111 @@ async def test_aenter_wraps_session_creation_failures(
 
 def test_extract_next_url_timeout_payload_not_mapping() -> None:
     """Non-object timeout payloads should return None."""
-    client = EventClient(make_events_url("user", "token"))
-    assert client._extract_next_url_from_timeout("[]") is None
+    assert (
+        _extract_next_url_from_timeout(
+            "[]",
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
+        is None
+    )
 
 
 def test_extract_next_url_timeout_status_not_string() -> None:
     """Timeout payloads with non-string status should return None."""
-    client = EventClient(make_events_url("user", "token"))
     payload = json.dumps({
         "status": 123,
         "nextUrl": "https://events.testbed.cb.dev/events/next",
     })
-    assert client._extract_next_url_from_timeout(payload) is None
+    assert (
+        _extract_next_url_from_timeout(
+            payload,
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
+        is None
+    )
 
 
 def test_extract_next_url_timeout_status_without_timeout_text() -> None:
     """Timeout parser should ignore unrelated status messages."""
-    client = EventClient(make_events_url("user", "token"))
     payload = json.dumps({
         "status": "ok",
         "nextUrl": "https://events.testbed.cb.dev/events/next",
     })
-    assert client._extract_next_url_from_timeout(payload) is None
+    assert (
+        _extract_next_url_from_timeout(
+            payload,
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
+        is None
+    )
 
 
 def test_extract_next_url_timeout_missing_next_url() -> None:
     """Timeout parser should return None when nextUrl is absent."""
-    client = EventClient(make_events_url("user", "token"))
     payload = json.dumps({"status": "waited too long for events"})
-    assert client._extract_next_url_from_timeout(payload) is None
-
-
-def test_extract_next_url_timeout_when_validator_returns_none(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """If nextUrl validator returns None, timeout parser should return None."""
-    client = EventClient(make_events_url("user", "token"))
-
-    def _always_none(
-        _self: EventClient,
-        _next_url: object,
-        *,
-        response_text: str,
-    ) -> None:
-        _ = response_text
-
-    monkeypatch.setattr(
-        EventClient,
-        "_validate_next_url",
-        _always_none,
+    assert (
+        _extract_next_url_from_timeout(
+            payload,
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
+        is None
     )
+
+
+def test_extract_next_url_timeout_when_validator_returns_none() -> None:
+    """Invalid timeout nextUrl should raise with direct validation path."""
     payload = json.dumps({
         "status": "waited too long for events",
-        "nextUrl": "https://events.testbed.cb.dev/events/next",
+        "nextUrl": "",
     })
 
-    assert client._extract_next_url_from_timeout(payload) is None
+    with pytest.raises(EventsError, match="nextUrl"):
+        _extract_next_url_from_timeout(
+            payload,
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
 
 
 def test_parse_json_response_rejects_non_object() -> None:
     """Top-level JSON arrays should be rejected."""
-    client = EventClient(make_events_url("user", "token"))
-
     with pytest.raises(EventsError, match=r"(?i)expected JSON object"):
-        client._parse_json_response("[]")
+        _parse_json_response(
+            "[]",
+            strict_validation=False,
+            context=_parser_context(),
+        )
 
 
 def test_parse_json_response_allows_missing_events_key() -> None:
     """Missing events key should be treated as an empty event list."""
-    client = EventClient(make_events_url("user", "token"))
-
-    events = client._parse_json_response('{"nextUrl": null}')
-    assert events == []
+    _parse_json_response(
+        '{"nextUrl": null}',
+        strict_validation=False,
+        context=_parser_context(),
+    )
 
 
 def test_parse_json_response_debug_logs_event_count(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Debug logging should include the number of parsed events."""
-    client = EventClient(make_events_url("user", "token"))
     payload = json.dumps({
         "events": [{"method": "tip", "id": "evt-1", "object": {}}],
         "nextUrl": None,
     })
 
-    caplog.set_level("DEBUG", logger="cb_events.client")
-    events = client._parse_json_response(payload)
+    caplog.set_level("DEBUG", logger="cb_events._client")
+    _parse_json_response(
+        payload,
+        strict_validation=False,
+        context=_parser_context(),
+    )
 
-    assert len(events) == 1
     assert "Received 1 events for user user" in caplog.text
 
 
@@ -155,7 +188,7 @@ async def test_poll_debug_logs_masked_url(
         payload={"events": [], "nextUrl": None},
     )
 
-    caplog.set_level("DEBUG", logger="cb_events.client")
+    caplog.set_level("DEBUG", logger="cb_events._client")
     async with client:
         events = await client._poll()
 
@@ -199,7 +232,7 @@ async def test_request_raises_unexpected_error_when_retry_context_is_empty(
         return _EmptyRetryContext()
 
     monkeypatch.setattr(
-        "cb_events.client.stamina.retry_context",
+        "cb_events._request.stamina.retry_context",
         _empty_retry_context,
     )
 

@@ -11,7 +11,7 @@ def test_default_configuration() -> None:
     config = ClientConfig()
 
     assert config.timeout == 10
-    assert config.retry_attempts == 8
+    assert config.retry_attempts == 10
 
 
 def test_custom_configuration() -> None:

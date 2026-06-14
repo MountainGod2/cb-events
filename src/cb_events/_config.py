@@ -11,12 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-else:
-    try:
-        from typing import Self
-    except ImportError:  # pragma: no cover
-        from typing_extensions import Self
+    from ._compat import Self
 
 
 class ClientConfig(BaseModel):
@@ -33,7 +28,7 @@ class ClientConfig(BaseModel):
     strict_validation: bool = False
     """Raise on invalid events vs. skip and log."""
 
-    retry_attempts: int = Field(default=8, ge=1)
+    retry_attempts: int = Field(default=10, ge=1)
     """Total attempts including the initial request (must be >= 1)."""
 
     retry_backoff: float = Field(default=1.0, ge=0)
@@ -42,7 +37,7 @@ class ClientConfig(BaseModel):
     retry_factor: float = Field(default=2.0, gt=0)
     """Backoff multiplier applied after each retry."""
 
-    retry_max_delay: float = Field(default=30.0, ge=0)
+    retry_max_delay: float = Field(default=60.0, ge=0)
     """Maximum delay between retries in seconds."""
 
     @model_validator(mode="after")
@@ -58,9 +53,7 @@ class ClientConfig(BaseModel):
         if self.retry_max_delay < self.retry_backoff:
             msg = (
                 f"retry_max_delay ({self.retry_max_delay}) must be >= "
-                f"retry_backoff ({self.retry_backoff}). "
-                f"Consider setting retry_max_delay to at least "
-                f"{self.retry_backoff} or reducing retry_backoff."
+                f"retry_backoff ({self.retry_backoff})."
             )
             raise ValueError(msg)
         return self

@@ -12,16 +12,7 @@ nav = [
     { "Event Models" = "event_models.md" },
     { "Configuration" = "configuration.md" },
     { "Error Handling" = "error_handling.md" },
-    { "API Reference" = [
-        { "Overview" = "api/index.md" },
-        { "Modules" = [
-            { "client" = "api/client.md" },
-            { "config" = "api/config.md" },
-            { "exceptions" = "api/exceptions.md" },
-            { "models" = "api/models.md" },
-            { "router" = "api/router.md" },
-        ] },
-    ] },
+    { "API Reference" = "api/index.md" },
     { "Changelog" = "changelog.md" },
 ]
 
@@ -45,7 +36,7 @@ docstring_style = "google"
 merge_init_into_class = true
 show_source = false
 heading_level = 4
-filters = ["!^_[^_]", "!^__.*__$", "!^build_http_error$", "!^truncate_text$"]
+filters = ["!^_[^_]", "!^__.*__$"]
 
 [project.markdown_extensions.admonition]
 [project.markdown_extensions.attr_list]

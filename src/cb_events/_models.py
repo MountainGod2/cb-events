@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -19,13 +19,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-if TYPE_CHECKING:
-    from typing_extensions import override
-else:
-    try:
-        from typing import override
-    except ImportError:  # pragma: no cover
-        from typing_extensions import override
+from ._compat import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -202,8 +196,11 @@ class Media(BaseEventModel):
     """Identifier of the purchased media."""
     name: str
     """Name of the purchased media."""
-    type: Literal["video", "photos"]
-    """Type of the purchased media."""
+    type: str
+    """Type of the purchased media.
+
+    Possible values: "photos", "video".
+    """
     tokens: int
     """Number of tokens spent on the media purchase."""
 
@@ -293,7 +290,6 @@ class Event(BaseEventModel):
         value: object | None = self.data.get(key)
         if isinstance(value, str) and value:
             return value
-
         return None
 
     def _extract(

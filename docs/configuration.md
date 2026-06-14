@@ -8,10 +8,10 @@ from cb_events import ClientConfig, EventClient
 config = ClientConfig(
     timeout=10,  # Server long-poll timeout (seconds)
     strict_validation=False,  # Raise on invalid events vs skip
-    retry_attempts=8,  # Total attempts (initial + retries)
+    retry_attempts=10,  # Total attempts (initial + retries)
     retry_backoff=1.0,  # Initial backoff (seconds)
     retry_factor=2.0,  # Backoff multiplier
-    retry_max_delay=30.0,  # Max retry delay (seconds)
+    retry_max_delay=60.0,  # Max retry delay (seconds)
 )
 
 client = EventClient(events_url, config=config)
@@ -108,7 +108,7 @@ logging.getLogger("cb_events").setLevel(logging.DEBUG)
 **Example DEBUG output**:
 
 ```text
-DEBUG:cb_events.client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
-DEBUG:cb_events.client:Received 1 events for user
-DEBUG:cb_events.router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
+DEBUG:cb_events._client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
+DEBUG:cb_events._client:Received 1 events for user
+DEBUG:cb_events._router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
 ```

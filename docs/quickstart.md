@@ -39,13 +39,19 @@ mountaingod2 tipped 100 tokens
 
 ## Long Polling and `nextUrl`
 
-The Events API uses long polling and returns a `nextUrl` cursor on each request.
-`EventClient` follows that cursor automatically, so your position in the stream is
-tracked for you while you keep iterating.
+The Events API uses long polling and returns a `nextUrl` continuation URL on each request.
+`EventClient` follows that `nextUrl` automatically while iterating through events.
+
+Internally, the client only locks around reading and writing the `nextUrl` state.
+The HTTP request itself runs outside the lock so a slow network call does not
+block other coroutine scheduling.
 
 Avoid restarting the client in the middle of a live stream. A restart creates a
-new polling session, which can reset cursor position and lead to missed or
+new polling session, which can reset the `nextUrl` position and lead to missed or
 duplicate events.
+
+For the cleanest `nextUrl` progression, prefer a single polling consumer per
+`EventClient` instance.
 
 ## Event Types
 

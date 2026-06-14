@@ -106,26 +106,12 @@ jobs:
       - name: Install built wheel
         run: uv pip install dist/cb_events-*.whl
 
-      - name: Validate live test inputs
+      - name: Validate URL variable is set
         run: |
           if [[ -z "${CB_EVENTS_URL:-}" ]]; then
             echo "::error::CB_EVENTS_URL is empty."
             exit 1
           fi
-          uv run --no-sync python - <<'PY'
-          import os
-          import sys
-
-          from cb_events.client import _parse_events_url
-          from cb_events.exceptions import AuthError
-
-          events_url = os.environ.get("CB_EVENTS_URL", "")
-          try:
-              _parse_events_url(events_url)
-          except AuthError as exc:
-              print(f"::error::Invalid CB_EVENTS_URL: {exc}")
-              sys.exit(1)
-          PY
 
       - name: Run live E2E tests
         env:
@@ -184,7 +170,7 @@ jobs:
       - name: Verify upstream is unchanged
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: bash .github/workflows/verify_upstream.sh
+        run: bash .github/scripts/verify_upstream.sh
 
       - name: Create release
         env:

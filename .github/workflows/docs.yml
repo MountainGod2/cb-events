@@ -3,6 +3,15 @@ name: Docs Pages
 on:
   push:
     branches: [main]
+    paths:
+      [
+        "docs/**",
+        "src/**",
+        "README.md",
+        "CHANGELOG.md",
+        "zensical.toml",
+        "pyproject.toml",
+      ]
   workflow_dispatch:
 
 permissions:
