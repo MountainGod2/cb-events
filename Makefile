@@ -133,6 +133,7 @@ test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live 
 test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
 	$(UV) sync --group=test --resolution lowest-direct --upgrade
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
+	$(UV) sync --frozen --all-groups
 
 test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
