@@ -498,7 +498,7 @@ class EventClient:
             return
 
         self._state = _ClientState.CLOSING
-        try:  # noqa: PLW0717  # Too many statements in try block.
+        try:
             current_task = asyncio.current_task()
             # Cancel in-flight poll tasks first so shutdown does not wait on long I/O.
             async with self._polling_lock:

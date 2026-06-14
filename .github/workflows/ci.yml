@@ -37,9 +37,6 @@ jobs:
       - name: Sync lint and docs dependencies
         run: uv sync --group=lint --group=docs --group=test --frozen
 
-      - name: Verify requirements.txt is up to date
-        run: make requirements-check
-
       - name: Run lint checks
         run: make lint
 
@@ -213,10 +210,10 @@ jobs:
       - name: Sync security dependencies
         run: uv sync --group=security --frozen
 
-      - name: Run pip-audit
-        id: pip_audit
+      - name: Run uv audit
+        id: audit
         continue-on-error: true
-        run: make pip-audit
+        run: make audit
 
       - name: Run Bandit
         id: bandit
@@ -274,14 +271,14 @@ jobs:
         if: >-
           ${{
             always() && (
-              steps.pip_audit.outcome != 'success' ||
+              steps.audit.outcome != 'success' ||
               steps.bandit.outcome != 'success' ||
               steps.trivy.outcome != 'success' ||
               steps.zizmor.outcome != 'success'
             )
           }}
         run: |
-          echo "::error::One or more security scanners failed (pip-audit, Bandit, Trivy, or Zizmor)."
+          echo "::error::One or more security scanners failed (audit, Bandit, Trivy, or Zizmor)."
           exit 1
 
   codeql:

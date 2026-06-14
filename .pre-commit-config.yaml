@@ -72,21 +72,6 @@ repos:
         language: system
         files: ^(docs/.*\.md|README\.md)$
 
-      - id: requirements-sync
-        name: requirements.txt sync check
-        entry: bash -c 'uv export --no-emit-workspace --no-editable --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt && git diff --exit-code -- requirements.txt'
-        language: system
-        pass_filenames: false
-        files: ^(pyproject\.toml|uv\.lock)$
-
-      - id: pip-audit
-        name: pip audit security scan
-        entry: uv run --group=security pip-audit -r requirements.txt
-        language: system
-        pass_filenames: false
-        always_run: true
-        files: ^(pyproject\.toml|uv\.lock|requirements\.txt)$
-
       - id: xenon
         name: xenon complexity check
         entry: uv run --group=lint xenon --max-absolute C --max-modules A --ignore tests .
@@ -106,6 +91,9 @@ repos:
     hooks:
       - id: uv-lock
         name: uv lockfile update
+      - id: uv-audit
+        name: uv dependency audit
+        args: ["--preview-features=audit-command"]
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0

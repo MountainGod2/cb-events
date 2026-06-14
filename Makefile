@@ -12,8 +12,7 @@ PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 XENON_ARGS ?= --max-absolute C --max-modules A --ignore tests
 
 .PHONY: setup format fix lint check-all pre-commit
-.PHONY: security security-full bandit pip-audit trivy zizmor
-.PHONY: requirements-export requirements-check
+.PHONY: security security-full bandit audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build ci ci-lower-bounds clean help
@@ -49,13 +48,13 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
 
-security: bandit pip-audit zizmor ## Public: Run core security scans.
+security: bandit audit zizmor ## Public: Run core security scans.
 
 docs: ## Public: Build documentation.
 	rm -rf site docs/html_local_check
 	$(UV) run --group=docs zensical build --strict
 
-ci: requirements-check lint security test-cov ## Public: Run CI-equivalent checks locally.
+ci: lint security test-cov ## Public: Run CI-equivalent checks locally.
 
 clean: ## Public: Remove caches, artifacts, and generated reports.
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -91,9 +90,6 @@ pre-commit: ## Public: Run all pre-commit hooks.
 
 security-full: security trivy ## Advanced: Run all security scans, including Trivy.
 
-requirements-export: ## Advanced: Regenerate requirements.txt from lock data.
-	$(UV) export --no-emit-workspace --no-editable --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file=requirements.txt
-
 docs-serve: docs ## Advanced: Build docs and serve locally on port 8000.
 	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
 	$(UV) run --group=docs zensical serve --dev-addr 127.0.0.1:8000
@@ -110,15 +106,9 @@ docs-format-check: ## Advanced: Check Markdown docs formatting.
 build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
 
-ci-lower-bounds: requirements-check lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
+ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
 # --- Internal targets ---
-
-requirements-check: ## Internal: Verify requirements.txt is up to date without changing files.
-	@tmp_file="$$(mktemp)"; \
-	trap 'rm -f "$$tmp_file"' EXIT; \
-	$(UV) export --no-emit-workspace --no-editable --frozen --format requirements-txt --no-hashes --no-default-groups --no-header --output-file="$$tmp_file" >/dev/null; \
-	diff -u requirements.txt "$$tmp_file"
 
 bandit: ## Internal: Run Bandit and emit SARIF.
 	$(UV) run bandit -r src/ -f sarif -o bandit.sarif
@@ -126,8 +116,8 @@ bandit: ## Internal: Run Bandit and emit SARIF.
 zizmor: ## Internal: Run Zizmor and emit SARIF.
 	$(UV) run zizmor --format=sarif . > zizmor.sarif
 
-pip-audit: ## Internal: Audit dependencies against known vulnerabilities.
-	$(UV) run --group=security pip-audit -r requirements.txt
+audit: ## Internal: Audit dependencies against known vulnerabilities.
+	$(UV) audit --preview-features audit-command
 
 trivy: ## Internal: Run Trivy vulnerability and config scans.
 	@command -v trivy >/dev/null 2>&1 || { \
@@ -143,6 +133,7 @@ test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live 
 test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
 	$(UV) sync --group=test --resolution lowest-direct --upgrade
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
+	$(UV) sync --frozen --all-groups
 
 test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
