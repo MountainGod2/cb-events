@@ -182,7 +182,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.pylint]
-max-statements-in-try = 10
+max-statements-in-try = 16
 
 [tool.pylint.main]
 load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
