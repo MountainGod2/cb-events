@@ -42,7 +42,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
-	$(UV) run --group=test pyrefly check
+	$(UV) run --group=lint --group=test pyrefly check
 	$(UV) run pylint ./src
 	$(UV) run xenon $(XENON_ARGS) .
 
