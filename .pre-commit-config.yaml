@@ -22,7 +22,7 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.46.3
+    rev: v1.47.2
     hooks:
       - id: typos
         name: typos spell check
@@ -37,13 +37,13 @@ repos:
         name: check github workflows
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.150.0
+    rev: 43.214.2
     hooks:
       - id: renovate-config-validator
         args: [--strict]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.14
+    rev: v0.15.16
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
@@ -102,7 +102,7 @@ repos:
         types: [python]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.16
+    rev: 0.11.19
     hooks:
       - id: uv-lock
         name: uv lockfile update
