@@ -28,7 +28,8 @@ if TYPE_CHECKING:
     from types import TracebackType
     from urllib.parse import ParseResult
 
-    from ._compat import Self
+    from typing_extensions import Self
+
     from ._models import Event
 
 
