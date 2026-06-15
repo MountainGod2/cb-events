@@ -51,12 +51,6 @@ update:
 uv lock --upgrade-package aiohttp
 ```
 
-If you change `pyproject.toml`, regenerate `requirements.txt` (CI checks it's in sync):
-
-```bash
-make requirements-export
-```
-
 ## Commit Messages
 
 [Conventional Commits](https://www.conventionalcommits.org/) format is enforced. A scope
