@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from inspect import getattr_static, iscoroutinefunction
+from inspect import iscoroutinefunction
 from itertools import chain
 from typing import TYPE_CHECKING, TypeAlias, overload
 
@@ -34,7 +34,7 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
     try:
         await handler(event)
     # BaseException (including CancelledError) intentionally propagates
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception:
         _logger.exception(
             "Handler %s failed for event %s (type: %s)",
             _handler_name(handler),
@@ -54,15 +54,7 @@ def _is_async_callable(func: object) -> bool:
         if func is not an async function and does not define an async __call__
         method (i.e., cannot be awaited).
     """
-    if iscoroutinefunction(func):
-        return True
-    call_method = getattr_static(func, "__call__", None)  # pyright: ignore[reportAny]
-    if call_method is not None and iscoroutinefunction(call_method):  # pyright: ignore[reportAny]
-        return True
-    underlying = getattr(func, "func", None)
-    if callable(underlying) and underlying is not func:
-        return _is_async_callable(underlying)
-    return False
+    return iscoroutinefunction(func)
 
 
 def _handler_name(handler: object) -> str:
