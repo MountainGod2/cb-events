@@ -48,10 +48,7 @@ lint = [
     "basedpyright==1.39.7",
     "pyrefly==1.0.0",
     "pre-commit==4.6.0",
-    "pylint==4.0.5",
-    "pylint-pydantic==0.4.1",
     "ruff==0.15.16",
-    "xenon==0.9.3",
 ]
 test = [
     "aioresponses==0.7.8",
@@ -81,7 +78,6 @@ exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false }
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
-default-groups = []
 
 # aioresponses 0.7.8 is incompatible with aiohttp 3.14's mandatory `stream_writer` argument
 # TODO: Remove once aioresponses PR #288 is released.
@@ -174,6 +170,9 @@ future-annotations = true
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.mccabe]
+max-complexity = 11
+
 [tool.ruff.format]
 preview = true
 quote-style = "double"
@@ -184,20 +183,9 @@ line-ending = "auto"
 [tool.ruff.lint.pylint]
 max-statements-in-try = 16
 
-[tool.pylint.main]
-load-plugins = ["pylint.extensions.typing", "pylint_pydantic"]
-py-version = "3.10"
-
-[tool.pylint.design]
-max-attributes = 12
-
-[tool.pylint.format]
-max-line-length = 100
-max-module-lines = 1200
-
 [tool.basedpyright]
 include = ["src"]
-exclude = ["tests", "examples", "docs", "build", "dist", ".venv", "**/_compat.py"]
+exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
 extraPaths = ["src"]
 pythonVersion = "3.10"
 

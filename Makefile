@@ -9,7 +9,6 @@ UV ?= uv
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
-XENON_ARGS ?= --max-absolute C --max-modules A --ignore tests
 
 .PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full bandit audit trivy zizmor
@@ -42,8 +41,6 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run --group=docs zensical build --strict
 	$(UV) run basedpyright
 	$(UV) run --group=lint --group=test pyrefly check
-	$(UV) run pylint ./src
-	$(UV) run xenon $(XENON_ARGS) .
 
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
@@ -78,11 +75,9 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) sync --python "$$version" --group lint --group test --frozen; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff format --check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff check; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint pylint ./src; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint basedpyright; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint --group test pyrefly check; \
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint xenon $(XENON_ARGS) .; \
 	done
 
 pre-commit: ## Public: Run all pre-commit hooks.
@@ -111,10 +106,10 @@ ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks
 # --- Internal targets ---
 
 bandit: ## Internal: Run Bandit and emit SARIF.
-	$(UV) run bandit -r src/ -f sarif -o bandit.sarif
+	$(UV) run --group=security bandit -r src/ -f sarif -o bandit.sarif
 
 zizmor: ## Internal: Run Zizmor and emit SARIF.
-	$(UV) run zizmor --format=sarif . > zizmor.sarif
+	$(UV) run --group=security zizmor --format=sarif . > zizmor.sarif
 
 audit: ## Internal: Audit dependencies against known vulnerabilities.
 	$(UV) audit --preview-features audit-command
@@ -132,8 +127,8 @@ test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live 
 
 test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
 	$(UV) sync --group=test --resolution lowest-direct --upgrade
-	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
-	$(UV) sync --frozen --all-groups
+	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS); status=$$?; \
+        $(UV) sync --frozen --all-groups; exit $$status
 
 test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
