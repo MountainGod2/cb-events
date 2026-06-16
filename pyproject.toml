@@ -45,7 +45,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
-    "basedpyright==1.39.6",
+    "basedpyright==1.39.7",
     "pyrefly==1.0.0",
     "pre-commit==4.6.0",
     "pylint==4.0.5",
@@ -57,7 +57,7 @@ test = [
     "aioresponses==0.7.8",
     "pytest==9.0.3",
     "pytest-asyncio==1.4.0",
-    "pytest-aiohttp==1.1.0",
+    "pytest-aiohttp==1.1.1",
     "pytest-cov==7.1.0",
     "pytest-mock==3.15.1",
 ]
