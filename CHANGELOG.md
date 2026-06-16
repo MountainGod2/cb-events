@@ -1,6 +1,246 @@
 # CHANGELOG
 
 
+## v9.1.0 (2026-06-16)
+
+### Bug Fixes
+
+- **uv**: Update aioresponses source to specific revision
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+### Features
+
+- **event**: Add private attributes for sub-models
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+### Refactoring
+
+- Relax User model fields and simplify validation
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- Remove slots and update dependencies ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- Standardize modules names to improve public API surface
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **api**: Change __all__ to use list ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Add caching option to _build_url
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Add connect timeout to ClientSession
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **client**: Add missing docstrings and refactor parsing
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Handle invalid ports in nextUrl
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **client**: Improve client state management with Enum
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Improve error messages for nextUrl validation
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Improve nextUrl handling and polling logic
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Improve session management and error handling
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Remove redundant type imports
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Rename poll to _poll and make private
+  ([#217](https://github.com/MountainGod2/cb-events/pull/217),
+  [`a1d092e`](https://github.com/MountainGod2/cb-events/commit/a1d092e35f47940455f439627245bff59b7ec8e2))
+
+- **client**: Simplify error handling and response parsing
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Simplify nextUrl validation logging
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **client**: Simplify nextUrl validation logic
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Simplify type imports using compatibility shims
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Split response parsing and request handling responsibilities
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **client**: Update docstring for error handling
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **config**: Change timeout type from float to int
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **config**: Simplify error message for invalid delays
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **config**: Update retry attempts and max delay
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **deps**: Adjust typing-extensions for Python version
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **deps**: Simplify linting ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **docs**: Remove obsolete API documentation files
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **docs**: Update mdformat dependencies and exclude api docs
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **exceptions**: Move truncate_text utility to _utils.py
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **exceptions**: Remove __slots__ from error classes
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **exceptions**: Rename constants and functions
+  ([#219](https://github.com/MountainGod2/cb-events/pull/219),
+  [`97be6ef`](https://github.com/MountainGod2/cb-events/commit/97be6ef695fbd3bd418b821839cca734006dd796))
+
+- **imports**: Update import handling for Self and override
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **init**: Change __all__ from list to tuple
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **lint**: Combine lint and test groups for pyrefly check
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **lint**: Update pyrefly check command to include test group
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **makefile**: Correct status handling in test-cov-lowest-direct
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **makefile**: Update requirements export command options
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **models**: Add literal types for user fields
+  ([#217](https://github.com/MountainGod2/cb-events/pull/217),
+  [`a1d092e`](https://github.com/MountainGod2/cb-events/commit/a1d092e35f47940455f439627245bff59b7ec8e2))
+
+- **models**: Change media type to str ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **models**: Clean up imports and fix media type docstring
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **models**: Remove caching logic from Event model
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **models**: Replace Literal types with str for User fields
+  ([#222](https://github.com/MountainGod2/cb-events/pull/222),
+  [`1628580`](https://github.com/MountainGod2/cb-events/commit/1628580c241ce24fbbb6dbccff3af51e78a2f129))
+
+- **pre-commit**: Simplify hooks and remove pip-audit
+  ([#229](https://github.com/MountainGod2/cb-events/pull/229),
+  [`7ad0dc7`](https://github.com/MountainGod2/cb-events/commit/7ad0dc7559ad41eecedad1bce327ad63e487b788))
+
+- **pyproject**: Add aiohttp 3.14 restriction for compatibility with aioresponses
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **release**: Update validation for CB_EVENTS_URL
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **router**: Add async callable check logic
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **router**: Change typed_handlers to use list
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **router**: Improve async callable check logic
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **router**: Optimize handler registration logic
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **router**: Simplify callable check ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **router**: Simplify handler name retrieval logic
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **tests**: Remove aiohttp constraint from test dependencies
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **tests**: Remove unused callable wrapper classes
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **typing**: Replace Self import with typing_extensions
+  ([#234](https://github.com/MountainGod2/cb-events/pull/234),
+  [`4a5e11d`](https://github.com/MountainGod2/cb-events/commit/4a5e11d0bcab85f789b6cedcdd74324e36cf8408))
+
+- **uv**: Include aiohttp in exclude-newer-package
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **uv**: Remove aiohttp from exclude-newer-package
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+- **uv**: Replace required-version with exclude-newer-package
+  ([#219](https://github.com/MountainGod2/cb-events/pull/219),
+  [`97be6ef`](https://github.com/MountainGod2/cb-events/commit/97be6ef695fbd3bd418b821839cca734006dd796))
+
+- **xenon**: Update max-absolute argument
+  ([#224](https://github.com/MountainGod2/cb-events/pull/224),
+  [`76490c5`](https://github.com/MountainGod2/cb-events/commit/76490c562ff1529bcba81c79980a2ee939665521))
+
+
 ## v9.0.2 (2026-05-30)
 
 ### Bug Fixes
