@@ -77,8 +77,7 @@
         "aioresponses",
         "pre-commit",
         "basedpyright",
-        "ruff",
-        "pyrefly"
+        "ruff"
       ],
       "groupName": "dev-tools",
       "labels": ["dependencies", "dev"],
