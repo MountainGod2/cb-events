@@ -82,7 +82,7 @@ fork-strategy = "requires-python"
 # TODO: Remove once aioresponses PR #288 is released.
 # https://github.com/pnuckowski/aioresponses/pull/288
 [tool.uv.sources]
-aioresponses = { git = "https://github.com/agners/aioresponses", branch = "fix-aiohttp-3.14-stream-writer" }
+aioresponses = { git = "https://github.com/agners/aioresponses",  rev = "8f40e0db2eed16621607ecfc857168240c795755" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
