@@ -56,8 +56,9 @@ def _is_async_callable(func: object) -> bool:
     """
     if iscoroutinefunction(func):
         return True
-    call = callable(func)
-    return call is not None and iscoroutinefunction(call)
+    if not callable(func):
+        return False
+    return iscoroutinefunction(func.__call__)
 
 
 def _handler_name(handler: object) -> str:
