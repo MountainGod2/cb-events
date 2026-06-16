@@ -323,7 +323,7 @@ requires-dist = [
 build = [{ name = "python-semantic-release", specifier = "==10.5.3" }]
 dev = [
     { name = "aioresponses", git = "https://github.com/agners/aioresponses?rev=8f40e0db2eed16621607ecfc857168240c795755" },
-    { name = "basedpyright", specifier = "==1.39.6" },
+    { name = "basedpyright", specifier = "==1.39.7" },
     { name = "pre-commit", specifier = "==4.6.0" },
     { name = "pytest", specifier = "==9.0.3" },
     { name = "pytest-aiohttp", specifier = "==1.1.1" },
