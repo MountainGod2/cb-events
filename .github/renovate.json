@@ -73,17 +73,11 @@
       "description": "Development tools (testing, linting, and type checking)",
       "matchPackageNames": [
         "pytest",
-        "pytest-asyncio",
-        "pytest-aiohttp",
-        "pytest-cov",
-        "pytest-mock",
+        "/^pytest-.*$/",
         "aioresponses",
         "pre-commit",
         "basedpyright",
-        "pylint",
-        "ruff",
-        "/^pytest-.*$/",
-        "/^pylint-.*$/"
+        "ruff"
       ],
       "groupName": "dev-tools",
       "labels": ["dependencies", "dev"],

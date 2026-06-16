@@ -261,14 +261,14 @@ def test_event_property_validation_errors_logged(
     })
 
     assert getattr(event, attr_name) is None
-    # Access again. Accessors validate on every call.
+    # Access again. Only one error should be logged.
     assert getattr(event, attr_name) is None
     warning_records = [
         r
         for r in caplog.records
         if r.levelname == "WARNING" and f"{log_msg} in event {event_id}" in r.getMessage()
     ]
-    assert len(warning_records) == 2
+    assert len(warning_records) == 1
 
 
 def test_event_broadcaster_property() -> None:

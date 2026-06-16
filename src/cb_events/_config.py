@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
-    from ._compat import Self
+    from typing_extensions import Self
 
 
 class ClientConfig(BaseModel):

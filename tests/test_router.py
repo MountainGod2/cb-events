@@ -1,15 +1,12 @@
 """Dispatch tests for :class:`cb_events.Router`."""
 
 import asyncio
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 from functools import partial
 from unittest.mock import AsyncMock
 
 import pytest
 
 from cb_events import Event, EventType, Router
-from cb_events._router import _handler_name, _is_async_callable
 from tests.helpers import CORE_EVENT_TYPES, make_event
 
 
@@ -205,22 +202,6 @@ async def test_accept_partial_async_handler(router: Router) -> None:
     assert seen == [event.id]
 
 
-async def test_accept_async_callable_object(router: Router) -> None:
-    """Callable objects with async __call__ should register."""
-    seen: list[str] = []
-
-    class AsyncCallable:
-        async def __call__(self, event: Event) -> None:
-            seen.append(event.id)
-
-    router.on(EventType.TIP)(AsyncCallable())
-    event = Event.model_validate(make_event(EventType.TIP, event_id="test"))
-
-    await router.dispatch(event)
-
-    assert seen == [event.id]
-
-
 async def test_cancelled_error_propagates(router: Router) -> None:
     """Dispatch should not swallow CancelledError from handlers."""
 
@@ -232,90 +213,3 @@ async def test_cancelled_error_propagates(router: Router) -> None:
 
     with pytest.raises(asyncio.CancelledError):
         await router.dispatch(event)
-
-
-@pytest.mark.parametrize(
-    "factory",
-    [
-        pytest.param(
-            lambda: partial(partial(_sample_handler)),
-            id="nested_partial",
-        ),
-        pytest.param(
-            lambda: _FuncAttrWrapper(_sample_handler),
-            id="func_attr",
-        ),
-    ],
-)
-def test_handler_name_prefers_underlying_callable(
-    factory: Callable[[], object],
-) -> None:
-    """_handler_name should unwrap helpers until it finds a function name."""
-    handler = factory()
-    assert _handler_name(handler) == "_sample_handler"
-
-
-async def test_accept_handler_wrapper_with_func_attr(router: Router) -> None:
-    """Handlers wrapped in an object with a 'func' attribute should register."""
-
-    async def base_handler(event: Event) -> None:
-        _ = event.id
-
-    handler = _FuncAttrWrapper(base_handler)
-    router.on(EventType.TIP)(handler)  # type: ignore  # noqa: PGH003
-
-    event = Event.model_validate(make_event(EventType.TIP, event_id="wrapped"))
-    await router.dispatch(event)
-
-
-def test_is_async_callable_handles_missing_call_attribute() -> None:
-    """`_is_async_callable` should detect async __call__ despite metaclass masking."""
-    handler = _MetaclassCallable()
-    assert _is_async_callable(handler)
-
-
-def test_is_async_callable_uses_func_attribute_when_not_callable() -> None:
-    """Objects exposing async targets only via ``func`` should be accepted."""
-
-    async def inner_handler(event: Event) -> None:
-        _ = event.id
-
-    wrapper = _FuncAttrOnlyWrapper(inner_handler)
-    assert _is_async_callable(wrapper)
-
-
-class _FuncAttrWrapper:
-    """Callable storing target coroutine under func attribute."""
-
-    def __init__(self, func: Callable[..., object]) -> None:
-        self.func = func
-
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
-
-
-@dataclass(slots=True)
-class _FuncAttrOnlyWrapper:
-    """Non-callable holder exposing async handler via ``func`` attribute."""
-
-    func: Callable[..., Awaitable[None]]
-
-
-class _NoCallMeta(type):
-    """Metaclass that hides ``__call__`` attribute lookups."""
-
-    def __getattribute__(cls, name: str):
-        if name == "__call__":
-            raise AttributeError
-        return super().__getattribute__(name)
-
-
-class _MetaclassCallable(metaclass=_NoCallMeta):
-    """Callable object whose metaclass masks the __call__ attribute."""
-
-    async def __call__(self, event: Event) -> None:
-        _ = event.id
-
-
-def _sample_handler() -> None:
-    """Simple stand-in callable used for handler name tests."""

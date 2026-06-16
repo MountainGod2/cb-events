@@ -14,6 +14,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PrivateAttr,
     ValidationError,
     field_validator,
 )
@@ -229,54 +230,72 @@ class Event(BaseEventModel):
     data: dict[str, object] = Field(default_factory=dict, alias="object")
     """Event data payload."""
 
-    @property
-    def user(self) -> User | None:
-        """User data if present and valid."""
-        return self._extract("user", User.model_validate)
+    # Private attributes hold the results of one-time sub-model parsing.
+    _user: User | None = PrivateAttr(default=None)
+    _message: Message | None = PrivateAttr(default=None)
+    _broadcaster: str | None = PrivateAttr(default=None)
+    _tip: Tip | None = PrivateAttr(default=None)
+    _media: Media | None = PrivateAttr(default=None)
+    _room_subject: RoomSubject | None = PrivateAttr(default=None)
 
-    @property
-    def message(self) -> Message | None:
-        """Message data if present and valid."""
-        return self._extract(
+    @override
+    def model_post_init(self, context: object, /) -> None:  # noqa: ARG002
+        """Parse and cache all typed sub-models after field initialisation.
+
+        Called once by Pydantic during ``__init__`` and ``model_validate``.
+        """
+        self._user = self._extract("user", User.model_validate)
+        self._message = self._extract(
             "message",
             Message.model_validate,
-            allowed_types=(
-                EventType.CHAT_MESSAGE,
-                EventType.PRIVATE_MESSAGE,
-            ),
+            allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
         )
-
-    @property
-    def broadcaster(self) -> str | None:
-        """Broadcaster username, or ``None`` if missing or invalid."""
-        return self._extract_non_empty_string("broadcaster")
-
-    @property
-    def tip(self) -> Tip | None:
-        """Tip data if present and valid (TIP events only)."""
-        return self._extract(
+        self._broadcaster = self._extract_non_empty_string("broadcaster")
+        self._tip = self._extract(
             "tip",
             Tip.model_validate,
             allowed_types=(EventType.TIP,),
         )
-
-    @property
-    def media(self) -> Media | None:
-        """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
-        return self._extract(
+        self._media = self._extract(
             "media",
             Media.model_validate,
             allowed_types=(EventType.MEDIA_PURCHASE,),
         )
-
-    @property
-    def room_subject(self) -> RoomSubject | None:
-        """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
-        return self._extract(
+        self._room_subject = self._extract(
             "subject",
             lambda v: RoomSubject.model_validate({"subject": v}),
             allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
         )
+
+    @property
+    def user(self) -> User | None:
+        """User data if present and valid."""
+        return self._user
+
+    @property
+    def message(self) -> Message | None:
+        """Message data if present and valid."""
+        return self._message
+
+    @property
+    def broadcaster(self) -> str | None:
+        """Broadcaster username, or ``None`` if missing or invalid."""
+        return self._broadcaster
+
+    @property
+    def tip(self) -> Tip | None:
+        """Tip data if present and valid (TIP events only)."""
+        return self._tip
+
+    @property
+    def media(self) -> Media | None:
+        """Media purchase data if present and valid (MEDIA_PURCHASE only)."""
+        return self._media
+
+    @property
+    def room_subject(self) -> RoomSubject | None:
+        """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
+        return self._room_subject
 
     def _extract_non_empty_string(self, key: str) -> str | None:
         """Extract a non-empty string from event data.
