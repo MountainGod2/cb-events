@@ -48,6 +48,9 @@ _DEFAULT_MAX_RATE: Final[int] = 2000
 _DEFAULT_TIME_PERIOD: Final[int] = 60
 """Limiter window size in seconds."""
 
+_CONNECT_TIMEOUT: Final[int] = 10
+"""Connection timeout in seconds."""
+
 _SESSION_TIMEOUT_BUFFER: Final[int] = 5
 """Extra seconds added to the client timeout."""
 
@@ -306,7 +309,10 @@ class EventClient:
                 raise EventsError(msg)
             try:
                 self.session = ClientSession(
-                    timeout=ClientTimeout(total=self.config.timeout + _SESSION_TIMEOUT_BUFFER),
+                    timeout=ClientTimeout(
+                        total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
+                        connect=_CONNECT_TIMEOUT,
+                    ),
                 )
             except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
                 # Fall through to close() and re-raise outside the lock.
