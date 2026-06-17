@@ -307,6 +307,7 @@ class EventClient:
             if self.session is not None:
                 msg = "Client is already open. ..."
                 raise EventsError(msg)
+            captured: Exception | None = None
             try:
                 self.session = ClientSession(
                     timeout=ClientTimeout(
@@ -316,13 +317,13 @@ class EventClient:
                 )
             except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
                 # Fall through to close() and re-raise outside the lock.
-                creation_exc: Exception = exc
+                captured = exc
             else:
                 return self
 
         await self.close()
         msg = "Failed to create HTTP session."
-        raise EventsError(msg) from creation_exc
+        raise EventsError(msg) from captured
 
     async def __aexit__(
         self,
@@ -425,18 +426,17 @@ class EventClient:
             The polling lock is held only while reading or writing _next_url and
             tracking active poll tasks. HTTP I/O runs outside the lock.
         """
+        # Fail early to avoid locking when already closing/closed.
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
         current_task = asyncio.current_task()
-        if current_task is None:
-            msg = "Unable to resolve current asyncio task."
-            raise EventsError(msg)
 
         async with self._polling_lock:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
-            self._active_poll_tasks.add(current_task)
+            if current_task is not None:
+                self._active_poll_tasks.add(current_task)
             request_next_url = self._next_url
 
         url = self._build_url(next_url=request_next_url)
@@ -516,7 +516,7 @@ class EventClient:
                 ]
 
             for poll_task in poll_tasks:
-                _ = poll_task.cancel()
+                poll_task.cancel()  # pyright: ignore[reportUnusedCallResult]
 
             for poll_task in poll_tasks:
                 with suppress(asyncio.CancelledError, EventsError):
@@ -535,6 +535,6 @@ class EventClient:
                     # the underlying TCP connection from being abandoned mid-teardown.
                     await asyncio.shield(session.close())
                 except (ClientError, OSError, RuntimeError) as e:
-                    _logger.warning("Error closing session: %s", e, exc_info=True)
+                    _logger.warning("Error closing session: %s", e)
         finally:
             self._state = _ClientState.CLOSED
