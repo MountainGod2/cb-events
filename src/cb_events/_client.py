@@ -432,11 +432,14 @@ class EventClient:
 
         current_task = asyncio.current_task()
 
+        if current_task is None:  # pragma: no cover
+            msg = "Unable to resolve current asyncio task."
+            raise EventsError(msg)
+
         async with self._polling_lock:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
-            if current_task is not None:
-                self._active_poll_tasks.add(current_task)
+            self._active_poll_tasks.add(current_task)
             request_next_url = self._next_url
 
         url = self._build_url(next_url=request_next_url)
