@@ -24,7 +24,7 @@ from ._parser import (
 from ._request import perform_request_attempt, request_with_retry
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncIterator
     from types import TracebackType
     from urllib.parse import ParseResult
 
@@ -266,11 +266,9 @@ class EventClient:
         self._token: str = token
         self.config: ClientConfig = config or ClientConfig()
         self.session: ClientSession | None = None
-        self._parsed_base_url: ParseResult = urlparse(base_url)
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
-            parsed_base_url=self._parsed_base_url,
             logger=_logger,
         )
         self._active_poll_tasks: set[asyncio.Task[object]] = set()
@@ -431,8 +429,8 @@ class EventClient:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
         current_task = asyncio.current_task()
-
         if current_task is None:  # pragma: no cover
+            # asyncio guarantees a current task exists inside a running coroutine.
             msg = "Unable to resolve current asyncio task."
             raise EventsError(msg)
 
@@ -478,7 +476,7 @@ class EventClient:
             async with self._polling_lock:
                 self._active_poll_tasks.discard(current_task)
 
-    async def __aiter__(self) -> AsyncGenerator[Event]:
+    async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
 
         Runs until cancelled or a terminal error occurs. Transient failures
@@ -491,7 +489,8 @@ class EventClient:
             AuthError: If authentication fails (e.g. invalid token).
             EventsError: If a non-retryable error occurs or retries are exhausted.
 
-        Poll position is tracked with nextUrl between iterations.
+        Note:
+            Poll position is tracked with nextUrl between iterations.
         """  # noqa: DOC502  # Called functions raise AuthError/EventsError on failure.
         while True:
             events = await self._poll()
