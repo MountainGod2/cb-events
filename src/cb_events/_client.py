@@ -434,10 +434,6 @@ class EventClient:
             msg = "Unable to resolve current asyncio task."
             raise EventsError(msg)
 
-        if current_task is None:  # pragma: no cover
-            msg = "Unable to resolve current asyncio task."
-            raise EventsError(msg)
-
         async with self._polling_lock:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
