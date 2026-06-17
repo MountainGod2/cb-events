@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import TYPE_CHECKING, TypeGuard
 from urllib.parse import urljoin, urlparse
@@ -30,14 +30,22 @@ class ParserContext:
     Attributes:
         username: Account username used for diagnostics.
         base_url: Canonical base API URL.
-        parsed_base_url: Parsed representation of base_url.
         logger: Logger used for warnings/debug output.
+        parsed_base_url: Parsed representation of base_url. Derived
+            automatically from base_url; do not pass this explicitly.
     """
 
     username: str
     base_url: str
-    parsed_base_url: ParseResult
     logger: logging.Logger
+    parsed_base_url: ParseResult = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Derive parsed_base_url from base_url.
+
+        Uses object.__setattr__ because the dataclass is frozen.
+        """
+        object.__setattr__(self, "parsed_base_url", urlparse(self.base_url))
 
 
 def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:

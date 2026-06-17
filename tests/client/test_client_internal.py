@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from urllib.parse import urlparse
 
 import pytest
 from aioresponses import aioresponses
@@ -24,7 +23,6 @@ def _parser_context(username: str = "user") -> ParserContext:
     return ParserContext(
         username=username,
         base_url=TESTBED_URL,
-        parsed_base_url=urlparse(TESTBED_URL),
         logger=logging.getLogger("cb_events._client"),
     )
 

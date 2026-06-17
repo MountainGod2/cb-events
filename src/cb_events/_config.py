@@ -28,7 +28,7 @@ class ClientConfig(BaseModel):
     strict_validation: bool = False
     """Raise on invalid events vs. skip and log."""
 
-    retry_attempts: int = Field(default=10, ge=1)
+    retry_attempts: int = Field(default=20, ge=1)
     """Total attempts including the initial request (must be >= 1)."""
 
     retry_backoff: float = Field(default=1.0, ge=0)

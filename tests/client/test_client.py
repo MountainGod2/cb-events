@@ -2,7 +2,7 @@
 
 import logging
 from unittest.mock import AsyncMock
-from urllib.parse import quote, urlparse
+from urllib.parse import quote
 
 import pytest
 from aiohttp.client_exceptions import ClientError
@@ -19,7 +19,6 @@ from tests.helpers import make_events_url
 _TEST_PARSER_CONTEXT = ParserContext(
     username="user",
     base_url="https://events.testbed.cb.dev/events",
-    parsed_base_url=urlparse("https://events.testbed.cb.dev/events"),
     logger=logging.getLogger("cb_events._client"),
 )
 
