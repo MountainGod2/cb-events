@@ -63,7 +63,7 @@ docs = [
     "mdformat-pyproject==0.1.1",
     "mkdocstrings-python==2.0.4",
     "pymdown-extensions==10.21.3",
-    "zensical==0.0.44",
+    "zensical==0.0.45",
 ]
 security = ["bandit[sarif]==1.9.4", "zizmor==1.25.2"]
 build = ["python-semantic-release==10.5.3"]
