@@ -399,7 +399,7 @@ def process_response(
     Raises:
         AuthError: If authentication fails.
         HttpStatusError: If response status is non-200 and not a timeout redirect.
-    """  # noqa: DOC501, DOC502  # ruff wants the raised function listed, not the propagated error.
+    """  # noqa: DOC501, DOC502  # ruff wants the raised function listed, not the propagated error(s).
     if status in AUTH_ERROR_STATUS_CODES:
         context.logger.warning(
             "Authentication failed for user %s (HTTP %d)",
