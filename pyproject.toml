@@ -44,11 +44,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
-lint = [
-    "basedpyright==1.39.7",
-    "pre-commit==4.6.0",
-    "ruff==0.15.16",
-]
+lint = ["basedpyright==1.39.7", "pre-commit==4.6.0", "ruff==0.15.16"]
 test = [
     "aioresponses==0.7.8",
     "pytest==9.0.3",
@@ -82,7 +78,7 @@ fork-strategy = "requires-python"
 # TODO: Remove once aioresponses PR #288 is released.
 # https://github.com/pnuckowski/aioresponses/pull/288
 [tool.uv.sources]
-aioresponses = { git = "https://github.com/agners/aioresponses",  rev = "8f40e0db2eed16621607ecfc857168240c795755" }
+aioresponses = { git = "https://github.com/agners/aioresponses", rev = "8f40e0db2eed16621607ecfc857168240c795755" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
@@ -148,7 +144,7 @@ ignore = [
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = ["RUF029", "TC", "DOC"]
+"examples/*" = ["RUF029", "TC", "DOC", "TRY400"]
 "tests/*" = [
     "ANN",
     "E501",
