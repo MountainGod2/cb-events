@@ -18,6 +18,10 @@ if TYPE_CHECKING:
 
     from ._config import ClientConfig
 
+# Suppress stamina's built-in retry hook. Per-attempt failures are logged
+# inside request_with_retry.
+stamina.set_on_retry_hooks([])
+
 
 class _RetryableStatusError(Exception):
     """Internal exception used to trigger retry for HTTP status failures."""
@@ -157,20 +161,19 @@ async def request_with_retry(
             wait_exp_base=config.retry_factor,
         ):
             attempts_made = attempt.num
-            try:
-                with attempt:
+            with attempt:
+                try:
                     return await perform_attempt(url)
-            except retriable_exc_types as exc:
-                if attempts_made < config.retry_attempts:
-                    msg = "Attempt %d/%d failed for user %s: %r. Retrying..."
-                    logger.warning(
-                        msg,
-                        attempts_made,
-                        config.retry_attempts,
-                        username,
-                        exc,
-                    )
-                raise
+                except retriable_exc_types as exc:
+                    if attempts_made < config.retry_attempts:
+                        logger.warning(
+                            "Attempt %d/%d failed for user %s: %r. Retrying...",
+                            attempts_made,
+                            config.retry_attempts,
+                            username,
+                            exc,
+                        )
+                    raise
 
     except retriable_exc_types as original_exception:
         _raise_request_failure(
@@ -181,6 +184,6 @@ async def request_with_retry(
         )
 
     # Unreachable in practice: stamina always yields ≥1 attempt and
-    # _raise_request_failure is NoReturn. Required for type-checker soundness
+    # _raise_request_failure is NoReturn. Required for type-checker soundness.
     msg = "Unexpected error in request loop"
     raise EventsError(msg)
