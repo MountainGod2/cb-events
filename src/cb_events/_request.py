@@ -167,7 +167,7 @@ async def request_with_retry(
                 except retriable_exc_types as exc:
                     if attempts_made < config.retry_attempts:
                         logger.warning(
-                            "Attempt %d/%d failed for user %s: %r. Retrying...",
+                            "Attempt %d/%d failed for user %s: %s. Retrying...",
                             attempts_made,
                             config.retry_attempts,
                             username,
