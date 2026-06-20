@@ -14,6 +14,8 @@ import signal
 import sys
 import threading
 
+import stamina
+
 from cb_events import (
     AuthError,
     ClientConfig,
@@ -23,6 +25,10 @@ from cb_events import (
     EventType,
     Router,
 )
+
+# Suppress stamina's default retry hook; cb-events logs retries
+# (user, attempt count) via its own per-attempt warning.
+stamina.set_on_retry_hooks([])
 
 logger = logging.getLogger(__name__)
 

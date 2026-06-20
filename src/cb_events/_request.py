@@ -18,10 +18,6 @@ if TYPE_CHECKING:
 
     from ._config import ClientConfig
 
-# Suppress stamina's built-in retry hook. Per-attempt failures are logged
-# inside request_with_retry.
-stamina.set_on_retry_hooks([])
-
 
 class _RetryableStatusError(Exception):
     """Internal exception used to trigger retry for HTTP status failures."""
