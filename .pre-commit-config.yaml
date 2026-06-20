@@ -43,7 +43,7 @@ repos:
         args: [--strict]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.16
+    rev: v0.15.17
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
@@ -73,7 +73,7 @@ repos:
         files: ^(docs/.*\.md|README\.md)$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.20
+    rev: 0.11.21
     hooks:
       - id: uv-lock
         name: uv lockfile update
