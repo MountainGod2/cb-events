@@ -178,7 +178,7 @@ if __name__ == "__main__":
     log_level = logging.getLevelNamesMapping().get(log_level_name, logging.INFO)
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s - %(message)s",
+        format="%(asctime)s [%(name)s] %(levelname)s - %(message)s",
     )
 
     try:
