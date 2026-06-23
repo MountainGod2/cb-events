@@ -57,6 +57,7 @@ async def test_client_router_workflow(
 
 async def test_client_context_manager_lifecycle() -> None:
     """Context manager should open and close the internal session."""
+    # Needed to to test the initial session is None state before entry.
     client = EventClient(make_events_url("test_user", "test_token"))
     assert client.session is None
 

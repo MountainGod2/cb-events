@@ -7,8 +7,7 @@ import pytest
 
 from cb_events import EventClient, EventsError
 from tests.conftest import EventClientFactory
-
-TESTBED_POLL_URL = "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10"
+from tests.helpers import make_events_url
 
 
 async def test_concurrent_polls_release_lock_during_http_call(
@@ -29,7 +28,8 @@ async def test_concurrent_polls_release_lock_during_http_call(
             entered_first_request.set()
             await release_first_request.wait()
         in_flight -= 1
-        return 200, json.dumps({"events": [], "nextUrl": f"{TESTBED_POLL_URL}&next=1"})
+        constructed_url = make_events_url("user", "token")
+        return 200, json.dumps({"events": [], "nextUrl": f"{constructed_url}&next=1"})
 
     monkeypatch.setattr(EventClient, "_request", _fake_request)
 

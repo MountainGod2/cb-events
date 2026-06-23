@@ -31,7 +31,7 @@ uv add cb-events
 
 ```python
 import asyncio
-from cb_events import EventClient, EventType, Router
+from cb_events import Event, EventClient, EventType, Router
 
 router = Router()
 
@@ -39,7 +39,7 @@ events_url = "https://eventsapi.chaturbate.com/events/your_username/your_api_tok
 
 
 @router.on(EventType.TIP)
-async def handle_tip(event) -> None:
+async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
 

@@ -78,9 +78,11 @@ def _raise_request_failure(
         logger: Logger instance.
 
     Raises:
-        EventsError: For non-HTTP retry failures.
-        build_http_error: For HTTP retry failures with a known status code.
-    """
+        EventsError: For network-level failures (ClientError, OSError, etc.).
+        ServerError: If the final attempt failed with a 5xx or Cloudflare error code.
+        RateLimitError: If the final attempt failed with HTTP 429.
+        ClientRequestError: If the final attempt failed with another 4xx.
+    """  # noqa: DOC501, DOC502  # ruff wants the raised function listed, not the propagated error(s).
     logger.error(
         "Request failed after %d attempts for user %s",
         attempts_made,
@@ -155,20 +157,19 @@ async def request_with_retry(
             wait_exp_base=config.retry_factor,
         ):
             attempts_made = attempt.num
-            try:
-                with attempt:
+            with attempt:
+                try:
                     return await perform_attempt(url)
-            except retriable_exc_types as exc:
-                if attempts_made < config.retry_attempts:
-                    msg = "Attempt %d/%d failed for user %s: %r. Retrying..."
-                    logger.warning(
-                        msg,
-                        attempts_made,
-                        config.retry_attempts,
-                        username,
-                        exc,
-                    )
-                raise
+                except retriable_exc_types as exc:
+                    if attempts_made < config.retry_attempts:
+                        logger.warning(
+                            "Attempt %d/%d failed for user %s: %s. Retrying...",
+                            attempts_made,
+                            config.retry_attempts,
+                            username,
+                            exc,
+                        )
+                    raise
 
     except retriable_exc_types as original_exception:
         _raise_request_failure(
@@ -179,6 +180,6 @@ async def request_with_retry(
         )
 
     # Unreachable in practice: stamina always yields ≥1 attempt and
-    # _raise_request_failure is NoReturn. Required for type-checker soundness
+    # _raise_request_failure is NoReturn. Required for type-checker soundness.
     msg = "Unexpected error in request loop"
     raise EventsError(msg)

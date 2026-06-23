@@ -37,7 +37,7 @@ class ClientConfig(BaseModel):
     retry_factor: float = Field(default=2.0, gt=0)
     """Backoff multiplier applied after each retry."""
 
-    retry_max_delay: float = Field(default=60.0, ge=0)
+    retry_max_delay: float = Field(default=120.0, ge=0)
     """Maximum delay between retries in seconds."""
 
     @model_validator(mode="after")

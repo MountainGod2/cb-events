@@ -44,16 +44,7 @@ async def _dispatch_handler(handler: HandlerFunc, event: Event) -> None:
 
 
 def _is_async_callable(func: object) -> bool:
-    """Check if a callable can be awaited.
-
-    Args:
-        func: Object to check for async callability.
-
-    Returns:
-        True if func is an async function or has an async __call__, and False
-        if func is not an async function and does not define an async __call__
-        method (i.e., cannot be awaited).
-    """
+    """Return True if *func* can be awaited (coroutine function or async callable)."""
     if iscoroutinefunction(func):
         return True
     if not callable(func):
