@@ -28,7 +28,7 @@ from cb_events import (
 
 # Suppress stamina's default retry hook; cb-events logs retries
 # (user, attempt count) via its own per-attempt warning.
-stamina.set_on_retry_hooks([])
+stamina.instrumentation.set_on_retry_hooks([])
 
 logger = logging.getLogger(__name__)
 
