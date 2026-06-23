@@ -44,7 +44,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
-lint = ["basedpyright==1.39.7", "pre-commit==4.6.0", "ruff==0.15.16"]
+lint = ["basedpyright==1.39.7", "pre-commit==4.6.0", "ruff==0.15.17"]
 test = [
     "aioresponses-ng==0.8.0",
     "pytest==9.0.3",
@@ -156,6 +156,7 @@ future-annotations = true
 ]
 "tests/conftest.py" = ["D"]
 "tests/test_router.py" = ["ARG001", "RUF029"]
+"**/conftest.py" = ["RUF076"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
