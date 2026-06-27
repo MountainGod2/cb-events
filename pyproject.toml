@@ -153,6 +153,7 @@ future-annotations = true
     "S106",
     "SLF001",
     "TC",
+    "RUF076"
 ]
 "tests/conftest.py" = ["D"]
 "tests/test_router.py" = ["ARG001", "RUF029"]
