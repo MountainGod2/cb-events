@@ -37,7 +37,7 @@ repos:
         name: check github workflows
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.227.0
+    rev: 43.234.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
@@ -59,7 +59,7 @@ repos:
         exclude: ^tests/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.25.2
+    rev: v1.26.1
     hooks:
       - id: zizmor
         name: zizmor security check
