@@ -28,7 +28,7 @@ class ClientConfig(BaseModel):
     strict_validation: bool = False
     """Raise on invalid events vs. skip and log."""
 
-    retry_attempts: int = Field(default=20, ge=1)
+    retry_attempts: int = Field(default=25, ge=1)
     """Total attempts including the initial request (must be >= 1)."""
 
     retry_backoff: float = Field(default=1.0, ge=0)
@@ -37,7 +37,7 @@ class ClientConfig(BaseModel):
     retry_factor: float = Field(default=2.0, gt=0)
     """Backoff multiplier applied after each retry."""
 
-    retry_max_delay: float = Field(default=120.0, ge=0)
+    retry_max_delay: float = Field(default=300.0, ge=0)
     """Maximum delay between retries in seconds."""
 
     @model_validator(mode="after")
