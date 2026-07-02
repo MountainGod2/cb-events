@@ -193,5 +193,5 @@ if __name__ == "__main__":
         logger.error("Check your credentials and try again.")
         sys.exit(1)
     except EventsError:
-        logger.error("An error occurred.")
+        logger.exception("An error occurred.")
         sys.exit(1)
