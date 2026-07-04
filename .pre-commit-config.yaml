@@ -37,13 +37,13 @@ repos:
         name: check github workflows
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.242.2
+    rev: 43.243.2
     hooks:
       - id: renovate-config-validator
         args: [--strict]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.19
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
