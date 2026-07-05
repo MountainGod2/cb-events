@@ -37,7 +37,7 @@ repos:
         name: check github workflows
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.244.1
+    rev: 43.244.4
     hooks:
       - id: renovate-config-validator
         args: [--strict]
@@ -73,7 +73,7 @@ repos:
         files: ^(docs/.*\.md|README\.md)$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.11.24
+    rev: 0.11.25
     hooks:
       - id: uv-lock
         name: uv lockfile update
