@@ -70,8 +70,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 exclude-newer = "1 week"
-# TODO: Remove once aioresponses-ng release is 1 week old
-exclude-newer-package = { cb-events = false, aioresponses-ng = false }
+exclude-newer-package = { cb-events = false }
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
 

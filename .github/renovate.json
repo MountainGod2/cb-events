@@ -74,7 +74,7 @@
       "matchPackageNames": [
         "pytest",
         "/^pytest-.*$/",
-        "aioresponses",
+        "aioresponses-ng",
         "pre-commit",
         "basedpyright",
         "ruff"
