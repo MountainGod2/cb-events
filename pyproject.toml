@@ -54,7 +54,7 @@ test = [
     "pytest-mock==3.15.1",
 ]
 docs = [
-    "mdformat-mkdocs==5.1.4",
+    "mdformat-mkdocs==5.2.0",
     "mdformat-frontmatter==2.1.2",
     "mdformat-pyproject==0.1.1",
     "mkdocstrings-python==2.0.5",
