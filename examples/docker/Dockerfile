@@ -25,7 +25,8 @@ RUN uv build && uv pip install dist/*.whl "rich>=14.3.4"
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 
-ENV PATH="/opt/venv/bin:${PATH}" \
+ENV LANG=C.UTF-8 \
+    PATH="/opt/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
@@ -33,7 +34,7 @@ ENV PATH="/opt/venv/bin:${PATH}" \
 WORKDIR /app
 
 COPY --chown=1000:1000 examples/event_handling.py /app/
-COPY --from=builder /opt/venv /opt/venv
+COPY --chown=1000:1000 --from=builder /opt/venv /opt/venv
 
 USER 1000:1000
 
