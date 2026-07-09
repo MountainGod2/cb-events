@@ -10,7 +10,6 @@ exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
 cb-events = false
-aioresponses-ng = false
 
 [[package]]
 name = "aiohappyeyeballs"
