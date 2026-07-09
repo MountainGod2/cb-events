@@ -1,6 +1,96 @@
 # CHANGELOG
 
 
+## v9.1.1 (2026-07-09)
+
+### Bug Fixes
+
+- **logging**: Improve error logging details on session closure
+  ([#280](https://github.com/MountainGod2/cb-events/pull/280),
+  [`39812ba`](https://github.com/MountainGod2/cb-events/commit/39812bafbf1da4bf505c86eea55c08ac8d3a1c51))
+
+### Refactoring
+
+- **client**: Handle exceptions during session creation
+  ([#238](https://github.com/MountainGod2/cb-events/pull/238),
+  [`5e0815b`](https://github.com/MountainGod2/cb-events/commit/5e0815b2249d08b9493d8508c8fdc21488ab2ee9))
+
+- **client**: Handle missing current asyncio task
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **client**: Handle missing current asyncio task
+  ([#238](https://github.com/MountainGod2/cb-events/pull/238),
+  [`5e0815b`](https://github.com/MountainGod2/cb-events/commit/5e0815b2249d08b9493d8508c8fdc21488ab2ee9))
+
+- **client**: Improve retry configuration and parser initialization
+  ([#238](https://github.com/MountainGod2/cb-events/pull/238),
+  [`5e0815b`](https://github.com/MountainGod2/cb-events/commit/5e0815b2249d08b9493d8508c8fdc21488ab2ee9))
+
+- **client**: Update default retry_attempts to 20
+  ([#238](https://github.com/MountainGod2/cb-events/pull/238),
+  [`5e0815b`](https://github.com/MountainGod2/cb-events/commit/5e0815b2249d08b9493d8508c8fdc21488ab2ee9))
+
+- **config**: Increase default retry_max_delay to 120 seconds
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **config**: Increase retry attempts and max delay
+  ([#262](https://github.com/MountainGod2/cb-events/pull/262),
+  [`3a2ed85`](https://github.com/MountainGod2/cb-events/commit/3a2ed85f276c9ee6049e55bcd30f95a698ed6625))
+
+- **examples**: Improve event logging and cleanup
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **examples**: Update retry hook handling in event handling
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **models**: Rename TypeVar ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **parser**: Clarify raised exceptions in docstring
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **parser**: Derive parsed_base_url in ParserContext
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **parser**: Derive parsed_base_url in ParserContext
+  ([#238](https://github.com/MountainGod2/cb-events/pull/238),
+  [`5e0815b`](https://github.com/MountainGod2/cb-events/commit/5e0815b2249d08b9493d8508c8fdc21488ab2ee9))
+
+- **renovate**: Update aioresponses to aioresponses-ng
+  ([#280](https://github.com/MountainGod2/cb-events/pull/280),
+  [`39812ba`](https://github.com/MountainGod2/cb-events/commit/39812bafbf1da4bf505c86eea55c08ac8d3a1c51))
+
+- **request**: Improve logging message format for retries
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **request**: Improve retry logging and structure
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **request**: Update retry hook handling in examples
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **tests**: Add comment for session state check
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **tests**: Replace hardcoded URL with helper function
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+- **tests**: Update aioresponses dependency to aioresponses-ng
+  ([#248](https://github.com/MountainGod2/cb-events/pull/248),
+  [`64b12db`](https://github.com/MountainGod2/cb-events/commit/64b12dbc0d0f8df7f07deea47f2966317053f960))
+
+
 ## v9.1.0 (2026-06-16)
 
 ### Bug Fixes
