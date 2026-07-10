@@ -168,15 +168,15 @@ wheels = [
 
 [[package]]
 name = "aioresponses-ng"
-version = "0.8.0"
+version = "0.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/a4/95a4a1c9c622315441bbebf76c53fa7901c74e1de56ee4d0481c8eb34412/aioresponses_ng-0.8.0.tar.gz", hash = "sha256:662b22aee013917848cca70a9d2cff9ac9314c6c953235205f941cd06f6b322c", size = 16892, upload-time = "2026-06-23T01:05:00.672Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/b7/a19554167c265b6a51a09e4d2fb8ea9dd3dc5ccdd977d98925ac60148243/aioresponses_ng-0.8.1.tar.gz", hash = "sha256:ad8b2b5dbdaffeee89f6ab20fc78d4f612e0fb68baee8b62ddc6770d559a9e2e", size = 19141, upload-time = "2026-06-26T22:34:58.532Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/d7/9f3e8208cf1e3c6e02da970651d2874f91d79c7f563f7569c1cbfa6aea67/aioresponses_ng-0.8.0-py3-none-any.whl", hash = "sha256:3013356bf88c2fbc8fe971726322dc10aae9c431e1a998336cefbd0e3fd0886e", size = 10505, upload-time = "2026-06-23T01:04:59.509Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/b0/e3aea54272aa43f97ebf5ac3bf7e65a42a6d3a4196f58f69a14a658f4105/aioresponses_ng-0.8.1-py3-none-any.whl", hash = "sha256:304b4513109e599408c2c74c13d2fd1f955d39665366cb32a5604a9c46353ca8", size = 10556, upload-time = "2026-06-26T22:34:57.283Z" },
 ]
 
 [[package]]
@@ -263,7 +263,7 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "9.1.0"
+version = "9.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -326,7 +326,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 build = [{ name = "python-semantic-release", specifier = "==10.5.3" }]
 dev = [
-    { name = "aioresponses-ng", specifier = "==0.8.0" },
+    { name = "aioresponses-ng", specifier = "==0.8.1" },
     { name = "basedpyright", specifier = "==1.39.9" },
     { name = "pre-commit", specifier = "==4.6.0" },
     { name = "pytest", specifier = "==9.1.1" },
@@ -354,7 +354,7 @@ security = [
     { name = "zizmor", specifier = "==1.26.1" },
 ]
 test = [
-    { name = "aioresponses-ng", specifier = "==0.8.0" },
+    { name = "aioresponses-ng", specifier = "==0.8.1" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-aiohttp", specifier = "==1.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
