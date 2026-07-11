@@ -98,33 +98,14 @@ class _ClientState(Enum):
 
 
 def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
-    """Raise AuthError if value is empty or has leading/trailing whitespace.
-
-    Args:
-        value: The string value to validate.
-        field: Name of the field being validated, used in error messages.
-        hint: Additional hint to include in the error message.
-
-    Raises:
-        AuthError: If the value is empty or contains leading/trailing whitespace.
-    """
+    """Raise AuthError if value is empty or has leading/trailing whitespace."""
     if not value or value != value.strip():
         msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
         raise AuthError(msg)
 
 
 def _parse_events_url(events_url: str) -> tuple[str, str, str]:
-    """Parse and validate the Events API URL.
-
-    Args:
-        events_url: Full upstream URL containing host, username, and token.
-
-    Returns:
-        Tuple of (base_url, username, token).
-
-    Raises:
-        AuthError: If the URL, host, or path is invalid.
-    """
+    """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
         raise AuthError(msg)
@@ -172,30 +153,14 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
 
 
 def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
-    """Mask token for logging.
-
-    Args:
-        token: Raw token string to mask.
-        visible: Number of trailing characters to leave unmasked.
-
-    Returns:
-        Masked token string.
-    """
+    """Mask token for logging."""
     if visible <= 0 or len(token) <= visible:
         return "*" * len(token)
     return f"{'*' * (len(token) - visible)}{token[-visible:]}"
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask token in URL for safe logging.
-
-    Args:
-        url: Full URL that may contain the token.
-        token: Raw token string to redact from the URL.
-
-    Returns:
-        URL string with token masked.
-    """
+    """Mask token in URL for safe logging."""
     masked = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
@@ -303,17 +268,7 @@ class EventClient:
         self,
         next_url: str | None = None,
     ) -> str:
-        """Build the URL for the next poll.
-
-        Args:
-            next_url: Optional nextUrl snapshot to use for this request.
-
-        Note:
-            The timeout query parameter is added only to the initial request URL.
-
-        Returns:
-            Fully qualified URL for the upcoming API request.
-        """
+        """Build the URL for the next poll."""
         if next_url:
             return next_url
         return (
@@ -322,17 +277,7 @@ class EventClient:
         )
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
-        """Perform one HTTP request attempt.
-
-        Args:
-            url: Fully qualified endpoint to request.
-
-        Returns:
-            Tuple of (status_code, response_text).
-
-        Raises:
-            EventsError: If the client session is unexpectedly unavailable.
-        """
+        """Perform one HTTP request attempt."""
         # Session may be set to None by close() between retry attempts.
         if self.session is None:
             msg = "Client session unexpectedly unavailable"
@@ -346,17 +291,7 @@ class EventClient:
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
-        """Run one request with retry/backoff policy.
-
-        Args:
-            url: Fully qualified endpoint to request.
-
-        Returns:
-            Tuple of (status_code, response_text).
-
-        Raises:
-            EventsError: If the client is not initialized or the request fails.
-        """
+        """Run one request with retry/backoff policy."""
         if self.session is None:
             msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
             raise EventsError(msg)
