@@ -68,7 +68,7 @@ repos:
     hooks:
       - id: format-docs-markdown
         name: format docs markdown files
-        entry: uv run --group=docs mdformat
+        entry: uv run --group=docs --frozen mdformat
         language: system
         files: ^(docs/.*\.md|README\.md)$
 
