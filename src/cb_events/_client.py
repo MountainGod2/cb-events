@@ -26,7 +26,6 @@ from ._request import perform_request_attempt, request_with_retry
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from types import TracebackType
-    from urllib.parse import ParseResult
 
     from typing_extensions import Self
 
@@ -98,79 +97,6 @@ class _ClientState(Enum):
     """Client has been fully closed and cannot be reopened."""
 
 
-def _parse_and_validate_events_url(events_url: str) -> ParseResult:
-    """Parse the Events URL and validate top-level URL components.
-
-    Args:
-        events_url: Full Events API URL provided by upstream.
-
-    Returns:
-        ParsedResult with validated scheme, host, and path shape.
-
-    Raises:
-        AuthError: If the URL is malformed or contains invalid components.
-    """
-    if not events_url or events_url != events_url.strip():
-        msg = "Events URL must not be empty or contain leading/trailing whitespace."
-        raise AuthError(msg)
-
-    parsed = urlparse(events_url)
-    if parsed.scheme != "https":
-        msg = "Events URL must use https."
-        raise AuthError(msg)
-
-    if parsed.query or parsed.fragment:
-        msg = "Events URL must not include query parameters or fragments."
-        raise AuthError(msg)
-
-    custom_port_msg = "Events URL must not include a custom port."
-    try:
-        if parsed.port is not None:
-            raise AuthError(custom_port_msg)
-    except ValueError as exc:
-        raise AuthError(custom_port_msg) from exc
-
-    return parsed
-
-
-def _resolve_base_url(hostname: str | None) -> str:
-    """Resolve canonical base URL from a parsed hostname.
-
-    Args:
-        hostname: Hostname extracted from the parsed Events URL.
-
-    Returns:
-        Canonical base URL corresponding to the hostname.
-
-    Raises:
-        AuthError: If the hostname is not in the list of supported hosts.
-    """
-    base_url = _SUPPORTED_EVENTS_HOSTS.get((hostname or "").lower())
-    if base_url is not None:
-        return base_url
-    msg = "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-    raise AuthError(msg)
-
-
-def _extract_username_token(path: str) -> tuple[str, str]:
-    """Extract and URL-decode username/token from an Events path.
-
-    Args:
-        path: Path component of the Events URL.
-
-    Returns:
-        Tuple of (username, token).
-
-    Raises:
-        AuthError: If the path does not match the expected format.
-    """
-    parts = [part for part in path.split("/") if part]
-    if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
-        msg = "Events URL must match https://<host>/events/<username>/<token>/"
-        raise AuthError(msg)
-    return unquote(parts[1]), unquote(parts[2])
-
-
 def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
     """Raise AuthError if value is empty or has leading/trailing whitespace.
 
@@ -195,10 +121,45 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
 
     Returns:
         Tuple of (base_url, username, token).
+
+    Raises:
+        AuthError: If the URL, host, or path is invalid.
     """
-    parsed = _parse_and_validate_events_url(events_url)
-    base_url = _resolve_base_url(parsed.hostname)
-    username, token = _extract_username_token(parsed.path)
+    if not events_url or events_url != events_url.strip():
+        msg = "Events URL must not be empty or contain leading/trailing whitespace."
+        raise AuthError(msg)
+
+    parsed = urlparse(events_url)
+    if parsed.scheme != "https":
+        msg = "Events URL must use https."
+        raise AuthError(msg)
+
+    if parsed.query or parsed.fragment:
+        msg = "Events URL must not include query parameters or fragments."
+        raise AuthError(msg)
+
+    custom_port_msg = "Events URL must not include a custom port."
+    try:
+        has_port = parsed.port is not None
+    except ValueError as exc:
+        raise AuthError(custom_port_msg) from exc
+    if has_port:
+        raise AuthError(custom_port_msg)
+
+    base_url = _SUPPORTED_EVENTS_HOSTS.get((parsed.hostname or "").lower())
+    if base_url is None:
+        msg = (
+            "Events URL host is not supported. "
+            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+        )
+        raise AuthError(msg)
+
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
+        msg = "Events URL must match https://<host>/events/<username>/<token>/"
+        raise AuthError(msg)
+
+    username, token = unquote(parts[1]), unquote(parts[2])
     _validate_non_empty_stripped(
         username, field="Username", hint="Provide a valid Chaturbate username."
     )
