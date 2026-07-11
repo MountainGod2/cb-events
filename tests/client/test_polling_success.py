@@ -8,10 +8,10 @@ from pydantic import ValidationError
 
 from cb_events import ClientConfig, EventType
 from tests.conftest import EventClientFactory
-from tests.helpers import CORE_EVENT_TYPES, make_event, make_response
+from tests.helpers import SAMPLE_EVENT_TYPES, make_event, make_response
 
 
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
+@pytest.mark.parametrize("method", SAMPLE_EVENT_TYPES)
 async def test_poll_returns_events(
     method: EventType,
     event_client_factory: EventClientFactory,
@@ -55,21 +55,6 @@ async def test_poll_handles_multiple_events(
         EventType.BROADCAST_START,
         EventType.PRIVATE_MESSAGE,
     ]
-
-
-async def test_aiter_protocol_yields_events(
-    event_client_factory: EventClientFactory,
-    aioresponses_mock: aioresponses,
-    testbed_url_pattern: re.Pattern[str],
-) -> None:
-    """Events should be available via the async-iterator protocol."""
-    response = make_response([make_event(EventType.TIP, event_id="1")])
-    aioresponses_mock.get(testbed_url_pattern, payload=response, repeat=True)
-
-    async with event_client_factory() as client:
-        event = await anext(aiter(client))
-
-    assert event.type == EventType.TIP
 
 
 async def test_async_for_loop_yields_events(
