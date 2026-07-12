@@ -14,4 +14,22 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-__all__ = ["override"]
+if sys.version_info >= (3, 11):
+    # pyright targets 3.10, so it sees this branch as unreachable
+    from enum import StrEnum  # pyright: ignore[reportUnreachable]
+else:
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        """Backport of :class:`enum.StrEnum` for Python 3.10.
+
+        Matches 3.11+ semantics: ``str(member)`` returns the plain value
+        instead of ``ClassName.MEMBER``.
+        """
+
+        @override
+        def __str__(self) -> str:
+            return str.__str__(self)
+
+
+__all__ = ["StrEnum", "override"]

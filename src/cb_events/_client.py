@@ -26,7 +26,6 @@ from ._request import perform_request_attempt, request_with_retry
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from types import TracebackType
-    from urllib.parse import ParseResult
 
     from typing_extensions import Self
 
@@ -98,18 +97,15 @@ class _ClientState(Enum):
     """Client has been fully closed and cannot be reopened."""
 
 
-def _parse_and_validate_events_url(events_url: str) -> ParseResult:
-    """Parse the Events URL and validate top-level URL components.
+def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
+    """Raise AuthError if value is empty or has leading/trailing whitespace."""
+    if not value or value != value.strip():
+        msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
+        raise AuthError(msg)
 
-    Args:
-        events_url: Full Events API URL provided by upstream.
 
-    Returns:
-        ParsedResult with validated scheme, host, and path shape.
-
-    Raises:
-        AuthError: If the URL is malformed or contains invalid components.
-    """
+def _parse_events_url(events_url: str) -> tuple[str, str, str]:
+    """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
         raise AuthError(msg)
@@ -125,80 +121,26 @@ def _parse_and_validate_events_url(events_url: str) -> ParseResult:
 
     custom_port_msg = "Events URL must not include a custom port."
     try:
-        if parsed.port is not None:
-            raise AuthError(custom_port_msg)
+        has_port = parsed.port is not None
     except ValueError as exc:
         raise AuthError(custom_port_msg) from exc
+    if has_port:
+        raise AuthError(custom_port_msg)
 
-    return parsed
+    base_url = _SUPPORTED_EVENTS_HOSTS.get((parsed.hostname or "").lower())
+    if base_url is None:
+        msg = (
+            "Events URL host is not supported. "
+            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+        )
+        raise AuthError(msg)
 
-
-def _resolve_base_url(hostname: str | None) -> str:
-    """Resolve canonical base URL from a parsed hostname.
-
-    Args:
-        hostname: Hostname extracted from the parsed Events URL.
-
-    Returns:
-        Canonical base URL corresponding to the hostname.
-
-    Raises:
-        AuthError: If the hostname is not in the list of supported hosts.
-    """
-    base_url = _SUPPORTED_EVENTS_HOSTS.get((hostname or "").lower())
-    if base_url is not None:
-        return base_url
-    msg = "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-    raise AuthError(msg)
-
-
-def _extract_username_token(path: str) -> tuple[str, str]:
-    """Extract and URL-decode username/token from an Events path.
-
-    Args:
-        path: Path component of the Events URL.
-
-    Returns:
-        Tuple of (username, token).
-
-    Raises:
-        AuthError: If the path does not match the expected format.
-    """
-    parts = [part for part in path.split("/") if part]
+    parts = [part for part in parsed.path.split("/") if part]
     if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg)
-    return unquote(parts[1]), unquote(parts[2])
 
-
-def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
-    """Raise AuthError if value is empty or has leading/trailing whitespace.
-
-    Args:
-        value: The string value to validate.
-        field: Name of the field being validated, used in error messages.
-        hint: Additional hint to include in the error message.
-
-    Raises:
-        AuthError: If the value is empty or contains leading/trailing whitespace.
-    """
-    if not value or value != value.strip():
-        msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
-        raise AuthError(msg)
-
-
-def _parse_events_url(events_url: str) -> tuple[str, str, str]:
-    """Parse and validate the Events API URL.
-
-    Args:
-        events_url: Full upstream URL containing host, username, and token.
-
-    Returns:
-        Tuple of (base_url, username, token).
-    """
-    parsed = _parse_and_validate_events_url(events_url)
-    base_url = _resolve_base_url(parsed.hostname)
-    username, token = _extract_username_token(parsed.path)
+    username, token = unquote(parts[1]), unquote(parts[2])
     _validate_non_empty_stripped(
         username, field="Username", hint="Provide a valid Chaturbate username."
     )
@@ -211,30 +153,14 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
 
 
 def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
-    """Mask token for logging.
-
-    Args:
-        token: Raw token string to mask.
-        visible: Number of trailing characters to leave unmasked.
-
-    Returns:
-        Masked token string.
-    """
+    """Mask token for logging."""
     if visible <= 0 or len(token) <= visible:
         return "*" * len(token)
     return f"{'*' * (len(token) - visible)}{token[-visible:]}"
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask token in URL for safe logging.
-
-    Args:
-        url: Full URL that may contain the token.
-        token: Raw token string to redact from the URL.
-
-    Returns:
-        URL string with token masked.
-    """
+    """Mask token in URL for safe logging."""
     masked = _mask_token(token)
     return url.replace(token, masked).replace(quote(token, safe=""), masked)
 
@@ -342,17 +268,7 @@ class EventClient:
         self,
         next_url: str | None = None,
     ) -> str:
-        """Build the URL for the next poll.
-
-        Args:
-            next_url: Optional nextUrl snapshot to use for this request.
-
-        Note:
-            The timeout query parameter is added only to the initial request URL.
-
-        Returns:
-            Fully qualified URL for the upcoming API request.
-        """
+        """Build the URL for the next poll."""
         if next_url:
             return next_url
         return (
@@ -361,17 +277,7 @@ class EventClient:
         )
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
-        """Perform one HTTP request attempt.
-
-        Args:
-            url: Fully qualified endpoint to request.
-
-        Returns:
-            Tuple of (status_code, response_text).
-
-        Raises:
-            EventsError: If the client session is unexpectedly unavailable.
-        """
+        """Perform one HTTP request attempt."""
         # Session may be set to None by close() between retry attempts.
         if self.session is None:
             msg = "Client session unexpectedly unavailable"
@@ -385,17 +291,7 @@ class EventClient:
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
-        """Run one request with retry/backoff policy.
-
-        Args:
-            url: Fully qualified endpoint to request.
-
-        Returns:
-            Tuple of (status_code, response_text).
-
-        Raises:
-            EventsError: If the client is not initialized or the request fails.
-        """
+        """Run one request with retry/backoff policy."""
         if self.session is None:
             msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
             raise EventsError(msg)

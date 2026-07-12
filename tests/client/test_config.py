@@ -16,7 +16,6 @@ def test_default_configuration() -> None:
     assert config.retry_backoff == pytest.approx(1.0)
     assert config.retry_factor == pytest.approx(2.0)
     assert config.retry_max_delay == pytest.approx(300.0)
-    assert config.retry_factor == 2
 
 
 def test_custom_configuration() -> None:

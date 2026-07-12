@@ -9,7 +9,11 @@ from cb_events import EventType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
-CORE_EVENT_TYPES: tuple[EventType, ...] = tuple(EventType)
+SAMPLE_EVENT_TYPES: tuple[EventType, EventType] = (EventType.TIP, EventType.USER_ENTER)
+"""Two distinct event types for tests that only need to prove type-agnostic
+wiring works (e.g. dispatch, poll parsing) rather than exhaustively checking
+every EventType. Full enumeration lives in test_models.py, which actually
+tests the type-to-model mapping itself."""
 
 
 def make_events_url(

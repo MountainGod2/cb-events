@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from cb_events import Event, EventType, Router
-from tests.helpers import CORE_EVENT_TYPES, make_event
+from tests.helpers import SAMPLE_EVENT_TYPES, make_event
 
 
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
+@pytest.mark.parametrize("method", SAMPLE_EVENT_TYPES)
 async def test_dispatch_to_specific_handler(
     router: Router,
     mock_handler: AsyncMock,
@@ -25,7 +25,7 @@ async def test_dispatch_to_specific_handler(
     mock_handler.assert_called_once_with(event)
 
 
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
+@pytest.mark.parametrize("method", SAMPLE_EVENT_TYPES)
 async def test_dispatch_to_any_handler(
     router: Router,
     mock_handler: AsyncMock,
@@ -40,7 +40,7 @@ async def test_dispatch_to_any_handler(
     mock_handler.assert_called_once_with(event)
 
 
-@pytest.mark.parametrize("method", CORE_EVENT_TYPES)
+@pytest.mark.parametrize("method", SAMPLE_EVENT_TYPES)
 async def test_dispatch_to_any_handler_with_bare_decorator(
     router: Router,
     method: EventType,

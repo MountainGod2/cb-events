@@ -7,7 +7,6 @@ snake_case attributes.
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from pydantic import (
@@ -20,7 +19,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from ._compat import override
+from ._compat import StrEnum, override
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,7 +28,7 @@ _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Event type values emitted by the API."""
 
     BROADCAST_START = "broadcastStart"
@@ -56,14 +55,6 @@ class EventType(str, Enum):
     """User has sent a tip."""
     MEDIA_PURCHASE = "mediaPurchase"
     """User has purchased media."""
-
-    @override
-    def __str__(self) -> str:
-        """Return the raw API value.
-
-        This keeps string formatting stable across Python versions.
-        """
-        return self.value
 
 
 class BaseEventModel(BaseModel):

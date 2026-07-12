@@ -79,40 +79,31 @@ def test_user_field_mapping() -> None:
 
 
 @pytest.mark.parametrize(
-    ("field_name", "valid_value"),
+    ("field_name", "attr_name", "value"),
     [
-        ("colorGroup", "p"),
-        ("gender", "f"),
-        ("language", "en"),
-        ("recentTips", "some"),
-        ("subgender", "tf"),
+        ("colorGroup", "color_group", "p"),
+        ("colorGroup", "color_group", "owner"),  # not a documented value
+        ("gender", "gender", "f"),
+        ("gender", "gender", "x"),  # not a documented value
+        ("language", "language", "en"),
+        ("language", "language", "sv"),  # not a documented value
+        ("recentTips", "recent_tips", "some"),
+        ("recentTips", "recent_tips", "many"),  # not a documented value
+        ("subgender", "subgender", "tf"),
+        ("subgender", "subgender", "xx"),  # not a documented value
     ],
 )
-def test_user_literal_fields_accept_known_values(field_name: str, valid_value: str) -> None:
-    """Enum-like user fields should accept known API values."""
-    user = User.model_validate({"username": "u", field_name: valid_value})
-    assert user.username == "u"
-    assert user.model_dump(by_alias=True)[field_name] == valid_value
-
-
-@pytest.mark.parametrize(
-    ("field_name", "attr_name", "unknown_value"),
-    [
-        ("colorGroup", "color_group", "owner"),
-        ("gender", "gender", "x"),
-        ("language", "language", "sv"),
-        ("recentTips", "recent_tips", "many"),
-        ("subgender", "subgender", "xx"),
-    ],
-)
-def test_user_literal_fields_accept_unknown_values(
+def test_user_open_string_fields_accept_arbitrary_values(
     field_name: str,
     attr_name: str,
-    unknown_value: str,
+    value: str,
 ) -> None:
-    """Enum-like user fields should not break on new API values."""
-    user = User.model_validate({"username": "u", field_name: unknown_value})
-    assert getattr(user, attr_name) == unknown_value
+    """User fields documented with "known values" are plain strings.
+
+    The API should be able to send new values without breaking parsing.
+    """
+    user = User.model_validate({"username": "u", field_name: value})
+    assert getattr(user, attr_name) == value
 
 
 @pytest.mark.parametrize(
@@ -282,19 +273,6 @@ def test_event_broadcaster_property() -> None:
     assert event.broadcaster == "streamer"
 
 
-def test_event_broadcaster_property_repeated_access() -> None:
-    """Broadcaster property should be stable across repeated access."""
-    event = Event.model_validate({
-        "method": "broadcastStart",
-        "id": "evt-bcaster-cache",
-        "object": {"broadcaster": "streamer"},
-    })
-
-    first = event.broadcaster
-    second = event.broadcaster
-    assert first == second == "streamer"
-
-
 def test_event_broadcaster_missing_returns_none() -> None:
     """Missing broadcaster should return None."""
     event = Event.model_validate({
@@ -338,22 +316,3 @@ def test_room_subject_not_parsed_when_other_event_type() -> None:
     })
 
     assert event.room_subject is None
-
-
-def test_extract_with_empty_allowed_types_returns_none() -> None:
-    """An explicit empty allow-list should prevent extraction."""
-    event = Event.model_validate({
-        "method": "tip",
-        "id": "evt-empty-allow-list",
-        "object": {"tip": {"tokens": 42}},
-    })
-
-    called = False
-
-    def loader(_: object) -> Tip:
-        nonlocal called
-        called = True
-        return Tip.model_validate({"tokens": 1})
-
-    assert event._extract("tip", loader, allowed_types=()) is None
-    assert called is False

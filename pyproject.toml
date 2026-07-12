@@ -87,13 +87,8 @@ pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove `> [!NOTE]` admonitions but keep the codeblocks
-pattern = '> \[![A-Z]+\][^\n]*\n'
-replacement = ''
-
-[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove the Star History section
-pattern = '## Star History\n\n(?:(?!^## )[\s\S])*'
+# Remove GitHub-style callouts but keep the codeblocks
+pattern = '> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][^\n]*\n'
 replacement = ''
 
 [tool.semantic_release]
@@ -113,11 +108,12 @@ ignore_merge_commits = true
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [
-    '''chore(?:\([^)]*?\))?: .+''',
-    '''ci(?:\([^)]*?\))?: .+''',
-    '''docs(?:\([^)]*?\))?: .+''',
-    '''style(?:\([^)]*?\))?: .+''',
-    '''test(?:\([^)]*?\))?: .+''',
+    '''refactor(?:\([^)]*?\))?(?!!): .+''',
+    '''chore(?:\([^)]*?\))?(?!!): .+''',
+    '''ci(?:\([^)]*?\))?(?!!): .+''',
+    '''docs(?:\([^)]*?\))?(?!!): .+''',
+    '''style(?:\([^)]*?\))?(?!!): .+''',
+    '''test(?:\([^)]*?\))?(?!!): .+''',
     '''build\((?!deps\): .+)''',
     '''Initial [Cc]ommit.*''',
 ]
@@ -173,6 +169,9 @@ line-ending = "auto"
 
 [tool.ruff.lint.pylint]
 max-statements-in-try = 16
+
+[tool.ruff.lint.pydoclint]
+ignore-one-line-docstrings = true
 
 [tool.basedpyright]
 include = ["src"]
