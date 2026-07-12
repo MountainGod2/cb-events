@@ -87,13 +87,8 @@ pattern = '\[(.+?)\]\(((?!https?://)\.?/?(\S+?))\)'
 replacement = '[\1](https://github.com/MountainGod2/cb-events/tree/main/\g<3>)'
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove `> [!NOTE]` admonitions but keep the codeblocks
-pattern = '> \[![A-Z]+\][^\n]*\n'
-replacement = ''
-
-[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
-# Remove the Star History section
-pattern = '## Star History\n\n(?:(?!^## )[\s\S])*'
+# Remove GitHub-style callouts but keep the codeblocks
+pattern = '> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][^\n]*\n'
 replacement = ''
 
 [tool.semantic_release]

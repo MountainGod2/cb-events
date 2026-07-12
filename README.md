@@ -55,7 +55,6 @@ asyncio.run(main())
 
 > [!NOTE]
 > Create an API token at https://chaturbate.com/statsapi/authtoken/ with Events API scope.
-> You can create multiple tokens. Deleting a token revokes its access within up to one minute.
 
 ## Features
 
@@ -71,16 +70,6 @@ asyncio.run(main())
 - [Examples](https://github.com/MountainGod2/cb-events/tree/main/examples)
 - [Changelog](https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md)
 - [PyPI](https://pypi.org/project/cb-events/)
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=mountaingod2%2Fcb-events&type=timeline&logscale=&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&theme=dark&logscale&legend=top-left&sealed_token=406wZ43Xihxy_hyp8Ault12R0RwbZGxHP-W3zLNd6HFIrI7TNaowvVeVb4lI8bG6AMwBMddlWRKerxWLXwccs9TDoEqRUzKNU3mr0TQ9o9uh1nQethqz1cMPgjcVKl_JMS0r5VsXHJ7-IRdf0OhNm7rFYM0VaTlgAWFBm6VfPo4Ny22LwWeIQCm-WOjo" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&logscale&legend=top-left&sealed_token=406wZ43Xihxy_hyp8Ault12R0RwbZGxHP-W3zLNd6HFIrI7TNaowvVeVb4lI8bG6AMwBMddlWRKerxWLXwccs9TDoEqRUzKNU3mr0TQ9o9uh1nQethqz1cMPgjcVKl_JMS0r5VsXHJ7-IRdf0OhNm7rFYM0VaTlgAWFBm6VfPo4Ny22LwWeIQCm-WOjo" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=mountaingod2/cb-events&type=timeline&logscale&legend=top-left&sealed_token=406wZ43Xihxy_hyp8Ault12R0RwbZGxHP-W3zLNd6HFIrI7TNaowvVeVb4lI8bG6AMwBMddlWRKerxWLXwccs9TDoEqRUzKNU3mr0TQ9o9uh1nQethqz1cMPgjcVKl_JMS0r5VsXHJ7-IRdf0OhNm7rFYM0VaTlgAWFBm6VfPo4Ny22LwWeIQCm-WOjo" />
- </picture>
-</a>
 
 ## License
 
