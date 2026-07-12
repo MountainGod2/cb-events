@@ -108,6 +108,7 @@ ignore_merge_commits = true
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [
+    '''refactor(?:\([^)]*?\))?: .+''',
     '''chore(?:\([^)]*?\))?: .+''',
     '''ci(?:\([^)]*?\))?: .+''',
     '''docs(?:\([^)]*?\))?: .+''',
