@@ -62,7 +62,7 @@ docs = [
     "zensical==0.0.46",
 ]
 security = ["bandit[sarif]==1.9.4", "zizmor==1.26.1"]
-build = ["python-semantic-release==10.6.0"]
+build = ["python-semantic-release==10.6.1"]
 
 [build-system]
 requires = ["hatchling==1.30.1", "hatch-fancy-pypi-readme==25.1.0"]
@@ -73,7 +73,7 @@ exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false }
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
-
+constraint-dependencies = ["setuptools>=83.0.0"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
 
@@ -148,7 +148,7 @@ future-annotations = true
     "S106",
     "SLF001",
     "TC",
-    "RUF076"
+    "RUF076",
 ]
 "tests/conftest.py" = ["D"]
 "tests/test_router.py" = ["ARG001", "RUF029"]
