@@ -21,7 +21,7 @@ COPY uv.lock pyproject.toml README.md ./
 RUN uv venv && uv sync --no-dev --no-install-project
 
 COPY src/ ./src/
-RUN uv build && uv pip install dist/*.whl
+RUN uv build && uv pip install dist/*.whl "rich>=14.3.4"
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 

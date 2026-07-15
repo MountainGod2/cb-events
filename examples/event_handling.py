@@ -1,20 +1,32 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "cb-events >=9.1.2"
+#     "cb-events >=9.1.2",
+#     "rich >=14.3.4",
 # ]
 # ///
 
-"""Example script demonstrating event handling with cb-events."""
+"""Example script demonstrating event handling with cb-events.
 
+Usage:
+    uv run examples/event_handling.py --events-url "https://eventsapi.chaturbate.com/events/<user>/<token>/"
+
+Or, with CB_EVENTS_URL set in the environment:
+    uv run examples/event_handling.py
+"""
+
+import argparse
 import asyncio
+import json
 import logging
 import os
 import signal
 import sys
 import threading
+from collections.abc import Sequence
 
 import stamina
+from rich.logging import RichHandler
 
 from cb_events import (
     AuthError,
@@ -24,6 +36,7 @@ from cb_events import (
     EventsError,
     EventType,
     Router,
+    __version__,
 )
 
 # Suppress stamina's default retry hook; cb-events logs retries
@@ -144,14 +157,94 @@ async def handle_media_purchase(event: Event) -> None:
         )
 
 
-async def main() -> None:
-    """Set up signal handlers and stream events to registered handlers."""
-    events_url = os.getenv("CB_EVENTS_URL")
-    if not events_url:
-        msg = "CB_EVENTS_URL environment variable is required"
-        raise RuntimeError(msg)
+class _JsonLineFormatter(logging.Formatter):
+    """Render each log record as one JSON object, for piping into other tools."""
 
-    config = ClientConfig()
+    def format(self, record: logging.LogRecord) -> str:
+        """Return the record as a single-line JSON string.
+
+        Returns:
+            A JSON-encoded log line.
+        """
+        payload: dict[str, object] = {
+            "timestamp": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            payload["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(payload, default=str)
+
+
+def configure_logging(*, level: int, json_lines: bool) -> None:
+    """Set up console logging, either human-readable or as JSON lines."""
+    handler: logging.Handler
+    if json_lines:
+        handler = logging.StreamHandler()
+        handler.setFormatter(_JsonLineFormatter())
+    else:
+        handler = RichHandler(show_path=False, rich_tracebacks=True, markup=False)
+    logging.basicConfig(level=level, handlers=[handler], format="%(message)s")
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse CLI arguments, falling back to environment variables.
+
+    Returns:
+        Parsed arguments, with ``events_url`` guaranteed to be set.
+    """
+    parser = argparse.ArgumentParser(
+        description="Stream and log events from the Chaturbate Events API.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--events-url",
+        default=os.getenv("CB_EVENTS_URL"),
+        metavar="URL",
+        help="Events API URL. Defaults to the CB_EVENTS_URL environment variable.",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str.upper,
+        default=os.getenv("LOG_LEVEL", "INFO"),
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Logging verbosity. Defaults to the LOG_LEVEL environment variable.",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=ClientConfig.model_fields["timeout"].default,
+        metavar="SECONDS",
+        help="Server long-poll timeout in seconds.",
+    )
+    parser.add_argument(
+        "--retry-attempts",
+        type=int,
+        default=ClientConfig.model_fields["retry_attempts"].default,
+        metavar="N",
+        help="Total request attempts, including the first, before giving up.",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Raise on invalid events instead of skipping and logging them.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit one JSON object per log line instead of formatted console output.",
+    )
+    parser.add_argument("--version", action="version", version=f"cb-events {__version__}")
+
+    args = parser.parse_args(argv)
+    if not args.events_url:
+        parser.error("--events-url or the CB_EVENTS_URL environment variable is required")
+    return args
+
+
+async def run(events_url: str, config: ClientConfig) -> None:
+    """Set up signal handlers and stream events to registered handlers."""
     loop = asyncio.get_running_loop()
     main_task = asyncio.current_task()
 
@@ -179,19 +272,28 @@ async def main() -> None:
         logger.info("Shutting down")
 
 
-if __name__ == "__main__":
-    log_level_name = os.getenv("LOG_LEVEL", "INFO").strip().upper()
-    log_level = logging.getLevelNamesMapping().get(log_level_name, logging.INFO)
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s [%(name)s] %(levelname)s - %(message)s",
+def main() -> None:
+    """Parse CLI arguments, configure logging, and run the event stream."""
+    args = parse_args()
+    configure_logging(
+        level=logging.getLevelNamesMapping()[args.log_level],
+        json_lines=args.json,
+    )
+    config = ClientConfig(
+        timeout=args.timeout,
+        retry_attempts=args.retry_attempts,
+        strict_validation=args.strict,
     )
 
     try:
-        asyncio.run(main())
+        asyncio.run(run(args.events_url, config))
     except AuthError:
         logger.error("Check your credentials and try again.")
         sys.exit(1)
     except EventsError:
         logger.exception("An error occurred.")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
