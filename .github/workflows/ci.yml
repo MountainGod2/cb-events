@@ -27,9 +27,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1 # v8.3.1
         with:
-          version: "0.11.26"
+          version: "0.11.28"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
@@ -63,9 +63,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1 # v8.3.1
         with:
-          version: "0.11.26"
+          version: "0.11.28"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-suffix: test-${{ matrix.python-version }}-highest-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -107,9 +107,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1 # v8.3.1
         with:
-          version: "0.11.26"
+          version: "0.11.28"
           python-version: "3.10"
           enable-cache: true
           cache-suffix: test-3.10-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -135,9 +135,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1 # v8.3.1
         with:
-          version: "0.11.26"
+          version: "0.11.28"
           python-version: "3.14"
           enable-cache: true
           cache-suffix: coverage-summary-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -200,9 +200,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@f98e06938123ccabd21905ea5d0069192241f9f1 # v8.3.1
         with:
-          version: "0.11.26"
+          version: "0.11.28"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
