@@ -217,4 +217,3 @@ async def test_close_logs_warning_when_session_close_raises(
 
     assert client.session is None
     assert "Error closing session" in caplog.text
-    assert str(exc_instance) in caplog.text

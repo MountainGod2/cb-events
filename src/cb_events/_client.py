@@ -433,11 +433,9 @@ class EventClient:
                     # the underlying TCP connection from being abandoned mid-teardown.
                     await asyncio.shield(session.close())
                 except (ClientError, OSError, RuntimeError) as e:
-                    detail = str(e) or "no additional details"
                     _logger.warning(
-                        "Error closing session (%s: %s).",
+                        "Error closing session (%s).",
                         type(e).__name__,
-                        detail,
                     )
         finally:
             self._state = _ClientState.CLOSED
