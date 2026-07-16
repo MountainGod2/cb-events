@@ -175,15 +175,15 @@ wheels = [
 
 [[package]]
 name = "aioresponses-ng"
-version = "0.8.1"
+version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c8/b7/a19554167c265b6a51a09e4d2fb8ea9dd3dc5ccdd977d98925ac60148243/aioresponses_ng-0.8.1.tar.gz", hash = "sha256:ad8b2b5dbdaffeee89f6ab20fc78d4f612e0fb68baee8b62ddc6770d559a9e2e", size = 19141, upload-time = "2026-06-26T22:34:58.532Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/6f/6e317e805995b704894d9fc90ca63a87a567daf567e58db138659bf0abdc/aioresponses_ng-0.8.2.tar.gz", hash = "sha256:0ee168f7bccfcc7990a995fcabf42bb84dd42faafaa30497c7108b093214633f", size = 19394, upload-time = "2026-07-05T16:17:23.065Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/b0/e3aea54272aa43f97ebf5ac3bf7e65a42a6d3a4196f58f69a14a658f4105/aioresponses_ng-0.8.1-py3-none-any.whl", hash = "sha256:304b4513109e599408c2c74c13d2fd1f955d39665366cb32a5604a9c46353ca8", size = 10556, upload-time = "2026-06-26T22:34:57.283Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/9d/4ad5aebee5771ce0822135b6daaa21b45f44043b15eb1b7afc2faaeabf1c/aioresponses_ng-0.8.2-py3-none-any.whl", hash = "sha256:9de28a0de0ad289c6317b56da2f81c846643e4b9c2fde32023c1509064fbb72d", size = 10760, upload-time = "2026-07-05T16:17:21.807Z" },
 ]
 
 [[package]]
@@ -334,7 +334,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 build = [{ name = "python-semantic-release", specifier = "==10.6.1" }]
 dev = [
-    { name = "aioresponses-ng", specifier = "==0.8.1" },
+    { name = "aioresponses-ng", specifier = "==0.8.2" },
     { name = "basedpyright", specifier = "==1.39.9" },
     { name = "pre-commit", specifier = "==4.6.0" },
     { name = "pytest", specifier = "==9.1.1" },
@@ -362,7 +362,7 @@ security = [
     { name = "zizmor", specifier = "==1.26.1" },
 ]
 test = [
-    { name = "aioresponses-ng", specifier = "==0.8.1" },
+    { name = "aioresponses-ng", specifier = "==0.8.2" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-aiohttp", specifier = "==1.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
