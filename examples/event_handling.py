@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #     "cb-events >=9.1.2",
-#     "rich >=14.3.4",
+#     "rich >=15.0.0",
 # ]
 # ///
 
