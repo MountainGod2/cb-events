@@ -289,7 +289,7 @@ def main() -> None:
         asyncio.run(run(args.events_url, config))
     except AuthError:
         logger.error("Check your credentials and try again.")
-        sys.exit(1)
+        sys.exit(2)
     except EventsError:
         logger.exception("An error occurred.")
         sys.exit(1)
