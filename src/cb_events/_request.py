@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, NoReturn
 
 import stamina
@@ -29,12 +31,39 @@ class _RetryableStatusError(Exception):
         self.response_text: str = response_text
 
 
+@dataclass(frozen=True)
+class AuthRetryOptions:
+    """Small, fixed-delay retry budget for HTTP 401/403 responses.
+
+    Kept separate from the exponential-backoff retry used for network/5xx
+    failures: a persistently invalid token should still fail fast, but a
+    lone 401/403 can also be a transient edge/WAF hiccup, so a few quick
+    retries are attempted first.
+    """
+
+    status_codes: frozenset[int] = frozenset()
+    """HTTP statuses eligible for this retry budget (typically 401/403)."""
+
+    attempts: int = 1
+    """Total attempts before returning the auth-status response as final."""
+
+    delay: float = 0.0
+    """Fixed delay in seconds between auth-retry attempts."""
+
+    username: str = ""
+    """Username used for log context."""
+
+    logger: logging.Logger | None = field(default=None)
+    """Optional logger for per-attempt auth-retry warnings."""
+
+
 async def perform_request_attempt(
     *,
     session: ClientSession,
     rate_limiter: AsyncLimiter,
     url: str,
     retry_status_codes: frozenset[int],
+    auth_retry: AuthRetryOptions | None = None,
 ) -> tuple[int, str]:
     """Perform one HTTP request attempt and return status/body.
 
@@ -42,7 +71,10 @@ async def perform_request_attempt(
         session: Active HTTP client session.
         rate_limiter: Rate limiter applied before each request.
         url: Fully qualified endpoint URL.
-        retry_status_codes: HTTP statuses that should trigger a retry.
+        retry_status_codes: HTTP statuses that should trigger the caller's
+            exponential-backoff retry via ``_RetryableStatusError``.
+        auth_retry: Optional small fixed-delay retry budget for 401/403
+            responses. Defaults to no retry (single attempt).
 
     Returns:
         Tuple of (HTTP status code, response text).
@@ -50,14 +82,33 @@ async def perform_request_attempt(
     Raises:
         _RetryableStatusError: If the response status should be retried.
     """
-    await rate_limiter.acquire()
-    async with session.get(url, allow_redirects=False) as response:
-        status = response.status
-        text = await response.text()
+    options = auth_retry or AuthRetryOptions()
+    status = 0
+    text = ""
+    attempts = max(options.attempts, 1)
+    for attempt in range(1, attempts + 1):
+        await rate_limiter.acquire()
+        async with session.get(url, allow_redirects=False) as response:
+            status = response.status
+            text = await response.text()
 
-    if status in retry_status_codes:
-        msg = f"HTTP {status}"
-        raise _RetryableStatusError(msg, status_code=status, response_text=text)
+        if status in retry_status_codes:
+            msg = f"HTTP {status}"
+            raise _RetryableStatusError(msg, status_code=status, response_text=text)
+
+        if status not in options.status_codes or attempt >= attempts:
+            break
+
+        if options.logger is not None:
+            options.logger.warning(
+                "Auth check attempt %d/%d failed for user %s (HTTP %d). Retrying...",
+                attempt,
+                attempts,
+                options.username,
+                status,
+            )
+        if options.delay > 0:
+            await asyncio.sleep(options.delay)
 
     return status, text
 
@@ -82,7 +133,7 @@ def _raise_request_failure(
         ServerError: If the final attempt failed with a 5xx or Cloudflare error code.
         RateLimitError: If the final attempt failed with HTTP 429.
         ClientRequestError: If the final attempt failed with another 4xx.
-    """  # noqa: DOC501, DOC502  # ruff wants the raised function listed, not the propagated error(s).
+    """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
     logger.error(
         "Request failed after %d attempts for user %s",
         attempts_made,
@@ -167,7 +218,7 @@ async def request_with_retry(
                             attempts_made,
                             config.retry_attempts,
                             username,
-                            type(exc).__name__,
+                            str(exc) or type(exc).__name__,
                         )
                     raise
 
