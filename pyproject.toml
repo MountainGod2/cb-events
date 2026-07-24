@@ -73,7 +73,8 @@ exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false }
 environments = ["python_version>='3.10'"]
 fork-strategy = "requires-python"
-constraint-dependencies = ["setuptools>=83.0.0"]
+# constraint-dependencies = ["setuptools>=83.0.0"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
 
@@ -128,31 +129,31 @@ indent-width = 4
 preview = true
 select = ["ALL"]
 ignore = [
-    "COM812", # Incompatible with ruff formatter
-    "CPY001",
+    "missing-trailing-comma",   # Incompatible with ruff formatter
+    "missing-copyright-notice",
 ]
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"examples/*" = ["RUF029", "TC", "DOC", "TRY400"]
+"examples/*" = ["unused-async", "TC", "DOC", "error-instead-of-exception"]
 "tests/*" = [
     "ANN",
-    "E501",
-    "FBT001",
-    "PLC2701",
-    "PLR0913",
-    "PLR0917",
-    "PLR2004",
-    "S101",
-    "S105",
-    "S106",
-    "SLF001",
+    "line-too-long",
+    "boolean-type-hint-positional-argument",
+    "import-private-name",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "magic-value-comparison",
+    "assert",
+    "hardcoded-password-string",
+    "hardcoded-password-func-arg",
+    "private-member-access",
     "TC",
-    "RUF076",
+    "pytest-fixture-autouse",
 ]
 "tests/conftest.py" = ["D"]
-"tests/test_router.py" = ["ARG001", "RUF029"]
-"**/conftest.py" = ["RUF076"]
+"tests/test_router.py" = ["unused-function-argument", "unused-async"]
+"**/conftest.py" = ["pytest-fixture-autouse"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
