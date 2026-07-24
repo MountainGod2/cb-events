@@ -136,7 +136,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         raise AuthError(msg)
 
     parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
+    if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg)
 
@@ -387,7 +387,7 @@ class EventClient:
 
         Note:
             Poll position is tracked with nextUrl between iterations.
-        """  # noqa: DOC502  # Called functions raise AuthError/EventsError on failure.
+        """  # ruff: ignore[docstring-extraneous-exception]  # Called functions raise AuthError/EventsError on failure.
         while True:
             events = await self._poll()
             for event in events:

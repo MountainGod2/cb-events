@@ -21,7 +21,7 @@ from ._exceptions import (
 from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from ._router import HandlerFunc, Router
 
-try:  # noqa: RUF067 # Version lookup at import time is intentional
+try:  # ruff: ignore[non-empty-init-module] # Version lookup at import time is intentional
     __version__: str = version("cb-events")
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"

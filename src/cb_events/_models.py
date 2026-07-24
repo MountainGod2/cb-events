@@ -230,7 +230,7 @@ class Event(BaseEventModel):
     _room_subject: RoomSubject | None = PrivateAttr(default=None)
 
     @override
-    def model_post_init(self, context: object, /) -> None:  # noqa: ARG002
+    def model_post_init(self, context: object, /) -> None:  # ruff: ignore[unused-method-argument]
         """Parse and cache all typed sub-models after field initialisation.
 
         Called once by Pydantic during ``__init__`` and ``model_validate``.
