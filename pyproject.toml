@@ -148,11 +148,9 @@ future-annotations = true
     "hardcoded-password-func-arg",
     "private-member-access",
     "TC",
-    "pytest-fixture-autouse",
 ]
 "tests/conftest.py" = ["D"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]
-"**/conftest.py" = ["pytest-fixture-autouse"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
