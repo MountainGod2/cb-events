@@ -6,6 +6,7 @@ validation behavior.
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -39,6 +40,18 @@ class ClientConfig(BaseModel):
 
     retry_max_delay: float = Field(default=300.0, ge=0)
     """Maximum delay between retries in seconds."""
+
+    auth_retry_attempts: int = Field(default=1, ge=1)
+    """Total auth-status attempts before returning the final 401/403."""
+
+    auth_retry_delay: float = Field(default=0.0, ge=0)
+    """Fixed delay in seconds between auth-status retry attempts."""
+
+    auth_retry_status_codes: frozenset[int] = frozenset({
+        HTTPStatus.UNAUTHORIZED.value,
+        HTTPStatus.FORBIDDEN.value,
+    })
+    """HTTP status codes eligible for auth-status retry behavior."""
 
     @model_validator(mode="after")
     def validate_delays(self) -> Self:

@@ -79,6 +79,31 @@ async def test_authentication_error_propagation(
             await client._poll()
 
 
+async def test_authentication_retry_sequence_then_success(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Configured auth retries should handle 401/403 blips before success."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
+    aioresponses_mock.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=403)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
+
+    config = ClientConfig(
+        auth_retry_attempts=3,
+        auth_retry_delay=0.0,
+        retry_attempts=1,
+        retry_backoff=0.0,
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client._poll()
+
+    assert len(events) == 1
+    assert events[0].type == EventType.TIP
+
+
 def test_version_attribute() -> None:
     """Package should expose a ``__version__`` attribute matching metadata."""
     assert isinstance(__version__, str)

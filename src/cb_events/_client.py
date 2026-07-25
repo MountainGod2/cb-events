@@ -21,7 +21,7 @@ from ._parser import (
     ParserContext,
     process_response,
 )
-from ._request import perform_request_attempt, request_with_retry
+from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -205,6 +205,13 @@ class EventClient:
             max_rate=_DEFAULT_MAX_RATE,
             time_period=_DEFAULT_TIME_PERIOD,
         )
+        self._auth_retry_options: AuthRetryOptions = AuthRetryOptions(
+            status_codes=self.config.auth_retry_status_codes,
+            attempts=self.config.auth_retry_attempts,
+            delay=self.config.auth_retry_delay,
+            username=self.username,
+            logger=_logger,
+        )
 
     @override
     def __repr__(self) -> str:
@@ -288,6 +295,7 @@ class EventClient:
             rate_limiter=self._rate_limiter,
             url=url,
             retry_status_codes=_RETRY_STATUS_CODES,
+            auth_retry=self._auth_retry_options,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:

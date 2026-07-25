@@ -12,6 +12,9 @@ config = ClientConfig(
     retry_backoff=1.0,  # Initial backoff (seconds)
     retry_factor=2.0,  # Backoff multiplier
     retry_max_delay=300.0,  # Max retry delay (seconds)
+    auth_retry_attempts=1,  # 401/403 attempts (1 means disabled)
+    auth_retry_delay=0.0,  # Fixed delay between auth retries
+    auth_retry_status_codes={401, 403},  # Auth statuses eligible for retry
 )
 
 client = EventClient(events_url, config=config)
@@ -40,8 +43,19 @@ config = ClientConfig(
 )
 ```
 
-Retries are attempted on `429`, `5xx`, and Cloudflare `521-524`. Retries are never
-attempted for `401` or `403`.
+Retries are attempted on `429`, `5xx`, and Cloudflare `521-524`.
+
+Authentication statuses can use a separate fixed-delay retry budget.
+By default `auth_retry_attempts=1`, which preserves fail-fast behavior for
+`401` and `403` (no retry).
+
+```python
+config = ClientConfig(
+    auth_retry_attempts=3,
+    auth_retry_delay=0.2,
+    auth_retry_status_codes={401, 403},
+)
+```
 
 ## Validation Mode
 

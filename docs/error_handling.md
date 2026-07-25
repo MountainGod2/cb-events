@@ -45,7 +45,10 @@ asyncio.run(main())
 Built-in retries are enabled by default.
 
 - Retried: `429`, `500`, `502`, `503`, `504`, `521-524`
-- Not retried: `401`, `403`, and other `4xx` statuses
+- Not retried by default: `401`, `403`, and other `4xx` statuses
+
+`401`/`403` retries can be enabled with `ClientConfig(auth_retry_attempts=...)`
+for short fixed-delay retry sequences.
 
 If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
