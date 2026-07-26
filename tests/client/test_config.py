@@ -68,3 +68,9 @@ def test_allow_max_delay_equal_to_backoff() -> None:
 
     assert config.retry_backoff == pytest.approx(5.0)
     assert config.retry_max_delay == pytest.approx(5.0)
+
+
+def test_reject_non_auth_status_in_auth_retry_status_codes() -> None:
+    """Auth retry statuses should only allow 401/403."""
+    with pytest.raises(ValidationError, match=r"auth_retry_status_codes may only include"):
+        ClientConfig(auth_retry_status_codes=frozenset({401, 429}))

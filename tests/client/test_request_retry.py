@@ -7,6 +7,7 @@ import stamina
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventsError, EventType
+from cb_events._request import AuthRetryOptions, perform_request_attempt
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_response
 
@@ -87,3 +88,15 @@ async def test_retries_on_retry_status_codes_then_succeeds(
 
     assert len(events) == 1
     assert events[0].type == EventType.TIP
+
+
+async def test_perform_request_attempt_rejects_overlapping_auth_and_general_statuses() -> None:
+    """Overlapping auth/general retry statuses should be rejected explicitly."""
+    with pytest.raises(ValueError, match=r"overlap retry_status_codes"):
+        await perform_request_attempt(
+            session=None,  # type: ignore[arg-type]
+            rate_limiter=None,  # type: ignore[arg-type]
+            url="https://events.testbed.cb.dev/events",
+            retry_status_codes=frozenset({401}),
+            auth_retry=AuthRetryOptions(status_codes=frozenset({401}), attempts=2),
+        )

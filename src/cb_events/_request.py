@@ -80,9 +80,19 @@ async def perform_request_attempt(
         Tuple of (HTTP status code, response text).
 
     Raises:
+        ValueError: If auth retry status codes overlap general retry statuses.
         _RetryableStatusError: If the response status should be retried.
     """
     options = auth_retry or AuthRetryOptions()
+    overlapping_codes = options.status_codes & retry_status_codes
+    if overlapping_codes:
+        overlapping = ", ".join(str(code) for code in sorted(overlapping_codes))
+        msg = (
+            "auth retry status codes overlap retry_status_codes "
+            f"({overlapping}); this would bypass auth retry handling."
+        )
+        raise ValueError(msg)
+
     status = 0
     text = ""
     attempts = max(options.attempts, 1)

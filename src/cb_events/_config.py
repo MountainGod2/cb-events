@@ -15,6 +15,12 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
+_ALLOWED_AUTH_RETRY_STATUS_CODES: frozenset[int] = frozenset({
+    HTTPStatus.UNAUTHORIZED.value,
+    HTTPStatus.FORBIDDEN.value,
+})
+
+
 class ClientConfig(BaseModel):
     """Immutable settings for EventClient.
 
@@ -69,4 +75,15 @@ class ClientConfig(BaseModel):
                 f"retry_backoff ({self.retry_backoff})."
             )
             raise ValueError(msg)
+
+        invalid_auth_codes = self.auth_retry_status_codes - _ALLOWED_AUTH_RETRY_STATUS_CODES
+        if invalid_auth_codes:
+            allowed = ", ".join(str(code) for code in sorted(_ALLOWED_AUTH_RETRY_STATUS_CODES))
+            invalid = ", ".join(str(code) for code in sorted(invalid_auth_codes))
+            msg = (
+                "auth_retry_status_codes may only include authentication statuses "
+                f"({allowed}); got: {invalid}."
+            )
+            raise ValueError(msg)
+
         return self
