@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v9.2.0 (2026-07-26)
+
+### Features
+
+- **auth**: Add configurable auth retry options
+  ([#312](https://github.com/MountainGod2/cb-events/pull/312),
+  [`5c3296d`](https://github.com/MountainGod2/cb-events/commit/5c3296d0e83ba77c12983f1d727b5aa2c911c31c))
+
+
 ## v9.1.2 (2026-07-12)
 
 ### Bug Fixes
