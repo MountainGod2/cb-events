@@ -79,6 +79,67 @@ async def test_authentication_error_propagation(
             await client._poll()
 
 
+async def test_authentication_retry_sequence_then_success(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Configured auth retries should handle 401/403 blips before success."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
+    aioresponses_mock.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=403)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
+
+    config = ClientConfig(
+        auth_retry_attempts=3,
+        auth_retry_delay=0.0,
+        retry_attempts=1,
+        retry_backoff=0.0,
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client._poll()
+
+    assert len(events) == 1
+    assert events[0].type == EventType.TIP
+
+
+async def test_authentication_retry_uses_configured_delay_between_auth_retries(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Auth retry delay should be awaited for each 401/403 retry before success."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
+    aioresponses_mock.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=403)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
+
+    observed_delays: list[float] = []
+    original_sleep = asyncio.sleep
+
+    async def _fake_sleep(delay: float) -> None:
+        await original_sleep(0)
+        observed_delays.append(delay)
+
+    monkeypatch.setattr("cb_events._request.asyncio.sleep", _fake_sleep)
+
+    config = ClientConfig(
+        auth_retry_attempts=3,
+        auth_retry_delay=0.25,
+        retry_attempts=1,
+        retry_backoff=0.0,
+    )
+
+    async with event_client_factory(config=config) as client:
+        events = await client._poll()
+
+    assert observed_delays == [0.25, 0.25]
+    assert len(events) == 1
+    assert events[0].type == EventType.TIP
+
+
 def test_version_attribute() -> None:
     """Package should expose a ``__version__`` attribute matching metadata."""
     assert isinstance(__version__, str)

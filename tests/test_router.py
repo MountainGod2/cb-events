@@ -154,7 +154,7 @@ def test_reject_non_async_handler_on_decorator(router: Router) -> None:
     """Registering a non-async handler with on() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on(EventType.TIP)  # type: ignore  # noqa: PGH003
+        @router.on(EventType.TIP)  # type: ignore  # ruff: ignore[blanket-type-ignore]
         def sync_handler(event: Event) -> None:
             pass
 
@@ -163,7 +163,7 @@ def test_reject_non_async_handler_on_any_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any() should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any()  # type: ignore  # noqa: PGH003
+        @router.on_any()  # type: ignore  # ruff: ignore[blanket-type-ignore]
         def sync_handler(event: Event) -> None:
             pass
 
@@ -172,7 +172,7 @@ def test_reject_non_async_handler_on_any_bare_decorator(router: Router) -> None:
     """Registering a non-async handler with on_any should raise TypeError."""
     with pytest.raises(TypeError, match="must be async"):
 
-        @router.on_any  # type: ignore  # noqa: PGH003
+        @router.on_any  # type: ignore  # ruff: ignore[blanket-type-ignore]
         def sync_handler(event: Event) -> None:
             pass
 
@@ -184,7 +184,7 @@ def test_reject_partial_sync_handler(router: Router) -> None:
         pass
 
     with pytest.raises(TypeError, match="must be async"):
-        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # type: ignore  # noqa: PGH003
+        router.on(EventType.TIP)(partial(sync_handler, flag=True))  # type: ignore  # ruff: ignore[blanket-type-ignore]
 
 
 async def test_accept_partial_async_handler(router: Router) -> None:

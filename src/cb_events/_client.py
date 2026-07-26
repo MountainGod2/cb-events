@@ -21,7 +21,7 @@ from ._parser import (
     ParserContext,
     process_response,
 )
-from ._request import perform_request_attempt, request_with_retry
+from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -136,7 +136,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         raise AuthError(msg)
 
     parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) != 3 or parts[0] != "events":  # noqa: PLR2004
+    if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg)
 
@@ -204,6 +204,13 @@ class EventClient:
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=_DEFAULT_MAX_RATE,
             time_period=_DEFAULT_TIME_PERIOD,
+        )
+        self._auth_retry_options: AuthRetryOptions = AuthRetryOptions(
+            status_codes=self.config.auth_retry_status_codes,
+            attempts=self.config.auth_retry_attempts,
+            delay=self.config.auth_retry_delay,
+            username=self.username,
+            logger=_logger,
         )
 
     @override
@@ -288,6 +295,7 @@ class EventClient:
             rate_limiter=self._rate_limiter,
             url=url,
             retry_status_codes=_RETRY_STATUS_CODES,
+            auth_retry=self._auth_retry_options,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
@@ -387,7 +395,7 @@ class EventClient:
 
         Note:
             Poll position is tracked with nextUrl between iterations.
-        """  # noqa: DOC502  # Called functions raise AuthError/EventsError on failure.
+        """  # ruff: ignore[docstring-extraneous-exception]  # Called functions raise AuthError/EventsError on failure.
         while True:
             events = await self._poll()
             for event in events:

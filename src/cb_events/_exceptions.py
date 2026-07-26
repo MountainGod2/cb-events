@@ -114,8 +114,8 @@ def build_http_error(
         return AuthError(message, status_code=status_code, response_text=response_text)
     if status_code == _RATE_LIMIT_STATUS_CODE:
         return RateLimitError(message, status_code=status_code, response_text=response_text)
-    if 400 <= status_code < 500:  # noqa: PLR2004
+    if 400 <= status_code < 500:  # ruff: ignore[magic-value-comparison]
         return ClientRequestError(message, status_code=status_code, response_text=response_text)
-    if 500 <= status_code < 600 or status_code in CF_SERVER_ERROR_CODES:  # noqa: PLR2004
+    if 500 <= status_code < 600 or status_code in CF_SERVER_ERROR_CODES:  # ruff: ignore[magic-value-comparison]
         return ServerError(message, status_code=status_code, response_text=response_text)
     return HttpStatusError(message, status_code=status_code, response_text=response_text)
