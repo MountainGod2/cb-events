@@ -144,11 +144,10 @@ def _raise_request_failure(
         RateLimitError: If the final attempt failed with HTTP 429.
         ClientRequestError: If the final attempt failed with another 4xx.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
-    logger.error(
+    logger.exception(  # ruff:ignore[log-exception-outside-except-handler]  # Only ever called within except clauses.
         "Request failed after %d attempts for user %s",
         attempts_made,
         username,
-        exc_info=original_exception,
     )
 
     attempt_label = "attempt" if attempts_made == 1 else "attempts"
