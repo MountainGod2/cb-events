@@ -244,7 +244,7 @@ def test_event_property_validation_errors_logged(
     log_msg: str,
 ) -> None:
     """When event properties fail validation, they should return None."""
-    caplog.set_level(logging.WARNING, logger="cb_events.models")
+    caplog.set_level(logging.WARNING, logger="cb_events._models")
     event = Event.model_validate({
         "method": method,
         "id": event_id,
