@@ -8,9 +8,11 @@ Requires [uv](https://docs.astral.sh/uv/).
 make setup
 ```
 
-This installs all dependency groups, the supported Python versions, and the pre-commit hooks.
+This installs all dependency groups, the supported Python versions, and the prek (pre-commit)
+hooks.
+
 `make setup` is equivalent to `uv sync --all-groups` followed by Python version installs and
-pre-commit setup - either works if you want to handle those steps yourself.
+prek setup - either works if you would rather handle those steps yourself.
 
 ## Common Commands
 
@@ -20,7 +22,7 @@ make fix          # format + apply lint autofixes
 make lint         # lint, type-check, complexity
 make test         # run tests (excludes live)
 make test-cov     # tests with coverage report
-make pre-commit   # run all pre-commit hooks
+make pre-commit   # run all prek (pre-commit) hooks
 make ci           # full local CI equivalent (lint + security + test-cov)
 make check-all    # lint + tests across all supported Python versions
 make help         # list all targets

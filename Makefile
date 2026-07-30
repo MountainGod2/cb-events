@@ -22,10 +22,10 @@ PYTHON_VERSIONS ?= 3.10 3.11 3.12 3.13 3.14
 
 # --- Public targets ---
 
-setup: ## Public: Bootstrap local development tooling (dependencies, Python versions, pre-commit hooks).
+setup: ## Public: Bootstrap local development tooling (dependencies, Python versions, prek hooks).
 	$(UV) sync --all-groups
 	$(UV) python install $(PYTHON_VERSIONS)
-	$(UV) run pre-commit install
+	$(UV) run prek install
 
 format: ## Public: Format code with Ruff.
 	$(UV) run ruff format
@@ -78,8 +78,8 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
 	done
 
-pre-commit: ## Public: Run all pre-commit hooks.
-	$(UV) run pre-commit run --all-files
+pre-commit: ## Public: Run all prek hooks.
+	$(UV) run prek run --all-files
 
 security-full: security trivy ## Advanced: Run all security scans, including Trivy.
 
