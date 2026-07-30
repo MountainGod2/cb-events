@@ -12,7 +12,7 @@ This installs all dependency groups, the supported Python versions, and the prek
 hooks.
 
 `make setup` is equivalent to `uv sync --all-groups` followed by Python version installs and
-prek setup - either works if you would rather handle those steps yourself.
+installing prek hooks - either works if you would rather handle those steps yourself.
 
 ## Common Commands
 
