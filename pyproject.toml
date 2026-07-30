@@ -61,7 +61,7 @@ docs = [
     "pymdown-extensions==11.0.1",
     "zensical==0.0.51",
 ]
-security = ["bandit[sarif]==1.9.4", "zizmor==1.26.1"]
+security = ["bandit[sarif]==1.9.4", "zizmor==1.28.0"]
 build = ["python-semantic-release==10.6.1"]
 
 [build-system]
