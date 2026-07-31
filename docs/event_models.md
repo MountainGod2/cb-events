@@ -86,7 +86,7 @@ Known API values (non-exhaustive):
 
     ```python
     user.recent_tips == "none"  # literal value
-    user.recent_tips is None      # field is absent
+    user.recent_tips is None  # field is absent
     ```
 
 ## Tip
