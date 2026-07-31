@@ -26,8 +26,7 @@ from ._request import AuthRetryOptions, perform_request_attempt, request_with_re
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from types import TracebackType
-
-    from typing_extensions import Self
+    from typing import Self
 
     from ._models import Event
 

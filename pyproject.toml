@@ -4,7 +4,7 @@ version = "9.2.0"
 description = "Async Python client for the Chaturbate Events API."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.11.0",
     "aiolimiter>=1.0.0",
@@ -20,7 +20,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -71,7 +70,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, gitpython = false }
-environments = ["python_version>='3.10'"]
+environments = ["python_version>='3.11'"]
 fork-strategy = "requires-python"
 
 [tool.hatch.build.targets.wheel]
@@ -120,7 +119,7 @@ exclude_commit_patterns = [
 mode = "init"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 indent-width = 4
 
@@ -175,7 +174,7 @@ ignore-one-line-docstrings = true
 include = ["src"]
 exclude = ["tests", "examples", "docs", "build", "dist", ".venv"]
 extraPaths = ["src"]
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 
 [tool.pytest.ini_options]
 minversion = "9.0"

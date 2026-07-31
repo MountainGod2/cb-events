@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
 
 _ALLOWED_AUTH_RETRY_STATUS_CODES: frozenset[int] = frozenset({

@@ -13,7 +13,7 @@ Provides event polling, typed models, retries, and routing.
 
 ## Requirements
 
-Python 3.10+
+Python 3.11+
 
 ## Installation
 
@@ -75,6 +75,6 @@ asyncio.run(main())
 
 MIT
 
-______________________________________________________________________
+---
 
 Not affiliated with Chaturbate.
