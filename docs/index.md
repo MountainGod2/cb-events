@@ -19,10 +19,12 @@ from cb_events import Event, EventClient, EventType, Router
 
 router = Router()
 
+
 @router.on(EventType.TIP)
 async def handle_tip(event: Event) -> None:
     if event.user and event.tip:
         print(f"{event.user.username} tipped {event.tip.tokens} tokens")
+
 
 async def main() -> None:
     events_url = "https://eventsapi.chaturbate.com/events/username/token/"

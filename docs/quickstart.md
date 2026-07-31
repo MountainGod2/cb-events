@@ -81,6 +81,7 @@ async def handle_all(event: Event) -> None:
 ```python
 import logging
 
+
 @router.on(EventType.TIP)
 async def log_tip(event: Event) -> None:
     if event.tip:
