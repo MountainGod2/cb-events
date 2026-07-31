@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v10.0.0 (2026-07-31)
+
+### Chores
+
+- Drop Python 3.10 support
+  ([`ae9c7eb`](https://github.com/MountainGod2/cb-events/commit/ae9c7eb6144dfe3b5510b094ac691699a6e4ee59))
+
+### Breaking Changes
+
+- The minimum supported Python version is now 3.11.
+
+
 ## v9.2.0 (2026-07-26)
 
 ### Features
