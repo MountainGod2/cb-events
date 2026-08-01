@@ -6,9 +6,10 @@ import json
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import TYPE_CHECKING, TypeGuard
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from pydantic import ValidationError
+from yarl import URL
 
 from ._exceptions import AUTH_ERROR_STATUS_CODES, AuthError, EventsError, build_http_error
 from ._models import Event
@@ -169,14 +170,12 @@ def _resolve_absolute_url(
     """
     parsed = urlparse(stripped)
     if not parsed.scheme and not parsed.netloc:
-        base_origin = (
-            f"{context.parsed_base_url.scheme}://{context.parsed_base_url.netloc}"
-            if context.parsed_base_url.scheme and context.parsed_base_url.netloc
-            else context.base_url
-        )
-        base_for_join = base_origin if stripped.startswith("/") else context.base_url
-        base_for_join = f"{base_for_join.rstrip('/')}/"
-        absolute = urljoin(base_for_join, stripped)
+        base_url = URL(context.base_url)
+        if stripped.startswith("/"):
+            absolute_url = base_url.origin().join(URL(stripped))
+        else:
+            absolute_url = URL(f"{context.base_url.rstrip('/')}/").join(URL(stripped))
+        absolute = str(absolute_url)
         return absolute, urlparse(absolute)
     if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
         absolute = f"{context.parsed_base_url.scheme}:{stripped}"

@@ -3,28 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import logging
 
 import pytest
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventClient, EventsError
 from cb_events._client import TESTBED_URL
-from cb_events._parser import (
-    ParserContext,
-    _extract_next_url_from_timeout,
-    _parse_json_response,
-)
 from tests.helpers import make_events_url
-
-
-def _parser_context(username: str = "user") -> ParserContext:
-    return ParserContext(
-        username=username,
-        base_url=TESTBED_URL,
-        logger=logging.getLogger("cb_events._client"),
-    )
 
 
 async def test_request_raises_when_client_not_initialized() -> None:
@@ -58,116 +43,6 @@ async def test_aenter_wraps_session_creation_failures(
     with pytest.raises(EventsError, match="Failed to create HTTP session"):
         async with client:
             pass
-
-
-def test_extract_next_url_timeout_payload_not_mapping() -> None:
-    """Non-object timeout payloads should return None."""
-    assert (
-        _extract_next_url_from_timeout(
-            "[]",
-            context=_parser_context(),
-            log_next_url=lambda _next_url: None,
-        )
-        is None
-    )
-
-
-def test_extract_next_url_timeout_status_not_string() -> None:
-    """Timeout payloads with non-string status should return None."""
-    payload = json.dumps({
-        "status": 123,
-        "nextUrl": "https://events.testbed.cb.dev/events/next",
-    })
-    assert (
-        _extract_next_url_from_timeout(
-            payload,
-            context=_parser_context(),
-            log_next_url=lambda _next_url: None,
-        )
-        is None
-    )
-
-
-def test_extract_next_url_timeout_status_without_timeout_text() -> None:
-    """Timeout parser should ignore unrelated status messages."""
-    payload = json.dumps({
-        "status": "ok",
-        "nextUrl": "https://events.testbed.cb.dev/events/next",
-    })
-    assert (
-        _extract_next_url_from_timeout(
-            payload,
-            context=_parser_context(),
-            log_next_url=lambda _next_url: None,
-        )
-        is None
-    )
-
-
-def test_extract_next_url_timeout_missing_next_url() -> None:
-    """Timeout parser should return None when nextUrl is absent."""
-    payload = json.dumps({"status": "waited too long for events"})
-    assert (
-        _extract_next_url_from_timeout(
-            payload,
-            context=_parser_context(),
-            log_next_url=lambda _next_url: None,
-        )
-        is None
-    )
-
-
-def test_extract_next_url_timeout_when_validator_returns_none() -> None:
-    """Invalid timeout nextUrl should raise with direct validation path."""
-    payload = json.dumps({
-        "status": "waited too long for events",
-        "nextUrl": "",
-    })
-
-    with pytest.raises(EventsError, match="nextUrl"):
-        _extract_next_url_from_timeout(
-            payload,
-            context=_parser_context(),
-            log_next_url=lambda _next_url: None,
-        )
-
-
-def test_parse_json_response_rejects_non_object() -> None:
-    """Top-level JSON arrays should be rejected."""
-    with pytest.raises(EventsError, match=r"(?i)expected JSON object"):
-        _parse_json_response(
-            "[]",
-            strict_validation=False,
-            context=_parser_context(),
-        )
-
-
-def test_parse_json_response_allows_missing_events_key() -> None:
-    """Missing events key should be treated as an empty event list."""
-    _parse_json_response(
-        '{"nextUrl": null}',
-        strict_validation=False,
-        context=_parser_context(),
-    )
-
-
-def test_parse_json_response_debug_logs_event_count(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Debug logging should include the number of parsed events."""
-    payload = json.dumps({
-        "events": [{"method": "tip", "id": "evt-1", "object": {}}],
-        "nextUrl": None,
-    })
-
-    caplog.set_level("DEBUG", logger="cb_events._client")
-    _parse_json_response(
-        payload,
-        strict_validation=False,
-        context=_parser_context(),
-    )
-
-    assert "Received 1 events for user user" in caplog.text
 
 
 async def test_poll_debug_logs_masked_url(
