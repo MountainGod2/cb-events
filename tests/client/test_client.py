@@ -7,11 +7,14 @@ from urllib.parse import quote
 import pytest
 from aiohttp.client_exceptions import ClientError
 from pydantic import ValidationError
+from yarl import URL
 
 from cb_events import AuthError, ClientConfig, EventClient, EventsError
 from cb_events._client import (
+    TESTBED_URL,
     _mask_token,
     _mask_url,
+    _parse_events_url,
 )
 from cb_events._parser import ParserContext, _parse_events
 from tests.helpers import make_events_url
@@ -59,7 +62,7 @@ def test_token_masking_in_repr() -> None:
         ),
         (
             "https://eventsapi.chaturbate.com:abc/events/user/token/",
-            "must not include a custom port",
+            "must match",
         ),
     ],
 )
@@ -67,6 +70,54 @@ def test_reject_invalid_credentials(events_url: str, message: str) -> None:
     """Invalid URLs should raise an ``AuthError`` with guidance."""
     with pytest.raises(AuthError, match=message):
         EventClient(events_url)
+
+
+def test_reject_malformed_ipv6_does_not_claim_custom_port() -> None:
+    """Malformed IPv6 URLs should surface as malformed, not port-specific."""
+    with pytest.raises(AuthError) as exc_info:
+        EventClient("https://[::1/events/user/token/")
+
+    message = str(exc_info.value)
+    assert "custom port" not in message
+    assert "must match" in message
+
+
+@pytest.mark.parametrize(
+    ("username", "token"),
+    [
+        ("user/name", "token/with/slash"),
+        ("user/name", "token with space"),
+        ("user/name", "token%value"),
+        ("user/name", "token?value#frag"),
+        ("user/name", "a/b%c?d#e f"),
+    ],
+)
+def test_opaque_segments_round_trip_and_masking(
+    username: str,
+    token: str,
+) -> None:
+    """Opaque username/token segments should round-trip and mask consistently."""
+    events_url = (
+        f"https://events.testbed.cb.dev/events/{quote(username, safe='')}/{quote(token, safe='')}/"
+    )
+
+    parsed_base_url, parsed_username, parsed_token = _parse_events_url(events_url)
+    assert parsed_base_url == TESTBED_URL
+    assert parsed_username == username
+    assert parsed_token == token
+
+    client = EventClient(events_url)
+    poll_url = client._build_url()
+    parsed_poll_url = URL(poll_url)
+    assert parsed_poll_url.parts[-3] == username
+    assert parsed_poll_url.parts[-2] == token
+    assert quote(username, safe="") in poll_url
+    assert quote(token, safe="") in poll_url
+
+    log_url = f"{poll_url}&raw={token}&encoded={quote(token, safe='')}"
+    masked = _mask_url(log_url, token)
+    assert token not in masked
+    assert quote(token, safe="") not in masked
 
 
 def test_mask_url_replaces_raw_and_encoded_token() -> None:

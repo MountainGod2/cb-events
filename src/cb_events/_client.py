@@ -8,6 +8,7 @@ from contextlib import suppress
 from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
+from urllib.parse import quote, unquote
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -103,6 +104,11 @@ def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
         raise AuthError(msg)
 
 
+def _quote_segment(value: str) -> str:
+    """Percent-encode a single opaque path segment."""
+    return quote(value, safe="")
+
+
 def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
@@ -113,8 +119,6 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     try:
         parsed = URL(events_url)
     except ValueError as exc:
-        if ":" in events_url.partition("://")[2].split("/", maxsplit=1)[0]:
-            raise AuthError(custom_port_msg) from exc
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg) from exc
 
@@ -137,12 +141,12 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         )
         raise AuthError(msg)
 
-    parts = [part for part in parsed.path.split("/") if part]
+    parts = [part for part in parsed.raw_parts if part not in {"", "/"}]
     if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg)
 
-    username, token = parts[1], parts[2]
+    username, token = unquote(parts[1]), unquote(parts[2])
     _validate_non_empty_stripped(
         username, field="Username", hint="Provide a valid Chaturbate username."
     )
@@ -164,7 +168,7 @@ def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging."""
     masked = _mask_token(token)
-    encoded_token = URL.build(path=f"/{token}").raw_path.lstrip("/")
+    encoded_token = _quote_segment(token)
     return url.replace(token, masked).replace(encoded_token, masked)
 
 
@@ -281,9 +285,10 @@ class EventClient:
         """Build the URL for the next poll."""
         if next_url:
             return next_url
-        base_url = URL(self.base_url) / self.username / self._token
-        base_url = base_url.with_path(f"{base_url.path}/")
-        return str(base_url.with_query(timeout=self.config.timeout))
+        poll_url = URL(
+            f"{self.base_url.removesuffix('/')}/{_quote_segment(self.username)}/{_quote_segment(self._token)}/"
+        )
+        return str(poll_url.with_query(timeout=self.config.timeout))
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
         """Perform one HTTP request attempt."""

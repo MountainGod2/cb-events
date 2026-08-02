@@ -6,7 +6,6 @@ import json
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import TYPE_CHECKING, TypeGuard
-from urllib.parse import urlparse
 
 from pydantic import ValidationError
 from yarl import URL
@@ -18,7 +17,6 @@ from ._utils import TRUNCATE_LENGTH, truncate_text
 if TYPE_CHECKING:
     import logging
     from collections.abc import Callable, Sequence
-    from urllib.parse import ParseResult
 
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
@@ -39,14 +37,14 @@ class ParserContext:
     username: str
     base_url: str
     logger: logging.Logger
-    parsed_base_url: ParseResult = field(init=False)
+    parsed_base_url: URL = field(init=False)
 
     def __post_init__(self) -> None:
         """Derive parsed_base_url from base_url.
 
         Uses object.__setattr__ because the dataclass is frozen.
         """
-        object.__setattr__(self, "parsed_base_url", urlparse(self.base_url))
+        object.__setattr__(self, "parsed_base_url", URL(self.base_url))
 
 
 def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
@@ -158,7 +156,7 @@ def _resolve_absolute_url(
     stripped: str,
     *,
     context: ParserContext,
-) -> tuple[str, ParseResult]:
+) -> tuple[str, URL]:
     """Resolve nextUrl to an absolute URL.
 
     Args:
@@ -168,18 +166,19 @@ def _resolve_absolute_url(
     Returns:
         Tuple of (absolute URL, parsed URL object).
     """
-    parsed = urlparse(stripped)
-    if not parsed.scheme and not parsed.netloc:
-        base_url = URL(context.base_url)
+    parsed = URL(stripped)
+    if not parsed.scheme and not parsed.host:
+        base_url = context.parsed_base_url
         if stripped.startswith("/"):
             absolute_url = base_url.origin().join(URL(stripped))
         else:
-            absolute_url = URL(f"{context.base_url.rstrip('/')}/").join(URL(stripped))
+            absolute_url = URL(f"{context.base_url.removesuffix('/')}/").join(parsed)
         absolute = str(absolute_url)
-        return absolute, urlparse(absolute)
-    if not parsed.scheme and (parsed.netloc or stripped.startswith("//")):
-        absolute = f"{context.parsed_base_url.scheme}:{stripped}"
-        return absolute, urlparse(absolute)
+        return absolute, absolute_url
+    if not parsed.scheme and (parsed.host or stripped.startswith("//")):
+        absolute_url = URL(f"{context.parsed_base_url.scheme}:{stripped}")
+        absolute = str(absolute_url)
+        return absolute, absolute_url
     return stripped, parsed
 
 
@@ -222,7 +221,24 @@ def _validate_next_url(
         )
         raise EventsError(msg, response_text=response_text)
 
-    absolute, parsed = _resolve_absolute_url(stripped, context=context)
+    try:
+        absolute, parsed = _resolve_absolute_url(stripped, context=context)
+    except ValueError as exc:
+        message = str(exc)
+        if "port can't be converted to integer" in message or "Port out of range" in message:
+            context.logger.warning(
+                "Received nextUrl with invalid port for user %s",
+                context.username,
+            )
+            msg = "Invalid API response: 'nextUrl' contains an invalid port."
+            raise EventsError(msg, response_text=response_text) from None
+
+        context.logger.exception(
+            "Received malformed nextUrl for user %s",
+            context.username,
+        )
+        msg = "Invalid API response: 'nextUrl' must be a valid URL."
+        raise EventsError(msg, response_text=response_text) from None
 
     scheme = parsed.scheme
     if scheme != "https":
@@ -234,26 +250,16 @@ def _validate_next_url(
         msg = "Invalid nextUrl scheme; only https is allowed."
         raise EventsError(msg, response_text=response_text)
 
-    try:
-        port = parsed.port
-    except ValueError:
-        context.logger.warning(
-            "Received nextUrl with invalid port for user %s",
-            context.username,
-        )
-        msg = "Invalid API response: 'nextUrl' contains an invalid port."
-        raise EventsError(msg, response_text=response_text) from None
-
-    if port is not None:
+    if parsed.explicit_port is not None:
         context.logger.error(
             "Received nextUrl with custom port %s for user %s",
-            port,
+            parsed.explicit_port,
             context.username,
         )
         msg = "Invalid API response: 'nextUrl' must not contain a custom port."
         raise EventsError(msg, response_text=response_text)
 
-    hostname = parsed.hostname
+    hostname = parsed.host
     if not hostname:
         context.logger.error(
             "Received nextUrl without hostname for user %s",
@@ -262,7 +268,7 @@ def _validate_next_url(
         msg = "Invalid API response: 'nextUrl' must include a hostname."
         raise EventsError(msg, response_text=response_text)
 
-    allowed_host = (context.parsed_base_url.hostname or "").lower()
+    allowed_host = (context.parsed_base_url.host or "").lower()
     if hostname.lower() != allowed_host:
         context.logger.error(
             "Received nextUrl host %s which is not allowed for user %s",

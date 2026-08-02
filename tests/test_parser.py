@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
-from urllib.parse import urlparse
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from yarl import URL
 
 from cb_events import EventsError
 from cb_events._client import TESTBED_URL
@@ -211,9 +211,9 @@ def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> No
         resolved, parsed = _resolve_absolute_url(str(next_url).strip(), context=context)
         assert validated == resolved
         assert parsed.scheme == "https"
-        assert parsed.hostname == _ALLOWED_HOST
-        assert parsed.port is None
-        assert urlparse(validated).hostname == _ALLOWED_HOST
+        assert parsed.host == _ALLOWED_HOST
+        assert parsed.explicit_port is None
+        assert URL(validated).host == _ALLOWED_HOST
         return
 
     with pytest.raises(EventsError, match=expected_pattern):

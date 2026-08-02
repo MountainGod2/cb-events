@@ -210,6 +210,3 @@ directory = "htmlcov"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
-
-[tool.deptry]
-extend_exclude = ["examples"]
