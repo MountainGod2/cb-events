@@ -299,7 +299,7 @@ dev = [
     { name = "aioresponses-ng", specifier = "==0.8.2" },
     { name = "basedpyright", specifier = "==1.39.9" },
     { name = "hypothesis", specifier = "==6.161.5" },
-    { name = "prek", specifier = "==0.4.10" },
+    { name = "prek", specifier = "==0.4.11" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-aiohttp", specifier = "==1.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
