@@ -1,5 +1,7 @@
 """Shared utilities for cb-events."""
 
+from __future__ import annotations
+
 from typing import Final
 
 TRUNCATE_LENGTH: Final[int] = 200

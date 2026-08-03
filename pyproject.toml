@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.8.0",
     "stamina>=25.2.0",
     "typing-extensions>=4.12.2; python_version < '3.12'",
+    "yarl>=1.20.1",
 ]
 dynamic = ["readme"]
 keywords = ["chaturbate", "events", "api", "async", "streaming", "real-time", "webcam", "client"]
@@ -51,6 +52,8 @@ test = [
     "pytest-aiohttp==1.1.1",
     "pytest-cov==7.1.0",
     "pytest-mock==3.15.1",
+    "hypothesis==6.161.5",
+    "pytest-timeout==2.4.0",
 ]
 docs = [
     "mdformat-mkdocs==5.2.1",
@@ -181,6 +184,8 @@ minversion = "9.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+timeout = 60
+timeout_method = "signal"
 addopts = ["--strict-markers", "--strict-config", "--tb=short", "-ra"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

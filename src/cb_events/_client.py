@@ -8,11 +8,12 @@ from contextlib import suppress
 from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
-from urllib.parse import quote, unquote, urlparse
+from urllib.parse import quote, unquote
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
+from yarl import URL
 
 from ._compat import override
 from ._config import ClientConfig
@@ -103,30 +104,36 @@ def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
         raise AuthError(msg)
 
 
+def _quote_segment(value: str) -> str:
+    """Percent-encode a single opaque path segment."""
+    return quote(value, safe="")
+
+
 def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
         raise AuthError(msg)
 
-    parsed = urlparse(events_url)
+    custom_port_msg = "Events URL must not include a custom port."
+    try:
+        parsed = URL(events_url)
+    except ValueError as exc:
+        msg = "Events URL must match https://<host>/events/<username>/<token>/"
+        raise AuthError(msg) from exc
+
     if parsed.scheme != "https":
         msg = "Events URL must use https."
         raise AuthError(msg)
 
-    if parsed.query or parsed.fragment:
+    if parsed.query_string or parsed.fragment:
         msg = "Events URL must not include query parameters or fragments."
         raise AuthError(msg)
 
-    custom_port_msg = "Events URL must not include a custom port."
-    try:
-        has_port = parsed.port is not None
-    except ValueError as exc:
-        raise AuthError(custom_port_msg) from exc
-    if has_port:
+    if parsed.explicit_port is not None:
         raise AuthError(custom_port_msg)
 
-    base_url = _SUPPORTED_EVENTS_HOSTS.get((parsed.hostname or "").lower())
+    base_url = _SUPPORTED_EVENTS_HOSTS.get((parsed.host or "").lower())
     if base_url is None:
         msg = (
             "Events URL host is not supported. "
@@ -134,7 +141,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         )
         raise AuthError(msg)
 
-    parts = [part for part in parsed.path.split("/") if part]
+    parts = [part for part in parsed.raw_parts if part not in {"", "/"}]
     if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg)
@@ -161,7 +168,8 @@ def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
 def _mask_url(url: str, token: str) -> str:
     """Mask token in URL for safe logging."""
     masked = _mask_token(token)
-    return url.replace(token, masked).replace(quote(token, safe=""), masked)
+    encoded_token = _quote_segment(token)
+    return url.replace(token, masked).replace(encoded_token, masked)
 
 
 class EventClient:
@@ -277,10 +285,10 @@ class EventClient:
         """Build the URL for the next poll."""
         if next_url:
             return next_url
-        return (
-            f"{self.base_url}/{quote(self.username, safe='')}/"
-            f"{quote(self._token, safe='')}/?timeout={self.config.timeout}"
+        poll_url = URL(
+            f"{self.base_url.removesuffix('/')}/{_quote_segment(self.username)}/{_quote_segment(self._token)}/"
         )
+        return str(poll_url.with_query(timeout=self.config.timeout))
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
         """Perform one HTTP request attempt."""
