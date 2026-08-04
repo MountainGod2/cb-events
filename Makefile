@@ -55,7 +55,7 @@ ci: lint security test-cov ## Public: Run CI-equivalent checks locally.
 clean: ## Public: Remove caches, artifacts, and generated reports.
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.py[co]" -delete
-	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .cache/ .coverage
+	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .cache/ .coverage .hypothesis
 	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
 	rm -rf *.sarif site/ docs/html_local_check/
 
