@@ -62,6 +62,7 @@
         "pydantic",
         "stamina",
         "typing-extensions",
+        "yarl",
         "/^pydantic-.*$/"
       ],
       "groupName": "runtime",
