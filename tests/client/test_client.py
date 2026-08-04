@@ -54,15 +54,19 @@ def test_token_masking_in_repr() -> None:
         ),
         (
             "https://eventsapi.chaturbate.com/events/user/token/?timeout=10",
-            "must not include query parameters",
+            "Events URL must not include query parameters",
         ),
         (
             "https://eventsapi.chaturbate.com:8443/events/user/token/",
-            "must not include a custom port",
+            "Events URL must not include a custom port",
+        ),
+        (
+            "https://[]/events/user/token/",
+            "Events URL must match",
         ),
         (
             "https://eventsapi.chaturbate.com:abc/events/user/token/",
-            "must match",
+            "Events URL must match",
         ),
     ],
 )
