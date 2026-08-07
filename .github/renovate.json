@@ -78,14 +78,15 @@
         "aioresponses-ng",
         "pre-commit",
         "basedpyright",
-        "ruff"
+        "ruff",
+        "hypothesis"
       ],
-      "groupName": "dev-tools",
+      "groupName": "dev",
       "labels": ["dependencies", "dev"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "dev-tools"
+      "semanticCommitScope": "dev"
     },
     {
       "description": "Security scanning tools (SAST and dependency audit)",
@@ -128,14 +129,14 @@
       "semanticCommitScope": "build"
     },
     {
-      "description": "Pre-commit hooks",
+      "description": "Prek hooks",
       "matchManagers": ["pre-commit"],
-      "groupName": "pre-commit",
+      "groupName": "prek",
       "labels": ["dependencies", "pre-commit"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "autoApprove": true,
-      "semanticCommitScope": "pre-commit"
+      "semanticCommitScope": "prek"
     },
     {
       "description": "GitHub Actions workflows",
