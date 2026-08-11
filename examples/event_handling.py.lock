@@ -12,7 +12,7 @@ gitpython = false
 
 [manifest]
 requirements = [
-    { name = "cb-events", specifier = ">=9.2.0" },
+    { name = "cb-events", specifier = ">=10.0.0" },
     { name = "rich", specifier = ">=15.0.0" },
 ]
 
@@ -167,7 +167,7 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "9.2.0"
+version = "10.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -175,9 +175,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "stamina" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/e9/08da2e5504018dcd792d4f00b1cc6348b84da52eb9a4d422874d058236c8/cb_events-9.2.0.tar.gz", hash = "sha256:86b6ca04e0b20d327df3634e9aa7db501ca63712bbb1d8ca3369a5d8bd5b4554", size = 213875, upload-time = "2026-07-26T21:11:08.482Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/6c/7dc2bed42f5c8599f5299b7642a14040de67ba5baf82ccc02da3e8da47d5/cb_events-10.0.0.tar.gz", hash = "sha256:5ad225a940e6246e7465084b68553379e4991d2cc331b8e9c44e704a5983611f", size = 249058, upload-time = "2026-07-31T23:43:58.88Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/be/f3f86c5e97f80fd6b6e022d443e1419c52ff24db830db631310abdab3c27/cb_events-9.2.0-py3-none-any.whl", hash = "sha256:81d5b961fc988a38a37b3efcc9e34323e44efe34475380e14fe79db49a375522", size = 24501, upload-time = "2026-07-26T21:11:07.16Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/39/75bf1eb97f7d0ed3b84dd2dc6aa6eb630c33d73b0f9e7190351462de66de/cb_events-10.0.0-py3-none-any.whl", hash = "sha256:053c2353250fff39b9c36ef37e51407c80ea4d8a5a0f8fafe48acbdae325e62e", size = 24341, upload-time = "2026-07-31T23:43:57.583Z" },
 ]
 
 [[package]]
