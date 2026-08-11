@@ -7,6 +7,7 @@ snake_case attributes.
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from pydantic import (
@@ -19,7 +20,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from ._compat import StrEnum, override
+from ._compat import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable

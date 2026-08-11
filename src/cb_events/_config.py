@@ -7,7 +7,7 @@ validation behavior.
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Final
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from typing import Self
 
 
-_ALLOWED_AUTH_RETRY_STATUS_CODES: frozenset[int] = frozenset({
+_ALLOWED_AUTH_RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
     HTTPStatus.UNAUTHORIZED.value,
     HTTPStatus.FORBIDDEN.value,
 })
@@ -60,8 +60,8 @@ class ClientConfig(BaseModel):
     """HTTP status codes eligible for auth-status retry behavior."""
 
     @model_validator(mode="after")
-    def validate_delays(self) -> Self:
-        """Validate retry delay bounds.
+    def _validate_config(self) -> Self:
+        """Validate configuration.
 
         Returns:
             Validated configuration instance.
