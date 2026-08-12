@@ -74,6 +74,11 @@ _CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
 )
 """Error raised when entering a client after close()."""
 
+_CLIENT_ALREADY_OPEN_MESSAGE: Final[str] = (
+    "EventClient is already open. Enter the 'async with' block only once per instance."
+)
+"""Error raised when entering an already-open client."""
+
 _POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
 """Error raised when close() cancels an active poll."""
 
@@ -243,8 +248,7 @@ class EventClient:
             if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
                 raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
             if self.session is not None:
-                msg = "Client is already open. ..."
-                raise EventsError(msg)
+                raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
             captured: Exception | None = None
             try:
                 self.session = ClientSession(

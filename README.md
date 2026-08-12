@@ -17,13 +17,13 @@ Python 3.11+
 
 ## Installation
 
-```bash
+```sh
 pip install cb-events
 ```
 
 With [uv](https://docs.astral.sh/uv/):
 
-```bash
+```sh
 uv add cb-events
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: Home
+description: Async Python client for the Chaturbate Events API.
 ---
 
 # cb-events
