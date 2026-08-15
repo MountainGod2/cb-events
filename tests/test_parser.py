@@ -32,7 +32,7 @@ def _parser_context(username: str = "user") -> ParserContext:
 
 
 @st.composite
-def _next_url_cases(draw: st.DrawFn) -> tuple[object, str | None]:  # ruff:ignore[too-many-return-statements]
+def _next_url_cases(draw: st.DrawFn) -> tuple[object, str | None]:  # ruff: ignore[too-many-return-statements]
     kind = draw(
         st.sampled_from(
             [

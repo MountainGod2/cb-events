@@ -27,7 +27,7 @@ try:  # ruff: ignore[non-empty-init-module] # Version lookup at import time is i
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())  # ruff:ignore[non-empty-init-module] # Configuration of handlers is the prerogative of end-users
+logging.getLogger(__name__).addHandler(logging.NullHandler())  # ruff: ignore[non-empty-init-module] # Configuration of handlers is the prerogative of end-users
 
 
 __all__ = [
