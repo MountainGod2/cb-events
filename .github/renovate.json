@@ -76,7 +76,7 @@
         "pytest",
         "/^pytest-.*$/",
         "aioresponses-ng",
-        "pre-commit",
+        "prek",
         "basedpyright",
         "ruff",
         "hypothesis"
