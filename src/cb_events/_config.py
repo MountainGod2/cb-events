@@ -6,19 +6,14 @@ validation behavior.
 
 from __future__ import annotations
 
-from http import HTTPStatus
-from typing import TYPE_CHECKING, ClassVar, Final
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ._exceptions import AUTH_ERROR_STATUS_CODES
+
 if TYPE_CHECKING:
     from typing import Self
-
-
-_ALLOWED_AUTH_RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
-    HTTPStatus.UNAUTHORIZED.value,
-    HTTPStatus.FORBIDDEN.value,
-})
 
 
 class ClientConfig(BaseModel):
@@ -53,10 +48,7 @@ class ClientConfig(BaseModel):
     auth_retry_delay: float = Field(default=0.0, ge=0)
     """Fixed delay in seconds between auth-status retry attempts."""
 
-    auth_retry_status_codes: frozenset[int] = frozenset({
-        HTTPStatus.UNAUTHORIZED.value,
-        HTTPStatus.FORBIDDEN.value,
-    })
+    auth_retry_status_codes: frozenset[int] = AUTH_ERROR_STATUS_CODES
     """HTTP status codes eligible for auth-status retry behavior."""
 
     @model_validator(mode="after")
@@ -76,9 +68,9 @@ class ClientConfig(BaseModel):
             )
             raise ValueError(msg)
 
-        invalid_auth_codes = self.auth_retry_status_codes - _ALLOWED_AUTH_RETRY_STATUS_CODES
+        invalid_auth_codes = self.auth_retry_status_codes - AUTH_ERROR_STATUS_CODES
         if invalid_auth_codes:
-            allowed = ", ".join(str(code) for code in sorted(_ALLOWED_AUTH_RETRY_STATUS_CODES))
+            allowed = ", ".join(str(code) for code in sorted(AUTH_ERROR_STATUS_CODES))
             invalid = ", ".join(str(code) for code in sorted(invalid_auth_codes))
             msg = (
                 "auth_retry_status_codes may only include authentication statuses "
