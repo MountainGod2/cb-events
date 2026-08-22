@@ -12,7 +12,12 @@ from yarl import URL
 
 from ._exceptions import AUTH_ERROR_STATUS_CODES, AuthError, EventsError, build_http_error
 from ._models import Event
-from ._utils import TRUNCATE_LENGTH, truncate_text
+from ._utils import (
+    TRUNCATE_LENGTH,
+    UrlValidationReason,
+    truncate_text,
+    validate_https_host_no_port,
+)
 
 if TYPE_CHECKING:
     import logging
@@ -240,43 +245,42 @@ def _validate_next_url(
         msg = "Invalid API response: 'nextUrl' must be a valid URL."
         raise EventsError(msg, response_text=response_text) from None
 
-    scheme = parsed.scheme
-    if scheme != "https":
-        context.logger.error(
-            "Received nextUrl with unsupported scheme %s for user %s",
-            scheme or "<missing>",
-            context.username,
-        )
-        msg = "Invalid nextUrl scheme; only https is allowed."
-        raise EventsError(msg, response_text=response_text)
-
-    if parsed.explicit_port is not None:
-        context.logger.error(
-            "Received nextUrl with custom port %s for user %s",
-            parsed.explicit_port,
-            context.username,
-        )
-        msg = "Invalid API response: 'nextUrl' must not contain a custom port."
-        raise EventsError(msg, response_text=response_text)
-
-    hostname = parsed.host
-    if not hostname:
-        context.logger.error(
-            "Received nextUrl without hostname for user %s",
-            context.username,
-        )
-        msg = "Invalid API response: 'nextUrl' must include a hostname."
-        raise EventsError(msg, response_text=response_text)
-
     allowed_host = (context.parsed_base_url.host or "").lower()
-    if hostname.lower() != allowed_host:
-        context.logger.error(
+    try:
+        _ = validate_https_host_no_port(parsed, {allowed_host})
+    except ValueError as exc:
+        reason = exc.args[0] if exc.args else None
+        if reason == UrlValidationReason.SCHEME:
+            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+                "Received nextUrl with unsupported scheme %s for user %s",
+                parsed.scheme or "<missing>",
+                context.username,
+            )
+            msg = "Invalid nextUrl scheme; only https is allowed."
+            raise EventsError(msg, response_text=response_text) from None
+        if reason == UrlValidationReason.CUSTOM_PORT:
+            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+                "Received nextUrl with custom port %s for user %s",
+                parsed.explicit_port,
+                context.username,
+            )
+            msg = "Invalid API response: 'nextUrl' must not contain a custom port."
+            raise EventsError(msg, response_text=response_text) from None
+        if reason == UrlValidationReason.MISSING_HOST:
+            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+                "Received nextUrl without hostname for user %s",
+                context.username,
+            )
+            msg = "Invalid API response: 'nextUrl' must include a hostname."
+            raise EventsError(msg, response_text=response_text) from None
+
+        context.logger.error(  # ruff: ignore[error-instead-of-exception]
             "Received nextUrl host %s which is not allowed for user %s",
-            hostname,
+            parsed.host,
             context.username,
         )
         msg = "Invalid API response: 'nextUrl' host is not allowed."
-        raise EventsError(msg, response_text=response_text)
+        raise EventsError(msg, response_text=response_text) from None
 
     return absolute
 
