@@ -184,7 +184,9 @@ def configure_logging(*, level: int, json_lines: bool) -> None:
         handler = logging.StreamHandler()
         handler.setFormatter(_JsonLineFormatter())
     else:
-        handler = RichHandler(show_path=False, rich_tracebacks=True, markup=False)
+        handler = RichHandler(
+            show_path=False, rich_tracebacks=True, markup=False, tracebacks_max_frames=100
+        )
     logging.basicConfig(level=level, handlers=[handler], format="%(message)s")
 
 

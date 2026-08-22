@@ -23,6 +23,7 @@ from ._parser import (
     process_response,
 )
 from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
+from ._utils import UrlValidationReason, validate_https_host_no_port
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -120,31 +121,36 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
         raise AuthError(msg)
 
-    custom_port_msg = "Events URL must not include a custom port."
     try:
         parsed = URL(events_url)
     except ValueError as exc:
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
         raise AuthError(msg) from exc
 
-    if parsed.scheme != "https":
-        msg = "Events URL must use https."
-        raise AuthError(msg)
-
     if parsed.query_string or parsed.fragment:
         msg = "Events URL must not include query parameters or fragments."
         raise AuthError(msg)
 
-    if parsed.explicit_port is not None:
-        raise AuthError(custom_port_msg)
-
-    base_url = _SUPPORTED_EVENTS_HOSTS.get((parsed.host or "").lower())
-    if base_url is None:
+    try:
+        normalized_host = validate_https_host_no_port(
+            parsed,
+            _SUPPORTED_EVENTS_HOSTS,
+        )
+    except ValueError as exc:
+        reason = exc.args[0] if exc.args else None
+        if reason == UrlValidationReason.SCHEME:
+            msg = "Events URL must use https."
+            raise AuthError(msg) from None
+        if reason == UrlValidationReason.CUSTOM_PORT:
+            msg = "Events URL must not include a custom port."
+            raise AuthError(msg) from None
         msg = (
             "Events URL host is not supported. "
             "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
         )
-        raise AuthError(msg)
+        raise AuthError(msg) from None
+
+    base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
 
     parts = [part for part in parsed.raw_parts if part not in {"", "/"}]
     if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
@@ -209,7 +215,7 @@ class EventClient:
             base_url=self.base_url,
             logger=_logger,
         )
-        self._active_poll_tasks: set[asyncio.Task[object]] = set()
+        self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
