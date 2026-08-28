@@ -44,7 +44,7 @@ Changelog = "https://github.com/MountainGod2/cb-events/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [{ include-group = "lint" }, { include-group = "test" }]
-lint = ["basedpyright==1.39.10", "prek==0.4.14", "ruff==0.16.3"]
+lint = ["basedpyright==1.39.10", "prek==0.4.14", "ruff==0.16.4"]
 test = [
     "aioresponses-ng==0.8.2",
     "pytest==9.1.1",
