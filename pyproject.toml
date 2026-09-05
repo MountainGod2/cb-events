@@ -64,7 +64,7 @@ docs = [
     "zensical==0.0.57",
 ]
 security = ["bandit[sarif]==1.9.4", "zizmor==1.29.0"]
-build = ["python-semantic-release==10.6.1"]
+build = ["python-semantic-release==10.6.2"]
 
 [build-system]
 requires = ["hatchling==1.32.0", "hatch-fancy-pypi-readme==25.1.0"]
