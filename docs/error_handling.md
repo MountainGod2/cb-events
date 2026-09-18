@@ -52,6 +52,17 @@ for short fixed-delay retry sequences.
 
 If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
+## Long-poll Timeout Responses
+
+A long-poll timeout is a normal `400` response from the upstream API when the
+server has no new events yet. In that case, the payload typically contains a
+`nextUrl` pointing at the next polling endpoint; the client treats that as a
+successful continuation and keeps polling instead of raising `ClientRequestError`.
+
+The `status` field is free-form text and may change over time, so the client does
+not rely on it as the only signal. A validated `nextUrl` is the primary indicator
+that this `400` is part of the normal event-stream timeout flow.
+
 ## Validation Mode
 
 `strict_validation=False` (default): skip invalid events and log a warning.

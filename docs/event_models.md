@@ -99,6 +99,22 @@ Present on `TIP` events only. Access via `event.tip`.
 | is_anon | bool        | Whether the tip is anonymous.         |
 | message | str or None | Optional message attached to the tip. |
 
+!!! warning "Tip menu message encoding"
+
+    Chaturbate's tip-menu widget encodes the user's dropdown selection and
+    free-text input into this single field using a `"| "` convention:
+
+    - No menu in the room → raw, unprefixed text (or `""` if empty).
+    - Menu present, text only → `"| <text>"`.
+    - Menu present, selection only → `"<selection>"`.
+    - Menu present, both → `"<selection> | <text>"`.
+    - Menu present, neither → `""`.
+
+    These forms are **indistinguishable from the event alone** - a no-menu
+    room's raw message can coincidentally contain `" | "` or start with
+    `"| "`. Do not assume a leading/embedded pipe implies a menu selection
+    unless you independently know the room has a tip menu configured.
+
 ## Message
 
 Present on `CHAT_MESSAGE` and `PRIVATE_MESSAGE` events. Access via `event.message`.
