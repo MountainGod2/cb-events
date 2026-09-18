@@ -100,7 +100,7 @@ def test_extract_next_url_timeout_payload_not_mapping() -> None:
 
 
 def test_extract_next_url_timeout_status_not_string() -> None:
-    """Timeout payloads with non-string status should return None."""
+    """A valid continuation nextUrl should still be accepted when status is non-string."""
     payload = json.dumps({
         "status": 123,
         "nextUrl": "https://events.testbed.cb.dev/events/next",
@@ -111,12 +111,12 @@ def test_extract_next_url_timeout_status_not_string() -> None:
             context=_parser_context(),
             log_next_url=lambda _next_url: None,
         )
-        is None
+        == "https://events.testbed.cb.dev/events/next"
     )
 
 
 def test_extract_next_url_timeout_status_without_timeout_text() -> None:
-    """Timeout parser should ignore unrelated status messages."""
+    """The status text should not override a valid continuation nextUrl."""
     payload = json.dumps({
         "status": "ok",
         "nextUrl": "https://events.testbed.cb.dev/events/next",
@@ -127,7 +127,23 @@ def test_extract_next_url_timeout_status_without_timeout_text() -> None:
             context=_parser_context(),
             log_next_url=lambda _next_url: None,
         )
-        is None
+        == "https://events.testbed.cb.dev/events/next"
+    )
+
+
+def test_extract_next_url_timeout_status_text_is_advisory() -> None:
+    """A valid nextUrl should continue polling even if the API wording shifts."""
+    payload = json.dumps({
+        "status": "request exceeded the polling window",
+        "nextUrl": "https://events.testbed.cb.dev/events/next",
+    })
+    assert (
+        _extract_next_url_from_timeout(
+            payload,
+            context=_parser_context(),
+            log_next_url=lambda _next_url: None,
+        )
+        == "https://events.testbed.cb.dev/events/next"
     )
 
 

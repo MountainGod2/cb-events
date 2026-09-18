@@ -291,7 +291,11 @@ def _extract_next_url_from_timeout(
     context: ParserContext,
     log_next_url: Callable[[str], None],
 ) -> str | None:
-    """Extract nextUrl from timeout-style responses.
+    """Extract nextUrl from long-poll timeout responses.
+
+    A 400 response with a valid ``nextUrl`` is treated as an expected polling
+    continuation, even if the API's free-form status text changes over time.
+    The status message remains advisory and is not used as the sole gate.
 
     Args:
         text: Raw response body.
@@ -299,15 +303,11 @@ def _extract_next_url_from_timeout(
         log_next_url: Callback used to log a masked nextUrl.
 
     Returns:
-        Normalized nextUrl when present on timeout responses; otherwise None.
+        Normalized nextUrl when present on a continuation response; otherwise None.
     """
     try:
         data = _parse_json_object(text)
     except EventsError:
-        return None
-
-    status_msg = data.get("status")
-    if not (isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE in status_msg.lower()):
         return None
 
     next_url = data.get("nextUrl")
@@ -321,6 +321,14 @@ def _extract_next_url_from_timeout(
     )
     if validated is None:
         return None
+
+    status_msg = data.get("status")
+    if isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE not in status_msg.lower():
+        context.logger.debug(
+            "Received 400 response with valid nextUrl but unexpected status text %r for user %s",
+            status_msg,
+            context.username,
+        )
 
     log_next_url(validated)
     return validated
