@@ -14,7 +14,20 @@ dependencies = [
     "yarl>=1.20.1",
 ]
 dynamic = ["readme"]
-keywords = ["chaturbate", "events", "api", "async", "asyncio", "streaming", "real-time", "webcam", "client", "tip-bot", "chatbot", "long-polling"]
+keywords = [
+    "chaturbate",
+    "events",
+    "api",
+    "async",
+    "asyncio",
+    "streaming",
+    "real-time",
+    "webcam",
+    "client",
+    "tip-bot",
+    "chatbot",
+    "long-polling",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -151,7 +164,7 @@ future-annotations = true
     "private-member-access",
     "TC",
 ]
-"tests/conftest.py" = ["D"]
+"tests/conftest.py" = ["D", "pytest-fixture-autouse"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]
 
 [tool.ruff.lint.pydocstyle]
