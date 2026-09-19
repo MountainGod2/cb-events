@@ -37,20 +37,20 @@ repos:
         name: check github workflows
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 44.69.7
+    rev: 44.82.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.6
+    rev: v0.16.7
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
   - repo: https://github.com/DetachHead/basedpyright-prek-mirror
-    rev: 1.39.10
+    rev: 1.40.1
     hooks:
       - id: basedpyright
 
@@ -64,7 +64,7 @@ repos:
         exclude: ^tests/
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.30.0
+    rev: v1.30.1
     hooks:
       - id: zizmor
         name: zizmor security check
@@ -78,7 +78,7 @@ repos:
         files: ^(docs/.*\.md|README\.md)$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.10
+    rev: 0.12.13
     hooks:
       - id: uv-lock
         name: uv lockfile update
