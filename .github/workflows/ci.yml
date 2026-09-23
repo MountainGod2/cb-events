@@ -275,16 +275,15 @@ jobs:
       - name: Publish security summary
         if: always()
         run: |
-          icon() { [ "$1" = "success" ] && echo "✓" || echo "✗"; }
           {
             echo "## Security Scan Summary"
             echo
             echo "| Scanner | Result |"
             echo "|---|---|"
-            echo "| Dependency Audit (uv audit) | $(icon "${{ steps.audit.outcome }}") ${{ steps.audit.outcome }} |"
-            echo "| Bandit (SAST) | $(icon "${{ steps.bandit.outcome }}") ${{ steps.bandit.outcome }} |"
-            echo "| Trivy (filesystem scan) | $(icon "${{ steps.trivy.outcome }}") ${{ steps.trivy.outcome }} |"
-            echo "| Zizmor (workflow lint) | $(icon "${{ steps.zizmor.outcome }}") ${{ steps.zizmor.outcome }} |"
+            echo "| Dependency Audit (uv audit) | ${{ steps.audit.outcome }} |"
+            echo "| Bandit (SAST) | ${{ steps.bandit.outcome }} |"
+            echo "| Trivy (filesystem scan) | ${{ steps.trivy.outcome }} |"
+            echo "| Zizmor (workflow lint) | ${{ steps.zizmor.outcome }} |"
             echo
             echo "See the Security tab for detailed findings from each scanner."
           } >> "$GITHUB_STEP_SUMMARY"
