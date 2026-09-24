@@ -157,17 +157,26 @@ jobs:
           uv run coverage combine --keep coverage-artifacts
           uv run coverage report --show-missing --skip-covered | tee coverage-report.txt
           uv run coverage xml -o coverage.xml
+          {
+            echo "total_pct=$(uv run coverage report --format=total)"
+          } >> "$GITHUB_ENV"
 
       - name: Publish coverage summary
         run: |
           {
             echo "## Coverage Summary"
             echo
-            echo "Combined branch coverage for supported Python versions."
+            echo "| Metric | Value |"
+            echo "|---|---|"
+            echo "| Combined branch coverage | ${total_pct}% |"
+            echo
+            echo "<details><summary>Full report</summary>"
             echo
             echo '```text'
             cat coverage-report.txt
             echo '```'
+            echo
+            echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload combined coverage artifacts
@@ -263,23 +272,44 @@ jobs:
           sarif_file: zizmor.sarif
           category: zizmor
 
+      - name: Publish security summary
+        if: always()
+        run: |
+          {
+            echo "## Security Scan Summary"
+            echo
+            echo "| Scanner | Result |"
+            echo "|---|---|"
+            echo "| Dependency Audit (uv audit) | ${{ steps.audit.outcome }} |"
+            echo "| Bandit (SAST) | ${{ steps.bandit.outcome }} |"
+            echo "| Trivy (filesystem scan) | ${{ steps.trivy.outcome }} |"
+            echo "| Zizmor (workflow lint) | ${{ steps.zizmor.outcome }} |"
+            echo
+            echo "See the Security tab for detailed findings from each scanner."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Prune uv cache
         if: always()
         run: uv cache prune --ci
 
       - name: Security gate
-        if: >-
-          ${{
-            always() && (
-              steps.audit.outcome != 'success' ||
-              steps.bandit.outcome != 'success' ||
-              steps.trivy.outcome != 'success' ||
-              steps.zizmor.outcome != 'success'
-            )
-          }}
+        if: always()
         run: |
-          echo "::error::One or more security scanners failed (audit, Bandit, Trivy, or Zizmor)."
-          exit 1
+          failed=0
+          declare -A results=(
+            ["uv audit"]="${{ steps.audit.outcome }}"
+            ["Bandit"]="${{ steps.bandit.outcome }}"
+            ["Trivy"]="${{ steps.trivy.outcome }}"
+            ["Zizmor"]="${{ steps.zizmor.outcome }}"
+          )
+          for name in "${!results[@]}"; do
+            outcome="${results[$name]}"
+            if [ "$outcome" != "success" ]; then
+              echo "::error title=${name} failed::${name} reported an outcome of '${outcome}'. See the '${name}' step above for details."
+              failed=1
+            fi
+          done
+          exit "$failed"
 
   codeql:
     name: CodeQL (${{ matrix.language }})
