@@ -41,7 +41,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
@@ -95,7 +95,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
@@ -137,7 +137,7 @@ jobs:
     steps:
       - name: Generate release token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
@@ -159,7 +159,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
@@ -238,7 +238,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: publish-only-3.13-${{ hashFiles('uv.lock') }}

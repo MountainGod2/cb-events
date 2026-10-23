@@ -29,7 +29,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
@@ -65,7 +65,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-suffix: test-${{ matrix.python-version }}-highest-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -109,7 +109,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.11"
           enable-cache: true
           cache-suffix: test-3.11-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -137,7 +137,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.14"
           enable-cache: true
           cache-suffix: coverage-summary-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
@@ -211,7 +211,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.13.0"
+          version: "0.13.1"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
@@ -230,7 +230,7 @@ jobs:
         run: make bandit
 
       - name: Upload Bandit SARIF
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         if: always()
         continue-on-error: true
         with:
@@ -242,7 +242,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          version: v0.75.0
+          version: v0.76.0
           scan-type: fs
           skip-dirs: .git,.github,.venv,docs/_build
           format: sarif
@@ -251,7 +251,7 @@ jobs:
           exit-code: 1
 
       - name: Upload Trivy SARIF
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         if: always()
         continue-on-error: true
         with:
@@ -265,7 +265,7 @@ jobs:
         run: make zizmor
 
       - name: Upload Zizmor SARIF
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         if: always()
         continue-on-error: true
         with:
@@ -337,12 +337,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: "/language:${{ matrix.language }}"
