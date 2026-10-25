@@ -59,10 +59,13 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         "tip": {"tokens": 100},
         "nested": {"items": [1, 2, {"flag": True}]},
     }
-    assert event.model_copy(deep=True).data == {
+    copied = event.model_copy(deep=True)
+    assert copied.data == {
         "tip": {"tokens": 100},
         "nested": {"items": (1, 2, {"flag": True})},
     }
+    with pytest.raises(TypeError, match="immutable"):
+        copied.data["tip"] = {"tokens": 999}
 
 
 def test_event_data_rejects_excessive_nesting() -> None:
