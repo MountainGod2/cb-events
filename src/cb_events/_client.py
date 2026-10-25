@@ -454,18 +454,19 @@ class EventClient:
                 self._next_url = None
                 self._active_poll_tasks.clear()
             if session is not None:
+                close_task = asyncio.create_task(session.close())
                 try:
-                    # Shield the close call so shutdown can finish even if the
-                    # surrounding task is cancelled. Re-raise cancellation only
-                    # after the session close attempt completes.
-                    await asyncio.shield(session.close())
+                    # Shield the same close task so shutdown can finish even if the
+                    # surrounding await is cancelled. Re-raise cancellation only
+                    # after the original cleanup has completed.
+                    await asyncio.shield(close_task)
                 except asyncio.CancelledError:
                     _logger.warning(
                         "Session close for user %s was cancelled; waiting for shutdown to finish.",
                         self.username,
                     )
                     try:
-                        await asyncio.shield(session.close())
+                        await asyncio.shield(close_task)
                     except (ClientError, OSError, RuntimeError) as e:
                         _logger.warning(
                             "Error closing session (%s).",
