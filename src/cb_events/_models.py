@@ -7,9 +7,10 @@ snake_case attributes.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Mapping  # ruff: ignore[typing-only-standard-library-import]
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, ClassVar, TypeVar, cast
+from typing import ClassVar, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -22,9 +23,6 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 from ._compat import override
-
-if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
