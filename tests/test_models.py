@@ -284,6 +284,23 @@ def test_event_broadcaster_missing_returns_none() -> None:
     assert event.broadcaster is None
 
 
+def test_event_data_is_immutable() -> None:
+    """Mutating the raw payload should not silently corrupt the parsed model."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-immutable",
+        "object": {"tip": {"tokens": 5}},
+    })
+
+    assert event.tip is not None
+    assert event.tip.tokens == 5
+
+    with pytest.raises(TypeError):
+        event.data["tip"]["tokens"] = 100
+
+    assert event.tip.tokens == 5
+
+
 def test_message_not_parsed_on_tip_event() -> None:
     """Message objects should not be parsed for TIP events."""
     event = Event.model_validate({

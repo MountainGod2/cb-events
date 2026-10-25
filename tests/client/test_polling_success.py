@@ -94,6 +94,24 @@ async def test_strict_validation_raises_on_invalid_event(
             await client._poll()
 
 
+async def test_strict_validation_raises_on_invalid_nested_payload(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Strict mode should validate nested payload shape, not just the envelope."""
+    response = {
+        "events": [{"method": "tip", "id": "invalid-tip", "object": {"tip": {"tokens": "bad"}}}],
+        "nextUrl": None,
+    }
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
+    config = ClientConfig(strict_validation=True)
+
+    async with event_client_factory(config=config) as client:
+        with pytest.raises(ValidationError):
+            await client._poll()
+
+
 async def test_lenient_validation_skips_invalid_events(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
