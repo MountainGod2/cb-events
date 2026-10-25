@@ -1,9 +1,11 @@
 """Model validation tests for :mod:`cb_events.models`."""
 
+import json
 import logging
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
 
@@ -39,6 +41,42 @@ def test_event_properties_parsed() -> None:
     assert event.tip.tokens == 100
     assert event.user is not None
     assert event.user.username == "tipper"
+
+
+def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
+    """Event payloads should remain JSON-compatible and copy-safe."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "event_456",
+        "object": {
+            "tip": {"tokens": 100},
+            "nested": {"items": [1, 2, {"flag": True}]},
+        },
+    })
+
+    assert isinstance(event.data, dict)
+    assert json.loads(json.dumps(event.data)) == {
+        "tip": {"tokens": 100},
+        "nested": {"items": [1, 2, {"flag": True}]},
+    }
+    assert event.model_copy(deep=True).data == {
+        "tip": {"tokens": 100},
+        "nested": {"items": (1, 2, {"flag": True})},
+    }
+
+
+def test_event_data_rejects_excessive_nesting() -> None:
+    """Excessively deep payloads should fail validation without RecursionError."""
+    nested: object = {"value": 1}
+    for _ in range(5000):
+        nested = {"value": nested}
+
+    with pytest.raises(ValidationError, match="nesting exceeds"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_deep",
+            "object": {"message": {"message": "hello", "extra": nested}},
+        })
 
 
 @pytest.mark.parametrize(

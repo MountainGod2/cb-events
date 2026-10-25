@@ -7,9 +7,9 @@ snake_case attributes.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping  # ruff: ignore[typing-only-standard-library-import]
+from collections.abc import Callable, Mapping, Sequence  # ruff: ignore[typing-only-standard-library-import]
+from copy import deepcopy
 from enum import StrEnum
-from types import MappingProxyType
 from typing import ClassVar, TypeVar, cast
 
 from pydantic import (
@@ -204,14 +204,83 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
+_MAX_EVENT_DATA_DEPTH = 1000
+_IMMUTABLE_EVENT_PAYLOAD_ERROR = TypeError("Event payloads are immutable.")
+
+
+class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
+    """Mapping that forbids mutation while remaining JSON-serializable."""
+
+    def __deepcopy__(self, memo: dict[int, object]) -> dict[str, object]:
+        return {key: deepcopy(value, memo) for key, value in self.items()}
+
+    def __copy__(self) -> dict[str, object]:
+        return dict(self)
+
+    @override
+    def __setitem__(self, key: str, value: object) -> None:
+        del key, value
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def __delitem__(self, key: str) -> None:
+        del key
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def clear(self) -> None:
+        del self
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def pop(self, key: str, default: object = None) -> object:
+        del self, key, default
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def popitem(self) -> tuple[str, object]:
+        del self
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def setdefault(self, key: str, default: object = None) -> object:
+        del self, key, default
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+    @override
+    def update(self, *args: object, **kwargs: object) -> None:
+        del self, args, kwargs
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+
+
+def _event_data_depth(value: object) -> int:
+    """Return the maximum nested container depth for a payload value."""
+    max_depth = 0
+    stack: list[tuple[object, int]] = [(value, 0)]
+    while stack:
+        current, depth = stack.pop()
+        max_depth = max(max_depth, depth)
+        if isinstance(current, dict):
+            mapping = cast("dict[str, object]", current)
+            stack.extend((item, depth + 1) for item in mapping.values())
+        elif isinstance(current, (list, tuple)):
+            sequence = cast("Sequence[object]", current)
+            stack.extend((item, depth + 1) for item in sequence)
+    return max_depth
+
+
 def _freeze_event_data(value: object) -> object:
-    """Return an immutable copy of the raw event payload."""
+    """Return a JSON-safe immutable copy of the raw event payload."""
+    if _event_data_depth(value) > _MAX_EVENT_DATA_DEPTH:
+        msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+        raise ValueError(msg)
+
     if isinstance(value, dict):
         mapping = cast("dict[str, object]", value)
-        frozen: dict[str, object] = {}
-        for key, item in mapping.items():
-            frozen[key] = _freeze_event_data(item)
-        return MappingProxyType(frozen)
+        frozen: _ImmutableDict = _ImmutableDict({
+            key: _freeze_event_data(item) for key, item in mapping.items()
+        })
+        return frozen
     if isinstance(value, list):
         items = cast("list[object]", value)
         return tuple(_freeze_event_data(item) for item in items)
