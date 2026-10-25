@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import logging
 from enum import StrEnum
-from typing import TYPE_CHECKING, ClassVar, TypeVar
+from types import MappingProxyType
+from typing import TYPE_CHECKING, ClassVar, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -23,7 +24,7 @@ from pydantic.alias_generators import to_camel
 from ._compat import override
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
@@ -205,6 +206,23 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
+def _freeze_event_data(value: object) -> object:
+    """Return an immutable copy of the raw event payload."""
+    if isinstance(value, dict):
+        mapping = cast("dict[str, object]", value)
+        frozen: dict[str, object] = {}
+        for key, item in mapping.items():
+            frozen[key] = _freeze_event_data(item)
+        return MappingProxyType(frozen)
+    if isinstance(value, list):
+        items = cast("list[object]", value)
+        return tuple(_freeze_event_data(item) for item in items)
+    if isinstance(value, tuple):
+        items = cast("tuple[object, ...]", value)
+        return tuple(_freeze_event_data(item) for item in items)
+    return value
+
+
 class Event(BaseEventModel):
     """Top-level event container.
 
@@ -219,8 +237,8 @@ class Event(BaseEventModel):
     """Type of the event."""
     id: str
     """Unique identifier for the event."""
-    data: dict[str, object] = Field(default_factory=dict, alias="object")
-    """Event data payload."""
+    data: Mapping[str, object] = Field(default_factory=dict, alias="object")
+    """Immutable event data payload."""
 
     # Private attributes hold the results of one-time sub-model parsing.
     _user: User | None = PrivateAttr(default=None)
@@ -232,10 +250,8 @@ class Event(BaseEventModel):
 
     @override
     def model_post_init(self, context: object, /) -> None:  # ruff: ignore[unused-method-argument]
-        """Parse and cache all typed sub-models after field initialisation.
-
-        Called once by Pydantic during ``__init__`` and ``model_validate``.
-        """
+        """Freeze the raw payload and cache the validated sub-models."""
+        object.__setattr__(self, "data", _freeze_event_data(self.data))  # ruff: ignore[unnecessary-dunder-call] - required for frozen BaseModel
         self._user = self._extract("user", User.model_validate)
         self._message = self._extract(
             "message",
