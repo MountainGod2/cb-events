@@ -85,7 +85,7 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { cb-events = false, gitpython = false }
+exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
 environments = ["python_version>='3.11'"]
 fork-strategy = "requires-python"
 
