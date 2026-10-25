@@ -10,7 +10,7 @@ import logging
 from collections.abc import Callable, Mapping, Sequence  # ruff: ignore[typing-only-standard-library-import]
 from copy import deepcopy
 from enum import StrEnum
-from typing import ClassVar, TypeVar, cast
+from typing import ClassVar, Self, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -211,11 +211,16 @@ _IMMUTABLE_EVENT_PAYLOAD_ERROR = TypeError("Event payloads are immutable.")
 class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
     """Mapping that forbids mutation while remaining JSON-serializable."""
 
-    def __deepcopy__(self, memo: dict[int, object]) -> dict[str, object]:
-        return {key: deepcopy(value, memo) for key, value in self.items()}
+    def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableDict:
+        return _ImmutableDict({key: deepcopy(value, memo) for key, value in self.items()})
 
     def __copy__(self) -> dict[str, object]:
         return dict(self)
+
+    @override
+    def __ior__(self, other: object) -> Self:
+        del other
+        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
 
     @override
     def __setitem__(self, key: str, value: object) -> None:
