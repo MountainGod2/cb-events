@@ -10,11 +10,11 @@ from tests.conftest import EventClientFactory
 from tests.helpers import make_events_url
 
 
-async def test_concurrent_polls_release_lock_during_http_call(
+async def test_concurrent_polls_are_serialized_per_client(
     event_client_factory: EventClientFactory,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Concurrent polls should overlap I/O while protecting nextUrl state updates."""
+    """A single client should only have one in-flight poll at a time."""
     entered_first_request = asyncio.Event()
     release_first_request = asyncio.Event()
     in_flight = 0
@@ -43,7 +43,7 @@ async def test_concurrent_polls_release_lock_during_http_call(
 
         await asyncio.gather(first_poll, second_poll)
 
-    assert max_in_flight >= 2
+    assert max_in_flight == 1
 
 
 async def test_close_cancels_inflight_poll(

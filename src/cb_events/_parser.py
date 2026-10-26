@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from yarl import URL
 
 from ._exceptions import AUTH_ERROR_STATUS_CODES, AuthError, EventsError, build_http_error
-from ._models import Event
+from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from ._utils import (
     TRUNCATE_LENGTH,
     UrlValidationReason,
@@ -106,6 +106,48 @@ def _log_validation_error(
     )
 
 
+def _strict_validate_event_payload(item: object) -> None:
+    """Validate nested payloads even when the event envelope itself is accepted."""
+    if not _is_json_object(item):
+        return
+
+    object_payload = item.get("object")
+    if not _is_json_object(object_payload):
+        return
+
+    method = item.get("method")
+    if not isinstance(method, str):
+        return
+
+    try:
+        event_type = Event.model_validate(item).type
+    except ValidationError:
+        return
+
+    validators: tuple[tuple[str, Callable[[object], object], tuple[str, ...] | None], ...] = (
+        ("user", User.model_validate, ()),
+        (
+            "message",
+            Message.model_validate,
+            (EventType.CHAT_MESSAGE.value, EventType.PRIVATE_MESSAGE.value),
+        ),
+        ("tip", Tip.model_validate, (EventType.TIP.value,)),
+        ("media", Media.model_validate, (EventType.MEDIA_PURCHASE.value,)),
+        (
+            "subject",
+            lambda value: RoomSubject.model_validate({"subject": value}),
+            (EventType.ROOM_SUBJECT_CHANGE.value,),
+        ),
+    )
+
+    for key, validator, allowed_types in validators:
+        if key not in object_payload:
+            continue
+        if allowed_types and event_type.value not in allowed_types:
+            continue
+        _ = validator(object_payload[key])
+
+
 def _parse_event(
     item: object,
     *,
@@ -126,12 +168,16 @@ def _parse_event(
         ValidationError: If strict is True and validation fails.
     """
     try:
-        return Event.model_validate(item)
+        event = Event.model_validate(item)
     except ValidationError as exc:
         if strict:
             raise
         _log_validation_error(item, exc, logger=context.logger)
         return None
+
+    if strict:
+        _strict_validate_event_payload(item)
+    return event
 
 
 def _parse_events(

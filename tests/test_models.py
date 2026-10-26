@@ -1,9 +1,11 @@
 """Model validation tests for :mod:`cb_events.models`."""
 
+import json
 import logging
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
 
@@ -39,6 +41,45 @@ def test_event_properties_parsed() -> None:
     assert event.tip.tokens == 100
     assert event.user is not None
     assert event.user.username == "tipper"
+
+
+def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
+    """Event payloads should remain JSON-compatible and copy-safe."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "event_456",
+        "object": {
+            "tip": {"tokens": 100},
+            "nested": {"items": [1, 2, {"flag": True}]},
+        },
+    })
+
+    assert isinstance(event.data, dict)
+    assert json.loads(json.dumps(event.data)) == {
+        "tip": {"tokens": 100},
+        "nested": {"items": [1, 2, {"flag": True}]},
+    }
+    copied = event.model_copy(deep=True)
+    assert copied.data == {
+        "tip": {"tokens": 100},
+        "nested": {"items": (1, 2, {"flag": True})},
+    }
+    with pytest.raises(TypeError, match="immutable"):
+        copied.data["tip"] = {"tokens": 999}
+
+
+def test_event_data_rejects_excessive_nesting() -> None:
+    """Excessively deep payloads should fail validation without RecursionError."""
+    nested: object = {"value": 1}
+    for _ in range(5000):
+        nested = {"value": nested}
+
+    with pytest.raises(ValidationError, match="nesting exceeds"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_deep",
+            "object": {"message": {"message": "hello", "extra": nested}},
+        })
 
 
 @pytest.mark.parametrize(
@@ -282,6 +323,23 @@ def test_event_broadcaster_missing_returns_none() -> None:
     })
 
     assert event.broadcaster is None
+
+
+def test_event_data_is_immutable() -> None:
+    """Mutating the raw payload should not silently corrupt the parsed model."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-immutable",
+        "object": {"tip": {"tokens": 5}},
+    })
+
+    assert event.tip is not None
+    assert event.tip.tokens == 5
+
+    with pytest.raises(TypeError):
+        event.data["tip"]["tokens"] = 100
+
+    assert event.tip.tokens == 5
 
 
 def test_message_not_parsed_on_tip_event() -> None:

@@ -219,6 +219,7 @@ class EventClient:
         self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
         self._polling_lock: asyncio.Lock = asyncio.Lock()
+        self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=_DEFAULT_MAX_RATE,
             time_period=_DEFAULT_TIME_PERIOD,
@@ -355,47 +356,48 @@ class EventClient:
             msg = "Unable to resolve current asyncio task."
             raise EventsError(msg)
 
-        async with self._polling_lock:
-            if self._state is not _ClientState.OPEN:
-                raise EventsError(_CLIENT_CLOSING_MESSAGE)
-            self._active_poll_tasks.add(current_task)
-            request_next_url = self._next_url
-
-        url = self._build_url(next_url=request_next_url)
-        _logger.debug("Polling %s", _mask_url(url, self._token))
-
-        try:
-            status, text = await self._request(url)
-
-            events, next_url = process_response(
-                status=status,
-                text=text,
-                context=self._parser_context,
-                strict_validation=self.config.strict_validation,
-                log_next_url=lambda next_url: _logger.debug(
-                    "Received nextUrl from timeout response: %s",
-                    _mask_url(next_url, self._token),
-                ),
-            )
-
+        async with self._polling_semaphore:
             async with self._polling_lock:
-                if self._state is _ClientState.OPEN:
-                    if self._next_url == request_next_url:
-                        self._next_url = next_url
-                    else:
-                        _logger.debug(
-                            "Skipping stale nextUrl update for user %s",
-                            self.username,
-                        )
-        except asyncio.CancelledError:
-            if self._state is not _ClientState.OPEN:
-                raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
-            raise
-        else:
-            return events
-        finally:
-            async with self._polling_lock:
-                self._active_poll_tasks.discard(current_task)
+                if self._state is not _ClientState.OPEN:
+                    raise EventsError(_CLIENT_CLOSING_MESSAGE)
+                self._active_poll_tasks.add(current_task)
+                request_next_url = self._next_url
+
+            url = self._build_url(next_url=request_next_url)
+            _logger.debug("Polling %s", _mask_url(url, self._token))
+
+            try:
+                status, text = await self._request(url)
+
+                events, next_url = process_response(
+                    status=status,
+                    text=text,
+                    context=self._parser_context,
+                    strict_validation=self.config.strict_validation,
+                    log_next_url=lambda next_url: _logger.debug(
+                        "Received nextUrl from timeout response: %s",
+                        _mask_url(next_url, self._token),
+                    ),
+                )
+
+                async with self._polling_lock:
+                    if self._state is _ClientState.OPEN:
+                        if self._next_url == request_next_url:
+                            self._next_url = next_url
+                        else:
+                            _logger.debug(
+                                "Skipping stale nextUrl update for user %s",
+                                self.username,
+                            )
+            except asyncio.CancelledError:
+                if self._state is not _ClientState.OPEN:
+                    raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
+                raise
+            else:
+                return events
+            finally:
+                async with self._polling_lock:
+                    self._active_poll_tasks.discard(current_task)
 
     async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
@@ -452,11 +454,25 @@ class EventClient:
                 self._next_url = None
                 self._active_poll_tasks.clear()
             if session is not None:
+                close_task = asyncio.create_task(session.close())
                 try:
-                    # asyncio.shield ensures session.close() runs to completion even
-                    # if close() itself is cancelled from an outer task, preventing
-                    # the underlying TCP connection from being abandoned mid-teardown.
-                    await asyncio.shield(session.close())
+                    # Shield the same close task so shutdown can finish even if the
+                    # surrounding await is cancelled. Re-raise cancellation only
+                    # after the original cleanup has completed.
+                    await asyncio.shield(close_task)
+                except asyncio.CancelledError:
+                    _logger.warning(
+                        "Session close for user %s was cancelled; waiting for shutdown to finish.",
+                        self.username,
+                    )
+                    try:
+                        await asyncio.shield(close_task)
+                    except (ClientError, OSError, RuntimeError) as e:
+                        _logger.warning(
+                            "Error closing session (%s).",
+                            type(e).__name__,
+                        )
+                    raise
                 except (ClientError, OSError, RuntimeError) as e:
                     _logger.warning(
                         "Error closing session (%s).",

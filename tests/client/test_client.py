@@ -1,5 +1,6 @@
 """Core tests for client initialization, configuration and utils."""
 
+import asyncio
 import logging
 from unittest.mock import AsyncMock
 from urllib.parse import quote
@@ -272,3 +273,31 @@ async def test_close_logs_warning_when_session_close_raises(
 
     assert client.session is None
     assert "Error closing session" in caplog.text
+
+
+async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
+    """A cancellation during shutdown should not restart session cleanup."""
+    client = EventClient(make_events_url("user", "test_token"))
+    close_calls = 0
+    started = asyncio.Event()
+    completed = asyncio.Event()
+
+    async def _slow_close() -> None:
+        nonlocal close_calls
+        close_calls += 1
+        started.set()
+        await asyncio.sleep(0.05)
+        completed.set()
+
+    client.session = AsyncMock()  # type: ignore[assignment]
+    client.session.close = _slow_close
+
+    close_task = asyncio.create_task(client.close())
+    await started.wait()
+    close_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await close_task
+
+    assert close_calls == 1
+    assert completed.is_set()

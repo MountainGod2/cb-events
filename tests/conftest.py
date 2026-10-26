@@ -1,7 +1,7 @@
 """Test configuration and shared fixtures."""
 
 import re
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncGenerator, Iterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Protocol
 from unittest.mock import AsyncMock
@@ -75,7 +75,7 @@ def event_client_factory(credentials: tuple[str, str]) -> EventClientFactory:
         config: ClientConfig | None = None,
         use_testbed: bool = True,
         **config_overrides: object,
-    ) -> AsyncIterator[EventClient]:
+    ) -> AsyncGenerator[EventClient, None]:
         if config is not None and config_overrides:
             msg = "Provide either `config` or keyword overrides, not both."
             raise ValueError(msg)
