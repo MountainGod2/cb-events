@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v10.1.0 (2026-10-26)
+
+### Bug Fixes
+
+- **client**: Improve session closing handling in EventClient
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+- **models**: Enhance _ImmutableDict to ensure immutability and improve deepcopy handling
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+### Features
+
+- **client**: Implement polling semaphore for improved concurrency control
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+- **models**: Add immutable dictionary class and enhance event data handling
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+- **models**: Enhance event data handling with immutability and type safety
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+- **parser**: Add strict validation for nested event payloads
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+- **tests**: Enhance polling tests with strict validation and immutability checks
+  ([#497](https://github.com/MountainGod2/cb-events/pull/497),
+  [`f921de3`](https://github.com/MountainGod2/cb-events/commit/f921de3694080f420dcea816bc10a1c4158e9a39))
+
+
 ## v10.0.0 (2026-07-31)
 
 ### Chores
