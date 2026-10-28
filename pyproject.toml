@@ -72,7 +72,7 @@ docs = [
     "mdformat-mkdocs==5.3.0",
     "mdformat-frontmatter==2.1.2",
     "mdformat-pyproject==0.1.1",
-    "mkdocstrings-python==2.0.9",
+    "mkdocstrings-python==2.0.10",
     "pymdown-extensions==12.3",
     "zensical==0.0.71",
 ]
