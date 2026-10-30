@@ -39,9 +39,9 @@ jobs:
         run: git checkout -B "$REF_NAME"
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.4"
+          version: "0.13.5"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
@@ -93,9 +93,9 @@ jobs:
           path: dist
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.4"
+          version: "0.13.5"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
@@ -157,9 +157,9 @@ jobs:
         run: git reset --hard "$GIT_SHA"
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.4"
+          version: "0.13.5"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
@@ -236,9 +236,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.4"
+          version: "0.13.5"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: publish-only-3.13-${{ hashFiles('uv.lock') }}
