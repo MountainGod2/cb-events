@@ -41,7 +41,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
@@ -95,7 +95,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           python-version: "3.13"
           enable-cache: true
           cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
@@ -159,7 +159,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
@@ -238,7 +238,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: "0.13.5"
+          version: "0.13.6"
           python-version: "3.13"
           enable-cache: false
           cache-suffix: publish-only-3.13-${{ hashFiles('uv.lock') }}
