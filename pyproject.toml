@@ -80,7 +80,7 @@ security = ["bandit[sarif]==1.9.4", "zizmor==1.31.1"]
 build = ["python-semantic-release==10.7.0"]
 
 [build-system]
-requires = ["hatchling==1.32.4", "hatch-fancy-pypi-readme==25.1.0"]
+requires = ["hatchling==1.33.0", "hatch-fancy-pypi-readme==25.1.0"]
 build-backend = "hatchling.build"
 
 [tool.uv]
