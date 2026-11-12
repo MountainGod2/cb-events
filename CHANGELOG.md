@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v10.1.1 (2026-11-12)
+
+### Bug Fixes
+
+- **models**: Update pop method signature in _ImmutableDict to accept object type for key
+  ([#528](https://github.com/MountainGod2/cb-events/pull/528),
+  [`80e42a4`](https://github.com/MountainGod2/cb-events/commit/80e42a494fcb5829b42b8df040d2c838da3ca291))
+
+- **request**: Replace direct asyncio.sleep call with _sleep alias for consistency
+  ([#528](https://github.com/MountainGod2/cb-events/pull/528),
+  [`80e42a4`](https://github.com/MountainGod2/cb-events/commit/80e42a494fcb5829b42b8df040d2c838da3ca291))
+
+
 ## v10.1.0 (2026-10-26)
 
 ### Bug Fixes
