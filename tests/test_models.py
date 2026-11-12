@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
@@ -64,8 +64,9 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         "tip": {"tokens": 100},
         "nested": {"items": (1, 2, {"flag": True})},
     }
+    mutable_data = cast(dict[str, object], copied.data)
     with pytest.raises(TypeError, match="immutable"):
-        copied.data["tip"] = {"tokens": 999}
+        mutable_data["tip"] = {"tokens": 999}
 
 
 def test_event_data_rejects_excessive_nesting() -> None:
@@ -336,8 +337,9 @@ def test_event_data_is_immutable() -> None:
     assert event.tip is not None
     assert event.tip.tokens == 5
 
+    mutable_tip = cast(dict[str, object], event.data["tip"])
     with pytest.raises(TypeError):
-        event.data["tip"]["tokens"] = 100
+        mutable_tip["tokens"] = 100
 
     assert event.tip.tokens == 5
 

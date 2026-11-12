@@ -238,7 +238,7 @@ class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
         raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
 
     @override
-    def pop(self, key: str, default: object = None) -> object:
+    def pop(self, key: object, default: object = None) -> object:
         del self, key, default
         raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
 
