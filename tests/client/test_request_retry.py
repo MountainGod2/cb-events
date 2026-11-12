@@ -1,6 +1,7 @@
 """Tests for retry behavior in the EventClient._request path."""
 
 import re
+from typing import Any, cast
 
 import pytest
 import stamina
@@ -94,8 +95,8 @@ async def test_perform_request_attempt_rejects_overlapping_auth_and_general_stat
     """Overlapping auth/general retry statuses should be rejected explicitly."""
     with pytest.raises(ValueError, match=r"overlap retry_status_codes"):
         await perform_request_attempt(
-            session=None,  # type: ignore[arg-type]
-            rate_limiter=None,  # type: ignore[arg-type]
+            session=cast(Any, None),
+            rate_limiter=cast(Any, None),
             url="https://events.testbed.cb.dev/events",
             retry_status_codes=frozenset({401}),
             auth_retry=AuthRetryOptions(status_codes=frozenset({401}), attempts=2),

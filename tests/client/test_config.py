@@ -53,7 +53,7 @@ def test_custom_configuration() -> None:
 def test_reject_non_positive_values(invalid_kwargs: dict[str, int]) -> None:
     """Timeout and retry attempts must be strictly positive."""
     with pytest.raises(ValidationError):
-        ClientConfig(**invalid_kwargs)
+        ClientConfig.model_validate(invalid_kwargs)
 
 
 def test_reject_max_delay_less_than_backoff() -> None:
