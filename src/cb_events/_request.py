@@ -11,6 +11,8 @@ from aiohttp.client_exceptions import ClientError
 
 from ._exceptions import EventsError, build_http_error
 
+_sleep = asyncio.sleep
+
 if TYPE_CHECKING:
     import logging
     from collections.abc import Awaitable, Callable
@@ -118,7 +120,7 @@ async def perform_request_attempt(
                 status,
             )
         if options.delay > 0:
-            await asyncio.sleep(options.delay)
+            await _sleep(options.delay)
 
     return status, text
 
