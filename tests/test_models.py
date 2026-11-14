@@ -2,6 +2,7 @@
 
 import json
 import logging
+import pickle
 from typing import Any, cast
 
 import pytest
@@ -81,6 +82,20 @@ def test_event_data_rejects_excessive_nesting() -> None:
             "id": "event_deep",
             "object": {"message": {"message": "hello", "extra": nested}},
         })
+
+
+def test_event_is_pickle_round_trippable() -> None:
+    """Event objects should survive pickle round-trips for multiprocessing and caches."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "event_pickle",
+        "object": {"tip": {"tokens": 42}, "user": {"username": "alice"}},
+    })
+
+    restored = pickle.loads(pickle.dumps(event))
+
+    assert restored == event
+    assert restored.data == event.data
 
 
 @pytest.mark.parametrize(

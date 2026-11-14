@@ -177,10 +177,13 @@ def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask token in URL for safe logging."""
+    """Mask token in URL for safe logging without touching the host."""
     masked = _mask_token(token)
     encoded_token = _quote_segment(token)
-    return url.replace(token, masked).replace(encoded_token, masked)
+    parsed = URL(url)
+    masked_path = parsed.raw_path.replace(encoded_token, masked).replace(token, masked)
+    masked_query = parsed.raw_query_string.replace(encoded_token, masked).replace(token, masked)
+    return str(parsed.with_path(masked_path).with_query(masked_query))
 
 
 class EventClient:
@@ -213,12 +216,11 @@ class EventClient:
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
-            logger=_logger,
+            logger=logging.getLogger("cb_events._parser"),
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.OPEN
         self._next_url: str | None = None
-        self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=_DEFAULT_MAX_RATE,
@@ -229,7 +231,7 @@ class EventClient:
             attempts=self.config.auth_retry_attempts,
             delay=self.config.auth_retry_delay,
             username=self.username,
-            logger=_logger,
+            logger=logging.getLogger("cb_events._request"),
         )
 
     @override
@@ -251,28 +253,24 @@ class EventClient:
             EventsError: If the client has already been closed, is already
                 open, or if session creation fails.
         """
-        async with self._polling_lock:
-            if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
-                raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
-            if self.session is not None:
-                raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
-            captured: Exception | None = None
-            try:
-                self.session = ClientSession(
-                    timeout=ClientTimeout(
-                        total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
-                        connect=_CONNECT_TIMEOUT,
-                    ),
-                )
-            except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
-                # Fall through to close() and re-raise outside the lock.
-                captured = exc
-            else:
-                return self
+        if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
+            raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
+        if self.session is not None:
+            raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
 
-        await self.close()
-        msg = "Failed to create HTTP session."
-        raise EventsError(msg) from captured
+        try:
+            self.session = ClientSession(
+                timeout=ClientTimeout(
+                    total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
+                    connect=_CONNECT_TIMEOUT,
+                ),
+            )
+        except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
+            await self.close()
+            msg = "Failed to create HTTP session."
+            raise EventsError(msg) from exc
+
+        return self
 
     async def __aexit__(
         self,
@@ -327,7 +325,7 @@ class EventClient:
             config=self.config,
             username=self.username,
             perform_attempt=self._perform_request_attempt,
-            logger=_logger,
+            logger=logging.getLogger("cb_events._request"),
         )
 
     async def _poll(self) -> list[Event]:
@@ -340,13 +338,7 @@ class EventClient:
 
         Raises:
             EventsError: If shutdown has started or if close() cancels this poll.
-            asyncio.CancelledError: If the polling task is cancelled externally.
-
-        Note:
-            The polling lock is held only while reading or writing _next_url and
-            tracking active poll tasks. HTTP I/O runs outside the lock.
         """
-        # Fail early to avoid locking when already closing/closed.
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
@@ -357,11 +349,10 @@ class EventClient:
             raise EventsError(msg)
 
         async with self._polling_semaphore:
-            async with self._polling_lock:
-                if self._state is not _ClientState.OPEN:
-                    raise EventsError(_CLIENT_CLOSING_MESSAGE)
-                self._active_poll_tasks.add(current_task)
-                request_next_url = self._next_url
+            if self._state is not _ClientState.OPEN:
+                raise EventsError(_CLIENT_CLOSING_MESSAGE)
+            self._active_poll_tasks.add(current_task)
+            request_next_url = self._next_url
 
             url = self._build_url(next_url=request_next_url)
             _logger.debug("Polling %s", _mask_url(url, self._token))
@@ -380,24 +371,21 @@ class EventClient:
                     ),
                 )
 
-                async with self._polling_lock:
-                    if self._state is _ClientState.OPEN:
-                        if self._next_url == request_next_url:
-                            self._next_url = next_url
-                        else:
-                            _logger.debug(
-                                "Skipping stale nextUrl update for user %s",
-                                self.username,
-                            )
-            except asyncio.CancelledError:
-                if self._state is not _ClientState.OPEN:
-                    raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
-                raise
-            else:
+                if self._state is _ClientState.OPEN:
+                    if self._next_url == request_next_url:
+                        self._next_url = next_url
+                    else:
+                        _logger.debug(
+                            "Skipping stale nextUrl update for user %s",
+                            self.username,
+                        )
                 return events
             finally:
-                async with self._polling_lock:
-                    self._active_poll_tasks.discard(current_task)
+                self._active_poll_tasks.discard(current_task)
+
+    async def poll(self) -> list[Event]:
+        """Public wrapper for fetching one batch of events."""
+        return await self._poll()
 
     async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
@@ -432,33 +420,27 @@ class EventClient:
         self._state = _ClientState.CLOSING
         try:
             current_task = asyncio.current_task()
-            # Cancel in-flight poll tasks first so shutdown does not wait on long I/O.
-            async with self._polling_lock:
-                poll_tasks = [
-                    task
-                    for task in self._active_poll_tasks
-                    if task is not current_task and not task.done()
-                ]
+            poll_tasks = [
+                task
+                for task in self._active_poll_tasks
+                if task is not current_task and not task.done()
+            ]
 
             for poll_task in poll_tasks:
                 poll_task.cancel()  # pyright: ignore[reportUnusedCallResult]
 
             for poll_task in poll_tasks:
-                with suppress(asyncio.CancelledError, EventsError):
+                with suppress(asyncio.CancelledError):
                     await poll_task
 
-            # If outside the lock, await session.close() so it is not held on I/O.
-            async with self._polling_lock:
-                session: ClientSession | None = self.session
-                self.session = None
-                self._next_url = None
-                self._active_poll_tasks.clear()
+            session: ClientSession | None = self.session
+            self.session = None
+            self._next_url = None
+            self._active_poll_tasks.clear()
+
             if session is not None:
                 close_task = asyncio.create_task(session.close())
                 try:
-                    # Shield the same close task so shutdown can finish even if the
-                    # surrounding await is cancelled. Re-raise cancellation only
-                    # after the original cleanup has completed.
                     await asyncio.shield(close_task)
                 except asyncio.CancelledError:
                     _logger.warning(
@@ -467,16 +449,10 @@ class EventClient:
                     )
                     try:
                         await asyncio.shield(close_task)
-                    except (ClientError, OSError, RuntimeError) as e:
-                        _logger.warning(
-                            "Error closing session (%s).",
-                            type(e).__name__,
-                        )
+                    except (ClientError, OSError, RuntimeError) as exc:
+                        _logger.warning("Error closing session (%s).", type(exc).__name__)
                     raise
-                except (ClientError, OSError, RuntimeError) as e:
-                    _logger.warning(
-                        "Error closing session (%s).",
-                        type(e).__name__,
-                    )
+                except (ClientError, OSError, RuntimeError) as exc:
+                    _logger.warning("Error closing session (%s).", type(exc).__name__)
         finally:
             self._state = _ClientState.CLOSED

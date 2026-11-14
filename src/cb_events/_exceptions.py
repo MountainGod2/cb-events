@@ -78,6 +78,10 @@ class AuthError(EventsError):
     """
 
 
+class StrictValidationError(EventsError):
+    """Event validation failed while strict mode was enabled."""
+
+
 class HttpStatusError(EventsError):
     """Base error for HTTP status failures other than auth checks."""
 

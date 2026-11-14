@@ -7,7 +7,6 @@ from urllib.parse import quote
 
 import pytest
 from aiohttp.client_exceptions import ClientError
-from pydantic import ValidationError
 from yarl import URL
 
 from cb_events import AuthError, ClientConfig, EventClient, EventsError
@@ -35,6 +34,17 @@ def test_token_masking_in_repr() -> None:
 
     assert full_token not in repr_str
     assert "*" * len(full_token) in repr_str
+
+
+def test_mask_url_preserves_host_when_token_is_short() -> None:
+    """Masking a URL should not replace host characters when a short token is present."""
+    token = "abc"
+    url = "https://events.testbed.cb.dev/events/user/abc/"
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert token not in masked
 
 
 @pytest.mark.parametrize(
@@ -160,7 +170,7 @@ def test_parse_events_strict_and_lenient(
     invalid = {"method": "tip", "object": {}}
     invalid_non_mapping = 123
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(EventsError):
         _parse_events([valid, invalid], strict=True, context=_TEST_PARSER_CONTEXT)
 
     events = _parse_events(

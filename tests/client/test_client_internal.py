@@ -70,6 +70,28 @@ async def test_poll_debug_logs_masked_url(
     assert "secret_token_123" not in caplog.text
 
 
+async def test_close_cancels_active_poll_without_wrapping_cancelled_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Close should cancel in-flight polls without converting the cancellation into EventsError."""
+    client = EventClient(make_events_url("user", "token"))
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        await asyncio.sleep(10)
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with client:
+        poll_task = asyncio.create_task(client._poll())
+        await asyncio.sleep(0)
+
+        await client.close()
+
+        with pytest.raises(asyncio.CancelledError):
+            await poll_task
+
+
 async def test_request_non_retriable_error_is_propagated(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
