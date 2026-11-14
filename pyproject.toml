@@ -3,7 +3,8 @@ name = "cb-events"
 version = "10.1.1"
 description = "Async Python client for the Chaturbate Events API: long-polling, typed events, retries, routing."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.11.0",
@@ -31,7 +32,6 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
@@ -84,13 +84,16 @@ requires = ["hatchling==1.33.0", "hatch-fancy-pypi-readme==25.1.0"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-exclude-newer = "1 week"
+exclude-newer = "2026-11-14T00:00:00Z"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
 environments = ["python_version>='3.11'"]
 fork-strategy = "requires-python"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/docs", "/README.md", "/CHANGELOG.md", "/LICENSE", "/pyproject.toml"]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
@@ -163,6 +166,8 @@ future-annotations = true
     "hardcoded-password-func-arg",
     "private-member-access",
     "TC",
+    "suspicious-pickle-usage",
+    "suspicious-pickle-import",
 ]
 "tests/conftest.py" = ["D", "pytest-fixture-autouse"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]

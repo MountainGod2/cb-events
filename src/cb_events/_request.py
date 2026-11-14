@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, ClassVar, NoReturn
 
 import stamina
 from aiohttp.client_exceptions import ClientError
@@ -43,6 +43,8 @@ class AuthRetryOptions:
     retries are attempted first.
     """
 
+    ALLOWED_STATUS_CODES: ClassVar[frozenset[int]] = frozenset({401, 403})
+
     status_codes: frozenset[int] = frozenset()
     """HTTP statuses eligible for this retry budget (typically 401/403)."""
 
@@ -57,6 +59,17 @@ class AuthRetryOptions:
 
     logger: logging.Logger | None = field(default=None)
     """Optional logger for per-attempt auth-retry warnings."""
+
+    def __post_init__(self) -> None:
+        """Validate the supported auth-retry status subset."""
+        invalid_codes = sorted(self.status_codes - self.ALLOWED_STATUS_CODES)
+        if invalid_codes:
+            invalid = ", ".join(str(code) for code in invalid_codes)
+            msg = f"Auth retry status codes must be a subset of {{401, 403}}; received: {invalid}."
+            raise ValueError(msg)
+        if self.attempts < 1:
+            msg = f"Auth retry attempts must be >= 1, got {self.attempts}."
+            raise ValueError(msg)
 
 
 async def perform_request_attempt(
@@ -82,22 +95,13 @@ async def perform_request_attempt(
         Tuple of (HTTP status code, response text).
 
     Raises:
-        ValueError: If auth retry status codes overlap general retry statuses.
         _RetryableStatusError: If the response status should be retried.
     """
     options = auth_retry or AuthRetryOptions()
-    overlapping_codes = options.status_codes & retry_status_codes
-    if overlapping_codes:
-        overlapping = ", ".join(str(code) for code in sorted(overlapping_codes))
-        msg = (
-            "auth retry status codes overlap retry_status_codes "
-            f"({overlapping}); this would bypass auth retry handling."
-        )
-        raise ValueError(msg)
 
     status = 0
     text = ""
-    attempts = max(options.attempts, 1)
+    attempts = options.attempts
     for attempt in range(1, attempts + 1):
         await rate_limiter.acquire()
         async with session.get(url, allow_redirects=False) as response:
