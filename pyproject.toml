@@ -84,7 +84,7 @@ requires = ["hatchling==1.33.0", "hatch-fancy-pypi-readme==25.1.0"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-exclude-newer = "2026-11-14T00:00:00Z"
+exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
 environments = ["python_version>='3.11'"]
 fork-strategy = "requires-python"
