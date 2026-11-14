@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from cb_events import EventClient, EventsError
+from cb_events import EventClient
 from tests.conftest import EventClientFactory
 from tests.helpers import make_events_url
 
@@ -67,7 +67,7 @@ async def test_close_cancels_inflight_poll(
 
         await client.close()
 
-        with pytest.raises(EventsError, match="client is closing"):
+        with pytest.raises(asyncio.CancelledError):
             await poll_task
 
         assert client.session is None

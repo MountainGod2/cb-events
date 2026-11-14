@@ -5,12 +5,19 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from http import HTTPStatus
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
+from typing_extensions import TypeIs
 from yarl import URL
 
-from ._exceptions import AUTH_ERROR_STATUS_CODES, AuthError, EventsError, build_http_error
+from ._exceptions import (
+    AUTH_ERROR_STATUS_CODES,
+    AuthError,
+    EventsError,
+    StrictValidationError,
+    build_http_error,
+)
 from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from ._utils import (
     TRUNCATE_LENGTH,
@@ -52,12 +59,12 @@ class ParserContext:
         object.__setattr__(self, "parsed_base_url", URL(self.base_url))
 
 
-def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
+def _is_json_object(value: object) -> TypeIs[dict[str, object]]:
     """Return True when value is a JSON object dict."""
     return isinstance(value, dict)
 
 
-def _is_object_list(value: object) -> TypeGuard[list[object]]:
+def _is_object_list(value: object) -> TypeIs[list[object]]:
     """Return True when value is a JSON array list."""
     return isinstance(value, list)
 
@@ -76,8 +83,11 @@ def _parse_json_object(text: str) -> dict[str, object]:
     """
     try:
         data: object = json.loads(text)  # pyright: ignore[reportAny]
-    except json.JSONDecodeError as exc:
-        msg = f"Invalid JSON: {exc.msg}."
+    except (json.JSONDecodeError, RecursionError) as exc:
+        message = (
+            exc.msg if isinstance(exc, json.JSONDecodeError) else "input exceeds nesting limits"
+        )
+        msg = f"Invalid JSON: {message}."
         raise EventsError(msg, response_text=text) from exc
     if not _is_json_object(data):
         msg = f"Expected JSON object, got {type(data).__name__}."
@@ -121,8 +131,9 @@ def _strict_validate_event_payload(item: object) -> None:
 
     try:
         event_type = Event.model_validate(item).type
-    except ValidationError:
-        return
+    except ValidationError as exc:
+        msg = f"Strict validation failed: {exc}"
+        raise StrictValidationError(msg) from exc
 
     validators: tuple[tuple[str, Callable[[object], object], tuple[str, ...] | None], ...] = (
         ("user", User.model_validate, ()),
@@ -145,7 +156,11 @@ def _strict_validate_event_payload(item: object) -> None:
             continue
         if allowed_types and event_type.value not in allowed_types:
             continue
-        _ = validator(object_payload[key])
+        try:
+            _ = validator(object_payload[key])
+        except ValidationError as exc:
+            msg = f"Strict validation failed: {exc}"
+            raise StrictValidationError(msg) from exc
 
 
 def _parse_event(
@@ -165,13 +180,14 @@ def _parse_event(
         Parsed Event, or None in non-strict mode when validation fails.
 
     Raises:
-        ValidationError: If strict is True and validation fails.
+        StrictValidationError: If strict mode is enabled and validation fails.
     """
     try:
         event = Event.model_validate(item)
     except ValidationError as exc:
         if strict:
-            raise
+            msg = f"Strict validation failed: {exc}"
+            raise StrictValidationError(msg) from exc
         _log_validation_error(item, exc, logger=context.logger)
         return None
 
