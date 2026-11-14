@@ -74,7 +74,7 @@ docs = [
     "mdformat-pyproject==0.1.1",
     "mkdocstrings-python==2.0.10",
     "pymdown-extensions==12.3",
-    "zensical==0.0.74",
+    "zensical==0.1.0",
 ]
 security = ["bandit[sarif]==1.9.4", "zizmor==1.32.0"]
 build = ["python-semantic-release==10.7.0"]
