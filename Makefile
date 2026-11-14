@@ -6,6 +6,7 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --warn-undefined-variables
 
 UV ?= uv
+export UV_FROZEN ?= 1
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
@@ -14,7 +15,7 @@ PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
 .PHONY: security security-full bandit audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
-.PHONY: build ci ci-lower-bounds clean help
+.PHONY: build build-smoke ci ci-lower-bounds clean help
 
 # Public targets are intended for day-to-day contributor workflows.
 # Advanced targets are occasional utility tasks.
@@ -98,6 +99,12 @@ docs-format-check: ## Advanced: Check Markdown docs formatting.
 
 build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
+
+build-smoke: ## Advanced: Build distributions and verify the wheel can be imported in isolation.
+	$(UV) build
+	$(UV) venv .venv-build-smoke
+	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
+	.venv-build-smoke/bin/python -c "import cb_events; print(cb_events.__version__)"
 
 ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
