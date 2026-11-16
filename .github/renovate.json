@@ -6,9 +6,11 @@
   "automergeType": "pr",
   "branchNameStrict": true,
   "commitMessageLowerCase": "auto",
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true,
+    "autoclose": true
+  },
   "dependencyDashboardApproval": false,
-  "dependencyDashboardAutoclose": true,
   "enabledManagers": [
     "dockerfile",
     "github-actions",
