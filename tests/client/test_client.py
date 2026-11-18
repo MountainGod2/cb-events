@@ -47,6 +47,23 @@ def test_mask_url_preserves_host_when_token_is_short() -> None:
     assert token not in masked
 
 
+def test_mask_url_keeps_non_token_path_and_query_names_for_short_token() -> None:
+    """Short tokens should only mask the actual token value, not unrelated path or key names."""
+    token = "e"
+    url = "https://events.testbed.cb.dev/events/user/e/?state=live&token=e&name=e"
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert "/events/user/" in masked
+    assert "/*v*nts/us*r/" not in masked
+    assert "state=live" in masked
+    assert "name=" in masked
+    assert "token=" in masked
+    assert "name=e" not in masked
+    assert "token=e" not in masked
+
+
 @pytest.mark.parametrize(
     ("events_url", "message"),
     [
