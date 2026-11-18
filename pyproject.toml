@@ -86,7 +86,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
-environments = ["python_version>='3.11'"]
+environments = ["python_full_version >= '3.11.5'"]  # Needed to support `pymdown-extensions` 13.0+
 fork-strategy = "requires-python"
 
 [tool.hatch.build.targets.wheel]
