@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, ClassVar, NoReturn
 import stamina
 from aiohttp.client_exceptions import ClientError
 
-from ._exceptions import EventsError, build_http_error
+from ._exceptions import AUTH_ERROR_STATUS_CODES, EventsError, build_http_error
 
 _sleep = asyncio.sleep
 
@@ -43,7 +43,7 @@ class AuthRetryOptions:
     retries are attempted first.
     """
 
-    ALLOWED_STATUS_CODES: ClassVar[frozenset[int]] = frozenset({401, 403})
+    ALLOWED_STATUS_CODES: ClassVar[frozenset[int]] = AUTH_ERROR_STATUS_CODES
 
     status_codes: frozenset[int] = frozenset()
     """HTTP statuses eligible for this retry budget (typically 401/403)."""
