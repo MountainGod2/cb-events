@@ -132,7 +132,7 @@ def _strict_validate_event_payload(item: object) -> None:
     try:
         event_type = Event.model_validate(item).type
     except ValidationError as exc:
-        msg = f"Strict validation failed: {exc}"
+        msg = "Strict validation failed."
         raise StrictValidationError(msg) from exc
 
     validators: tuple[tuple[str, Callable[[object], object], tuple[str, ...] | None], ...] = (
@@ -159,7 +159,7 @@ def _strict_validate_event_payload(item: object) -> None:
         try:
             _ = validator(object_payload[key])
         except ValidationError as exc:
-            msg = f"Strict validation failed: {exc}"
+            msg = "Strict validation failed."
             raise StrictValidationError(msg) from exc
 
 
@@ -186,7 +186,7 @@ def _parse_event(
         event = Event.model_validate(item)
     except ValidationError as exc:
         if strict:
-            msg = f"Strict validation failed: {exc}"
+            msg = "Strict validation failed."
             raise StrictValidationError(msg) from exc
         _log_validation_error(item, exc, logger=context.logger)
         return None

@@ -65,8 +65,9 @@ config = ClientConfig(
     In practice, this mainly matters if the upstream API schema changes or a
     malformed payload appears. However, the API has historically been stable.
 
-    `strict_validation=True` raises `pydantic.ValidationError` instead, which
-    gives fail-fast behavior but requires your code to handle those exceptions.
+    `strict_validation=True` raises `StrictValidationError` instead, which
+    gives fail-fast behavior but requires your code to handle that custom
+    exception.
 
 ## Environment Selection
 

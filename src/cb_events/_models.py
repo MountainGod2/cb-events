@@ -64,6 +64,7 @@ class BaseEventModel(BaseModel):
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
+        hide_input_in_errors=True,
     )
 
 
@@ -296,28 +297,13 @@ def _freeze_event_data(value: object) -> object:
 
     if isinstance(value, dict):
         mapping = cast("dict[str, object]", value)
-        try:
-            frozen: _ImmutableDict = _ImmutableDict({
-                key: _freeze_event_data(item) for key, item in mapping.items()
-            })
-        except RecursionError as exc:
-            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-            raise ValueError(msg) from exc
-        return frozen
+        return _ImmutableDict({key: _freeze_event_data(item) for key, item in mapping.items()})
     if isinstance(value, list):
         items = cast("list[object]", value)
-        try:
-            return tuple(_freeze_event_data(item) for item in items)
-        except RecursionError as exc:
-            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-            raise ValueError(msg) from exc
+        return tuple(_freeze_event_data(item) for item in items)
     if isinstance(value, tuple):
         items = cast("tuple[object, ...]", value)
-        try:
-            return tuple(_freeze_event_data(item) for item in items)
-        except RecursionError as exc:
-            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-            raise ValueError(msg) from exc
+        return tuple(_freeze_event_data(item) for item in items)
     return value
 
 

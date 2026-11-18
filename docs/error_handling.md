@@ -67,9 +67,10 @@ that this `400` is part of the normal event-stream timeout flow.
 
 `strict_validation=False` (default): skip invalid events and log a warning.
 
-`strict_validation=True`: raise `pydantic.ValidationError` on invalid events.
+`strict_validation=True`: raise `StrictValidationError` on invalid events.
 
-Use strict mode when you prefer fail-fast behavior and already handle those exceptions.
+Use strict mode when you prefer fail-fast behavior and already handle that
+exception type.
 
 ## Handler Exceptions
 
