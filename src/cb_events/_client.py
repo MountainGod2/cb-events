@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import suppress
 from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlencode
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -177,12 +176,22 @@ def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask token in URL for safe logging without touching the host."""
+    """Mask only the token value in a URL while preserving host/path/key names."""
     masked = _mask_token(token)
     encoded_token = _quote_segment(token)
     parsed = URL(url)
-    masked_path = parsed.raw_path.replace(encoded_token, masked).replace(token, masked)
-    masked_query = parsed.raw_query_string.replace(encoded_token, masked).replace(token, masked)
+
+    masked_path_parts: list[str] = [
+        masked if part in {token, encoded_token} else part for part in parsed.raw_path.split("/")
+    ]
+    masked_path = "/".join(masked_path_parts)
+
+    masked_query_items: list[tuple[str, str]] = []
+    for key, query_value in parsed.query.items():
+        masked_query_value = masked if query_value in {token, encoded_token} else query_value
+        masked_query_items.append((key, masked_query_value))
+
+    masked_query = urlencode(masked_query_items, doseq=True)
     return str(parsed.with_path(masked_path).with_query(masked_query))
 
 
@@ -216,7 +225,7 @@ class EventClient:
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
-            logger=logging.getLogger("cb_events._parser"),
+            logger=logging.getLogger(__name__),
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.OPEN
@@ -231,7 +240,7 @@ class EventClient:
             attempts=self.config.auth_retry_attempts,
             delay=self.config.auth_retry_delay,
             username=self.username,
-            logger=logging.getLogger("cb_events._request"),
+            logger=logging.getLogger(__name__),
         )
 
     @override
@@ -325,7 +334,7 @@ class EventClient:
             config=self.config,
             username=self.username,
             perform_attempt=self._perform_request_attempt,
-            logger=logging.getLogger("cb_events._request"),
+            logger=logging.getLogger(__name__),
         )
 
     async def _poll(self) -> list[Event]:
@@ -413,6 +422,10 @@ class EventClient:
 
         Safe to call multiple times. Called automatically by context exit.
         After close(), the instance cannot be reopened.
+
+        Raises:
+            asyncio.CancelledError: If the caller of close() is cancelled while
+                waiting for in-flight polls to finish shutting down.
         """
         if self._state is _ClientState.CLOSED:
             return
@@ -430,8 +443,12 @@ class EventClient:
                 poll_task.cancel()  # pyright: ignore[reportUnusedCallResult]
 
             for poll_task in poll_tasks:
-                with suppress(asyncio.CancelledError):
+                try:
                     await poll_task
+                except asyncio.CancelledError:
+                    current_task = asyncio.current_task()
+                    if current_task is not None and current_task.cancelling():
+                        raise
 
             session: ClientSession | None = self.session
             self.session = None

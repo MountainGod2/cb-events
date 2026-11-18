@@ -71,3 +71,33 @@ async def test_close_cancels_inflight_poll(
             await poll_task
 
         assert client.session is None
+
+
+async def test_close_propagates_caller_cancellation(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cancellation of the closer itself should not be swallowed during shutdown."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        started.set()
+        await release.wait()
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+        poll_task = asyncio.create_task(client._poll())
+        await started.wait()
+
+        close_task = asyncio.create_task(client.close())
+        await asyncio.sleep(0)
+        close_task.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await close_task
+
+        with pytest.raises(asyncio.CancelledError):
+            await poll_task
