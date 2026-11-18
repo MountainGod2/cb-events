@@ -45,3 +45,5 @@ This section is generated directly from package docstrings.
 ::: cb_events.RateLimitError
 
 ::: cb_events.ServerError
+
+::: cb_events.StrictValidationError
