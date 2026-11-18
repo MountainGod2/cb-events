@@ -101,10 +101,12 @@ build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
 
 build-smoke: ## Advanced: Build distributions and verify the wheel can be imported in isolation.
+	rm -rf .venv-build-smoke
 	$(UV) build
 	$(UV) venv .venv-build-smoke
 	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
 	.venv-build-smoke/bin/python -c "import cb_events; print(cb_events.__version__)"
+	rm -rf .venv-build-smoke
 
 ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
@@ -130,12 +132,8 @@ trivy: ## Internal: Run Trivy vulnerability and config scans.
 test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live tests).
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
-	$(UV) sync --group=test --resolution lowest-direct --upgrade
-	@status=0; \
-	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS) || status=$$?; \
-	$(UV) sync --frozen --all-groups; \
-	exit $$status
+test-cov-lowest-direct: ## Internal: Run tests in an isolated environment at the lowest direct dependency bounds.
+	UV_FROZEN=0 $(UV) run --isolated --resolution lowest-direct --group=test pytest -m "not live" $(PYTEST_COV_ARGS)
 
 test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"
