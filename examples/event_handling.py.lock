@@ -3,7 +3,8 @@ revision = 5
 requires-python = ">=3.11"
 
 [options]
-exclude-newer = "2026-11-14T00:00:00Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
 cb-events = false
@@ -12,7 +13,7 @@ setuptools = false
 
 [manifest]
 requirements = [
-    { name = "cb-events", specifier = ">=10.1.0" },
+    { name = "cb-events", specifier = ">=10.1.1" },
     { name = "rich", specifier = ">=15.0.0" },
 ]
 

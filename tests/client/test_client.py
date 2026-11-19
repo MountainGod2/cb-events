@@ -1,7 +1,6 @@
 """Core tests for client initialization, configuration and utils."""
 
 import asyncio
-import logging
 from unittest.mock import AsyncMock
 from urllib.parse import quote
 
@@ -16,14 +15,8 @@ from cb_events._client import (
     _mask_url,
     _parse_events_url,
 )
-from cb_events._parser import ParserContext, _parse_events
+from cb_events._parser import _parse_events
 from tests.helpers import make_events_url
-
-_TEST_PARSER_CONTEXT = ParserContext(
-    username="user",
-    base_url="https://events.testbed.cb.dev/events",
-    logger=logging.getLogger("cb_events._client"),
-)
 
 
 def test_token_masking_in_repr() -> None:
@@ -162,6 +155,19 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     assert token not in masked
     assert encoded not in masked
+    assert "%252A" not in masked
+
+
+def test_mask_url_replaces_token_inside_larger_query_values() -> None:
+    """Embedded token substrings in query values should be masked as well."""
+    token = "tok123"
+    url = f"https://events.testbed.cb.dev/events/user/{token}/?next=xx-{token}-yy"
+
+    masked = _mask_url(url, token)
+
+    assert token not in masked
+    assert "xx-" in masked
+    assert "-yy" in masked
 
 
 def test_mask_token_various_lengths() -> None:
@@ -188,12 +194,11 @@ def test_parse_events_strict_and_lenient(
     invalid_non_mapping = 123
 
     with pytest.raises(EventsError):
-        _parse_events([valid, invalid], strict=True, context=_TEST_PARSER_CONTEXT)
+        _parse_events([valid, invalid], strict=True)
 
     events = _parse_events(
         [valid, invalid, invalid_non_mapping],
         strict=False,
-        context=_TEST_PARSER_CONTEXT,
     )
     assert len(events) == 1
     assert events[0].id == "1"
@@ -211,7 +216,7 @@ def test_parse_events_logs_invalid_fields(
         "id": "evt-xyz",
         "object": {"tip": {"tokens": "abc"}},
     }
-    events = _parse_events([invalid_nested], strict=False, context=_TEST_PARSER_CONTEXT)
+    events = _parse_events([invalid_nested], strict=False)
     assert len(events) == 1
     assert events[0].tip is None
     assert "tokens" in caplog.text
@@ -260,7 +265,7 @@ async def test_poll_after_close_raises_terminal_state() -> None:
     await client.close()
 
     with pytest.raises(EventsError, match="closing or closed"):
-        await client._poll()
+        await client.poll()
 
 
 async def test_enter_after_close_raises_terminal_state() -> None:
@@ -309,15 +314,20 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
     started = asyncio.Event()
     completed = asyncio.Event()
 
-    async def _slow_close() -> None:
-        nonlocal close_calls
-        close_calls += 1
-        started.set()
-        await asyncio.sleep(0.05)
-        completed.set()
+    class _Session:
+        def __init__(self) -> None:
+            self.closed = False
 
-    client.session = AsyncMock()  # type: ignore[assignment]
-    client.session.close = _slow_close
+        async def close(self) -> None:
+            nonlocal close_calls
+            close_calls += 1
+            started.set()
+            await asyncio.sleep(0.05)
+            self.closed = True
+            completed.set()
+
+    session = _Session()
+    client.session = session  # type: ignore[assignment]
 
     close_task = asyncio.create_task(client.close())
     await started.wait()
@@ -328,3 +338,4 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
 
     assert close_calls == 1
     assert completed.is_set()
+    assert session.closed

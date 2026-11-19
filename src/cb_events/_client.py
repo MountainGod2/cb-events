@@ -7,7 +7,7 @@ import logging
 from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
-from urllib.parse import quote, unquote, urlencode
+from urllib.parse import quote, unquote
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
@@ -180,19 +180,29 @@ def _mask_url(url: str, token: str) -> str:
     masked = _mask_token(token)
     encoded_token = _quote_segment(token)
     parsed = URL(url)
+    allow_embedded_masking = len(token) >= 3  # ruff: ignore[magic-value-comparison]
 
-    masked_path_parts: list[str] = [
-        masked if part in {token, encoded_token} else part for part in parsed.raw_path.split("/")
-    ]
+    def _mask_value(value: str) -> str:
+        if value in {token, encoded_token}:
+            return masked
+        if allow_embedded_masking:
+            masked_value = value
+            if token and token in masked_value:
+                masked_value = masked_value.replace(token, masked)
+            if encoded_token and encoded_token in masked_value:
+                masked_value = masked_value.replace(encoded_token, masked)
+            return masked_value
+        return value
+
+    masked_path_parts: list[str] = [_mask_value(part) for part in parsed.raw_path.split("/")]
     masked_path = "/".join(masked_path_parts)
 
     masked_query_items: list[tuple[str, str]] = []
     for key, query_value in parsed.query.items():
-        masked_query_value = masked if query_value in {token, encoded_token} else query_value
+        masked_query_value = _mask_value(query_value)
         masked_query_items.append((key, masked_query_value))
 
-    masked_query = urlencode(masked_query_items, doseq=True)
-    return str(parsed.with_path(masked_path).with_query(masked_query))
+    return str(parsed.with_path(masked_path).with_query(masked_query_items))
 
 
 class EventClient:
@@ -225,7 +235,6 @@ class EventClient:
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
-            logger=logging.getLogger(__name__),
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.OPEN
@@ -239,8 +248,6 @@ class EventClient:
             status_codes=self.config.auth_retry_status_codes,
             attempts=self.config.auth_retry_attempts,
             delay=self.config.auth_retry_delay,
-            username=self.username,
-            logger=logging.getLogger(__name__),
         )
 
     @override
@@ -332,12 +339,10 @@ class EventClient:
         return await request_with_retry(
             url=url,
             config=self.config,
-            username=self.username,
             perform_attempt=self._perform_request_attempt,
-            logger=logging.getLogger(__name__),
         )
 
-    async def _poll(self) -> list[Event]:
+    async def poll(self) -> list[Event]:
         """Fetch one batch of events from the API.
 
         Makes one request and updates _next_url for the next poll.
@@ -346,8 +351,9 @@ class EventClient:
             List of events received, or an empty list on timeout.
 
         Raises:
-            EventsError: If shutdown has started or if close() cancels this poll.
-        """
+            EventsError: If shutdown has started.
+            asyncio.CancelledError: If close() cancels this poll.
+        """  # ruff: ignore[docstring-extraneous-exception]  # Called function may raise asyncio.CancelledError
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
@@ -392,10 +398,6 @@ class EventClient:
             finally:
                 self._active_poll_tasks.discard(current_task)
 
-    async def poll(self) -> list[Event]:
-        """Public wrapper for fetching one batch of events."""
-        return await self._poll()
-
     async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
 
@@ -413,7 +415,7 @@ class EventClient:
             Poll position is tracked with nextUrl between iterations.
         """  # ruff: ignore[docstring-extraneous-exception]  # Called functions raise AuthError/EventsError on failure.
         while True:
-            events = await self._poll()
+            events = await self.poll()
             for event in events:
                 yield event
 
@@ -431,6 +433,9 @@ class EventClient:
             return
 
         self._state = _ClientState.CLOSING
+        session: ClientSession | None = self.session
+        self.session = None
+        self._next_url = None
         try:
             current_task = asyncio.current_task()
             poll_tasks = [
@@ -449,10 +454,7 @@ class EventClient:
                     current_task = asyncio.current_task()
                     if current_task is not None and current_task.cancelling():
                         raise
-
-            session: ClientSession | None = self.session
-            self.session = None
-            self._next_url = None
+        finally:
             self._active_poll_tasks.clear()
 
             if session is not None:
@@ -471,5 +473,4 @@ class EventClient:
                     raise
                 except (ClientError, OSError, RuntimeError) as exc:
                     _logger.warning("Error closing session (%s).", type(exc).__name__)
-        finally:
             self._state = _ClientState.CLOSED

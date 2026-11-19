@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 
 import pytest
 from hypothesis import given, settings
@@ -27,7 +26,6 @@ def _parser_context(username: str = "user") -> ParserContext:
     return ParserContext(
         username=username,
         base_url=TESTBED_URL,
-        logger=logging.getLogger("cb_events._parser"),
     )
 
 

@@ -42,9 +42,9 @@ mountaingod2 tipped 100 tokens
 The Events API uses long polling and returns a `nextUrl` continuation URL on each request.
 `EventClient` follows that `nextUrl` automatically while iterating through events.
 
-Internally, the client only locks around reading and writing the `nextUrl` state.
-The HTTP request itself runs outside the lock so a slow network call does not
-block other coroutine scheduling.
+`EventClient` serializes polls per instance, so only one request is in flight
+at a time for a given client. This keeps `nextUrl` progression consistent
+without requiring extra synchronization in your application code.
 
 Avoid restarting the client in the middle of a live stream. A restart creates a
 new polling session, which can reset the `nextUrl` position and lead to missed or

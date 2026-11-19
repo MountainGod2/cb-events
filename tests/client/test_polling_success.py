@@ -23,7 +23,7 @@ async def test_poll_returns_events(
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert len(events) == 1
     assert events[0].type == method
@@ -46,7 +46,7 @@ async def test_poll_handles_multiple_events(
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert [event.type for event in events] == [
         EventType.TIP,
@@ -112,7 +112,7 @@ async def test_strict_validation_raises_on_invalid_nested_payload(
 
     async with event_client_factory(config=config) as client:
         with pytest.raises(EventsError):
-            await client._poll()
+            await client.poll()
 
 
 async def test_lenient_validation_skips_invalid_events(
@@ -132,7 +132,7 @@ async def test_lenient_validation_skips_invalid_events(
     config = ClientConfig(strict_validation=False)
 
     async with event_client_factory(config=config) as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert len(events) == 1
     assert events[0].id == "valid"

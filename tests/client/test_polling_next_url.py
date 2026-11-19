@@ -25,10 +25,10 @@ async def test_next_url_followed_after_timeout(
     aioresponses_mock.get(next_url_pattern, payload=success_response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
         assert not events
 
-        events = await client._poll()
+        events = await client.poll()
         assert len(events) == 1
     assert events[0].type == EventType.TIP
 
@@ -46,7 +46,7 @@ async def test_disallowed_next_url_host_raises(
         with pytest.raises(
             EventsError, match=r"Invalid API response: 'nextUrl' host is not allowed."
         ):
-            await client._poll()
+            await client.poll()
 
 
 async def test_relative_next_url_resolved_to_absolute(
@@ -66,10 +66,10 @@ async def test_relative_next_url_resolved_to_absolute(
     aioresponses_mock.get(next_absolute, payload=success_response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
         assert not events
 
-        events = await client._poll()
+        events = await client.poll()
         assert len(events) == 1
     assert events[0].type == EventType.TIP
 
@@ -114,4 +114,4 @@ async def test_invalid_next_url_handling(
 
     async with event_client_factory() as client:
         with pytest.raises(EventsError, match=expected_pattern):
-            await client._poll()
+            await client.poll()
