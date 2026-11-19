@@ -6,7 +6,7 @@ import pytest
 from aioresponses import aioresponses
 from pydantic import ValidationError
 
-from cb_events import ClientConfig, EventType
+from cb_events import ClientConfig, EventsError, EventType, StrictValidationError
 from tests.conftest import EventClientFactory
 from tests.helpers import SAMPLE_EVENT_TYPES, make_event, make_response
 
@@ -23,7 +23,7 @@ async def test_poll_returns_events(
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert len(events) == 1
     assert events[0].type == method
@@ -46,7 +46,7 @@ async def test_poll_handles_multiple_events(
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert [event.type for event in events] == [
         EventType.TIP,
@@ -81,7 +81,7 @@ async def test_strict_validation_raises_on_invalid_event(
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Strict mode should surface validation failures."""
+    """Strict mode should report validation failures as a dedicated error type."""
     response = {
         "events": [{"method": "tip", "object": {}}],
         "nextUrl": None,
@@ -90,8 +90,11 @@ async def test_strict_validation_raises_on_invalid_event(
     config = ClientConfig(strict_validation=True)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(ValidationError):
-            await client._poll()
+        with pytest.raises(StrictValidationError, match="Strict validation failed") as exc_info:
+            await client.poll()
+
+    assert isinstance(exc_info.value.__cause__, ValidationError)
+    assert "input_value=" not in str(exc_info.value)
 
 
 async def test_strict_validation_raises_on_invalid_nested_payload(
@@ -108,8 +111,8 @@ async def test_strict_validation_raises_on_invalid_nested_payload(
     config = ClientConfig(strict_validation=True)
 
     async with event_client_factory(config=config) as client:
-        with pytest.raises(ValidationError):
-            await client._poll()
+        with pytest.raises(EventsError):
+            await client.poll()
 
 
 async def test_lenient_validation_skips_invalid_events(
@@ -129,7 +132,7 @@ async def test_lenient_validation_skips_invalid_events(
     config = ClientConfig(strict_validation=False)
 
     async with event_client_factory(config=config) as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert len(events) == 1
     assert events[0].id == "valid"

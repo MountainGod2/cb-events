@@ -43,7 +43,11 @@ config = ClientConfig(
 )
 ```
 
-Retries are attempted on `429`, `5xx`, and Cloudflare `521-524`.
+Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
+`521-524`.
+
+With default retry settings, the worst-case retry window is about 84 minutes
+before the request fails.
 
 Authentication statuses can use a separate fixed-delay retry budget.
 By default `auth_retry_attempts=1`, which preserves fail-fast behavior for
@@ -65,8 +69,9 @@ config = ClientConfig(
     In practice, this mainly matters if the upstream API schema changes or a
     malformed payload appears. However, the API has historically been stable.
 
-    `strict_validation=True` raises `pydantic.ValidationError` instead, which
-    gives fail-fast behavior but requires your code to handle those exceptions.
+    `strict_validation=True` raises `StrictValidationError` instead, which
+    gives fail-fast behavior but requires your code to handle that custom
+    exception.
 
 ## Environment Selection
 

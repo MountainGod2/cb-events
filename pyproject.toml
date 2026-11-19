@@ -3,14 +3,15 @@ name = "cb-events"
 version = "10.1.1"
 description = "Async Python client for the Chaturbate Events API: long-polling, typed events, retries, routing."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.11.0",
     "aiolimiter>=1.0.0",
     "pydantic>=2.8.0",
     "stamina>=25.2.0",
-    "typing-extensions>=4.12.2; python_version < '3.12'",
+    "typing-extensions>=4.12.2",
     "yarl>=1.20.1",
 ]
 dynamic = ["readme"]
@@ -31,7 +32,6 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
@@ -86,11 +86,14 @@ build-backend = "hatchling.build"
 [tool.uv]
 exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
-environments = ["python_version>='3.11'"]
+environments = ["python_full_version >= '3.11.5'"]  # Needed to support `pymdown-extensions` 13.0+
 fork-strategy = "requires-python"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/docs", "/README.md", "/CHANGELOG.md", "/LICENSE", "/pyproject.toml"]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
@@ -163,6 +166,8 @@ future-annotations = true
     "hardcoded-password-func-arg",
     "private-member-access",
     "TC",
+    "suspicious-pickle-usage",
+    "suspicious-pickle-import",
 ]
 "tests/conftest.py" = ["D", "pytest-fixture-autouse"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]

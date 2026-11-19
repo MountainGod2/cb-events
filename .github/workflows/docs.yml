@@ -1,5 +1,8 @@
 name: Docs Pages
 
+env:
+  UV_FROZEN: "1"
+
 on:
   push:
     branches: [main]

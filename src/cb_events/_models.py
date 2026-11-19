@@ -64,6 +64,7 @@ class BaseEventModel(BaseModel):
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
+        hide_input_in_errors=True,
     )
 
 
@@ -205,11 +206,17 @@ class RoomSubject(BaseEventModel):
 
 
 _MAX_EVENT_DATA_DEPTH = 1000
-_IMMUTABLE_EVENT_PAYLOAD_ERROR = TypeError("Event payloads are immutable.")
+
+
+def _immutable_event_payload_error() -> TypeError:
+    """Return a fresh TypeError for mutation attempts on event payloads."""
+    return TypeError("Event payloads are immutable.")
 
 
 class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
     """Mapping that forbids mutation while remaining JSON-serializable."""
+
+    __slots__: tuple[()] = ()
 
     def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableDict:
         return _ImmutableDict({key: deepcopy(value, memo) for key, value in self.items()})
@@ -218,44 +225,48 @@ class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
         return dict(self)
 
     @override
+    def __reduce__(self) -> tuple[type[_ImmutableDict], tuple[dict[str, object]]]:
+        return (self.__class__, (dict(self),))
+
+    @override
     def __ior__(self, other: object) -> Self:
         del other
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def __setitem__(self, key: str, value: object) -> None:
         del key, value
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def __delitem__(self, key: str) -> None:
         del key
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def clear(self) -> None:
         del self
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def pop(self, key: object, default: object = None) -> object:
         del self, key, default
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def popitem(self) -> tuple[str, object]:
         del self
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def setdefault(self, key: str, default: object = None) -> object:
         del self, key, default
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
     @override
     def update(self, *args: object, **kwargs: object) -> None:
         del self, args, kwargs
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+        raise _immutable_event_payload_error()
 
 
 def _event_data_depth(value: object) -> int:
@@ -276,16 +287,17 @@ def _event_data_depth(value: object) -> int:
 
 def _freeze_event_data(value: object) -> object:
     """Return a JSON-safe immutable copy of the raw event payload."""
-    if _event_data_depth(value) > _MAX_EVENT_DATA_DEPTH:
+    try:
+        if _event_data_depth(value) > _MAX_EVENT_DATA_DEPTH:
+            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+            raise ValueError(msg)
+    except RecursionError as exc:
         msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-        raise ValueError(msg)
+        raise ValueError(msg) from exc
 
     if isinstance(value, dict):
         mapping = cast("dict[str, object]", value)
-        frozen: _ImmutableDict = _ImmutableDict({
-            key: _freeze_event_data(item) for key, item in mapping.items()
-        })
-        return frozen
+        return _ImmutableDict({key: _freeze_event_data(item) for key, item in mapping.items()})
     if isinstance(value, list):
         items = cast("list[object]", value)
         return tuple(_freeze_event_data(item) for item in items)
