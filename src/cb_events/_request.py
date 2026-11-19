@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, NoReturn
 
 import stamina
@@ -12,9 +13,9 @@ from aiohttp.client_exceptions import ClientError
 from ._exceptions import AUTH_ERROR_STATUS_CODES, EventsError, build_http_error
 
 _sleep = asyncio.sleep
+_logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    import logging
     from collections.abc import Awaitable, Callable
 
     from aiohttp import ClientSession
@@ -53,12 +54,6 @@ class AuthRetryOptions:
 
     delay: float = 0.0
     """Fixed delay in seconds between auth-retry attempts."""
-
-    username: str = ""
-    """Username used for log context."""
-
-    logger: logging.Logger | None = field(default=None)
-    """Optional logger for per-attempt auth-retry warnings."""
 
     def __post_init__(self) -> None:
         """Validate the supported auth-retry status subset."""
@@ -115,14 +110,12 @@ async def perform_request_attempt(
         if status not in options.status_codes or attempt >= attempts:
             break
 
-        if options.logger is not None:
-            options.logger.warning(
-                "Auth check attempt %d/%d failed for user %s (HTTP %d). Retrying...",
-                attempt,
-                attempts,
-                options.username,
-                status,
-            )
+        _logger.warning(
+            "Auth check attempt %d/%d failed (HTTP %d). Retrying...",
+            attempt,
+            attempts,
+            status,
+        )
         if options.delay > 0:
             await _sleep(options.delay)
 
@@ -133,16 +126,12 @@ def _raise_request_failure(
     *,
     attempts_made: int,
     original_exception: Exception,
-    username: str,
-    logger: logging.Logger,
 ) -> NoReturn:
     """Raise a final error after retries are exhausted.
 
     Args:
         attempts_made: Number of request attempts that were made.
         original_exception: Last exception raised in the retry loop.
-        username: Username used for logging context.
-        logger: Logger instance.
 
     Raises:
         EventsError: For network-level failures (ClientError, OSError, etc.).
@@ -150,10 +139,9 @@ def _raise_request_failure(
         RateLimitError: If the final attempt failed with HTTP 429.
         ClientRequestError: If the final attempt failed with another 4xx.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
-    logger.exception(  # ruff: ignore[log-exception-outside-except-handler]  # Only ever called within except clauses.
-        "Request failed after %d attempts for user %s",
+    _logger.exception(  # ruff: ignore[log-exception-outside-except-handler]  # Only ever called within except clauses.
+        "Request failed after %d attempts",
         attempts_made,
-        username,
     )
 
     attempt_label = "attempt" if attempts_made == 1 else "attempts"
@@ -186,18 +174,14 @@ async def request_with_retry(
     *,
     url: str,
     config: ClientConfig,
-    username: str,
     perform_attempt: Callable[[str], Awaitable[tuple[int, str]]],
-    logger: logging.Logger,
 ) -> tuple[int, str]:
     """Run one request under retry/backoff policy.
 
     Args:
         url: Fully qualified endpoint URL.
         config: Client retry/backoff configuration.
-        username: Username used for log context.
         perform_attempt: Callback performing a single request attempt.
-        logger: Logger instance.
 
     Returns:
         Tuple of (HTTP status code, response text).
@@ -228,11 +212,10 @@ async def request_with_retry(
                     return await perform_attempt(url)
                 except retriable_exc_types as exc:
                     if attempts_made < config.retry_attempts:
-                        logger.warning(
-                            "Attempt %d/%d failed for user %s (%s). Retrying...",
+                        _logger.warning(
+                            "Attempt %d/%d failed (%s). Retrying...",
                             attempts_made,
                             config.retry_attempts,
-                            username,
                             str(exc) or type(exc).__name__,
                         )
                     raise
@@ -241,8 +224,6 @@ async def request_with_retry(
         _raise_request_failure(
             attempts_made=attempts_made,
             original_exception=original_exception,
-            username=username,
-            logger=logger,
         )
 
     # Unreachable in practice: stamina always yields ≥1 attempt and

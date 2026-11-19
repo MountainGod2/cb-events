@@ -43,7 +43,11 @@ config = ClientConfig(
 )
 ```
 
-Retries are attempted on `429`, `5xx`, and Cloudflare `521-524`.
+Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
+`521-524`.
+
+With default retry settings, the worst-case retry window is about 84 minutes
+before the request fails.
 
 Authentication statuses can use a separate fixed-delay retry budget.
 By default `auth_retry_attempts=1`, which preserves fail-fast behavior for

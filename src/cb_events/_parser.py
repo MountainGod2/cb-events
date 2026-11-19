@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import TYPE_CHECKING
@@ -27,8 +28,9 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    import logging
     from collections.abc import Callable, Sequence
+
+_logger = logging.getLogger(__name__)
 
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
@@ -41,14 +43,12 @@ class ParserContext:
     Attributes:
         username: Account username used for diagnostics.
         base_url: Canonical base API URL.
-        logger: Logger used for warnings/debug output.
         parsed_base_url: Parsed representation of base_url. Derived
             automatically from base_url; do not pass this explicitly.
     """
 
     username: str
     base_url: str
-    logger: logging.Logger
     parsed_base_url: URL = field(init=False)
 
     def __post_init__(self) -> None:
@@ -98,8 +98,6 @@ def _parse_json_object(text: str) -> dict[str, object]:
 def _log_validation_error(
     item: object,
     exc: ValidationError,
-    *,
-    logger: logging.Logger,
 ) -> None:
     """Log a warning for an event that failed Pydantic validation."""
     event_id = item.get("id", "<unknown>") if _is_json_object(item) else "<unknown>"
@@ -109,7 +107,7 @@ def _log_validation_error(
         if not location:
             continue
         fields.add(".".join(str(part) for part in location))
-    logger.warning(
+    _logger.warning(
         "Skipping invalid event %s (invalid fields: %s)",
         event_id,
         ", ".join(sorted(fields)),
@@ -167,14 +165,12 @@ def _parse_event(
     item: object,
     *,
     strict: bool,
-    context: ParserContext,
 ) -> Event | None:
     """Parse one raw event object into an Event model.
 
     Args:
         item: Raw event payload object.
         strict: Whether validation errors should be raised.
-        context: Parsing context.
 
     Returns:
         Parsed Event, or None in non-strict mode when validation fails.
@@ -188,7 +184,7 @@ def _parse_event(
         if strict:
             msg = "Strict validation failed."
             raise StrictValidationError(msg) from exc
-        _log_validation_error(item, exc, logger=context.logger)
+        _log_validation_error(item, exc)
         return None
 
     if strict:
@@ -200,23 +196,17 @@ def _parse_events(
     raw: Sequence[object],
     *,
     strict: bool,
-    context: ParserContext,
 ) -> list[Event]:
     """Parse raw event dictionaries into Event models.
 
     Args:
         raw: Raw JSON-compatible event payload items.
         strict: Whether validation errors should be raised.
-        context: Parsing context.
 
     Returns:
         Parsed events.
     """
-    return [
-        event
-        for item in raw
-        if (event := _parse_event(item, strict=strict, context=context)) is not None
-    ]
+    return [event for item in raw if (event := _parse_event(item, strict=strict)) is not None]
 
 
 def _resolve_absolute_url(
@@ -273,7 +263,7 @@ def _validate_next_url(
 
     msg = "Invalid API response: 'nextUrl' must be a non-empty string."
     if not isinstance(next_url, str):
-        context.logger.error(
+        _logger.error(
             "Received invalid nextUrl type %s for user %s",
             type(next_url).__name__,
             context.username,
@@ -282,7 +272,7 @@ def _validate_next_url(
 
     stripped = next_url.strip()
     if not stripped:
-        context.logger.error(
+        _logger.error(
             "Received empty nextUrl from API for user %s",
             context.username,
         )
@@ -293,14 +283,14 @@ def _validate_next_url(
     except ValueError as exc:
         message = str(exc)
         if "port can't be converted to integer" in message or "Port out of range" in message:
-            context.logger.warning(
+            _logger.warning(
                 "Received nextUrl with invalid port for user %s",
                 context.username,
             )
             msg = "Invalid API response: 'nextUrl' contains an invalid port."
             raise EventsError(msg, response_text=response_text) from None
 
-        context.logger.exception(
+        _logger.exception(
             "Received malformed nextUrl for user %s",
             context.username,
         )
@@ -313,7 +303,7 @@ def _validate_next_url(
     except ValueError as exc:
         reason = exc.args[0] if exc.args else None
         if reason == UrlValidationReason.SCHEME:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+            _logger.error(  # ruff: ignore[error-instead-of-exception]
                 "Received nextUrl with unsupported scheme %s for user %s",
                 parsed.scheme or "<missing>",
                 context.username,
@@ -321,7 +311,7 @@ def _validate_next_url(
             msg = "Invalid nextUrl scheme; only https is allowed."
             raise EventsError(msg, response_text=response_text) from None
         if reason == UrlValidationReason.CUSTOM_PORT:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+            _logger.error(  # ruff: ignore[error-instead-of-exception]
                 "Received nextUrl with custom port %s for user %s",
                 parsed.explicit_port,
                 context.username,
@@ -329,14 +319,14 @@ def _validate_next_url(
             msg = "Invalid API response: 'nextUrl' must not contain a custom port."
             raise EventsError(msg, response_text=response_text) from None
         if reason == UrlValidationReason.MISSING_HOST:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
+            _logger.error(  # ruff: ignore[error-instead-of-exception]
                 "Received nextUrl without hostname for user %s",
                 context.username,
             )
             msg = "Invalid API response: 'nextUrl' must include a hostname."
             raise EventsError(msg, response_text=response_text) from None
 
-        context.logger.error(  # ruff: ignore[error-instead-of-exception]
+        _logger.error(  # ruff: ignore[error-instead-of-exception]
             "Received nextUrl host %s which is not allowed for user %s",
             parsed.host,
             context.username,
@@ -386,7 +376,7 @@ def _extract_next_url_from_timeout(
 
     status_msg = data.get("status")
     if isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE not in status_msg.lower():
-        context.logger.debug(
+        _logger.debug(
             "Received 400 response with valid nextUrl but unexpected status text %r for user %s",
             status_msg,
             context.username,
@@ -420,7 +410,7 @@ def _parse_json_response(
     except EventsError as exc:
         if isinstance(exc.__cause__, json.JSONDecodeError):
             snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-            context.logger.exception("Failed to parse JSON: %s", snippet)
+            _logger.exception("Failed to parse JSON: %s", snippet)
         raise
 
     next_url = _validate_next_url(
@@ -442,11 +432,10 @@ def _parse_json_response(
     events = _parse_events(
         raw_events_list,
         strict=strict_validation,
-        context=context,
     )
 
     if events:
-        context.logger.debug(
+        _logger.debug(
             "Received %d events for user %s",
             len(events),
             context.username,
@@ -480,7 +469,7 @@ def process_response(
         HttpStatusError: If response status is non-200 and not a timeout redirect.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
     if status in AUTH_ERROR_STATUS_CODES:
-        context.logger.warning(
+        _logger.warning(
             "Authentication failed for user %s (HTTP %d)",
             context.username,
             status,
@@ -504,7 +493,7 @@ def process_response(
 
     if status != HTTPStatus.OK:
         snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-        context.logger.error(
+        _logger.error(
             "HTTP %d for user %s: %s",
             status,
             context.username,

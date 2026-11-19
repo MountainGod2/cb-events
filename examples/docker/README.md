@@ -2,7 +2,7 @@
 
 Small Docker example for running `cb-events` with the included event handler example.
 
-Builds the local package from the repository and runs: `examples/event_handling.py`
+Installs `cb-events` from PyPI and runs: `examples/event_handling.py`
 
 ## Build
 

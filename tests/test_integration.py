@@ -42,7 +42,7 @@ async def test_client_router_workflow(
     aioresponses_mock.get(testbed_url_pattern, payload=event_data)
 
     async with event_client_factory() as client:
-        events = await client._poll()
+        events = await client.poll()
         for event in events:
             await router.dispatch(event)
 
@@ -77,7 +77,7 @@ async def test_authentication_error_propagation(
 
     async with event_client_factory(token_override="bad_token") as client:
         with pytest.raises(AuthError):
-            await client._poll()
+            await client.poll()
 
 
 async def test_authentication_retry_sequence_then_success(
@@ -99,7 +99,7 @@ async def test_authentication_retry_sequence_then_success(
     )
 
     async with event_client_factory(config=config) as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert len(events) == 1
     assert events[0].type == EventType.TIP
@@ -134,7 +134,7 @@ async def test_authentication_retry_uses_configured_delay_between_auth_retries(
     )
 
     async with event_client_factory(config=config) as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert observed_delays == [0.25, 0.25]
     assert len(events) == 1
@@ -169,7 +169,7 @@ async def test_live_polling() -> None:
         events_url,
         config=config,
     ) as client:
-        events = await client._poll()
+        events = await client.poll()
 
     assert isinstance(events, list)
     for event in events:
