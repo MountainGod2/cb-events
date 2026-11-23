@@ -26,6 +26,10 @@ Inject an `aiohttp.ClientSession` to configure a proxy, SSL context, connector,
 cookies, headers, or other aiohttp behavior. `EventClient` uses the injected
 session but does not close it; the caller retains ownership.
 
+When you inject a session, its configured `ClientTimeout` is used as-is. Ensure
+the session's `total` timeout is greater than `ClientConfig.timeout`, otherwise
+the caller timeout can abort long polls early.
+
 ```python
 from aiohttp import ClientSession
 
@@ -131,6 +135,7 @@ client3 = EventClient(url3, rate_limiter=limiter)
 ## Logging
 
 Set the logger to `DEBUG` for verbose polling URLs and event dispatch details.
+Retry warnings are emitted on `cb_events._request`.
 
 ```python
 import logging
@@ -142,6 +147,7 @@ logging.getLogger("cb_events").setLevel(logging.DEBUG)
 
 ```text
 DEBUG:cb_events._client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
-DEBUG:cb_events._client:Received 1 events for user
+DEBUG:cb_events._parser:Received 1 events for user
 DEBUG:cb_events._router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
+WARNING:cb_events._request:Retrying events request for user username after attempt 1/2 (HTTP 502).
 ```

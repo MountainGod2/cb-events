@@ -66,6 +66,11 @@ _RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 _CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
 """Error raised when polling while closing or closed."""
 
+_CLIENT_NOT_INITIALIZED_MESSAGE: Final[str] = (
+    "Client not initialized. Use 'async with EventClient(...)' as a context manager."
+)
+"""Error raised when polling before context entry."""
+
 _CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
     "Client is closed and cannot be reopened. Create a new EventClient instance."
 )
@@ -358,8 +363,7 @@ class EventClient:
     async def _request(self, url: str) -> tuple[int, str]:
         """Run one request with retry/backoff policy."""
         if self._session is None:
-            msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
-            raise EventsError(msg)
+            raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
 
         return await request_with_retry(
             url=url,
@@ -380,6 +384,8 @@ class EventClient:
             EventsError: If shutdown has started.
             asyncio.CancelledError: If close() cancels this poll.
         """  # ruff: ignore[docstring-extraneous-exception]  # Called function may raise asyncio.CancelledError
+        if self._state is _ClientState.NEW:
+            raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 

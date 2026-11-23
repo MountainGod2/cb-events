@@ -82,7 +82,7 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     testbed_url_pattern: re.Pattern[str],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Client should retry retryable statuses and eventually succeed."""
+    """Client should retry retryable statuses and log retry details via cb_events logger."""
     success_response = make_response([make_event(EventType.TIP, event_id="1")])
     aioresponses_mock.get(testbed_url_pattern, status=502)
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
@@ -95,11 +95,44 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     assert len(events) == 1
     assert events[0].type == EventType.TIP
     retry_records = [
-        record for record in caplog.records if record.message == "stamina.retry_scheduled"
+        record
+        for record in caplog.records
+        if record.name == "cb_events._request"
+        and record.getMessage().startswith("Retrying events request for user")
     ]
     assert len(retry_records) == 1
-    assert retry_records[0].__dict__["stamina.callable"] == "events request for test_user"
-    assert retry_records[0].__dict__["stamina.kwargs"] == {"username": "test_user"}
+    retry_message = retry_records[0].getMessage()
+    assert "test_user" in retry_message
+    assert "attempt 1/2" in retry_message
+    assert "HTTP 502" in retry_message
+
+
+async def test_auth_retry_warning_includes_username(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Auth retry warnings should include the username in message text."""
+    success_response = make_response([make_event(EventType.TIP, event_id="1")])
+    aioresponses_mock.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, payload=success_response)
+
+    config = ClientConfig(auth_retry_attempts=2, auth_retry_status_codes=frozenset({401}))
+    caplog.set_level("WARNING", logger="cb_events._request")
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+
+    assert len(events) == 1
+    auth_retry_records = [
+        record
+        for record in caplog.records
+        if record.name == "cb_events._request"
+        and record.getMessage().startswith("Auth check attempt")
+    ]
+    assert len(auth_retry_records) == 1
+    assert "test_user" in auth_retry_records[0].getMessage()
 
 
 def test_auth_retry_options_reject_invalid_status_codes() -> None:

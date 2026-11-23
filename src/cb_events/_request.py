@@ -66,6 +66,13 @@ class AuthRetryOptions:
             raise ValueError(msg)
 
 
+def _format_retry_cause(exc: Exception) -> str:
+    """Return a stable one-line reason string for retry diagnostics."""
+    if isinstance(exc, _RetryableStatusError):
+        return f"HTTP {exc.status_code}"
+    return type(exc).__name__
+
+
 async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
     *,
     session: ClientSession,
@@ -112,9 +119,10 @@ async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
             break
 
         _logger.warning(
-            "Auth check attempt %d/%d failed (HTTP %d). Retrying...",
+            "Auth check attempt %d/%d failed for user %s (HTTP %d). Retrying...",
             attempt,
             attempts,
+            username or "<unknown>",
             status,
             extra={"username": username},
         )
@@ -212,7 +220,19 @@ async def request_with_retry(
         async for attempt in retry_iterator:
             attempts_made = attempt.num
             with attempt:
-                return await perform_attempt(url)
+                try:
+                    return await perform_attempt(url)
+                except retriable_exc_types as exc:
+                    if attempt.num < config.retry_attempts:
+                        _logger.warning(
+                            "Retrying events request for user %s after attempt %d/%d (%s).",
+                            username or "<unknown>",
+                            attempt.num,
+                            config.retry_attempts,
+                            _format_retry_cause(exc),
+                            extra={"username": username},
+                        )
+                    raise
 
     except retriable_exc_types as original_exception:
         _raise_request_failure(

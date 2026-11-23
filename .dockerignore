@@ -50,4 +50,3 @@ Dockerfile*
 docker-compose*
 Makefile
 .pre-commit-config.yaml
-bandit.sarif

@@ -13,12 +13,12 @@ from cb_events._client import TESTBED_URL
 from tests.helpers import make_events_url
 
 
-async def test_request_raises_when_client_not_initialized() -> None:
-    """_request should fail fast when called outside context manager."""
+async def test_poll_raises_when_client_not_initialized() -> None:
+    """Poll should fail fast when called before entering context manager."""
     client = EventClient(make_events_url("user", "token"))
 
     with pytest.raises(EventsError, match="Client not initialized"):
-        await client._request("https://events.testbed.cb.dev/events")
+        await client.poll()
 
 
 async def test_perform_request_attempt_raises_when_session_missing() -> None:
@@ -44,14 +44,6 @@ async def test_aenter_propagates_session_creation_failures(
     with pytest.raises(OSError, match="socket init failed"):
         async with client:
             pass
-
-
-async def test_poll_rejects_client_before_context_entry() -> None:
-    """Polling should reject clients whose session lifecycle has not started."""
-    client = EventClient(make_events_url("user", "token"))
-
-    with pytest.raises(EventsError, match="closing or closed"):
-        await client.poll()
 
 
 async def test_aenter_rejects_closed_injected_session() -> None:
