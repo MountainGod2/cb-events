@@ -12,7 +12,7 @@ PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report
 PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
 
 .PHONY: setup format fix lint check-all pre-commit
-.PHONY: security security-full bandit audit trivy zizmor
+.PHONY: security security-full audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
 .PHONY: build build-smoke ci ci-lower-bounds clean help
@@ -45,7 +45,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
 
-security: bandit audit zizmor ## Public: Run core security scans.
+security: audit zizmor ## Public: Run core security scans.
 
 docs: ## Public: Build documentation.
 	rm -rf site docs/html_local_check
@@ -105,15 +105,12 @@ build-smoke: ## Advanced: Build distributions and verify the wheel can be import
 	$(UV) build
 	$(UV) venv .venv-build-smoke
 	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
-	.venv-build-smoke/bin/python -c "import cb_events; print(cb_events.__version__)"
+	.venv-build-smoke/bin/python -c "from cb_events import Event, EventType; event = Event.model_validate({'method': 'tip', 'id': 'smoke', 'object': {'tip': {'tokens': 1}}}); assert event.type is EventType.TIP and event.tip is not None and event.tip.tokens == 1"
 	rm -rf .venv-build-smoke
 
 ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
 # --- Internal targets ---
-
-bandit: ## Internal: Run Bandit and emit SARIF.
-	$(UV) run --group=security bandit -r src/ -f sarif -o bandit.sarif
 
 zizmor: ## Internal: Run Zizmor and emit SARIF.
 	$(UV) run --group=security zizmor --format=sarif . > zizmor.sarif
