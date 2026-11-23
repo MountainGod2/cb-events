@@ -5,12 +5,14 @@ import logging
 import pickle
 from collections import UserDict
 from collections.abc import Mapping
+from copy import copy, deepcopy
 from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
+from cb_events._models import _ImmutableMapping
 
 
 @pytest.mark.parametrize("event_type", EventType)
@@ -133,6 +135,25 @@ def test_event_data_rejects_reference_cycles() -> None:
         })
 
 
+def test_event_data_rejects_sequence_reference_cycles() -> None:
+    """Cyclic list payloads should fail clearly."""
+    cyclic_list: list[object] = []
+    cyclic_list.append(cyclic_list)
+
+    with pytest.raises(ValidationError, match="reference cycle"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_list_cycle",
+            "object": {"nested": cyclic_list},
+        })
+
+
+def test_event_data_validator_rejects_non_mapping_root() -> None:
+    """Validator should reject non-mapping roots when called directly."""
+    with pytest.raises(TypeError, match="must be a mapping"):
+        Event._freeze_data([])  # pyright: ignore[reportArgumentType]
+
+
 def test_event_is_pickle_round_trippable() -> None:
     """Event objects should survive pickle round-trips for multiprocessing and caches."""
     event = Event.model_validate({
@@ -159,6 +180,31 @@ def test_event_mapping_has_no_mutator_api() -> None:
     assert not hasattr(event.data, "__setitem__")
     assert isinstance(event.data["nested"], Mapping)
     assert isinstance(cast(Mapping[str, object], event.data["nested"])["items"], tuple)
+
+
+def test_immutable_mapping_copy_and_equality_behaviors() -> None:
+    """_ImmutableMapping should support value-based equality and copy operations."""
+    mapping = _ImmutableMapping({"nested": {"count": 1}})
+
+    assert mapping == {"nested": {"count": 1}}
+    assert mapping != {"nested": {"count": 2}}
+
+    mapping_copy = copy(mapping)
+    assert isinstance(mapping_copy, _ImmutableMapping)
+    assert mapping_copy == mapping
+    assert mapping_copy is not mapping
+
+    mapping_deepcopy = deepcopy(mapping)
+    assert isinstance(mapping_deepcopy, _ImmutableMapping)
+    assert mapping_deepcopy == mapping
+    assert mapping_deepcopy is not mapping
+
+
+def test_immutable_mapping_is_unhashable() -> None:
+    """_ImmutableMapping hash should raise TypeError."""
+    mapping = _ImmutableMapping({"a": 1})
+    with pytest.raises(TypeError, match="unhashable"):
+        hash(mapping)
 
 
 @pytest.mark.parametrize(

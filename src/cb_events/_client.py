@@ -245,6 +245,7 @@ class EventClient:
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
+            parsed_base_url=URL(self.base_url),
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.NEW

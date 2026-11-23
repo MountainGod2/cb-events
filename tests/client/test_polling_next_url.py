@@ -60,7 +60,7 @@ async def test_relative_next_url_is_rejected(
     aioresponses_mock.get(testbed_url_pattern, payload=initial_response)
 
     async with event_client_factory() as client:
-        with pytest.raises(EventsError, match="must be a valid URL"):
+        with pytest.raises(EventsError, match="must be an absolute URL"):
             await client.poll()
 
 
@@ -76,7 +76,7 @@ async def test_relative_next_url_is_rejected(
             r"Invalid nextUrl scheme",
         ),
         ("https:///nohost", r"Invalid API response: 'nextUrl' must include a hostname."),
-        ("//evil.com/path", r"Invalid API response: 'nextUrl' must be a valid URL."),
+        ("//evil.com/path", r"Invalid API response: 'nextUrl' must be an absolute URL."),
     ],
 )
 async def test_invalid_next_url_handling(

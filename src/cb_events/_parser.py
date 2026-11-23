@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
@@ -45,20 +45,12 @@ class ParserContext:
     Attributes:
         username: Account username used for diagnostics.
         base_url: Canonical base API URL.
-        parsed_base_url: Parsed representation of base_url. Derived
-            automatically from base_url; do not pass this explicitly.
+        parsed_base_url: Parsed representation of base_url.
     """
 
     username: str
     base_url: str
-    parsed_base_url: URL = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Derive parsed_base_url from base_url.
-
-        Uses object.__setattr__ because the dataclass is frozen.
-        """
-        object.__setattr__(self, "parsed_base_url", URL(self.base_url))
+    parsed_base_url: URL
 
 
 def _is_json_object(value: object) -> TypeIs[dict[str, object]]:
@@ -190,7 +182,10 @@ def _has_invalid_port(value: str) -> bool:
         parsed = urlsplit(value)
         _ = parsed.port
     except ValueError:
-        return bool("://" in value and "@" not in value.partition("://")[2].split("/")[0])
+        authority = value.partition("://")[2].split("/")[0]
+        if authority.startswith("[") and "]" not in authority:
+            return False
+        return bool("://" in value and "@" not in authority)
     return False
 
 
@@ -226,7 +221,10 @@ def _validate_next_url(
 
     try:
         absolute, parsed = _resolve_absolute_url(stripped)
-    except ValueError:
+    except ValueError as exc:
+        if str(exc) == "'nextUrl' must be an absolute URL.":
+            msg = "Invalid API response: 'nextUrl' must be an absolute URL."
+            raise EventsError(msg, response_text=response_text) from None
         if _has_invalid_port(stripped):
             msg = "Invalid API response: 'nextUrl' contains an invalid port."
             raise EventsError(msg, response_text=response_text) from None

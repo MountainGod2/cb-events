@@ -159,6 +159,18 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
     assert "%252A" not in masked
 
 
+def test_mask_url_replaces_only_percent_encoded_token_value() -> None:
+    """Percent-encoded token values should be masked even when raw token differs."""
+    token = "a/b"
+    encoded = quote(token, safe="")
+    url = f"https://events.testbed.cb.dev/events/user/{encoded}/?encoded={encoded}"
+
+    masked = _mask_url(url, token)
+
+    assert encoded not in masked
+    assert token not in masked
+
+
 def test_mask_url_replaces_token_inside_larger_query_values() -> None:
     """Embedded token substrings in query values should be masked as well."""
     token = "tok123"
@@ -298,6 +310,23 @@ async def test_enter_after_close_raises_terminal_state() -> None:
     with pytest.raises(EventsError, match="cannot be reopened"):
         async with client:
             pass
+
+
+async def test_reentering_open_client_raises() -> None:
+    """Re-entering an already open client should be rejected."""
+    client = EventClient(make_events_url("user", "test_token"))
+
+    async with client:
+        with pytest.raises(EventsError, match="already open"):
+            async with client:
+                pass
+
+
+def test_config_property_returns_original_config() -> None:
+    """Config property should expose the same immutable config instance."""
+    config = ClientConfig(timeout=7, retry_attempts=3)
+    client = EventClient(make_events_url("user", "test_token"), config=config)
+    assert client.config is config
 
 
 @pytest.mark.parametrize(

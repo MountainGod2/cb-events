@@ -26,6 +26,7 @@ def _parser_context(username: str = "user") -> ParserContext:
     return ParserContext(
         username=username,
         base_url=TESTBED_URL,
+        parsed_base_url=URL(TESTBED_URL),
     )
 
 
@@ -62,11 +63,11 @@ def _next_url_cases(draw: st.DrawFn) -> tuple[object, str | None]:  # ruff: igno
         return f"https://{_ALLOWED_HOST}{path}", None
     if kind == "valid_relative":
         relative = draw(st.sampled_from([path.lstrip("/"), path]))
-        return relative, r"must be a valid URL"
+        return relative, r"must be an absolute URL"
     if kind == "protocol_relative_allowed":
-        return f"//{_ALLOWED_HOST}{path}", r"must be a valid URL"
+        return f"//{_ALLOWED_HOST}{path}", r"must be an absolute URL"
     if kind == "protocol_relative_blocked":
-        return f"//evil.example.com{path}", r"must be a valid URL"
+        return f"//evil.example.com{path}", r"must be an absolute URL"
     if kind == "bad_scheme":
         scheme = draw(st.sampled_from(["http", "javascript", "ftp"]))
         return f"{scheme}://{_ALLOWED_HOST}{path}", r"Invalid nextUrl scheme"
@@ -219,6 +220,18 @@ def test_invalid_next_url_port_is_classified_without_yarl_message_matching() -> 
             response_text="{}",
             context=_parser_context(),
         )
+
+
+def test_malformed_ipv6_next_url_does_not_report_invalid_port() -> None:
+    """Malformed IPv6 should not be misclassified as an invalid port."""
+    with pytest.raises(EventsError, match="must be a valid URL") as exc_info:
+        _validate_next_url(
+            "https://[::1/events/next",
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+    assert "invalid port" not in str(exc_info.value)
 
 
 @given(case=_next_url_cases())
