@@ -1,7 +1,9 @@
 """Model validation tests for :mod:`cb_events.models`."""
 
+import json
 import logging
 import pickle
+from collections import UserDict
 from collections.abc import Mapping
 from typing import Any, cast
 
@@ -96,6 +98,26 @@ def test_event_data_accepts_depth_below_guard_limit() -> None:
     })
 
     assert event.data["nested"] is not None
+    serialized = event.model_dump(mode="python")
+    assert serialized["data"]["nested"] is not None
+    assert json.dumps(serialized["data"])
+
+
+def test_event_data_freezes_user_dict_payloads() -> None:
+    """Non-dict mappings should be frozen recursively like plain dicts."""
+    payload = UserDict({"nested": UserDict({"items": [1, 2, 3]})})
+    event = Event.model_validate({
+        "method": "chatMessage",
+        "id": "event_user_dict",
+        "object": payload,
+    })
+
+    nested = cast(Mapping[str, object], event.data["nested"])
+    assert isinstance(event.data, Mapping)
+    assert isinstance(nested, Mapping)
+    assert nested["items"] == (1, 2, 3)
+    with pytest.raises(TypeError):
+        cast(dict[str, object], nested)["items"] = []
 
 
 def test_event_data_rejects_reference_cycles() -> None:

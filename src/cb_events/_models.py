@@ -295,8 +295,8 @@ def _freeze_event_data(value: object) -> object:
         if depth > _MAX_EVENT_DATA_DEPTH:
             msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
             raise ValueError(msg)
-        if isinstance(current, dict):
-            source_mapping = cast("dict[str, object]", current)
+        if isinstance(current, Mapping):
+            source_mapping = cast("Mapping[str, object]", current)
             if id(source_mapping) in active_containers:
                 msg = "Event payload contains a reference cycle."
                 raise ValueError(msg)
@@ -344,13 +344,46 @@ def _freeze_event_data(value: object) -> object:
 
 def _thaw_event_data(value: object) -> object:
     """Return mutable JSON-compatible containers for serialization."""
-    if isinstance(value, Mapping):
-        mapping = cast("Mapping[str, object]", value)
-        return {key: _thaw_event_data(item) for key, item in mapping.items()}
-    if isinstance(value, (list, tuple)):
-        sequence = cast("list[object] | tuple[object, ...]", value)
-        return [_thaw_event_data(item) for item in sequence]
-    return value
+    root: list[object] = []
+    stack: list[tuple[str, object, _AssignValue]] = [("visit", value, root.append)]
+
+    while stack:
+        operation, current, assign = stack.pop()
+        if operation == "finish_map":
+            assign(cast("dict[str, object]", current))
+            continue
+        if operation == "finish_sequence":
+            assign(cast("list[object]", current))
+            continue
+        if isinstance(current, Mapping):
+            mapping = cast("Mapping[str, object]", current)
+            thawed: dict[str, object] = {}
+            stack.append(("finish_map", thawed, assign))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_mapping, thawed, key),
+                )
+                for key, item in reversed(tuple(mapping.items()))
+            )
+            continue
+        if isinstance(current, (list, tuple)):
+            sequence = cast("list[object] | tuple[object, ...]", current)
+            thawed_items: list[object] = [None] * len(sequence)
+            stack.append(("finish_sequence", thawed_items, assign))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_sequence, thawed_items, index),
+                )
+                for index, item in reversed(tuple(enumerate(sequence)))
+            )
+            continue
+        assign(current)
+
+    return root[0]
 
 
 @dataclass(frozen=True)

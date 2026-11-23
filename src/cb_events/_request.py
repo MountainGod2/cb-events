@@ -107,7 +107,11 @@ async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
     attempts = options.attempts
     for attempt in range(1, attempts + 1):
         await rate_limiter.acquire()
-        async with session.get(url, allow_redirects=False) as response:
+        async with session.get(
+            url,
+            allow_redirects=False,
+            raise_for_status=False,
+        ) as response:
             status = response.status
             text = await response.text()
 

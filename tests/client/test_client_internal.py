@@ -8,7 +8,7 @@ import pytest
 from aiohttp import ClientSession
 from aioresponses import aioresponses
 
-from cb_events import ClientConfig, EventClient, EventsError
+from cb_events import AuthError, ClientConfig, EventClient, EventsError
 from cb_events._client import TESTBED_URL
 from tests.helpers import make_events_url
 
@@ -105,6 +105,26 @@ async def test_poll_uses_injected_session(
             events = await client.poll()
         assert events == []
         assert not session.closed
+    finally:
+        await session.close()
+
+
+async def test_poll_handles_http_status_with_raise_for_status_injected_session(
+    aioresponses_mock: aioresponses,
+) -> None:
+    """Injected sessions with raise_for_status should still return handled HTTP statuses."""
+    request_url = f"{TESTBED_URL}/test_user/test_token/?timeout=10"
+    aioresponses_mock.get(request_url, status=401, body="Unauthorized")
+    session = ClientSession(raise_for_status=True)
+    client = EventClient(
+        make_events_url("test_user", "test_token"),
+        session=session,
+    )
+
+    try:
+        async with client:
+            with pytest.raises(AuthError, match="HTTP 401"):
+                await client.poll()
     finally:
         await session.close()
 

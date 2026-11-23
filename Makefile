@@ -102,6 +102,7 @@ build: ## Advanced: Build source and wheel distributions.
 
 build-smoke: ## Advanced: Build distributions and verify the wheel can be imported in isolation.
 	rm -rf .venv-build-smoke
+	rm -rf dist build
 	$(UV) build
 	$(UV) venv .venv-build-smoke
 	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
