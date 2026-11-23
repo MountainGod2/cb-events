@@ -5,20 +5,21 @@
 ```text
 EventsError (base)
 ├── AuthError (401/403)
+├── EventsUrlError (invalid constructor URL)
 └── HttpStatusError
     ├── ClientRequestError (4xx)
     ├── RateLimitError (429)
     └── ServerError (5xx/52x)
 ```
 
-`AuthError` is a subclass of `EventsError`, so `except EventsError` catches both.
-Catch `AuthError` first if you need separate handling.
+`AuthError` and `EventsUrlError` are subclasses of `EventsError`, so
+`except EventsError` catches both. Catch them first if you need separate handling.
 
 ## Recommended Pattern
 
 ```python
 import asyncio
-from cb_events import AuthError, EventClient, EventsError, Router
+from cb_events import AuthError, EventClient, EventsError, EventsUrlError, Router
 
 router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
@@ -32,6 +33,9 @@ async def main() -> None:
     except AuthError as err:
         # Bad credentials / revoked token (401/403)
         print(f"Authentication failed: {err} (status {err.status_code})")
+    except EventsUrlError as err:
+        # Invalid constructor URL
+        print(f"Invalid Events URL: {err}")
     except EventsError as err:
         # Other API/network errors
         print(f"Event API error: {err}")

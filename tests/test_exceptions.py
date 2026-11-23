@@ -6,6 +6,7 @@ from cb_events import (
     AuthError,
     ClientRequestError,
     EventsError,
+    EventsUrlError,
     HttpStatusError,
     RateLimitError,
     ServerError,
@@ -44,6 +45,15 @@ def test_auth_error_inherits_events_error() -> None:
 
     assert isinstance(error, EventsError)
     assert str(error) == "Authentication failed"
+
+
+def test_events_url_error_inherits_events_error() -> None:
+    """Malformed Events URLs have a distinct client-side exception."""
+    error = EventsUrlError("Invalid Events URL")
+
+    assert isinstance(error, EventsError)
+    assert not isinstance(error, AuthError)
+    assert str(error) == "Invalid Events URL"
 
 
 @pytest.mark.parametrize(

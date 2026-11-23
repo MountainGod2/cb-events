@@ -9,7 +9,7 @@ from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientError
 from yarl import URL
 
-from cb_events import AuthError, ClientConfig, EventClient, EventsError
+from cb_events import ClientConfig, EventClient, EventsError, EventsUrlError
 from cb_events._client import (
     TESTBED_URL,
     _mask_token,
@@ -93,14 +93,14 @@ def test_mask_url_keeps_non_token_path_and_query_names_for_short_token() -> None
     ],
 )
 def test_reject_invalid_credentials(events_url: str, message: str) -> None:
-    """Invalid URLs should raise an ``AuthError`` with guidance."""
-    with pytest.raises(AuthError, match=message):
+    """Invalid URLs should raise an ``EventsUrlError`` with guidance."""
+    with pytest.raises(EventsUrlError, match=message):
         EventClient(events_url)
 
 
 def test_reject_malformed_ipv6_does_not_claim_custom_port() -> None:
     """Malformed IPv6 URLs should surface as malformed, not port-specific."""
-    with pytest.raises(AuthError) as exc_info:
+    with pytest.raises(EventsUrlError) as exc_info:
         EventClient("https://[::1/events/user/token/")
 
     message = str(exc_info.value)

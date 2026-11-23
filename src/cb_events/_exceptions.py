@@ -75,8 +75,12 @@ class EventsError(Exception):
 class AuthError(EventsError):
     """Authentication failure.
 
-    Raised for invalid credentials and malformed authentication URL components.
+    Raised when the API rejects configured credentials.
     """
+
+
+class EventsUrlError(EventsError):
+    """The Events API URL is malformed or unsupported."""
 
 
 class StrictValidationError(EventsError):

@@ -42,7 +42,10 @@ async def test_poll_handles_multiple_events(
         make_event(EventType.BROADCAST_START, event_id="4"),
         make_event(EventType.PRIVATE_MESSAGE, event_id="5"),
     ]
-    response = make_response(events_data, next_url="url")
+    response = make_response(
+        events_data,
+        next_url="https://events.testbed.cb.dev/events/next",
+    )
     aioresponses_mock.get(testbed_url_pattern, payload=response)
 
     async with event_client_factory() as client:

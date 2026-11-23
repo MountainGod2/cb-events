@@ -16,7 +16,7 @@ from typing_extensions import override
 from yarl import URL
 
 from ._config import ClientConfig
-from ._exceptions import CF_SERVER_ERROR_CODES, AuthError, EventsError
+from ._exceptions import CF_SERVER_ERROR_CODES, EventsError, EventsUrlError
 from ._parser import (
     ParserContext,
     process_response,
@@ -106,10 +106,10 @@ class _ClientState(Enum):
 
 
 def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
-    """Raise AuthError if value is empty or has leading/trailing whitespace."""
+    """Raise EventsUrlError for empty or padded URL components."""
     if not value or value != value.strip():
         msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
 
 def _quote_segment(value: str) -> str:
@@ -121,17 +121,17 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     try:
         parsed = URL(events_url)
     except ValueError as exc:
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
-        raise AuthError(msg) from exc
+        raise EventsUrlError(msg) from exc
 
     if parsed.query_string or parsed.fragment:
         msg = "Events URL must not include query parameters or fragments."
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     try:
         normalized_host = validate_https_host_no_port(
@@ -142,22 +142,22 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         reason = exc.reason
         if reason == UrlValidationReason.SCHEME:
             msg = "Events URL must use https."
-            raise AuthError(msg) from None
+            raise EventsUrlError(msg) from None
         if reason == UrlValidationReason.CUSTOM_PORT:
             msg = "Events URL must not include a custom port."
-            raise AuthError(msg) from None
+            raise EventsUrlError(msg) from None
         msg = (
             "Events URL host is not supported. "
             "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
         )
-        raise AuthError(msg) from None
+        raise EventsUrlError(msg) from None
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
 
     parts = [part for part in parsed.raw_parts if part not in {"", "/"}]
     if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     username, token = unquote(parts[1]), unquote(parts[2])
     _validate_non_empty_stripped(

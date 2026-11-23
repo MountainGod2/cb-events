@@ -62,11 +62,11 @@ def _next_url_cases(draw: st.DrawFn) -> tuple[object, str | None]:  # ruff: igno
         return f"https://{_ALLOWED_HOST}{path}", None
     if kind == "valid_relative":
         relative = draw(st.sampled_from([path.lstrip("/"), path]))
-        return relative, None
+        return relative, r"must be a valid URL"
     if kind == "protocol_relative_allowed":
-        return f"//{_ALLOWED_HOST}{path}", None
+        return f"//{_ALLOWED_HOST}{path}", r"must be a valid URL"
     if kind == "protocol_relative_blocked":
-        return f"//evil.example.com{path}", r"host is not allowed"
+        return f"//evil.example.com{path}", r"must be a valid URL"
     if kind == "bad_scheme":
         scheme = draw(st.sampled_from(["http", "javascript", "ftp"]))
         return f"{scheme}://{_ALLOWED_HOST}{path}", r"Invalid nextUrl scheme"
@@ -232,7 +232,7 @@ def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> No
         validated = _validate_next_url(next_url, response_text="{}", context=context)
         assert validated is not None
 
-        resolved, parsed = _resolve_absolute_url(str(next_url).strip(), context=context)
+        resolved, parsed = _resolve_absolute_url(str(next_url).strip())
         assert validated == resolved
         assert parsed.scheme == "https"
         assert parsed.host == _ALLOWED_HOST

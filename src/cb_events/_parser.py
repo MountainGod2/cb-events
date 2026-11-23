@@ -165,32 +165,23 @@ def _parse_events(
 
 def _resolve_absolute_url(
     stripped: str,
-    *,
-    context: ParserContext,
 ) -> tuple[str, URL]:
-    """Resolve nextUrl to an absolute URL.
+    """Parse nextUrl and require an absolute URL.
 
     Args:
         stripped: nextUrl value with surrounding whitespace removed.
-        context: Parsing context.
 
     Returns:
         Tuple of (absolute URL, parsed URL object).
+
+    Raises:
+        ValueError: If the URL has no scheme.
     """
     parsed = URL(stripped)
-    if not parsed.scheme and not parsed.host:
-        base_url = context.parsed_base_url
-        if stripped.startswith("/"):
-            absolute_url = base_url.origin().join(URL(stripped))
-        else:
-            absolute_url = URL(f"{context.base_url.removesuffix('/')}/").join(parsed)
-        absolute = str(absolute_url)
-        return absolute, absolute_url
-    if not parsed.scheme and (parsed.host or stripped.startswith("//")):
-        absolute_url = URL(f"{context.parsed_base_url.scheme}:{stripped}")
-        absolute = str(absolute_url)
-        return absolute, absolute_url
-    return stripped, parsed
+    if not parsed.scheme:
+        msg = "'nextUrl' must be an absolute URL."
+        raise ValueError(msg)
+    return str(parsed), parsed
 
 
 def _has_invalid_port(value: str) -> bool:
@@ -227,36 +218,19 @@ def _validate_next_url(
 
     msg = "Invalid API response: 'nextUrl' must be a non-empty string."
     if not isinstance(next_url, str):
-        _logger.error(
-            "Received invalid nextUrl type %s for user %s",
-            type(next_url).__name__,
-            context.username,
-        )
         raise EventsError(msg, response_text=response_text)
 
     stripped = next_url.strip()
     if not stripped:
-        _logger.error(
-            "Received empty nextUrl from API for user %s",
-            context.username,
-        )
         raise EventsError(msg, response_text=response_text)
 
     try:
-        absolute, parsed = _resolve_absolute_url(stripped, context=context)
+        absolute, parsed = _resolve_absolute_url(stripped)
     except ValueError:
         if _has_invalid_port(stripped):
-            _logger.warning(
-                "Received nextUrl with invalid port for user %s",
-                context.username,
-            )
             msg = "Invalid API response: 'nextUrl' contains an invalid port."
             raise EventsError(msg, response_text=response_text) from None
 
-        _logger.exception(
-            "Received malformed nextUrl for user %s",
-            context.username,
-        )
         msg = "Invalid API response: 'nextUrl' must be a valid URL."
         raise EventsError(msg, response_text=response_text) from None
 
@@ -266,34 +240,15 @@ def _validate_next_url(
     except UrlValidationError as exc:
         reason = exc.reason
         if reason == UrlValidationReason.SCHEME:
-            _logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl with unsupported scheme %s for user %s",
-                parsed.scheme or "<missing>",
-                context.username,
-            )
             msg = "Invalid nextUrl scheme; only https is allowed."
             raise EventsError(msg, response_text=response_text) from None
         if reason == UrlValidationReason.CUSTOM_PORT:
-            _logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl with custom port %s for user %s",
-                parsed.explicit_port,
-                context.username,
-            )
             msg = "Invalid API response: 'nextUrl' must not contain a custom port."
             raise EventsError(msg, response_text=response_text) from None
         if reason == UrlValidationReason.MISSING_HOST:
-            _logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl without hostname for user %s",
-                context.username,
-            )
             msg = "Invalid API response: 'nextUrl' must include a hostname."
             raise EventsError(msg, response_text=response_text) from None
 
-        _logger.error(  # ruff: ignore[error-instead-of-exception]
-            "Received nextUrl host %s which is not allowed for user %s",
-            parsed.host,
-            context.username,
-        )
         msg = "Invalid API response: 'nextUrl' host is not allowed."
         raise EventsError(msg, response_text=response_text) from None
 

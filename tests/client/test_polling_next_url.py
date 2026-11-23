@@ -49,29 +49,19 @@ async def test_disallowed_next_url_host_raises(
             await client.poll()
 
 
-async def test_relative_next_url_resolved_to_absolute(
+async def test_relative_next_url_is_rejected(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
 ) -> None:
-    """Relative nextUrl values should resolve against the base host."""
+    """Relative nextUrl values should be rejected because the API uses absolute URLs."""
     relative_next = "/events/test_user/test_token/?timeout=10&next=relative"
     initial_response = make_response([], next_url=relative_next)
-    next_absolute = (
-        "https://events.testbed.cb.dev/events/test_user/test_token/?timeout=10&next=relative"
-    )
-    success_response = make_response([make_event(EventType.TIP, event_id="1")])
-
     aioresponses_mock.get(testbed_url_pattern, payload=initial_response)
-    aioresponses_mock.get(next_absolute, payload=success_response)
 
     async with event_client_factory() as client:
-        events = await client.poll()
-        assert not events
-
-        events = await client.poll()
-        assert len(events) == 1
-    assert events[0].type == EventType.TIP
+        with pytest.raises(EventsError, match="must be a valid URL"):
+            await client.poll()
 
 
 @pytest.mark.parametrize("is_timeout", [False, True])
@@ -86,7 +76,7 @@ async def test_relative_next_url_resolved_to_absolute(
             r"Invalid nextUrl scheme",
         ),
         ("https:///nohost", r"Invalid API response: 'nextUrl' must include a hostname."),
-        ("//evil.com/path", r"Invalid API response: 'nextUrl' host is not allowed."),
+        ("//evil.com/path", r"Invalid API response: 'nextUrl' must be a valid URL."),
     ],
 )
 async def test_invalid_next_url_handling(
