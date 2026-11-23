@@ -38,7 +38,6 @@ async def test_concurrent_polls_are_serialized_per_client(
         await entered_first_request.wait()
 
         second_poll = asyncio.create_task(client.poll())
-        await asyncio.sleep(0)
         release_first_request.set()
 
         await asyncio.gather(first_poll, second_poll)
@@ -80,10 +79,15 @@ async def test_close_propagates_caller_cancellation(
     """A cancellation of the closer itself should not be swallowed during shutdown."""
     started = asyncio.Event()
     release = asyncio.Event()
+    poll_cancelled = asyncio.Event()
 
     async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
         started.set()
-        await release.wait()
+        try:
+            await release.wait()
+        except asyncio.CancelledError:
+            poll_cancelled.set()
+            raise
         return 200, '{"events": [], "nextUrl": null}'
 
     monkeypatch.setattr(EventClient, "_request", _slow_request)
@@ -96,7 +100,7 @@ async def test_close_propagates_caller_cancellation(
         assert session is not None
 
         close_task = asyncio.create_task(client.close())
-        await asyncio.sleep(0)
+        await poll_cancelled.wait()
         close_task.cancel()
 
         with pytest.raises(asyncio.CancelledError):

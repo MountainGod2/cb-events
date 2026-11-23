@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 from urllib.parse import quote
 
 import pytest
+from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientError
 from yarl import URL
 
@@ -249,6 +250,20 @@ def test_eventclient_build_url_and_repr() -> None:
     assert "*" * len(token) in r
 
 
+def test_eventclient_public_state_is_read_only() -> None:
+    """Callers should not be able to replace identity or runtime state fields."""
+    client = EventClient(make_events_url("user", "test_token"))
+
+    with pytest.raises(AttributeError):
+        client.username = "other"  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.base_url = "https://example.com"  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.config = ClientConfig(timeout=1)  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.session = None  # pyright: ignore[reportAttributeAccessIssue]
+
+
 async def test_close_called_twice_does_not_raise() -> None:
     """Calling close() twice should be a no-op on the second call."""
     client = EventClient(make_events_url("user", "test_token"))
@@ -303,7 +318,7 @@ async def test_close_logs_warning_when_session_close_raises(
 
     mock_session = AsyncMock()
     mock_session.close = AsyncMock(side_effect=exc_instance)
-    client.session = mock_session  # type: ignore[assignment]
+    client._session = mock_session  # type: ignore[assignment]
 
     with caplog.at_level("WARNING"):
         await client.close()
@@ -332,7 +347,7 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
             completed.set()
 
     session = _Session()
-    client.session = session  # type: ignore[assignment]
+    client._session = session  # type: ignore[assignment]
 
     close_task = asyncio.create_task(client.close())
     await started.wait()
@@ -344,3 +359,20 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
     assert close_calls == 1
     assert completed.is_set()
     assert session.closed
+
+
+async def test_injected_session_remains_caller_owned() -> None:
+    """EventClient should use but not close an injected aiohttp session."""
+    session = ClientSession()
+    client = EventClient(
+        make_events_url("user", "test_token"),
+        session=session,
+    )
+
+    try:
+        async with client:
+            assert client.session is session
+        assert client.session is None
+        assert not session.closed
+    finally:
+        await session.close()

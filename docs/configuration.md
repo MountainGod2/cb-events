@@ -20,6 +20,20 @@ config = ClientConfig(
 client = EventClient(events_url, config=config)
 ```
 
+## Custom HTTP Session
+
+Inject an `aiohttp.ClientSession` to configure a proxy, SSL context, connector,
+cookies, headers, or other aiohttp behavior. `EventClient` uses the injected
+session but does not close it; the caller retains ownership.
+
+```python
+from aiohttp import ClientSession
+
+async with ClientSession(headers={"X-Client": "my-bot"}) as session:
+    async with EventClient(events_url, session=session) as client:
+        events = await client.poll()
+```
+
 ## Timeout Settings
 
 The `timeout` parameter controls the maximum time (in seconds) the Chaturbate server

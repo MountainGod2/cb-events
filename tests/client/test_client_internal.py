@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from aiohttp import ClientSession
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventClient, EventsError
@@ -53,6 +54,20 @@ async def test_poll_rejects_client_before_context_entry() -> None:
         await client.poll()
 
 
+async def test_aenter_rejects_closed_injected_session() -> None:
+    """A closed caller-owned session cannot be used by the client lifecycle."""
+    session = ClientSession()
+    await session.close()
+    client = EventClient(
+        make_events_url("user", "token"),
+        session=session,
+    )
+
+    with pytest.raises(EventsError, match="already closed"):
+        async with client:
+            pass
+
+
 async def test_poll_debug_logs_masked_url(
     caplog: pytest.LogCaptureFixture,
     aioresponses_mock: aioresponses,
@@ -78,13 +93,40 @@ async def test_poll_debug_logs_masked_url(
     assert "secret_token_123" not in caplog.text
 
 
+async def test_poll_uses_injected_session(
+    aioresponses_mock: aioresponses,
+) -> None:
+    """Injected sessions should perform requests and remain caller-owned."""
+    request_url = f"{TESTBED_URL}/test_user/test_token/?timeout=10"
+    aioresponses_mock.get(
+        request_url,
+        payload={"events": [], "nextUrl": None},
+    )
+    session = ClientSession()
+    client = EventClient(
+        make_events_url("test_user", "test_token"),
+        session=session,
+    )
+
+    try:
+        async with client:
+            events = await client.poll()
+        assert events == []
+        assert not session.closed
+    finally:
+        await session.close()
+
+
 async def test_close_cancels_active_poll_without_wrapping_cancelled_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Close should cancel in-flight polls without converting the cancellation into EventsError."""
     client = EventClient(make_events_url("user", "token"))
 
+    poll_task_started = asyncio.Event()
+
     async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        poll_task_started.set()
         await asyncio.sleep(10)
         return 200, '{"events": [], "nextUrl": null}'
 
@@ -92,7 +134,7 @@ async def test_close_cancels_active_poll_without_wrapping_cancelled_error(
 
     async with client:
         poll_task = asyncio.create_task(client.poll())
-        await asyncio.sleep(0)
+        await poll_task_started.wait()
 
         await client.close()
 

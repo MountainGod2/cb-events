@@ -76,6 +76,9 @@ _CLIENT_ALREADY_OPEN_MESSAGE: Final[str] = (
 )
 """Error raised when entering an already-open client."""
 
+_CLIENT_SESSION_CLOSED_MESSAGE: Final[str] = "Injected client session is already closed."
+"""Error raised when entering with a caller-owned session that cannot be reused."""
+
 _POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
 """Error raised when close() cancels an active poll."""
 
@@ -216,6 +219,7 @@ class EventClient:
         *,
         config: ClientConfig | None = None,
         rate_limiter: AsyncLimiter | None = None,
+        session: ClientSession | None = None,
     ) -> None:
         """Initialize a client from an Events API URL.
 
@@ -223,13 +227,16 @@ class EventClient:
             events_url: Full Events API URL provided by upstream.
             config: Optional client configuration overrides.
             rate_limiter: Optional shared limiter for multiple clients.
+            session: Optional caller-owned aiohttp session. Caller-owned
+                sessions are not closed by EventClient.
         """
         base_url, username, token = _parse_events_url(events_url)
-        self.base_url: str = base_url
-        self.username: str = username
+        self._base_url: str = base_url
+        self._username: str = username
         self._token: str = token
-        self.config: ClientConfig = config or ClientConfig()
-        self.session: ClientSession | None = None
+        self._config: ClientConfig = config or ClientConfig()
+        self._session: ClientSession | None = session
+        self._owns_session: bool = session is None
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
@@ -243,10 +250,30 @@ class EventClient:
             time_period=_DEFAULT_TIME_PERIOD,
         )
         self._auth_retry_options: AuthRetryOptions = AuthRetryOptions(
-            status_codes=self.config.auth_retry_status_codes,
-            attempts=self.config.auth_retry_attempts,
-            delay=self.config.auth_retry_delay,
+            status_codes=self._config.auth_retry_status_codes,
+            attempts=self._config.auth_retry_attempts,
+            delay=self._config.auth_retry_delay,
         )
+
+    @property
+    def base_url(self) -> str:
+        """Canonical Events API base URL."""
+        return self._base_url
+
+    @property
+    def username(self) -> str:
+        """Account username parsed from the Events API URL."""
+        return self._username
+
+    @property
+    def config(self) -> ClientConfig:
+        """Immutable client configuration."""
+        return self._config
+
+    @property
+    def session(self) -> ClientSession | None:
+        """Active HTTP session, or None before entry and after close."""
+        return self._session
 
     @override
     def __repr__(self) -> str:
@@ -271,13 +298,16 @@ class EventClient:
             raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
         if self._state is not _ClientState.NEW:
             raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
+        if self._session is not None and self._session.closed:
+            raise EventsError(_CLIENT_SESSION_CLOSED_MESSAGE)
 
-        self.session = ClientSession(
-            timeout=ClientTimeout(
-                total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
-                connect=_CONNECT_TIMEOUT,
-            ),
-        )
+        if self._session is None:
+            self._session = ClientSession(
+                timeout=ClientTimeout(
+                    total=self._config.timeout + _SESSION_TIMEOUT_BUFFER,
+                    connect=_CONNECT_TIMEOUT,
+                ),
+            )
         self._state = _ClientState.OPEN
 
         return self
@@ -305,37 +335,37 @@ class EventClient:
         if next_url:
             return next_url
         poll_url = URL(
-            f"{self.base_url.removesuffix('/')}/{_quote_segment(self.username)}/{_quote_segment(self._token)}/"
+            f"{self._base_url.removesuffix('/')}/{_quote_segment(self._username)}/{_quote_segment(self._token)}/"
         )
-        return str(poll_url.with_query(timeout=self.config.timeout))
+        return str(poll_url.with_query(timeout=self._config.timeout))
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
         """Perform one HTTP request attempt."""
         # Session may be set to None by close() between retry attempts.
-        if self.session is None:
+        if self._session is None:
             msg = "Client session unexpectedly unavailable"
             raise EventsError(msg)
 
         return await perform_request_attempt(
-            session=self.session,
+            session=self._session,
             rate_limiter=self._rate_limiter,
             url=url,
             retry_status_codes=_RETRY_STATUS_CODES,
             auth_retry=self._auth_retry_options,
-            username=self.username,
+            username=self._username,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
         """Run one request with retry/backoff policy."""
-        if self.session is None:
+        if self._session is None:
             msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
             raise EventsError(msg)
 
         return await request_with_retry(
             url=url,
-            config=self.config,
+            config=self._config,
             perform_attempt=self._perform_request_attempt,
-            username=self.username,
+            username=self._username,
         )
 
     async def poll(self) -> list[Event]:
@@ -375,7 +405,7 @@ class EventClient:
                     status=status,
                     text=text,
                     context=self._parser_context,
-                    strict_validation=self.config.strict_validation,
+                    strict_validation=self._config.strict_validation,
                     log_next_url=lambda next_url: _logger.debug(
                         "Received nextUrl from timeout response: %s",
                         _mask_url(next_url, self._token),
@@ -413,7 +443,8 @@ class EventClient:
         """Close the HTTP session and reset poll state.
 
         Safe to call multiple times. Called automatically by context exit.
-        After close(), the instance cannot be reopened.
+        Internally created sessions are closed; caller-owned injected sessions
+        remain open. After close(), the instance cannot be reopened.
 
         Raises:
             asyncio.CancelledError: If the caller of close() is cancelled while
@@ -423,8 +454,8 @@ class EventClient:
             return
 
         self._state = _ClientState.CLOSING
-        session: ClientSession | None = self.session
-        self.session = None
+        session = self._session
+        self._session = None
         self._next_url = None
         try:
             current_task = asyncio.current_task()
@@ -447,7 +478,7 @@ class EventClient:
         finally:
             self._active_poll_tasks.clear()
 
-            if session is not None:
+            if session is not None and self._owns_session:
                 close_task = asyncio.create_task(session.close())
                 try:
                     await asyncio.shield(close_task)
