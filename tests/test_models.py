@@ -48,6 +48,17 @@ def test_event_properties_parsed() -> None:
     assert event.user.username == "tipper"
 
 
+def test_unknown_event_type_maps_to_unknown() -> None:
+    """Unrecognized event methods should map to EventType.UNKNOWN."""
+    event = Event.model_validate({
+        "method": "futureEventTypeFromApi",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.type is EventType.UNKNOWN
+
+
 def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
     """Event payloads should remain JSON-compatible and copy-safe."""
     event = Event.model_validate({

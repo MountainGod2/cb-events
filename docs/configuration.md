@@ -8,7 +8,7 @@ from cb_events import ClientConfig, EventClient
 config = ClientConfig(
     timeout=10,  # Server long-poll timeout (seconds)
     strict_validation=False,  # Raise on invalid events vs skip
-    retry_attempts=25,  # Total attempts (initial + retries)
+    retry_attempts=10,  # Total attempts (initial + retries)
     retry_backoff=1.0,  # Initial backoff (seconds)
     retry_factor=2.0,  # Backoff multiplier
     retry_max_delay=300.0,  # Max retry delay (seconds)
@@ -64,7 +64,7 @@ config = ClientConfig(
 Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
 `521-524`.
 
-With default retry settings, the worst-case retry window is about 84 minutes
+With default retry settings, the worst-case retry window is about 8.5 minutes
 before the request fails.
 
 Authentication statuses can use a separate fixed-delay retry budget.

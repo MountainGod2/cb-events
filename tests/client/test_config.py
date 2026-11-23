@@ -12,7 +12,7 @@ def test_default_configuration() -> None:
 
     assert config.timeout == 10
     assert not config.strict_validation
-    assert config.retry_attempts == 25
+    assert config.retry_attempts == 10
     assert config.retry_backoff == pytest.approx(1.0)
     assert config.retry_factor == pytest.approx(2.0)
     assert config.retry_max_delay == pytest.approx(300.0)

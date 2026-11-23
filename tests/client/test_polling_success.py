@@ -140,3 +140,26 @@ async def test_lenient_validation_skips_invalid_events(
     assert len(events) == 1
     assert events[0].id == "valid"
     assert events[0].type == EventType.FOLLOW
+
+
+async def test_unknown_event_type_is_preserved_in_strict_mode(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Unknown event methods should map to UNKNOWN instead of failing strict parsing."""
+    response = {
+        "events": [
+            {"method": "futureEventTypeFromApi", "id": "unknown-1", "object": {}},
+        ],
+        "nextUrl": None,
+    }
+    aioresponses_mock.get(testbed_url_pattern, payload=response)
+    config = ClientConfig(strict_validation=True)
+
+    async with event_client_factory(config=config) as client:
+        events = await client.poll()
+
+    assert len(events) == 1
+    assert events[0].id == "unknown-1"
+    assert events[0].type == EventType.UNKNOWN

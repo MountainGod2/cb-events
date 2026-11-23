@@ -35,6 +35,9 @@ from nested fields that depend on the event type.
 arrays as tuples. Use `event.model_dump(mode="json")["data"]` when ordinary JSON
 containers are required.
 
+Unknown upstream `method` values are preserved as `EventType.UNKNOWN` so polling
+continues even when the API introduces new event kinds.
+
 ### Event-Specific Nested Fields
 
 | Accessor     | Payload key | Event type(s)                 | Description                                                   |
