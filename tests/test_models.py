@@ -1,8 +1,8 @@
 """Model validation tests for :mod:`cb_events.models`."""
 
-import json
 import logging
 import pickle
+from collections.abc import Mapping
 from typing import Any, cast
 
 import pytest
@@ -55,8 +55,8 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         },
     })
 
-    assert isinstance(event.data, dict)
-    assert json.loads(json.dumps(event.data)) == {
+    assert isinstance(event.data, Mapping)
+    assert event.model_dump(mode="json")["data"] == {
         "tip": {"tokens": 100},
         "nested": {"items": [1, 2, {"flag": True}]},
     }
@@ -65,9 +65,8 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         "tip": {"tokens": 100},
         "nested": {"items": (1, 2, {"flag": True})},
     }
-    mutable_data = cast(dict[str, object], copied.data)
-    with pytest.raises(TypeError, match="immutable"):
-        mutable_data["tip"] = {"tokens": 999}
+    with pytest.raises(TypeError):
+        cast(dict[str, object], copied.data)["tip"] = {"tokens": 999}
 
 
 def test_event_data_rejects_excessive_nesting() -> None:
@@ -84,6 +83,34 @@ def test_event_data_rejects_excessive_nesting() -> None:
         })
 
 
+def test_event_data_accepts_depth_below_guard_limit() -> None:
+    """The iterative freezer should not fail at Python's recursion limit."""
+    nested: object = {"value": 1}
+    for _ in range(600):
+        nested = {"value": nested}
+
+    event = Event.model_validate({
+        "method": "chatMessage",
+        "id": "event_deep_valid",
+        "object": {"nested": nested},
+    })
+
+    assert event.data["nested"] is not None
+
+
+def test_event_data_rejects_reference_cycles() -> None:
+    """Programmatically supplied cyclic payloads should fail clearly."""
+    cyclic: dict[str, object] = {}
+    cyclic["self"] = cyclic
+
+    with pytest.raises(ValidationError, match="reference cycle"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_cycle",
+            "object": cyclic,
+        })
+
+
 def test_event_is_pickle_round_trippable() -> None:
     """Event objects should survive pickle round-trips for multiprocessing and caches."""
     event = Event.model_validate({
@@ -96,6 +123,20 @@ def test_event_is_pickle_round_trippable() -> None:
 
     assert restored == event
     assert restored.data == event.data
+
+
+def test_event_mapping_has_no_mutator_api() -> None:
+    """Immutable payloads expose only the read-only Mapping API."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-mapping",
+        "object": {"nested": {"items": [1]}},
+    })
+
+    assert not hasattr(event.data, "update")
+    assert not hasattr(event.data, "__setitem__")
+    assert isinstance(event.data["nested"], Mapping)
+    assert isinstance(cast(Mapping[str, object], event.data["nested"])["items"], tuple)
 
 
 @pytest.mark.parametrize(

@@ -28,10 +28,10 @@ async def test_perform_request_attempt_raises_when_session_missing() -> None:
         await client._perform_request_attempt("https://events.testbed.cb.dev/events")
 
 
-async def test_aenter_wraps_session_creation_failures(
+async def test_aenter_propagates_session_creation_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Session creation failures should be wrapped in EventsError."""
+    """Session creation failures should retain their original exception type."""
 
     def _boom(*_args: object, **_kwargs: object) -> object:
         msg = "socket init failed"
@@ -40,9 +40,17 @@ async def test_aenter_wraps_session_creation_failures(
     monkeypatch.setattr("cb_events._client.ClientSession", _boom)
     client = EventClient(make_events_url("user", "token"))
 
-    with pytest.raises(EventsError, match="Failed to create HTTP session"):
+    with pytest.raises(OSError, match="socket init failed"):
         async with client:
             pass
+
+
+async def test_poll_rejects_client_before_context_entry() -> None:
+    """Polling should reject clients whose session lifecycle has not started."""
+    client = EventClient(make_events_url("user", "token"))
+
+    with pytest.raises(EventsError, match="closing or closed"):
+        await client.poll()
 
 
 async def test_poll_debug_logs_masked_url(

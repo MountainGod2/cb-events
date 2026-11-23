@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum response_text length kept on exceptions."""
 
+_ELLIPSIS_LENGTH: Final[int] = 3
+
 
 class UrlValidationReason(StrEnum):
     """Reason codes emitted by URL validation helpers."""
@@ -75,4 +77,6 @@ def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
         raise ValueError(msg)
     if len(text) <= limit:
         return text
-    return f"{text[:limit]}..."
+    if limit <= _ELLIPSIS_LENGTH:
+        return "." * limit
+    return f"{text[: limit - _ELLIPSIS_LENGTH]}..."

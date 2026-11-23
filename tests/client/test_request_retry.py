@@ -7,6 +7,10 @@ import stamina
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventsError, EventType
+from cb_events import _client as client_module
+from cb_events import _models as models_module
+from cb_events import _parser as parser_module
+from cb_events import _request as request_module
 from cb_events._request import AuthRetryOptions
 from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_response
@@ -76,6 +80,7 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Client should retry retryable statuses and eventually succeed."""
     success_response = make_response([make_event(EventType.TIP, event_id="1")])
@@ -83,11 +88,16 @@ async def test_retries_on_retry_status_codes_then_succeeds(
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
     config = ClientConfig(retry_attempts=2, retry_backoff=0.0)
+    caplog.set_level("WARNING", logger="cb_events._request")
     async with event_client_factory(config=config) as client:
         events = await client.poll()
 
     assert len(events) == 1
     assert events[0].type == EventType.TIP
+    retry_records = [record for record in caplog.records if "Retrying" in record.message]
+    assert retry_records
+    assert all(record.name == "cb_events._request" for record in retry_records)
+    assert all(record.username == "test_user" for record in retry_records)
 
 
 def test_auth_retry_options_reject_invalid_status_codes() -> None:
@@ -100,3 +110,11 @@ def test_auth_retry_options_accept_supported_status_codes() -> None:
     """The supported auth retry set should be accepted without complaint."""
     options = AuthRetryOptions(status_codes=frozenset({401, 403}), attempts=2)
     assert options.status_codes == frozenset({401, 403})
+
+
+def test_internal_logger_names_are_stable() -> None:
+    """Private implementation logger names are part of diagnostic configuration."""
+    assert client_module._logger.name == "cb_events._client"
+    assert models_module._logger.name == "cb_events._models"
+    assert parser_module._logger.name == "cb_events._parser"
+    assert request_module._logger.name == "cb_events._request"

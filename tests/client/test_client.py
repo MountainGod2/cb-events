@@ -171,15 +171,8 @@ def test_mask_url_replaces_token_inside_larger_query_values() -> None:
 
 
 def test_mask_token_various_lengths() -> None:
-    """_mask_token should mask tokens and preserve last visible chars.
-
-    - If visible <= 0 or visible >= len(token), entire token is masked.
-    - Otherwise, the last visible characters should be preserved.
-    """
+    """_mask_token should fully mask every token."""
     token = "abcd1234"
-    assert _mask_token(token, visible=20) == "*" * len(token)
-    assert _mask_token(token, visible=4) == "****1234"
-    assert _mask_token(token, visible=0) == "*" * len(token)
     masked = _mask_token(token)
     assert masked == "*" * len(token)
 
@@ -220,6 +213,18 @@ def test_parse_events_logs_invalid_fields(
     assert len(events) == 1
     assert events[0].tip is None
     assert "tokens" in caplog.text
+
+
+def test_parse_events_strict_rejects_invalid_nested_payload() -> None:
+    """Strict parsing should propagate validation failure from the model path."""
+    invalid_nested = {
+        "method": "tip",
+        "id": "evt-strict",
+        "object": {"tip": {"tokens": "abc"}},
+    }
+
+    with pytest.raises(EventsError, match="Strict validation failed"):
+        _parse_events([invalid_nested], strict=True)
 
 
 def test_eventclient_build_url_and_repr() -> None:

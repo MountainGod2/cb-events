@@ -12,7 +12,6 @@ from aiohttp.client_exceptions import ClientError
 
 from ._exceptions import AUTH_ERROR_STATUS_CODES, EventsError, build_http_error
 
-_sleep = asyncio.sleep
 _logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -67,13 +66,14 @@ class AuthRetryOptions:
             raise ValueError(msg)
 
 
-async def perform_request_attempt(
+async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
     *,
     session: ClientSession,
     rate_limiter: AsyncLimiter,
     url: str,
     retry_status_codes: frozenset[int],
     auth_retry: AuthRetryOptions | None = None,
+    username: str | None = None,
 ) -> tuple[int, str]:
     """Perform one HTTP request attempt and return status/body.
 
@@ -85,6 +85,7 @@ async def perform_request_attempt(
             exponential-backoff retry via ``_RetryableStatusError``.
         auth_retry: Optional small fixed-delay retry budget for 401/403
             responses. Defaults to no retry (single attempt).
+        username: Account username attached to retry log records.
 
     Returns:
         Tuple of (HTTP status code, response text).
@@ -115,9 +116,10 @@ async def perform_request_attempt(
             attempt,
             attempts,
             status,
+            extra={"username": username},
         )
         if options.delay > 0:
-            await _sleep(options.delay)
+            await asyncio.sleep(options.delay)
 
     return status, text
 
@@ -126,12 +128,14 @@ def _raise_request_failure(
     *,
     attempts_made: int,
     original_exception: Exception,
+    username: str | None,
 ) -> NoReturn:
     """Raise a final error after retries are exhausted.
 
     Args:
         attempts_made: Number of request attempts that were made.
         original_exception: Last exception raised in the retry loop.
+        username: Account username attached to failure log records.
 
     Raises:
         EventsError: For network-level failures (ClientError, OSError, etc.).
@@ -142,6 +146,7 @@ def _raise_request_failure(
     _logger.exception(  # ruff: ignore[log-exception-outside-except-handler]  # Only ever called within except clauses.
         "Request failed after %d attempts",
         attempts_made,
+        extra={"username": username},
     )
 
     attempt_label = "attempt" if attempts_made == 1 else "attempts"
@@ -175,6 +180,7 @@ async def request_with_retry(
     url: str,
     config: ClientConfig,
     perform_attempt: Callable[[str], Awaitable[tuple[int, str]]],
+    username: str | None = None,
 ) -> tuple[int, str]:
     """Run one request under retry/backoff policy.
 
@@ -182,6 +188,7 @@ async def request_with_retry(
         url: Fully qualified endpoint URL.
         config: Client retry/backoff configuration.
         perform_attempt: Callback performing a single request attempt.
+        username: Account username attached to retry log records.
 
     Returns:
         Tuple of (HTTP status code, response text).
@@ -217,6 +224,7 @@ async def request_with_retry(
                             attempts_made,
                             config.retry_attempts,
                             str(exc) or type(exc).__name__,
+                            extra={"username": username},
                         )
                     raise
 
@@ -224,6 +232,7 @@ async def request_with_retry(
         _raise_request_failure(
             attempts_made=attempts_made,
             original_exception=original_exception,
+            username=username,
         )
 
     # Unreachable in practice: stamina always yields ≥1 attempt and

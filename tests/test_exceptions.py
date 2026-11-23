@@ -88,7 +88,7 @@ def test_events_error_truncates_long_response_text() -> None:
     error = EventsError("Test", response_text=long_text)
 
     assert error.response_text is not None
-    assert len(error.response_text) == 203
+    assert len(error.response_text) == 200
     assert error.response_text.endswith("...")
 
 
@@ -96,6 +96,20 @@ def test_truncate_text_raises_on_negative_limit() -> None:
     """truncate_text() should raise ValueError when limit is negative."""
     with pytest.raises(ValueError, match="truncate_text"):
         truncate_text("hello", limit=-1)
+
+
+@pytest.mark.parametrize(
+    ("text", "limit", "expected"),
+    [
+        ("abcdef", 3, "..."),
+        ("abcdef", 1, "."),
+        ("abc", 3, "abc"),
+        ("abcd", 3, "..."),
+    ],
+)
+def test_truncate_text_respects_total_limit(text: str, limit: int, expected: str) -> None:
+    """Truncation should include the ellipsis in the configured limit."""
+    assert truncate_text(text, limit=limit) == expected
 
 
 @pytest.mark.parametrize("status_code", [401, 403])

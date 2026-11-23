@@ -42,6 +42,10 @@ mountaingod2 tipped 100 tokens
 The Events API uses long polling and returns a `nextUrl` continuation URL on each request.
 `EventClient` follows that `nextUrl` automatically while iterating through events.
 
+Use `await client.poll()` when you want one batch of events instead of continuous
+iteration. It follows the same `nextUrl` progression and returns an empty list on
+a long-poll timeout.
+
 `EventClient` serializes polls per instance, so only one request is in flight
 at a time for a given client. This keeps `nextUrl` progression consistent
 without requiring extra synchronization in your application code.

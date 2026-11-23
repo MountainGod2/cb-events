@@ -12,9 +12,9 @@ from urllib.parse import quote, unquote
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
+from typing_extensions import override
 from yarl import URL
 
-from ._compat import override
 from ._config import ClientConfig
 from ._exceptions import CF_SERVER_ERROR_CODES, AuthError, EventsError
 from ._parser import (
@@ -63,9 +63,6 @@ _RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 })
 """HTTP status codes retried with exponential backoff."""
 
-_TOKEN_VISIBLE_CHARS: Final[int] = 0
-"""Trailing token characters visible in logs (0 means fully masked)."""
-
 _CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
 """Error raised when polling while closing or closed."""
 
@@ -91,6 +88,9 @@ _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
 
 class _ClientState(Enum):
     """Lifecycle state of an :class:`EventClient` instance."""
+
+    NEW = auto()
+    """Client has not entered its context manager."""
 
     OPEN = auto()
     """Client is active and ready to poll."""
@@ -168,11 +168,9 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     return base_url, username, token
 
 
-def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
+def _mask_token(token: str) -> str:
     """Mask token for logging."""
-    if visible <= 0 or len(token) <= visible:
-        return "*" * len(token)
-    return f"{'*' * (len(token) - visible)}{token[-visible:]}"
+    return "*" * len(token)
 
 
 def _mask_url(url: str, token: str) -> str:
@@ -237,7 +235,7 @@ class EventClient:
             base_url=self.base_url,
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
-        self._state: _ClientState = _ClientState.OPEN
+        self._state: _ClientState = _ClientState.NEW
         self._next_url: str | None = None
         self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
@@ -271,20 +269,16 @@ class EventClient:
         """
         if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
             raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
-        if self.session is not None:
+        if self._state is not _ClientState.NEW:
             raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
 
-        try:
-            self.session = ClientSession(
-                timeout=ClientTimeout(
-                    total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
-                    connect=_CONNECT_TIMEOUT,
-                ),
-            )
-        except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
-            await self.close()
-            msg = "Failed to create HTTP session."
-            raise EventsError(msg) from exc
+        self.session = ClientSession(
+            timeout=ClientTimeout(
+                total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
+                connect=_CONNECT_TIMEOUT,
+            ),
+        )
+        self._state = _ClientState.OPEN
 
         return self
 
@@ -328,6 +322,7 @@ class EventClient:
             url=url,
             retry_status_codes=_RETRY_STATUS_CODES,
             auth_retry=self._auth_retry_options,
+            username=self.username,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
@@ -340,6 +335,7 @@ class EventClient:
             url=url,
             config=self.config,
             perform_attempt=self._perform_request_attempt,
+            username=self.username,
         )
 
     async def poll(self) -> list[Event]:
@@ -387,13 +383,7 @@ class EventClient:
                 )
 
                 if self._state is _ClientState.OPEN:
-                    if self._next_url == request_next_url:
-                        self._next_url = next_url
-                    else:
-                        _logger.debug(
-                            "Skipping stale nextUrl update for user %s",
-                            self.username,
-                        )
+                    self._next_url = next_url
                 return events
             finally:
                 self._active_poll_tasks.discard(current_task)

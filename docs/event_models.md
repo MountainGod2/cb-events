@@ -25,11 +25,15 @@ from nested fields that depend on the event type.
 
 ### Present On All Events
 
-| Field  | Accessor   | Type                  | Description                                       |
-| ------ | ---------- | --------------------- | ------------------------------------------------- |
-| method | event.type | EventType             | Event category (for example TIP or CHAT_MESSAGE). |
-| id     | event.id   | str                   | Unique event identifier.                          |
-| object | event.data | dict of str to object | Raw event payload map.                            |
+| Field  | Accessor   | Type              | Description                                       |
+| ------ | ---------- | ----------------- | ------------------------------------------------- |
+| method | event.type | EventType         | Event category (for example TIP or CHAT_MESSAGE). |
+| id     | event.id   | str               | Unique event identifier.                          |
+| object | event.data | immutable Mapping | Raw event payload map.                            |
+
+`event.data` exposes nested mappings as read-only `Mapping` objects and payload
+arrays as tuples. Use `event.model_dump(mode="json")["data"]` when ordinary JSON
+containers are required.
 
 ### Event-Specific Nested Fields
 

@@ -19,7 +19,7 @@ from ._exceptions import (
     StrictValidationError,
     build_http_error,
 )
-from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
+from ._models import Event
 from ._utils import (
     TRUNCATE_LENGTH,
     UrlValidationReason,
@@ -114,53 +114,6 @@ def _log_validation_error(
     )
 
 
-def _strict_validate_event_payload(item: object) -> None:
-    """Validate nested payloads even when the event envelope itself is accepted."""
-    if not _is_json_object(item):
-        return
-
-    object_payload = item.get("object")
-    if not _is_json_object(object_payload):
-        return
-
-    method = item.get("method")
-    if not isinstance(method, str):
-        return
-
-    try:
-        event_type = Event.model_validate(item).type
-    except ValidationError as exc:
-        msg = "Strict validation failed."
-        raise StrictValidationError(msg) from exc
-
-    validators: tuple[tuple[str, Callable[[object], object], tuple[str, ...] | None], ...] = (
-        ("user", User.model_validate, ()),
-        (
-            "message",
-            Message.model_validate,
-            (EventType.CHAT_MESSAGE.value, EventType.PRIVATE_MESSAGE.value),
-        ),
-        ("tip", Tip.model_validate, (EventType.TIP.value,)),
-        ("media", Media.model_validate, (EventType.MEDIA_PURCHASE.value,)),
-        (
-            "subject",
-            lambda value: RoomSubject.model_validate({"subject": value}),
-            (EventType.ROOM_SUBJECT_CHANGE.value,),
-        ),
-    )
-
-    for key, validator, allowed_types in validators:
-        if key not in object_payload:
-            continue
-        if allowed_types and event_type.value not in allowed_types:
-            continue
-        try:
-            _ = validator(object_payload[key])
-        except ValidationError as exc:
-            msg = "Strict validation failed."
-            raise StrictValidationError(msg) from exc
-
-
 def _parse_event(
     item: object,
     *,
@@ -179,17 +132,16 @@ def _parse_event(
         StrictValidationError: If strict mode is enabled and validation fails.
     """
     try:
-        event = Event.model_validate(item)
+        return Event.model_validate(
+            item,
+            context={"strict_validation": strict},
+        )
     except ValidationError as exc:
         if strict:
             msg = "Strict validation failed."
             raise StrictValidationError(msg) from exc
         _log_validation_error(item, exc)
         return None
-
-    if strict:
-        _strict_validate_event_payload(item)
-    return event
 
 
 def _parse_events(
@@ -405,13 +357,7 @@ def _parse_json_response(
     Raises:
         EventsError: If payload format is invalid.
     """
-    try:
-        data = _parse_json_object(text)
-    except EventsError as exc:
-        if isinstance(exc.__cause__, json.JSONDecodeError):
-            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-            _logger.exception("Failed to parse JSON: %s", snippet)
-        raise
+    data = _parse_json_object(text)
 
     next_url = _validate_next_url(
         data.get("nextUrl"),

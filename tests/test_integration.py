@@ -118,13 +118,17 @@ async def test_authentication_retry_uses_configured_delay_between_auth_retries(
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
     observed_delays: list[float] = []
-    original_sleep = request_module._sleep
+    original_sleep = request_module.asyncio.sleep
 
     async def _fake_sleep(delay: float) -> None:
         await original_sleep(0)
         observed_delays.append(delay)
 
-    monkeypatch.setattr(request_module, "_sleep", _fake_sleep)
+    monkeypatch.setattr(
+        request_module.asyncio,  # ruff: ignore[shared-clock-mock]
+        "sleep",
+        _fake_sleep,
+    )
 
     config = ClientConfig(
         auth_retry_attempts=3,
