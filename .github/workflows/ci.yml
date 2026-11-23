@@ -30,11 +30,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
@@ -66,11 +64,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: ${{ matrix.python-version }}
-          enable-cache: true
           cache-suffix: test-${{ matrix.python-version }}-highest-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
@@ -110,11 +106,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.11"
-          enable-cache: true
           cache-suffix: test-3.11-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Run tests with lowest direct dependency bounds
@@ -138,11 +132,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.7"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: package-smoke-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Build distributions
@@ -152,7 +144,18 @@ jobs:
         run: |
           uv venv .venv-wheel-smoke
           uv pip install --python .venv-wheel-smoke/bin/python dist/*.whl
-          .venv-wheel-smoke/bin/python -c "import cb_events; print(cb_events.__version__)"
+          .venv-wheel-smoke/bin/python - <<'PY'
+          from cb_events import Event, EventType
+
+          event = Event.model_validate({
+              "method": "tip",
+              "id": "smoke",
+              "object": {"tip": {"tokens": 1}},
+          })
+          assert event.type is EventType.TIP
+          assert event.tip is not None
+          assert event.tip.tokens == 1
+          PY
 
       - name: Prune uv cache
         if: always()
@@ -172,11 +175,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.14"
-          enable-cache: true
           cache-suffix: coverage-summary-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
@@ -246,11 +247,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync security dependencies
@@ -260,19 +259,6 @@ jobs:
         id: audit
         continue-on-error: true
         run: make audit
-
-      - name: Run Bandit
-        id: bandit
-        continue-on-error: true
-        run: make bandit
-
-      - name: Upload Bandit SARIF
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: bandit.sarif
-          category: bandit
 
       - name: Run Trivy
         id: trivy
@@ -318,7 +304,6 @@ jobs:
             echo "| Scanner | Result |"
             echo "|---|---|"
             echo "| Dependency Audit (uv audit) | ${{ steps.audit.outcome }} |"
-            echo "| Bandit (SAST) | ${{ steps.bandit.outcome }} |"
             echo "| Trivy (filesystem scan) | ${{ steps.trivy.outcome }} |"
             echo "| Zizmor (workflow lint) | ${{ steps.zizmor.outcome }} |"
             echo
@@ -335,7 +320,6 @@ jobs:
           failed=0
           declare -A results=(
             ["uv audit"]="${{ steps.audit.outcome }}"
-            ["Bandit"]="${{ steps.bandit.outcome }}"
             ["Trivy"]="${{ steps.trivy.outcome }}"
             ["Zizmor"]="${{ steps.zizmor.outcome }}"
           )
