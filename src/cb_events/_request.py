@@ -128,14 +128,12 @@ def _raise_request_failure(
     *,
     attempts_made: int,
     original_exception: Exception,
-    username: str | None,
 ) -> NoReturn:
     """Raise a final error after retries are exhausted.
 
     Args:
         attempts_made: Number of request attempts that were made.
         original_exception: Last exception raised in the retry loop.
-        username: Account username attached to failure log records.
 
     Raises:
         EventsError: For network-level failures (ClientError, OSError, etc.).
@@ -143,12 +141,6 @@ def _raise_request_failure(
         RateLimitError: If the final attempt failed with HTTP 429.
         ClientRequestError: If the final attempt failed with another 4xx.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
-    _logger.exception(  # ruff: ignore[log-exception-outside-except-handler]  # Only ever called within except clauses.
-        "Request failed after %d attempts",
-        attempts_made,
-        extra={"username": username},
-    )
-
     attempt_label = "attempt" if attempts_made == 1 else "attempts"
     msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
 
@@ -205,34 +197,27 @@ async def request_with_retry(
     )
 
     try:
-        async for attempt in stamina.retry_context(
+        retry_iterator = stamina.retry_context(
             on=retriable_exc_types,
             attempts=config.retry_attempts,
             timeout=None,
             wait_initial=config.retry_backoff,
             wait_max=config.retry_max_delay,
             wait_exp_base=config.retry_factor,
-        ):
+        ).with_name(
+            f"events request for {username}" if username else "events request",
+            (),
+            {"username": username} if username else {},
+        )
+        async for attempt in retry_iterator:
             attempts_made = attempt.num
             with attempt:
-                try:
-                    return await perform_attempt(url)
-                except retriable_exc_types as exc:
-                    if attempts_made < config.retry_attempts:
-                        _logger.warning(
-                            "Attempt %d/%d failed (%s). Retrying...",
-                            attempts_made,
-                            config.retry_attempts,
-                            str(exc) or type(exc).__name__,
-                            extra={"username": username},
-                        )
-                    raise
+                return await perform_attempt(url)
 
     except retriable_exc_types as original_exception:
         _raise_request_failure(
             attempts_made=attempts_made,
             original_exception=original_exception,
-            username=username,
         )
 
     # Unreachable in practice: stamina always yields ≥1 attempt and

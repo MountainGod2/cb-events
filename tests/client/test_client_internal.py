@@ -173,6 +173,14 @@ async def test_request_raises_unexpected_error_when_retry_context_is_empty(
         async def __anext__(self) -> object:
             raise StopAsyncIteration
 
+        def with_name(
+            self,
+            _name: str,
+            _args: tuple[object, ...],
+            _kwargs: dict[str, object],
+        ) -> _EmptyRetryContext:
+            return self
+
     def _empty_retry_context(**_kwargs: object) -> _EmptyRetryContext:
         return _EmptyRetryContext()
 

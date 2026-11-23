@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from pydantic import ValidationError
 from typing_extensions import TypeIs
@@ -22,6 +23,7 @@ from ._exceptions import (
 from ._models import Event
 from ._utils import (
     TRUNCATE_LENGTH,
+    UrlValidationError,
     UrlValidationReason,
     truncate_text,
     validate_https_host_no_port,
@@ -191,6 +193,16 @@ def _resolve_absolute_url(
     return stripped, parsed
 
 
+def _has_invalid_port(value: str) -> bool:
+    """Return whether a URL authority contains an invalid port."""
+    try:
+        parsed = urlsplit(value)
+        _ = parsed.port
+    except ValueError:
+        return bool("://" in value and "@" not in value.partition("://")[2].split("/")[0])
+    return False
+
+
 def _validate_next_url(
     next_url: object,
     *,
@@ -232,9 +244,8 @@ def _validate_next_url(
 
     try:
         absolute, parsed = _resolve_absolute_url(stripped, context=context)
-    except ValueError as exc:
-        message = str(exc)
-        if "port can't be converted to integer" in message or "Port out of range" in message:
+    except ValueError:
+        if _has_invalid_port(stripped):
             _logger.warning(
                 "Received nextUrl with invalid port for user %s",
                 context.username,
@@ -252,8 +263,8 @@ def _validate_next_url(
     allowed_host = (context.parsed_base_url.host or "").lower()
     try:
         _ = validate_https_host_no_port(parsed, {allowed_host})
-    except ValueError as exc:
-        reason = exc.args[0] if exc.args else None
+    except UrlValidationError as exc:
+        reason = exc.reason
         if reason == UrlValidationReason.SCHEME:
             _logger.error(  # ruff: ignore[error-instead-of-exception]
                 "Received nextUrl with unsupported scheme %s for user %s",
@@ -415,11 +426,6 @@ def process_response(
         HttpStatusError: If response status is non-200 and not a timeout redirect.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
     if status in AUTH_ERROR_STATUS_CODES:
-        _logger.warning(
-            "Authentication failed for user %s (HTTP %d)",
-            context.username,
-            status,
-        )
         msg = (
             f"Authentication failed for '{context.username}'. "
             "Verify your username and token are correct. "
@@ -439,13 +445,6 @@ def process_response(
 
     if status != HTTPStatus.OK:
         snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-        _logger.error(
-            "HTTP %d for user %s: %s",
-            status,
-            context.username,
-            snippet,
-        )
-
         msg = f"Request failed: {snippet}"
         raise build_http_error(
             msg,

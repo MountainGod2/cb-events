@@ -22,7 +22,7 @@ from ._parser import (
     process_response,
 )
 from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
-from ._utils import UrlValidationReason, validate_https_host_no_port
+from ._utils import UrlValidationError, UrlValidationReason, validate_https_host_no_port
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -138,8 +138,8 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
             parsed,
             _SUPPORTED_EVENTS_HOSTS,
         )
-    except ValueError as exc:
-        reason = exc.args[0] if exc.args else None
+    except UrlValidationError as exc:
+        reason = exc.reason
         if reason == UrlValidationReason.SCHEME:
             msg = "Events URL must use https."
             raise AuthError(msg) from None

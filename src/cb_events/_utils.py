@@ -25,6 +25,17 @@ class UrlValidationReason(StrEnum):
     HOST_NOT_ALLOWED = "host_not_allowed"
 
 
+class UrlValidationError(ValueError):
+    """URL validation failure with a stable reason code."""
+
+    reason: UrlValidationReason
+
+    def __init__(self, reason: UrlValidationReason) -> None:
+        """Initialize from a structured validation reason."""
+        super().__init__(reason.value)
+        self.reason = reason
+
+
 def validate_https_host_no_port(url: URL, allowed_hosts: Collection[str]) -> str:
     """Validate URL scheme/port/host and return normalized host.
 
@@ -36,25 +47,21 @@ def validate_https_host_no_port(url: URL, allowed_hosts: Collection[str]) -> str
         Normalized lowercase host when validation succeeds.
 
     Raises:
-        ValueError: One of ``UrlValidationReason`` to indicate validation failure.
+        UrlValidationError: A structured URL validation failure.
     """
     if url.scheme != "https":
-        msg = UrlValidationReason.SCHEME
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.SCHEME)
 
     if url.explicit_port is not None:
-        msg = UrlValidationReason.CUSTOM_PORT
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.CUSTOM_PORT)
 
     host = url.host
     if not host:
-        msg = UrlValidationReason.MISSING_HOST
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.MISSING_HOST)
 
     normalized_host = host.lower()
     if normalized_host not in {allowed_host.lower() for allowed_host in allowed_hosts}:
-        msg = UrlValidationReason.HOST_NOT_ALLOWED
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.HOST_NOT_ALLOWED)
 
     return normalized_host
 

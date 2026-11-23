@@ -94,10 +94,12 @@ async def test_retries_on_retry_status_codes_then_succeeds(
 
     assert len(events) == 1
     assert events[0].type == EventType.TIP
-    retry_records = [record for record in caplog.records if "Retrying" in record.message]
-    assert retry_records
-    assert all(record.name == "cb_events._request" for record in retry_records)
-    assert all(record.username == "test_user" for record in retry_records)
+    retry_records = [
+        record for record in caplog.records if record.message == "stamina.retry_scheduled"
+    ]
+    assert len(retry_records) == 1
+    assert retry_records[0].__dict__["stamina.callable"] == "events request for test_user"
+    assert retry_records[0].__dict__["stamina.kwargs"] == {"username": "test_user"}
 
 
 def test_auth_retry_options_reject_invalid_status_codes() -> None:

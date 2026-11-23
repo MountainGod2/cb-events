@@ -211,6 +211,16 @@ def test_parse_json_response_debug_logs_event_count(
     assert "Received 1 events for user user" in caplog.text
 
 
+def test_invalid_next_url_port_is_classified_without_yarl_message_matching() -> None:
+    """Port classification should be independent of yarl's exception wording."""
+    with pytest.raises(EventsError, match="invalid port"):
+        _validate_next_url(
+            "https://events.testbed.cb.dev:not-a-port/events/next",
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+
 @given(case=_next_url_cases())
 @settings(max_examples=50, deadline=None)
 def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> None:
