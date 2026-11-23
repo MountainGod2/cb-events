@@ -278,9 +278,10 @@ def _freeze_event_data(value: object) -> object:
                 raise ValueError(msg)
             active_containers.add(id(mapping))
             try:
-                return _ImmutableMapping({
-                    key: _freeze(item, depth=depth + 1) for key, item in mapping.items()
-                })
+                frozen_mapping: dict[str, object] = {}
+                for key, item in mapping.items():
+                    frozen_mapping[key] = _freeze(item, depth=depth + 1)
+                return _ImmutableMapping(frozen_mapping)
             finally:
                 active_containers.discard(id(mapping))
 
@@ -291,7 +292,10 @@ def _freeze_event_data(value: object) -> object:
                 raise ValueError(msg)
             active_containers.add(id(sequence))
             try:
-                return tuple(_freeze(item, depth=depth + 1) for item in sequence)
+                frozen_items: list[object] = [None] * len(sequence)
+                for index, item in enumerate(sequence):
+                    frozen_items[index] = _freeze(item, depth=depth + 1)
+                return tuple(frozen_items)
             finally:
                 active_containers.discard(id(sequence))
 
