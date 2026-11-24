@@ -508,8 +508,10 @@ class Event(BaseEventModel):
         if allowed_types is not None and self.type not in allowed_types:
             return None
 
-        payload: object | None = self.data.get(key)
-        if payload is None:
+        if key not in self.data:
+            return None
+        payload = self.data[key]
+        if payload is None and not strict:
             return None
 
         try:

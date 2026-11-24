@@ -366,6 +366,44 @@ def test_media_missing_payload_returns_none() -> None:
 
 
 @pytest.mark.parametrize(
+    ("method", "key"),
+    [
+        ("tip", "tip"),
+        ("mediaPurchase", "media"),
+    ],
+)
+def test_present_null_payload_is_lenient(method: str, key: str) -> None:
+    """A present null payload should remain optional in lenient mode."""
+    event = Event.model_validate({
+        "method": method,
+        "id": "evt-null",
+        "object": {key: None},
+    })
+
+    assert getattr(event, "tip" if key == "tip" else "media") is None
+
+
+@pytest.mark.parametrize(
+    ("method", "key"),
+    [
+        ("tip", "tip"),
+        ("mediaPurchase", "media"),
+    ],
+)
+def test_present_null_payload_is_strict_error(method: str, key: str) -> None:
+    """A present null payload should reach the registered loader in strict mode."""
+    with pytest.raises(ValidationError):
+        Event.model_validate(
+            {
+                "method": method,
+                "id": "evt-null-strict",
+                "object": {key: None},
+            },
+            context={"strict_validation": True},
+        )
+
+
+@pytest.mark.parametrize(
     ("method", "event_id", "invalid_object", "attr_name", "log_msg"),
     [
         (
