@@ -48,6 +48,25 @@ def test_event_properties_parsed() -> None:
     assert event.user.username == "tipper"
 
 
+def test_models_accept_python_field_names_and_api_aliases() -> None:
+    """Models should accept both documented snake_case names and API camelCase aliases."""
+    event = Event(type=EventType.TIP, id="event_python", data={"tip": {"tokens": 25}})
+    user = User.model_validate({
+        "username": "tipper",
+        "fc_auto_renew": True,
+        "isFollower": True,
+    })
+    tip = Tip.model_validate({"tokens": 25, "is_anon": True})
+    message = Message.model_validate({"message": "hello", "from_user": "sender"})
+
+    assert event.type is EventType.TIP
+    assert event.data["tip"] is not None
+    assert user.fc_auto_renew is True
+    assert user.is_follower is True
+    assert tip.is_anon is True
+    assert message.from_user == "sender"
+
+
 def test_unknown_event_type_maps_to_unknown() -> None:
     """Unrecognized event methods should map to EventType.UNKNOWN."""
     event = Event.model_validate({

@@ -70,6 +70,7 @@ class BaseEventModel(BaseModel):
         extra="ignore",
         frozen=True,
         hide_input_in_errors=True,
+        populate_by_name=True,
         validate_default=True,
     )
 
