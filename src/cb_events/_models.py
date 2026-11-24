@@ -216,7 +216,13 @@ _MappingValue = TypeVar("_MappingValue")
 
 
 class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
-    """Read-only mapping with copy and pickle support."""
+    """Read-only mapping with copy and pickle support.
+
+    Nested mappings and sequences are recursively frozen: mappings become
+    immutable mappings and sequences become tuples. Cycles and nesting beyond
+    1000 levels are rejected, and thawing recreates ordinary JSON-compatible
+    containers for serialization.
+    """
 
     __slots__: tuple[str, ...] = ("_data",)
 

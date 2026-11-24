@@ -109,6 +109,19 @@ def test_reject_malformed_ipv6_does_not_claim_custom_port() -> None:
 
 
 @pytest.mark.parametrize(
+    "events_url",
+    [
+        "https://username@eventsapi.chaturbate.com/events/user/token/",
+        "https://username:password@eventsapi.chaturbate.com/events/user/token/",
+    ],
+)
+def test_reject_constructor_url_user_info(events_url: str) -> None:
+    """Constructor URLs must not contain URL usernames or passwords."""
+    with pytest.raises(EventsUrlError, match="must not include user information"):
+        EventClient(events_url)
+
+
+@pytest.mark.parametrize(
     ("username", "token"),
     [
         ("user/name", "token/with/slash"),
@@ -177,10 +190,29 @@ def test_mask_url_replaces_token_inside_larger_query_values() -> None:
     url = f"https://events.testbed.cb.dev/events/user/{token}/?next=xx-{token}-yy"
 
     masked = _mask_url(url, token)
-
     assert token not in masked
     assert "xx-" in masked
     assert "-yy" in masked
+
+
+@pytest.mark.parametrize("token", ["a", "xy", "secret"])
+def test_mask_url_masks_raw_and_percent_encoded_tokens_at_any_length(token: str) -> None:
+    """Raw and encoded tokens in paths and query values should always be masked."""
+    encoded = quote(token, safe="")
+    url = (
+        "https://events.testbed.cb.dev/"
+        f"prefix-{encoded}-suffix/path?raw=prefix-{token}-suffix"
+        f"&encoded=prefix-{encoded}-suffix&state=unchanged"
+    )
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert "prefix-" in masked
+    assert "-suffix" in masked
+    assert "state=unchanged" in masked
+    assert f"prefix-{token}-suffix" not in masked
+    assert f"prefix-{encoded}-suffix" not in masked
 
 
 def test_mask_token_various_lengths() -> None:

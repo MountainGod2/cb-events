@@ -23,6 +23,7 @@ class UrlValidationReason(StrEnum):
     CUSTOM_PORT = "custom_port"
     MISSING_HOST = "missing_host"
     HOST_NOT_ALLOWED = "host_not_allowed"
+    USER_INFO = "user_info"
 
 
 class UrlValidationError(ValueError):
@@ -49,6 +50,9 @@ def validate_https_host_no_port(url: URL, allowed_hosts: Collection[str]) -> str
     Raises:
         UrlValidationError: A structured URL validation failure.
     """
+    if url.user is not None or url.password is not None:
+        raise UrlValidationError(UrlValidationReason.USER_INFO)
+
     if url.scheme != "https":
         raise UrlValidationError(UrlValidationReason.SCHEME)
 

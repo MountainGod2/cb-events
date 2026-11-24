@@ -61,7 +61,7 @@ jobs:
           name: dist
           path: dist/**
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 30
 
       - name: Prune uv cache
         if: always()

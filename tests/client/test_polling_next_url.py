@@ -64,6 +64,30 @@ async def test_relative_next_url_is_rejected(
             await client.poll()
 
 
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://user@events.testbed.cb.dev/events/next",
+        "https://user:password@events.testbed.cb.dev/events/next",
+    ],
+)
+async def test_user_info_next_url_is_rejected(
+    next_url: str,
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """The public polling lifecycle should reject continuation URL credentials."""
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        payload=make_response([], next_url=next_url),
+    )
+
+    async with event_client_factory() as client:
+        with pytest.raises(EventsError, match="must not contain user information"):
+            await client.poll()
+
+
 @pytest.mark.parametrize("is_timeout", [False, True])
 @pytest.mark.parametrize(
     ("invalid_next_url", "expected_pattern"),

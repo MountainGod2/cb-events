@@ -145,6 +145,9 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         )
     except UrlValidationError as exc:
         reason = exc.reason
+        if reason == UrlValidationReason.USER_INFO:
+            msg = "Events URL must not include user information."
+            raise EventsUrlError(msg) from None
         if reason == UrlValidationReason.SCHEME:
             msg = "Events URL must use https."
             raise EventsUrlError(msg) from None
@@ -181,31 +184,47 @@ def _mask_token(token: str) -> str:
     return "*" * len(token)
 
 
-def _mask_url(url: str, token: str) -> str:
+def _mask_url(url: str, token: str) -> str:  # ruff: ignore[complex-structure]
     """Mask only the token value in a URL while preserving host/path/key names."""
     masked = _mask_token(token)
     encoded_token = _quote_segment(token)
     parsed = URL(url)
-    allow_embedded_masking = len(token) >= 3  # ruff: ignore[magic-value-comparison]
 
     def _mask_value(value: str) -> str:
         if value in {token, encoded_token}:
             return masked
-        if allow_embedded_masking:
-            masked_value = value
-            if token and token in masked_value:
-                masked_value = masked_value.replace(token, masked)
-            if encoded_token and encoded_token in masked_value:
-                masked_value = masked_value.replace(encoded_token, masked)
-            return masked_value
-        return value
+        masked_value = value
+        if token:
+            masked_value = masked_value.replace(token, masked)
+        if encoded_token:
+            masked_value = masked_value.replace(encoded_token, masked)
+        return masked_value
 
-    masked_path_parts: list[str] = [_mask_value(part) for part in parsed.raw_path.split("/")]
+    def _mask_path_value(value: str) -> str:
+        if not value:
+            return value
+        masked_value = _mask_value(value)
+        if (
+            len(token) == 1
+            and len(masked_value) > 1
+            and not any(separator in masked_value for separator in ("-", "_", ".", "~"))
+        ):
+            return value
+        return masked_value
+
+    def _mask_query_value(value: str) -> str:
+        if value in {token, encoded_token}:
+            return masked
+        if len(token) == 1 and not any(separator in value for separator in ("-", "_", ".", "~")):
+            return value
+        return _mask_value(value)
+
+    masked_path_parts: list[str] = [_mask_path_value(part) for part in parsed.raw_path.split("/")]
     masked_path = "/".join(masked_path_parts)
 
     masked_query_items: list[tuple[str, str]] = []
     for key, query_value in parsed.query.items():
-        masked_query_value = _mask_value(query_value)
+        masked_query_value = _mask_query_value(query_value)
         masked_query_items.append((key, masked_query_value))
 
     return str(parsed.with_path(masked_path).with_query(masked_query_items))

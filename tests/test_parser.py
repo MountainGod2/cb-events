@@ -234,6 +234,23 @@ def test_malformed_ipv6_next_url_does_not_report_invalid_port() -> None:
     assert "invalid port" not in str(exc_info.value)
 
 
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://username@events.testbed.cb.dev/events/next",
+        "https://username:password@events.testbed.cb.dev/events/next",
+    ],
+)
+def test_validate_next_url_rejects_user_info(next_url: str) -> None:
+    """Continuation URLs must not contain URL usernames or passwords."""
+    with pytest.raises(EventsError, match="must not contain user information"):
+        _validate_next_url(
+            next_url,
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+
 @given(case=_next_url_cases())
 @settings(max_examples=50, deadline=None)
 def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> None:

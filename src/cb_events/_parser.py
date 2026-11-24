@@ -189,6 +189,19 @@ def _has_invalid_port(value: str) -> bool:
     return False
 
 
+def _next_url_validation_message(reason: UrlValidationReason) -> str:
+    """Map a URL validation reason to an API response error message."""
+    if reason == UrlValidationReason.USER_INFO:
+        return "Invalid API response: 'nextUrl' must not contain user information."
+    if reason == UrlValidationReason.SCHEME:
+        return "Invalid nextUrl scheme; only https is allowed."
+    if reason == UrlValidationReason.CUSTOM_PORT:
+        return "Invalid API response: 'nextUrl' must not contain a custom port."
+    if reason == UrlValidationReason.MISSING_HOST:
+        return "Invalid API response: 'nextUrl' must include a hostname."
+    return "Invalid API response: 'nextUrl' host is not allowed."
+
+
 def _validate_next_url(
     next_url: object,
     *,
@@ -236,18 +249,7 @@ def _validate_next_url(
     try:
         _ = validate_https_host_no_port(parsed, {allowed_host})
     except UrlValidationError as exc:
-        reason = exc.reason
-        if reason == UrlValidationReason.SCHEME:
-            msg = "Invalid nextUrl scheme; only https is allowed."
-            raise EventsError(msg, response_text=response_text) from None
-        if reason == UrlValidationReason.CUSTOM_PORT:
-            msg = "Invalid API response: 'nextUrl' must not contain a custom port."
-            raise EventsError(msg, response_text=response_text) from None
-        if reason == UrlValidationReason.MISSING_HOST:
-            msg = "Invalid API response: 'nextUrl' must include a hostname."
-            raise EventsError(msg, response_text=response_text) from None
-
-        msg = "Invalid API response: 'nextUrl' host is not allowed."
+        msg = _next_url_validation_message(exc.reason)
         raise EventsError(msg, response_text=response_text) from None
 
     return absolute

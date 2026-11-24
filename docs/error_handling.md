@@ -6,6 +6,7 @@
 EventsError (base)
 ├── AuthError (401/403)
 ├── EventsUrlError (invalid constructor URL)
+├── StrictValidationError (strict event validation failure)
 └── HttpStatusError
     ├── ClientRequestError (4xx)
     ├── RateLimitError (429)
