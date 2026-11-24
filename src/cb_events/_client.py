@@ -203,7 +203,12 @@ def _mask_url(url: str, token: str) -> str:  # ruff: ignore[complex-structure]
     def _mask_path_value(value: str) -> str:
         if not value:
             return value
-        masked_value = _mask_value(value)
+        decoded_value = unquote(value)
+        if token not in decoded_value:
+            return value
+        masked_decoded = decoded_value.replace(token, masked)
+        masked_value = _quote_segment(masked_decoded).replace("%2A", "*")
+        masked_value = masked_value.replace("%3A", ":").replace("%40", "@")
         if (
             len(token) == 1
             and len(masked_value) > 1
@@ -227,7 +232,7 @@ def _mask_url(url: str, token: str) -> str:  # ruff: ignore[complex-structure]
         masked_query_value = _mask_query_value(query_value)
         masked_query_items.append((key, masked_query_value))
 
-    return str(parsed.with_path(masked_path).with_query(masked_query_items))
+    return str(parsed.with_path(masked_path, encoded=True).with_query(masked_query_items))
 
 
 class EventClient:

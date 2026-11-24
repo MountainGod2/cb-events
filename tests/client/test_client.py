@@ -215,6 +215,23 @@ def test_mask_url_masks_raw_and_percent_encoded_tokens_at_any_length(token: str)
     assert f"prefix-{encoded}-suffix" not in masked
 
 
+def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> None:
+    """Debug masking should conceal decoded opaque path segments without corrupting URL encoding."""
+    token = "a/b:c@d"
+    encoded = quote(token, safe="")
+    url = f"https://events.testbed.cb.dev/events/user/{encoded}/prefix-{encoded}-suffix/unrelated"
+
+    masked = _mask_url(url, token)
+    parsed = URL(masked)
+
+    assert "a/b:c@d" not in masked
+    assert encoded not in masked
+    assert parsed.raw_parts[-1] == "unrelated"
+    assert parsed.host == "events.testbed.cb.dev"
+    assert "prefix-" in parsed.raw_path
+    assert "-suffix" in parsed.raw_path
+
+
 def test_mask_token_various_lengths() -> None:
     """_mask_token should fully mask every token."""
     token = "abcd1234"
