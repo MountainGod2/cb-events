@@ -38,6 +38,8 @@ This section is generated directly from package docstrings.
 
 ::: cb_events.AuthError
 
+::: cb_events.EventsUrlError
+
 ::: cb_events.ClientRequestError
 
 ::: cb_events.HttpStatusError
