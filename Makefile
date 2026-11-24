@@ -104,10 +104,15 @@ build-smoke: ## Advanced: Build distributions and verify the wheel can be import
 	rm -rf .venv-build-smoke
 	rm -rf dist build
 	$(UV) build
+	$(UV) run --group=build twine check dist/*
 	$(UV) venv .venv-build-smoke
 	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
 	.venv-build-smoke/bin/python -c "from cb_events import Event, EventType; event = Event.model_validate({'method': 'tip', 'id': 'smoke', 'object': {'tip': {'tokens': 1}}}); assert event.type is EventType.TIP and event.tip is not None and event.tip.tokens == 1"
+	$(UV) venv .venv-sdist-smoke
+	$(UV) pip install --python .venv-sdist-smoke/bin/python dist/*.tar.gz
+	.venv-sdist-smoke/bin/python -c "from cb_events import EventType; assert EventType.TIP.value == 'tip'"
 	rm -rf .venv-build-smoke
+	rm -rf .venv-sdist-smoke
 
 ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 

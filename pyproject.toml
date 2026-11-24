@@ -75,7 +75,7 @@ docs = [
     "zensical==0.0.74",
 ]
 security = ["zizmor==1.32.0"]
-build = ["python-semantic-release==10.7.0"]
+build = ["python-semantic-release==10.7.0", "twine==7.0.0"]
 
 [build-system]
 requires = ["hatchling==1.33.0", "hatch-fancy-pypi-readme==25.1.0"]
@@ -161,6 +161,13 @@ future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = ["unused-async", "TC", "DOC", "error-instead-of-exception"]
+"docs/snippets/*" = [
+    "unused-async",
+    "undocumented-public-module",
+    "undocumented-public-function",
+    "print",
+    "implicit-namespace-package",
+]
 "tests/*" = [
     "ANN",
     "line-too-long",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 import pytest
 from aiohttp import ClientSession
@@ -170,6 +171,41 @@ async def test_request_non_retriable_error_is_propagated(
     async with client:
         with pytest.raises(ValueError, match="bad payload"):
             await client._request("https://events.testbed.cb.dev/events")
+
+
+async def test_request_before_initialization_raises_not_initialized() -> None:
+    """The request helper should reject use before a session is installed."""
+    client = EventClient(make_events_url("user", "token"))
+
+    with pytest.raises(EventsError, match="Client not initialized"):
+        await client._request("https://events.testbed.cb.dev/events")
+
+
+async def test_close_logs_session_close_error(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Owned-session close failures should be logged without breaking cleanup."""
+    original_close = ClientSession.close
+
+    async def _close_with_error(_session: ClientSession) -> None:
+        await asyncio.sleep(0)
+        msg = "close failed"
+        raise OSError(msg)
+
+    monkeypatch.setattr(ClientSession, "close", _close_with_error)
+    caplog.set_level(logging.WARNING, logger="cb_events._client")
+    client = EventClient(make_events_url("user", "token"))
+    async with client:
+        session = client.session
+        assert session is not None
+        await client.close()
+
+        assert "Error closing session (OSError)" in caplog.text
+        with pytest.raises(EventsError, match="closing or closed"):
+            await client.poll()
+    monkeypatch.setattr(ClientSession, "close", original_close)
+    await original_close(session)
 
 
 async def test_request_raises_unexpected_error_when_retry_context_is_empty(

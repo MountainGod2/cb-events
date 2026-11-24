@@ -89,7 +89,8 @@ config = ClientConfig(
 
     `strict_validation=True` raises `StrictValidationError` instead, which
     gives fail-fast behavior but requires your code to handle that custom
-    exception.
+    exception. Unknown method names are accepted in either mode and preserved
+    as `event.raw_method` while `event.type` is `EventType.UNKNOWN`.
 
 ## Environment Selection
 
@@ -136,6 +137,15 @@ client3 = EventClient(url3, rate_limiter=limiter)
 
 Set the logger to `DEBUG` for verbose polling URLs and event dispatch details.
 Retry warnings are emitted on `cb_events._request`.
+Stamina also emits a separate `stamina.retry_scheduled` record for the same
+retry. To keep the informative client warning without the duplicate, use stdlib
+logging:
+
+```python
+import logging
+
+logging.getLogger("stamina").setLevel(logging.WARNING)
+```
 
 ```python
 import logging

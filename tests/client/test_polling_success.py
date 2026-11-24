@@ -163,3 +163,4 @@ async def test_unknown_event_type_is_preserved_in_strict_mode(
     assert len(events) == 1
     assert events[0].id == "unknown-1"
     assert events[0].type == EventType.UNKNOWN
+    assert events[0].raw_method == "futureEventTypeFromApi"

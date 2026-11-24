@@ -49,11 +49,6 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
-  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
-    rev: 1.40.2
-    hooks:
-      - id: basedpyright
-
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.32.0
     hooks:
@@ -62,6 +57,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: basedpyright
+        name: basedpyright
+        entry: uv run --frozen basedpyright
+        language: system
+        types_or: [python, toml]
+        pass_filenames: false
       - id: format-docs-markdown
         name: format docs markdown files
         entry: uv run --group=docs --frozen mdformat

@@ -57,6 +57,17 @@ for short fixed-delay retry sequences.
 
 If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
+The client emits its own descriptive warning on `cb_events._request`. The
+underlying `stamina` package also logs a `stamina.retry_scheduled` record by
+default, so retry scheduling may produce two messages. Silence only stamina's
+record with standard-library logging if desired:
+
+```python
+import logging
+
+logging.getLogger("stamina").setLevel(logging.WARNING)
+```
+
 ## Long-poll Timeout Responses
 
 A long-poll timeout is a normal `400` response from the upstream API when the
@@ -73,6 +84,8 @@ that this `400` is part of the normal event-stream timeout flow.
 `strict_validation=False` (default): skip invalid events and log a warning.
 
 `strict_validation=True`: raise `StrictValidationError` on invalid events.
+Unknown but otherwise valid upstream event methods are accepted in both modes as
+`EventType.UNKNOWN`; inspect `event.raw_method` to handle them explicitly.
 
 Use strict mode when you prefer fail-fast behavior and already handle that
 exception type.

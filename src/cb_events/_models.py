@@ -23,6 +23,7 @@ from pydantic import (
     ValidationError,
     field_serializer,
     field_validator,
+    model_validator,
 )
 from pydantic.alias_generators import to_camel
 from typing_extensions import override
@@ -269,67 +270,91 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
         return (self.__class__, (dict(self),))
 
 
-def _freeze_event_data(value: object) -> object:
-    """Return a recursive, depth-bounded immutable copy of event data."""
-    active_containers: set[int] = set()
-
-    def _freeze(current: object, *, depth: int) -> object:
-        if depth > _MAX_EVENT_DATA_DEPTH:
-            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-            raise ValueError(msg)
-
-        if isinstance(current, Mapping):
-            mapping = cast("Mapping[str, object]", current)
-            if id(mapping) in active_containers:
-                msg = "Event payload contains a reference cycle."
-                raise ValueError(msg)
-            active_containers.add(id(mapping))
-            try:
-                frozen_mapping: dict[str, object] = {}
-                for key, item in mapping.items():
-                    frozen_mapping[key] = _freeze(item, depth=depth + 1)
-                return _ImmutableMapping(frozen_mapping)
-            finally:
-                active_containers.discard(id(mapping))
-
-        if isinstance(current, (list, tuple)):
-            sequence = cast("list[object] | tuple[object, ...]", current)
-            if id(sequence) in active_containers:
-                msg = "Event payload contains a reference cycle."
-                raise ValueError(msg)
-            active_containers.add(id(sequence))
-            try:
-                frozen_items: list[object] = [None] * len(sequence)
-                for index, item in enumerate(sequence):
-                    frozen_items[index] = _freeze(item, depth=depth + 1)
-                return tuple(frozen_items)
-            finally:
-                active_containers.discard(id(sequence))
-
-        return current
-
-    try:
-        return _freeze(value, depth=0)
-    except RecursionError as exc:
-        msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-        raise ValueError(msg) from exc
-
-
 _AssignValue = Callable[[object], None]
 
 
 def _assign_mapping(target: dict[str, object], key: str, value: object) -> None:
-    """Assign one thawed value into a temporary mapping."""
+    """Assign one transformed value into a temporary mapping."""
     target[key] = value
 
 
 def _assign_sequence(target: list[object], key: int, value: object) -> None:
-    """Assign one thawed value into a temporary sequence."""
+    """Assign one transformed value into a temporary sequence."""
     target[key] = value
+
+
+def _freeze_event_data(value: object) -> object:
+    """Return a depth-bounded immutable copy of event data."""
+    root: list[object] = []
+    active_containers: set[int] = set()
+    stack: list[tuple[str, object, _AssignValue, int, int | None]] = [
+        ("visit", value, root.append, 0, None)
+    ]
+
+    while stack:
+        operation, current, assign, depth, container_id = stack.pop()
+        if operation == "finish_map":
+            if container_id is not None:
+                active_containers.discard(container_id)
+            assign(_ImmutableMapping(cast("dict[str, object]", current)))
+            continue
+        if operation == "finish_sequence":
+            if container_id is not None:
+                active_containers.discard(container_id)
+            assign(tuple(cast("list[object]", current)))
+            continue
+        if depth >= _MAX_EVENT_DATA_DEPTH:
+            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+            raise ValueError(msg)
+        if isinstance(current, Mapping):
+            mapping = cast("Mapping[str, object]", current)
+            container_id = id(mapping)
+            if container_id in active_containers:
+                msg = "Event payload contains a reference cycle."
+                raise ValueError(msg)
+            active_containers.add(container_id)
+            frozen: dict[str, object] = {}
+            stack.append(("finish_map", frozen, assign, depth, container_id))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_mapping, frozen, key),
+                    depth + 1,
+                    None,
+                )
+                for key, item in reversed(tuple(mapping.items()))
+            )
+            continue
+        if isinstance(current, (list, tuple)):
+            sequence = cast("list[object] | tuple[object, ...]", current)
+            container_id = id(sequence)
+            if container_id in active_containers:
+                msg = "Event payload contains a reference cycle."
+                raise ValueError(msg)
+            active_containers.add(container_id)
+            frozen_items: list[object] = [None] * len(sequence)
+            stack.append(("finish_sequence", frozen_items, assign, depth, container_id))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_sequence, frozen_items, index),
+                    depth + 1,
+                    None,
+                )
+                for index, item in reversed(tuple(enumerate(sequence)))
+            )
+            continue
+        assign(current)
+
+    return root[0]
 
 
 def _thaw_event_data(value: object) -> object:
     """Return mutable JSON-compatible containers for serialization."""
+    # Recursive traversal would exhaust Python's recursion limit near the
+    # accepted payload-depth boundary, so thawing uses an explicit work stack.
     root: list[object] = []
     stack: list[tuple[str, object, _AssignValue]] = [("visit", value, root.append)]
 
@@ -394,6 +419,8 @@ class Event(BaseEventModel):
 
     type: EventType = Field(alias="method")
     """Type of the event."""
+    raw_method: str | None = None
+    """Original API method name when it is not recognized by this client."""
     id: str
     """Unique identifier for the event."""
     data: Mapping[str, object] = Field(default_factory=dict, alias="object")
@@ -427,6 +454,26 @@ class Event(BaseEventModel):
             except ValueError:
                 return EventType.UNKNOWN
         return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def _preserve_unknown_method(cls, value: object) -> object:
+        """Retain the original name of an unrecognized upstream method."""
+        if not isinstance(value, Mapping):
+            return value
+
+        mapping = cast("Mapping[str, object]", value)
+        raw_method = mapping.get("method", mapping.get("type"))
+        if not isinstance(raw_method, str):
+            return mapping
+        try:
+            _ = EventType(raw_method)
+        except ValueError:
+            preserved = dict(mapping)
+            if "raw_method" not in preserved and "rawMethod" not in preserved:
+                preserved["raw_method"] = raw_method
+            return preserved
+        return mapping
 
     @field_serializer("data")
     @classmethod

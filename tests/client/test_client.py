@@ -27,7 +27,7 @@ def test_token_masking_in_repr() -> None:
     repr_str = str(client)
 
     assert full_token not in repr_str
-    assert "*" * len(full_token) in repr_str
+    assert "token='***'" in repr_str
 
 
 def test_mask_url_preserves_host_when_token_is_short() -> None:
@@ -122,6 +122,23 @@ def test_reject_constructor_url_user_info(events_url: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("username", "token", "field"),
+    [
+        ("%20user", "token", "Username"),
+        ("user%20", "token", "Username"),
+        ("user", "%20token", "Token"),
+        ("user", "token%20", "Token"),
+    ],
+)
+def test_reject_whitespace_in_url_fields(username: str, token: str, field: str) -> None:
+    """Encoded leading or trailing whitespace in credentials should be rejected."""
+    events_url = f"https://events.testbed.cb.dev/events/{username}/{token}/"
+
+    with pytest.raises(EventsUrlError, match=rf"{field} must not.*whitespace"):
+        EventClient(events_url)
+
+
+@pytest.mark.parametrize(
     ("username", "token"),
     [
         ("user/name", "token/with/slash"),
@@ -185,34 +202,35 @@ def test_mask_url_replaces_only_percent_encoded_token_value() -> None:
 
 
 def test_mask_url_replaces_token_inside_larger_query_values() -> None:
-    """Embedded token substrings in query values should be masked as well."""
+    """Only complete query values should be interpreted as token fields."""
     token = "tok123"
     url = f"https://events.testbed.cb.dev/events/user/{token}/?next=xx-{token}-yy"
 
     masked = _mask_url(url, token)
-    assert token not in masked
     assert "xx-" in masked
     assert "-yy" in masked
+    assert f"xx-{token}-yy" in masked
 
 
 @pytest.mark.parametrize("token", ["a", "xy", "secret"])
 def test_mask_url_masks_raw_and_percent_encoded_tokens_at_any_length(token: str) -> None:
-    """Raw and encoded tokens in paths and query values should always be masked."""
+    """Exact raw and encoded token components should always be masked."""
     encoded = quote(token, safe="")
     url = (
         "https://events.testbed.cb.dev/"
-        f"prefix-{encoded}-suffix/path?raw=prefix-{token}-suffix"
-        f"&encoded=prefix-{encoded}-suffix&state=unchanged"
+        f"{encoded}/path?raw={token}&encoded={encoded}&state=unchanged"
+        f"&embedded=prefix-{token}-suffix"
     )
 
     masked = _mask_url(url, token)
 
     assert "events.testbed.cb.dev" in masked
-    assert "prefix-" in masked
-    assert "-suffix" in masked
     assert "state=unchanged" in masked
-    assert f"prefix-{token}-suffix" not in masked
-    assert f"prefix-{encoded}-suffix" not in masked
+    parsed = URL(masked)
+    assert token not in parsed.parts
+    assert parsed.query["raw"] != token
+    assert parsed.query["encoded"] != token
+    assert f"embedded=prefix-{token}-suffix" in masked
 
 
 def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> None:
@@ -233,10 +251,8 @@ def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> N
 
 
 def test_mask_token_various_lengths() -> None:
-    """_mask_token should fully mask every token."""
-    token = "abcd1234"
-    masked = _mask_token(token)
-    assert masked == "*" * len(token)
+    """_mask_token should use a fixed marker that does not reveal length."""
+    assert _mask_token("a") == _mask_token("abcd1234") == "***"
 
 
 def test_parse_events_strict_and_lenient(
@@ -308,7 +324,7 @@ def test_eventclient_build_url_and_repr() -> None:
 
     r = repr(client)
     assert token not in r
-    assert "*" * len(token) in r
+    assert "token='***'" in r
 
 
 def test_eventclient_public_state_is_read_only() -> None:

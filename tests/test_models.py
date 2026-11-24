@@ -68,7 +68,7 @@ def test_models_accept_python_field_names_and_api_aliases() -> None:
 
 
 def test_unknown_event_type_maps_to_unknown() -> None:
-    """Unrecognized event methods should map to EventType.UNKNOWN."""
+    """Unrecognized methods should preserve their original name."""
     event = Event.model_validate({
         "method": "futureEventTypeFromApi",
         "id": "event_unknown",
@@ -76,6 +76,33 @@ def test_unknown_event_type_maps_to_unknown() -> None:
     })
 
     assert event.type is EventType.UNKNOWN
+    assert event.raw_method == "futureEventTypeFromApi"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureEventTypeFromApi"
+
+
+def test_known_event_type_has_no_raw_method() -> None:
+    """Known methods should not populate the compatibility field."""
+    event = Event.model_validate({"method": "tip", "id": "event_tip", "object": {}})
+
+    assert event.raw_method is None
+
+
+def test_non_string_method_does_not_set_raw_method() -> None:
+    """Invalid method values should continue through normal validation."""
+    with pytest.raises(ValidationError):
+        Event.model_validate({"method": 42, "id": "event_invalid", "object": {}})
+
+
+def test_explicit_raw_method_is_not_overwritten() -> None:
+    """An explicitly supplied raw method should be retained."""
+    event = Event.model_validate({
+        "method": "futureEvent",
+        "raw_method": "originalEvent",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.raw_method == "originalEvent"
 
 
 def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:

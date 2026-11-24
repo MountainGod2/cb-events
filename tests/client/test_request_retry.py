@@ -16,6 +16,12 @@ from tests.conftest import EventClientFactory
 from tests.helpers import make_event, make_response
 
 
+def test_auth_retry_options_reject_zero_attempts() -> None:
+    """Direct users of retry options should get the same invariant as config."""
+    with pytest.raises(ValueError, match="must be >= 1"):
+        AuthRetryOptions(attempts=0)
+
+
 async def test_exception_retries_until_success_with_testing_cap(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,

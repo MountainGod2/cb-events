@@ -4,17 +4,8 @@ env:
   UV_FROZEN: "1"
 
 on:
-  push:
-    branches: [main]
-    paths:
-      [
-        "docs/**",
-        "src/**",
-        "README.md",
-        "CHANGELOG.md",
-        "zensical.toml",
-        "pyproject.toml",
-      ]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +24,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
           persist-credentials: false
 
       - name: Setup Pages

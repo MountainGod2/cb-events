@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from cb_events import EventClient
+from cb_events import EventClient, EventsError
 from tests.conftest import EventClientFactory
 from tests.helpers import make_events_url
 
@@ -70,6 +70,34 @@ async def test_close_cancels_inflight_poll(
             await poll_task
 
         assert client.session is None
+
+
+async def test_poll_rechecks_state_after_waiting_for_semaphore(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A queued poll should fail instead of starting after client shutdown."""
+    first_started = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        first_started.set()
+        await asyncio.sleep(10)
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+        first_poll = asyncio.create_task(client.poll())
+        await first_started.wait()
+        queued_poll = asyncio.create_task(client.poll())
+        await asyncio.sleep(0)
+
+        await client.close()
+
+        with pytest.raises(asyncio.CancelledError):
+            await first_poll
+        with pytest.raises(EventsError, match="closing or closed"):
+            await queued_poll
 
 
 async def test_close_propagates_caller_cancellation(

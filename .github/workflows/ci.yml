@@ -149,6 +149,12 @@ jobs:
       - name: Build distributions
         run: uv build
 
+      - name: Sync build dependencies
+        run: uv sync --group=build --no-default-groups --frozen
+
+      - name: Validate distribution metadata
+        run: uv run --no-sync --group=build twine check dist/*
+
       - name: Smoke test built wheel
         run: |
           uv venv .venv-wheel-smoke
@@ -166,13 +172,23 @@ jobs:
           assert event.tip.tokens == 1
           PY
 
+      - name: Smoke test source distribution
+        run: |
+          uv venv .venv-sdist-smoke
+          uv pip install --python .venv-sdist-smoke/bin/python dist/*.tar.gz
+          .venv-sdist-smoke/bin/python - <<'PY'
+          from cb_events import EventType
+
+          assert EventType.TIP.value == "tip"
+          PY
+
       - name: Prune uv cache
         if: always()
         run: uv cache prune --ci
 
   coverage-summary:
     name: Coverage Summary
-    needs: test
+    needs: [test, test-lowest-direct, package-smoke, test-cross-platform]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -252,6 +268,39 @@ jobs:
           path: junit-artifacts
           if-no-files-found: error
           retention-days: 90
+
+      - name: Prune uv cache
+        if: always()
+        run: uv cache prune --ci
+
+  test-cross-platform:
+    name: Test (${{ matrix.os }}, Python 3.12)
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: $/.github/actions/setup-uv
+        with:
+          python-version: "3.12"
+          cache-suffix: test-${{ matrix.os }}-3.12-${{ hashFiles('uv.lock') }}
+
+      - name: Sync test dependencies
+        run: uv sync --group=test --frozen
+
+      - name: Run tests
+        run: uv run --no-sync pytest -m "not live"
 
       - name: Prune uv cache
         if: always()

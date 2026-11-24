@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from enum import StrEnum
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urlsplit
 
 from pydantic import ValidationError
@@ -36,6 +37,23 @@ _logger = logging.getLogger(__name__)
 
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
+
+
+class _NextUrlParseReason(StrEnum):
+    """Stable reasons for absolute nextUrl parsing failures."""
+
+    NOT_ABSOLUTE = "not_absolute"
+
+
+class _NextUrlParseError(ValueError):
+    """Absolute nextUrl parsing failure with a stable reason code."""
+
+    reason: _NextUrlParseReason
+
+    def __init__(self, reason: _NextUrlParseReason) -> None:
+        """Initialize from a structured parsing reason."""
+        super().__init__(reason.value)
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -167,12 +185,11 @@ def _resolve_absolute_url(
         Tuple of (absolute URL, parsed URL object).
 
     Raises:
-        ValueError: If the URL has no scheme.
+        _NextUrlParseError: If the URL has no scheme.
     """
     parsed = URL(stripped)
     if not parsed.scheme:
-        msg = "'nextUrl' must be an absolute URL."
-        raise ValueError(msg)
+        raise _NextUrlParseError(_NextUrlParseReason.NOT_ABSOLUTE)
     return str(parsed), parsed
 
 
@@ -191,15 +208,21 @@ def _has_invalid_port(value: str) -> bool:
 
 def _next_url_validation_message(reason: UrlValidationReason) -> str:
     """Map a URL validation reason to an API response error message."""
-    if reason == UrlValidationReason.USER_INFO:
-        return "Invalid API response: 'nextUrl' must not contain user information."
-    if reason == UrlValidationReason.SCHEME:
-        return "Invalid nextUrl scheme; only https is allowed."
-    if reason == UrlValidationReason.CUSTOM_PORT:
-        return "Invalid API response: 'nextUrl' must not contain a custom port."
-    if reason == UrlValidationReason.MISSING_HOST:
-        return "Invalid API response: 'nextUrl' must include a hostname."
-    return "Invalid API response: 'nextUrl' host is not allowed."
+    return {
+        UrlValidationReason.USER_INFO: (
+            "Invalid API response: 'nextUrl' must not contain user information."
+        ),
+        UrlValidationReason.SCHEME: "Invalid nextUrl scheme; only https is allowed.",
+        UrlValidationReason.CUSTOM_PORT: (
+            "Invalid API response: 'nextUrl' must not contain a custom port."
+        ),
+        UrlValidationReason.MISSING_HOST: (
+            "Invalid API response: 'nextUrl' must include a hostname."
+        ),
+        UrlValidationReason.HOST_NOT_ALLOWED: (
+            "Invalid API response: 'nextUrl' host is not allowed."
+        ),
+    }[reason]
 
 
 def _validate_next_url(
@@ -234,10 +257,10 @@ def _validate_next_url(
 
     try:
         absolute, parsed = _resolve_absolute_url(stripped)
-    except ValueError as exc:
-        if str(exc) == "'nextUrl' must be an absolute URL.":
-            msg = "Invalid API response: 'nextUrl' must be an absolute URL."
-            raise EventsError(msg, response_text=response_text) from None
+    except _NextUrlParseError:
+        msg = "Invalid API response: 'nextUrl' must be an absolute URL."
+        raise EventsError(msg, response_text=response_text) from None
+    except ValueError:
         if _has_invalid_port(stripped):
             msg = "Invalid API response: 'nextUrl' contains an invalid port."
             raise EventsError(msg, response_text=response_text) from None
@@ -284,13 +307,14 @@ def _extract_next_url_from_timeout(
     if next_url is None:
         return None
 
-    validated = _validate_next_url(
-        next_url,
-        response_text=text,
-        context=context,
+    validated = cast(
+        "str",
+        _validate_next_url(
+            next_url,
+            response_text=text,
+            context=context,
+        ),
     )
-    if validated is None:
-        return None
 
     status_msg = data.get("status")
     if isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE not in status_msg.lower():

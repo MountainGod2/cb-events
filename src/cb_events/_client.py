@@ -144,20 +144,20 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
             _SUPPORTED_EVENTS_HOSTS,
         )
     except UrlValidationError as exc:
-        reason = exc.reason
-        if reason == UrlValidationReason.USER_INFO:
-            msg = "Events URL must not include user information."
-            raise EventsUrlError(msg) from None
-        if reason == UrlValidationReason.SCHEME:
-            msg = "Events URL must use https."
-            raise EventsUrlError(msg) from None
-        if reason == UrlValidationReason.CUSTOM_PORT:
-            msg = "Events URL must not include a custom port."
-            raise EventsUrlError(msg) from None
-        msg = (
-            "Events URL host is not supported. "
-            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-        )
+        messages = {
+            UrlValidationReason.USER_INFO: "Events URL must not include user information.",
+            UrlValidationReason.SCHEME: "Events URL must use https.",
+            UrlValidationReason.CUSTOM_PORT: "Events URL must not include a custom port.",
+            UrlValidationReason.MISSING_HOST: (
+                "Events URL host is not supported. "
+                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+            ),
+            UrlValidationReason.HOST_NOT_ALLOWED: (
+                "Events URL host is not supported. "
+                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+            ),
+        }
+        msg = messages[exc.reason]
         raise EventsUrlError(msg) from None
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
@@ -181,57 +181,21 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
 
 def _mask_token(token: str) -> str:
     """Mask token for logging."""
-    return "*" * len(token)
+    del token
+    return "***"
 
 
-def _mask_url(url: str, token: str) -> str:  # ruff: ignore[complex-structure]
+def _mask_url(url: str, token: str) -> str:
     """Mask only the token value in a URL while preserving host/path/key names."""
     masked = _mask_token(token)
-    encoded_token = _quote_segment(token)
     parsed = URL(url)
-
-    def _mask_value(value: str) -> str:
-        if value in {token, encoded_token}:
-            return masked
-        masked_value = value
-        if token:
-            masked_value = masked_value.replace(token, masked)
-        if encoded_token:
-            masked_value = masked_value.replace(encoded_token, masked)
-        return masked_value
-
-    def _mask_path_value(value: str) -> str:
-        if not value:
-            return value
-        decoded_value = unquote(value)
-        if token not in decoded_value:
-            return value
-        masked_decoded = decoded_value.replace(token, masked)
-        masked_value = _quote_segment(masked_decoded).replace("%2A", "*")
-        masked_value = masked_value.replace("%3A", ":").replace("%40", "@")
-        if (
-            len(token) == 1
-            and len(masked_value) > 1
-            and not any(separator in masked_value for separator in ("-", "_", ".", "~"))
-        ):
-            return value
-        return masked_value
-
-    def _mask_query_value(value: str) -> str:
-        if value in {token, encoded_token}:
-            return masked
-        if len(token) == 1 and not any(separator in value for separator in ("-", "_", ".", "~")):
-            return value
-        return _mask_value(value)
-
-    masked_path_parts: list[str] = [_mask_path_value(part) for part in parsed.raw_path.split("/")]
+    masked_path_parts = [
+        masked if unquote(part) == token else part for part in parsed.raw_path.split("/")
+    ]
     masked_path = "/".join(masked_path_parts)
-
-    masked_query_items: list[tuple[str, str]] = []
-    for key, query_value in parsed.query.items():
-        masked_query_value = _mask_query_value(query_value)
-        masked_query_items.append((key, masked_query_value))
-
+    masked_query_items = [
+        (key, masked if value == token else value) for key, value in parsed.query.items()
+    ]
     return str(parsed.with_path(masked_path, encoded=True).with_query(masked_query_items))
 
 
