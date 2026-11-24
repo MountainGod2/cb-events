@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from functools import partial
 from types import MappingProxyType
-from typing import ClassVar, Generic, TypeVar, cast
+from typing import ClassVar, Generic, TypeVar, cast, overload
 
 from pydantic import (
     BaseModel,
@@ -246,6 +246,23 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
         return len(self._data)
 
     @override
+    def __contains__(self, key: object) -> bool:
+        return key in self._data
+
+    @overload
+    def get(self, key: str) -> _MappingValue | None: ...
+
+    @overload
+    def get(self, key: str, default: _MappingValue) -> _MappingValue: ...
+
+    @overload
+    def get(self, key: str, default: _T) -> _MappingValue | _T: ...
+
+    @override
+    def get(self, key: str, default: _T | None = None) -> _MappingValue | _T | None:
+        return self._data.get(key, default)
+
+    @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Mapping):
             return NotImplemented
@@ -283,45 +300,43 @@ def _assign_sequence(target: list[object], key: int, value: object) -> None:
     target[key] = value
 
 
-def _freeze_event_data(value: object) -> object:
-    """Return a depth-bounded immutable copy of event data."""
+def _transform_event_data(value: object, *, freeze: bool) -> object:
+    """Copy event data while freezing or thawing all nested containers."""
     root: list[object] = []
     active_containers: set[int] = set()
-    stack: list[tuple[str, object, _AssignValue, int, int | None]] = [
-        ("visit", value, root.append, 0, None)
-    ]
+    stack: list[tuple[str, object, _AssignValue, int]] = [("visit", value, root.append, 0)]
 
     while stack:
-        operation, current, assign, depth, container_id = stack.pop()
+        operation, current, assign, depth_or_id = stack.pop()
         if operation == "finish_map":
-            if container_id is not None:
-                active_containers.discard(container_id)
-            assign(_ImmutableMapping(cast("dict[str, object]", current)))
+            active_containers.discard(depth_or_id)
+            mapping_result = cast("dict[str, object]", current)
+            assign(_ImmutableMapping(mapping_result) if freeze else mapping_result)
             continue
         if operation == "finish_sequence":
-            if container_id is not None:
-                active_containers.discard(container_id)
-            assign(tuple(cast("list[object]", current)))
+            active_containers.discard(depth_or_id)
+            sequence_result = cast("list[object]", current)
+            assign(tuple(sequence_result) if freeze else sequence_result)
             continue
-        if depth >= _MAX_EVENT_DATA_DEPTH:
+        if freeze and depth_or_id >= _MAX_EVENT_DATA_DEPTH:
             msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
             raise ValueError(msg)
         if isinstance(current, Mapping):
             mapping = cast("Mapping[str, object]", current)
             container_id = id(mapping)
-            if container_id in active_containers:
+            if freeze and container_id in active_containers:
                 msg = "Event payload contains a reference cycle."
                 raise ValueError(msg)
-            active_containers.add(container_id)
-            frozen: dict[str, object] = {}
-            stack.append(("finish_map", frozen, assign, depth, container_id))
+            if freeze:
+                active_containers.add(container_id)
+            transformed_mapping: dict[str, object] = {}
+            stack.append(("finish_map", transformed_mapping, assign, container_id))
             stack.extend(
                 (
                     "visit",
                     item,
-                    partial(_assign_mapping, frozen, key),
-                    depth + 1,
-                    None,
+                    partial(_assign_mapping, transformed_mapping, key),
+                    depth_or_id + 1,
                 )
                 for key, item in reversed(tuple(mapping.items()))
             )
@@ -329,19 +344,19 @@ def _freeze_event_data(value: object) -> object:
         if isinstance(current, (list, tuple)):
             sequence = cast("list[object] | tuple[object, ...]", current)
             container_id = id(sequence)
-            if container_id in active_containers:
+            if freeze and container_id in active_containers:
                 msg = "Event payload contains a reference cycle."
                 raise ValueError(msg)
-            active_containers.add(container_id)
-            frozen_items: list[object] = [None] * len(sequence)
-            stack.append(("finish_sequence", frozen_items, assign, depth, container_id))
+            if freeze:
+                active_containers.add(container_id)
+            transformed_items: list[object] = [None] * len(sequence)
+            stack.append(("finish_sequence", transformed_items, assign, container_id))
             stack.extend(
                 (
                     "visit",
                     item,
-                    partial(_assign_sequence, frozen_items, index),
-                    depth + 1,
-                    None,
+                    partial(_assign_sequence, transformed_items, index),
+                    depth_or_id + 1,
                 )
                 for index, item in reversed(tuple(enumerate(sequence)))
             )
@@ -349,52 +364,16 @@ def _freeze_event_data(value: object) -> object:
         assign(current)
 
     return root[0]
+
+
+def _freeze_event_data(value: object) -> object:
+    """Return a depth-bounded immutable copy of event data."""
+    return _transform_event_data(value, freeze=True)
 
 
 def _thaw_event_data(value: object) -> object:
     """Return mutable JSON-compatible containers for serialization."""
-    # Recursive traversal would exhaust Python's recursion limit near the
-    # accepted payload-depth boundary, so thawing uses an explicit work stack.
-    root: list[object] = []
-    stack: list[tuple[str, object, _AssignValue]] = [("visit", value, root.append)]
-
-    while stack:
-        operation, current, assign = stack.pop()
-        if operation == "finish_map":
-            assign(cast("dict[str, object]", current))
-            continue
-        if operation == "finish_sequence":
-            assign(cast("list[object]", current))
-            continue
-        if isinstance(current, Mapping):
-            mapping = cast("Mapping[str, object]", current)
-            thawed: dict[str, object] = {}
-            stack.append(("finish_map", thawed, assign))
-            stack.extend(
-                (
-                    "visit",
-                    item,
-                    partial(_assign_mapping, thawed, key),
-                )
-                for key, item in reversed(tuple(mapping.items()))
-            )
-            continue
-        if isinstance(current, (list, tuple)):
-            sequence = cast("list[object] | tuple[object, ...]", current)
-            thawed_items: list[object] = [None] * len(sequence)
-            stack.append(("finish_sequence", thawed_items, assign))
-            stack.extend(
-                (
-                    "visit",
-                    item,
-                    partial(_assign_sequence, thawed_items, index),
-                )
-                for index, item in reversed(tuple(enumerate(sequence)))
-            )
-            continue
-        assign(current)
-
-    return root[0]
+    return _transform_event_data(value, freeze=False)
 
 
 @dataclass(frozen=True)
@@ -470,10 +449,12 @@ class Event(BaseEventModel):
             _ = EventType(raw_method)
         except ValueError:
             preserved = dict(mapping)
-            if "raw_method" not in preserved and "rawMethod" not in preserved:
-                preserved["raw_method"] = raw_method
+            preserved["raw_method"] = raw_method
             return preserved
-        return mapping
+        preserved = dict(mapping)
+        _ = preserved.pop("raw_method", None)
+        _ = preserved.pop("rawMethod", None)
+        return preserved
 
     @field_serializer("data")
     @classmethod

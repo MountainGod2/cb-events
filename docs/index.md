@@ -14,11 +14,7 @@ Async Python client for the Chaturbate Events API.
 
 ## Example
 
-```python
-# fmt: off
---8<-- "docs/snippets/quickstart.py"
-# fmt: on
-```
+--8<-- "docs/snippets/quickstart.md"
 
 ## Project Links
 

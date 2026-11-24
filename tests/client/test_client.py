@@ -201,7 +201,7 @@ def test_mask_url_replaces_only_percent_encoded_token_value() -> None:
     assert token not in masked
 
 
-def test_mask_url_replaces_token_inside_larger_query_values() -> None:
+def test_mask_url_leaves_token_substrings_in_query_values() -> None:
     """Only complete query values should be interpreted as token fields."""
     token = "tok123"
     url = f"https://events.testbed.cb.dev/events/user/{token}/?next=xx-{token}-yy"
@@ -252,7 +252,7 @@ def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> N
 
 def test_mask_token_various_lengths() -> None:
     """_mask_token should use a fixed marker that does not reveal length."""
-    assert _mask_token("a") == _mask_token("abcd1234") == "***"
+    assert _mask_token() == "***"
 
 
 def test_parse_events_strict_and_lenient(

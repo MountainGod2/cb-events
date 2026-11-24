@@ -93,8 +93,8 @@ def test_non_string_method_does_not_set_raw_method() -> None:
         Event.model_validate({"method": 42, "id": "event_invalid", "object": {}})
 
 
-def test_explicit_raw_method_is_not_overwritten() -> None:
-    """An explicitly supplied raw method should be retained."""
+def test_unknown_raw_method_uses_actual_upstream_name() -> None:
+    """Caller-supplied metadata cannot replace an unknown upstream method."""
     event = Event.model_validate({
         "method": "futureEvent",
         "raw_method": "originalEvent",
@@ -102,7 +102,19 @@ def test_explicit_raw_method_is_not_overwritten() -> None:
         "object": {},
     })
 
-    assert event.raw_method == "originalEvent"
+    assert event.raw_method == "futureEvent"
+
+
+def test_known_event_discards_supplied_raw_method() -> None:
+    """Compatibility metadata should only exist for UNKNOWN events."""
+    event = Event.model_validate({
+        "method": "tip",
+        "raw_method": "evil",
+        "id": "event_tip",
+        "object": {},
+    })
+
+    assert event.raw_method is None
 
 
 def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:

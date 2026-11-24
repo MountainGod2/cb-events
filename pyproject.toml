@@ -161,13 +161,6 @@ future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = ["unused-async", "TC", "DOC", "error-instead-of-exception"]
-"docs/snippets/*" = [
-    "unused-async",
-    "undocumented-public-module",
-    "undocumented-public-function",
-    "print",
-    "implicit-namespace-package",
-]
 "tests/*" = [
     "ANN",
     "line-too-long",

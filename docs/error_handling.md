@@ -65,7 +65,7 @@ record with standard-library logging if desired:
 ```python
 import logging
 
-logging.getLogger("stamina").setLevel(logging.WARNING)
+logging.getLogger("stamina").setLevel(logging.ERROR)
 ```
 
 ## Long-poll Timeout Responses

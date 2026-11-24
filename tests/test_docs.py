@@ -50,7 +50,7 @@ class _DocumentationClient:
 
 @pytest.mark.parametrize(
     "example_path",
-    [_ROOT / "README.md", _ROOT / "docs/snippets/quickstart.py"],
+    [_ROOT / "README.md", _ROOT / "docs/snippets/quickstart.md"],
 )
 def test_quickstart_example_executes(
     example_path: Path,

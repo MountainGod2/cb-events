@@ -1,10 +1,6 @@
 # Quick Start
 
-```python
-# fmt: off
---8<-- "docs/snippets/quickstart.py"
-# fmt: on
-```
+--8<-- "docs/snippets/quickstart.md"
 
 **Example output**:
 

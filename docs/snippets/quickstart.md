@@ -1,3 +1,4 @@
+```python
 import asyncio
 
 from cb_events import Event, EventClient, EventType, Router
@@ -27,3 +28,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+```

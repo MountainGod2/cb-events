@@ -179,15 +179,21 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     return base_url, username, token
 
 
-def _mask_token(token: str) -> str:
+def _mask_token() -> str:
     """Mask token for logging."""
-    del token
     return "***"
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask only the token value in a URL while preserving host/path/key names."""
-    masked = _mask_token(token)
+    """Mask token-shaped path/query components.
+
+    The API carries credentials as a complete path segment, so substrings inside
+    unrelated component values are deliberately left unchanged.
+
+    Returns:
+        URL with exact token components replaced by a fixed marker.
+    """
+    masked = _mask_token()
     parsed = URL(url)
     masked_path_parts = [
         masked if unquote(part) == token else part for part in parsed.raw_path.split("/")
@@ -276,7 +282,7 @@ class EventClient:
         Returns:
             Masked representation revealing only limited token characters.
         """
-        return f"EventClient(username='{self.username}', token='{_mask_token(self._token)}')"
+        return f"EventClient(username='{self.username}', token='{_mask_token()}')"
 
     async def __aenter__(self) -> Self:
         """Open the HTTP session on context entry.

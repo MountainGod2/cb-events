@@ -144,7 +144,7 @@ logging:
 ```python
 import logging
 
-logging.getLogger("stamina").setLevel(logging.WARNING)
+logging.getLogger("stamina").setLevel(logging.ERROR)
 ```
 
 ```python

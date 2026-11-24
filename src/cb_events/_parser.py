@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 from enum import StrEnum
 from http import HTTPStatus
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 from pydantic import ValidationError
@@ -225,13 +225,13 @@ def _next_url_validation_message(reason: UrlValidationReason) -> str:
     }[reason]
 
 
-def _validate_next_url(
+def _validate_present_next_url(
     next_url: object,
     *,
     response_text: str,
     context: ParserContext,
-) -> str | None:
-    """Validate and normalize an API nextUrl value.
+) -> str:
+    """Validate and normalize a present API nextUrl value.
 
     Args:
         next_url: Raw nextUrl value.
@@ -239,14 +239,11 @@ def _validate_next_url(
         context: Parsing context.
 
     Returns:
-        Normalized absolute nextUrl, or None when nextUrl is absent.
+        Normalized absolute nextUrl.
 
     Raises:
         EventsError: If nextUrl is malformed or points to an invalid host/scheme.
     """
-    if next_url is None:
-        return None
-
     msg = "Invalid API response: 'nextUrl' must be a non-empty string."
     if not isinstance(next_url, str):
         raise EventsError(msg, response_text=response_text)
@@ -278,6 +275,22 @@ def _validate_next_url(
     return absolute
 
 
+def _validate_next_url(
+    next_url: object,
+    *,
+    response_text: str,
+    context: ParserContext,
+) -> str | None:
+    """Validate and normalize an optional API nextUrl value."""
+    if next_url is None:
+        return None
+    return _validate_present_next_url(
+        next_url,
+        response_text=response_text,
+        context=context,
+    )
+
+
 def _extract_next_url_from_timeout(
     text: str,
     *,
@@ -307,13 +320,10 @@ def _extract_next_url_from_timeout(
     if next_url is None:
         return None
 
-    validated = cast(
-        "str",
-        _validate_next_url(
-            next_url,
-            response_text=text,
-            context=context,
-        ),
+    validated = _validate_present_next_url(
+        next_url,
+        response_text=text,
+        context=context,
     )
 
     status_msg = data.get("status")
