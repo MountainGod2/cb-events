@@ -13,7 +13,7 @@ setuptools = false
 
 [manifest]
 requirements = [
-    { name = "cb-events", specifier = ">=10.1.1" },
+    { name = "cb-events", specifier = ">=11.0.0" },
     { name = "rich", specifier = ">=15.0.0" },
 ]
 
@@ -228,19 +228,19 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "10.1.1"
+version = "11.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiolimiter" },
     { name = "pydantic" },
     { name = "stamina" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "typing-extensions" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/85/4d/a729308a953a1061d0f37e3d20011256e7e0331cf10395dbfc70e9708ef8/cb_events-10.1.1.tar.gz", hash = "sha256:cdeacbfc46514511b39a9f61e6e1c1a3c6c6fd02eeed91276e043fd08f7edbe8", size = 303244, upload-time = "2026-11-12T00:15:22.231Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/ae/58d0b39911ebbd108c5c8eab4662a5172c436e6178b1817988ad8293a09b/cb_events-11.0.0.tar.gz", hash = "sha256:d4e65aca5ef194833f03ae6c3785fffe64cd9a6e6b7b3157f5c0bfd4d412f6d6", size = 72610, upload-time = "2026-11-25T00:20:26.623Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/9b/894b4de76e7c389a69f4ef83be1f049a84c16b16d7e8ea6009d3a1ce67c3/cb_events-10.1.1-py3-none-any.whl", hash = "sha256:35d5b6c0d32405eef4a03c489f536e67c3e05f815215026a8a4a5038281e779c", size = 26549, upload-time = "2026-11-12T00:15:20.795Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/aa/c95d98f58ac4582f92c6aed714feacb4c5966990bad2de057450185a9680/cb_events-11.0.0-py3-none-any.whl", hash = "sha256:315fd5e8f61843e1e3bbf1438e90df7196a679458a3f4e738b8444faec8a4439", size = 27583, upload-time = "2026-11-25T00:20:25.283Z" },
 ]
 
 [[package]]
@@ -839,14 +839,14 @@ wheels = [
 
 [[package]]
 name = "stamina"
-version = "26.1.0"
+version = "26.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/80/bd/b2f71ae14368a066f103d182f25bbc6c3bf4aa695889f3ed3cba026d6f36/stamina-26.1.0.tar.gz", hash = "sha256:0214d05fdf5102c518194a4aac7520ce53cf660550ae3b940701aad88cf50c17", size = 568171, upload-time = "2026-04-13T17:44:31.012Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/46/e5491b7985761f6870bf11af1c461f57102f564686f2fe7b8637ebcbb0f9/stamina-26.2.0.tar.gz", hash = "sha256:c81efa445d6cd6f898584faa7556df09f6e4d25c16e219914b6422eeb3372985", size = 670204, upload-time = "2026-11-15T12:58:06.696Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/f0/1ff90a1d1dd02de23feafdf9dffaecef3958348be5c192df56670ccb4f86/stamina-26.1.0-py3-none-any.whl", hash = "sha256:62e06829bec87c06d4cafde520b32a6097d1017c378a9eb63253c5bf5ebbbb88", size = 18508, upload-time = "2026-04-13T17:44:29.545Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/14/ff4255606425fb66f0f4e0f5ac30e98c87a1895df615fe97ce662c551e52/stamina-26.2.0-py3-none-any.whl", hash = "sha256:4c9688f204d90544cd0c5bdd2a66fd82c6e7cb8248d70687ac69da3e7f5434f6", size = 23326, upload-time = "2026-11-15T12:58:04.938Z" },
 ]
 
 [[package]]

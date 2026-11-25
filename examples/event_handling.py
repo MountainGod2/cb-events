@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "cb-events >=10.1.1",
+#     "cb-events >=11.0.0",
 #     "rich >=15.0.0",
 # ]
 # ///
