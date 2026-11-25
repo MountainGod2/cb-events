@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v11.0.1 (2026-11-25)
+
+### Bug Fixes
+
+- **pyproject**: Update required Python version to 3.11.5
+  ([#551](https://github.com/MountainGod2/cb-events/pull/551),
+  [`8b630e9`](https://github.com/MountainGod2/cb-events/commit/8b630e92f746e7852cbcf769349499b88f39e469))
+
+
 ## v11.0.0 (2026-11-25)
 
 ### Features
