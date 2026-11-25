@@ -34,7 +34,7 @@ from nested fields that depend on the event type.
 `event.data` exposes nested mappings as read-only `Mapping` objects and payload
 arrays as tuples. Use `event.model_dump(mode="json")["data"]` when ordinary JSON
 containers are required.
-Event payload nesting is limited to 250 levels so all accepted payloads can
+Event payload nesting is limited to 100 levels so all accepted payloads can
 also be serialized with Pydantic JSON mode.
 
 Unknown upstream `method` values are mapped to `EventType.UNKNOWN` so polling

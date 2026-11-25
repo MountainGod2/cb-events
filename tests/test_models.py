@@ -157,9 +157,9 @@ def test_event_data_rejects_excessive_nesting() -> None:
 
 
 def test_event_data_accepts_depth_below_guard_limit() -> None:
-    """The iterative freezer should not fail at Python's recursion limit."""
+    """Accepted nesting depths should serialize in JSON mode across platforms."""
     nested: object = {"value": 1}
-    for _ in range(200):
+    for _ in range(80):
         nested = {"value": nested}
 
     event = Event.model_validate({
@@ -178,7 +178,7 @@ def test_event_data_accepts_depth_below_guard_limit() -> None:
 def test_event_data_rejects_depth_above_json_serialization_limit() -> None:
     """Payloads beyond Pydantic JSON-mode depth limits should be rejected."""
     nested: object = {"value": 1}
-    for _ in range(250):
+    for _ in range(100):
         nested = {"value": nested}
 
     with pytest.raises(ValidationError, match="nesting exceeds"):

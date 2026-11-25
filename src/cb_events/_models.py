@@ -213,7 +213,7 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_MAX_EVENT_DATA_DEPTH = 250
+_MAX_EVENT_DATA_DEPTH = 100
 _MappingValue = TypeVar("_MappingValue")
 
 
@@ -222,7 +222,7 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
 
     Nested mappings and sequences are recursively frozen: mappings become
     immutable mappings and sequences become tuples. Cycles and nesting beyond
-    250 levels are rejected, and thawing recreates ordinary JSON-compatible
+    100 levels are rejected, and thawing recreates ordinary JSON-compatible
     containers for serialization.
     """
 
