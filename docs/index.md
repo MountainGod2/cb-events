@@ -14,28 +14,7 @@ Async Python client for the Chaturbate Events API.
 
 ## Example
 
-```python
-import asyncio
-from cb_events import Event, EventClient, EventType, Router
-
-router = Router()
-
-
-@router.on(EventType.TIP)
-async def handle_tip(event: Event) -> None:
-    if event.user and event.tip:
-        print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-
-
-async def main() -> None:
-    events_url = "https://eventsapi.chaturbate.com/events/username/token/"
-    async with EventClient(events_url) as client:
-        async for event in client:
-            await router.dispatch(event)
-
-
-asyncio.run(main())
-```
+--8<-- "docs/snippets/quickstart.md"
 
 ## Project Links
 

@@ -1,5 +1,8 @@
 name: Release
 
+env:
+  UV_FROZEN: "1"
+
 on:
   push:
     branches: [main]
@@ -39,11 +42,9 @@ jobs:
         run: git checkout -B "$REF_NAME"
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: build-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
@@ -60,7 +61,7 @@ jobs:
           name: dist
           path: dist/**
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 30
 
       - name: Prune uv cache
         if: always()
@@ -93,11 +94,9 @@ jobs:
           path: dist
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: e2e-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
@@ -157,11 +156,10 @@ jobs:
         run: git reset --hard "$GIT_SHA"
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: false
+          cache-enabled: "false"
           cache-suffix: release-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies
@@ -236,11 +234,10 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: false
+          cache-enabled: "false"
           cache-suffix: publish-only-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync build dependencies

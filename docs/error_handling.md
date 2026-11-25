@@ -5,20 +5,22 @@
 ```text
 EventsError (base)
 ├── AuthError (401/403)
+├── EventsUrlError (invalid constructor URL)
+├── StrictValidationError (strict event validation failure)
 └── HttpStatusError
     ├── ClientRequestError (4xx)
     ├── RateLimitError (429)
     └── ServerError (5xx/52x)
 ```
 
-`AuthError` is a subclass of `EventsError`, so `except EventsError` catches both.
-Catch `AuthError` first if you need separate handling.
+`AuthError` and `EventsUrlError` are subclasses of `EventsError`, so
+`except EventsError` catches both. Catch them first if you need separate handling.
 
 ## Recommended Pattern
 
 ```python
 import asyncio
-from cb_events import AuthError, EventClient, EventsError, Router
+from cb_events import AuthError, EventClient, EventsError, EventsUrlError, Router
 
 router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
@@ -32,6 +34,9 @@ async def main() -> None:
     except AuthError as err:
         # Bad credentials / revoked token (401/403)
         print(f"Authentication failed: {err} (status {err.status_code})")
+    except EventsUrlError as err:
+        # Invalid constructor URL
+        print(f"Invalid Events URL: {err}")
     except EventsError as err:
         # Other API/network errors
         print(f"Event API error: {err}")
@@ -52,6 +57,18 @@ for short fixed-delay retry sequences.
 
 If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
+The client emits its own descriptive warning on `cb_events._request`. The
+underlying `stamina` package also logs a `stamina.retry_scheduled` record by
+default, so retry scheduling may produce two messages. Silence only stamina's
+record with standard-library logging if desired, provided Stamina is using
+its stdlib logging backend:
+
+```python
+import logging
+
+logging.getLogger("stamina").setLevel(logging.ERROR)
+```
+
 ## Long-poll Timeout Responses
 
 A long-poll timeout is a normal `400` response from the upstream API when the
@@ -67,9 +84,12 @@ that this `400` is part of the normal event-stream timeout flow.
 
 `strict_validation=False` (default): skip invalid events and log a warning.
 
-`strict_validation=True`: raise `pydantic.ValidationError` on invalid events.
+`strict_validation=True`: raise `StrictValidationError` on invalid events.
+Unknown but otherwise valid upstream event methods are accepted in both modes as
+`EventType.UNKNOWN`; inspect `event.raw_method` to handle them explicitly.
 
-Use strict mode when you prefer fail-fast behavior and already handle those exceptions.
+Use strict mode when you prefer fail-fast behavior and already handle that
+exception type.
 
 ## Handler Exceptions
 

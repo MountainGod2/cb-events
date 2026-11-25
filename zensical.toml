@@ -4,6 +4,8 @@ site_description = "Async Python client for the Chaturbate Events API."
 site_url = "https://mountaingod2.github.io/cb-events/"
 repo_url = "https://github.com/MountainGod2/cb-events"
 repo_name = "MountainGod2/cb-events"
+edit_uri = "edit/main/docs/"
+copyright = "Copyright &copy; 2026 MountainGod2"
 
 nav = [
     { "Home" = "index.md" },
@@ -19,9 +21,14 @@ nav = [
 [project.theme]
 language = "en"
 features = [
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.path",
     "navigation.sections",
     "navigation.top",
+    "content.code.annotate",
     "content.code.copy",
+    "content.tabs.link",
     "search.suggest",
     "search.highlight",
 ]
@@ -35,6 +42,16 @@ paths = ["src"]
 docstring_style = "google"
 merge_init_into_class = true
 show_source = false
+show_root_heading = true
+show_root_full_path = false
+show_symbol_type_heading = true
+show_category_heading = true
+show_signature_annotations = true
+separate_signature = true
+members_order = "source"
+inherited_members = false
+group_by_category = true
+line_length = 100
 heading_level = 4
 filters = ["!^_[^_]", "!^__.*__$"]
 

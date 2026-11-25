@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  UV_FROZEN: "1"
+
 on:
   push:
     branches: [main, "renovate/**"]
@@ -27,11 +30,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
@@ -63,11 +64,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: ${{ matrix.python-version }}
-          enable-cache: true
           cache-suffix: test-${{ matrix.python-version }}-highest-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
@@ -86,7 +85,16 @@ jobs:
           path: .coverage.${{ matrix.python-version }}
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 90
+
+      - name: Upload JUnit test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: junit-py${{ matrix.python-version }}
+          path: junit.xml
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Prune uv cache
         if: always()
@@ -107,11 +115,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.11"
-          enable-cache: true
           cache-suffix: test-3.11-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Run tests with lowest direct dependency bounds
@@ -121,9 +127,69 @@ jobs:
         if: always()
         run: uv cache prune --ci
 
+  package-smoke:
+    name: Package Smoke Test
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: $/.github/actions/setup-uv
+        with:
+          python-version: "3.13"
+          cache-suffix: package-smoke-3.13-${{ hashFiles('uv.lock') }}
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Sync build dependencies
+        run: uv sync --group=build --no-default-groups --frozen
+
+      - name: Validate distribution metadata
+        run: uv run --no-sync --group=build twine check dist/*
+
+      - name: Smoke test built wheel
+        run: |
+          uv venv .venv-wheel-smoke
+          uv pip install --python .venv-wheel-smoke/bin/python dist/*.whl
+          .venv-wheel-smoke/bin/python - <<'PY'
+          from cb_events import Event, EventType
+
+          event = Event.model_validate({
+              "method": "tip",
+              "id": "smoke",
+              "object": {"tip": {"tokens": 1}},
+          })
+          assert event.type is EventType.TIP
+          assert event.tip is not None
+          assert event.tip.tokens == 1
+          PY
+
+      - name: Smoke test source distribution
+        run: |
+          uv venv .venv-sdist-smoke
+          uv pip install --python .venv-sdist-smoke/bin/python dist/*.tar.gz
+          .venv-sdist-smoke/bin/python - <<'PY'
+          from cb_events import EventType
+
+          assert EventType.TIP.value == "tip"
+          PY
+
+      - name: Prune uv cache
+        if: always()
+        run: uv cache prune --ci
+
   coverage-summary:
     name: Coverage Summary
-    needs: test
+    if: ${{ !cancelled() }}
+    needs: [test, test-lowest-direct, package-smoke, test-cross-platform]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -135,11 +201,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.14"
-          enable-cache: true
           cache-suffix: coverage-summary-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
@@ -151,6 +215,7 @@ jobs:
           pattern: coverage-data-py*
           merge-multiple: true
           path: coverage-artifacts
+          if-no-files-found: warn
 
       - name: Combine and report coverage
         run: |
@@ -188,7 +253,56 @@ jobs:
             coverage.xml
             coverage-report.txt
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 90
+
+      - name: Download JUnit artifacts
+        if: always()
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: junit-py*
+          path: junit-artifacts
+
+      - name: Upload combined JUnit artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-junit
+          path: junit-artifacts
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Prune uv cache
+        if: always()
+        run: uv cache prune --ci
+
+  test-cross-platform:
+    name: Test (${{ matrix.os }}, Python 3.12)
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: $/.github/actions/setup-uv
+        with:
+          python-version: "3.12"
+          cache-suffix: test-${{ matrix.os }}-3.12-${{ hashFiles('uv.lock') }}
+
+      - name: Sync test dependencies
+        run: uv sync --group=test --frozen
+
+      - name: Run tests
+        run: uv run --no-sync pytest -m "not live"
 
       - name: Prune uv cache
         if: always()
@@ -209,11 +323,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync security dependencies
@@ -223,19 +335,6 @@ jobs:
         id: audit
         continue-on-error: true
         run: make audit
-
-      - name: Run Bandit
-        id: bandit
-        continue-on-error: true
-        run: make bandit
-
-      - name: Upload Bandit SARIF
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: bandit.sarif
-          category: bandit
 
       - name: Run Trivy
         id: trivy
@@ -281,7 +380,6 @@ jobs:
             echo "| Scanner | Result |"
             echo "|---|---|"
             echo "| Dependency Audit (uv audit) | ${{ steps.audit.outcome }} |"
-            echo "| Bandit (SAST) | ${{ steps.bandit.outcome }} |"
             echo "| Trivy (filesystem scan) | ${{ steps.trivy.outcome }} |"
             echo "| Zizmor (workflow lint) | ${{ steps.zizmor.outcome }} |"
             echo
@@ -298,7 +396,6 @@ jobs:
           failed=0
           declare -A results=(
             ["uv audit"]="${{ steps.audit.outcome }}"
-            ["Bandit"]="${{ steps.bandit.outcome }}"
             ["Trivy"]="${{ steps.trivy.outcome }}"
             ["Zizmor"]="${{ steps.zizmor.outcome }}"
           )

@@ -34,11 +34,10 @@ async def test_concurrent_polls_are_serialized_per_client(
     monkeypatch.setattr(EventClient, "_request", _fake_request)
 
     async with event_client_factory() as client:
-        first_poll = asyncio.create_task(client._poll())
+        first_poll = asyncio.create_task(client.poll())
         await entered_first_request.wait()
 
-        second_poll = asyncio.create_task(client._poll())
-        await asyncio.sleep(0)
+        second_poll = asyncio.create_task(client.poll())
         release_first_request.set()
 
         await asyncio.gather(first_poll, second_poll)
@@ -62,12 +61,80 @@ async def test_close_cancels_inflight_poll(
     monkeypatch.setattr(EventClient, "_request", _slow_request)
 
     async with event_client_factory() as client:
-        poll_task = asyncio.create_task(client._poll())
+        poll_task = asyncio.create_task(client.poll())
         await started.wait()
 
         await client.close()
 
-        with pytest.raises(EventsError, match="client is closing"):
+        with pytest.raises(asyncio.CancelledError):
             await poll_task
 
         assert client.session is None
+
+
+async def test_poll_rechecks_state_after_waiting_for_semaphore(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A queued poll should fail instead of starting after client shutdown."""
+    first_started = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        first_started.set()
+        await asyncio.sleep(10)
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+        first_poll = asyncio.create_task(client.poll())
+        await first_started.wait()
+        queued_poll = asyncio.create_task(client.poll())
+        await asyncio.sleep(0)
+
+        await client.close()
+
+        with pytest.raises(asyncio.CancelledError):
+            await first_poll
+        with pytest.raises(EventsError, match="closing or closed"):
+            await queued_poll
+
+
+async def test_close_propagates_caller_cancellation(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cancellation of the closer itself should not be swallowed during shutdown."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+    poll_cancelled = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        started.set()
+        try:
+            await release.wait()
+        except asyncio.CancelledError:
+            poll_cancelled.set()
+            raise
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+        poll_task = asyncio.create_task(client.poll())
+        await started.wait()
+
+        session = client.session
+        assert session is not None
+
+        close_task = asyncio.create_task(client.close())
+        await poll_cancelled.wait()
+        close_task.cancel()
+
+        with pytest.raises(asyncio.CancelledError):
+            await close_task
+
+        with pytest.raises(asyncio.CancelledError):
+            await poll_task
+
+        assert session.closed

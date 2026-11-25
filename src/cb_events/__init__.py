@@ -15,9 +15,11 @@ from ._exceptions import (
     AuthError,
     ClientRequestError,
     EventsError,
+    EventsUrlError,
     HttpStatusError,
     RateLimitError,
     ServerError,
+    StrictValidationError,
 )
 from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
 from ._router import HandlerFunc, Router
@@ -38,6 +40,7 @@ __all__ = [
     "EventClient",
     "EventType",
     "EventsError",
+    "EventsUrlError",
     "HandlerFunc",
     "HttpStatusError",
     "Media",
@@ -46,6 +49,7 @@ __all__ = [
     "RoomSubject",
     "Router",
     "ServerError",
+    "StrictValidationError",
     "Tip",
     "User",
     "__version__",

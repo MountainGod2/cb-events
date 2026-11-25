@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import suppress
 from enum import Enum, auto
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
@@ -13,17 +12,17 @@ from urllib.parse import quote, unquote
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientError
 from aiolimiter import AsyncLimiter
+from typing_extensions import override
 from yarl import URL
 
-from ._compat import override
 from ._config import ClientConfig
-from ._exceptions import CF_SERVER_ERROR_CODES, AuthError, EventsError
+from ._exceptions import CF_SERVER_ERROR_CODES, EventsError, EventsUrlError
 from ._parser import (
     ParserContext,
     process_response,
 )
 from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
-from ._utils import UrlValidationReason, validate_https_host_no_port
+from ._utils import UrlValidationError, UrlValidationReason, validate_https_host_no_port
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -64,11 +63,13 @@ _RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
 })
 """HTTP status codes retried with exponential backoff."""
 
-_TOKEN_VISIBLE_CHARS: Final[int] = 0
-"""Trailing token characters visible in logs (0 means fully masked)."""
-
 _CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
 """Error raised when polling while closing or closed."""
+
+_CLIENT_NOT_INITIALIZED_MESSAGE: Final[str] = (
+    "Client not initialized. Use 'async with EventClient(...)' as a context manager."
+)
+"""Error raised when polling before context entry."""
 
 _CLIENT_CLOSED_ENTER_MESSAGE: Final[str] = (
     "Client is closed and cannot be reopened. Create a new EventClient instance."
@@ -79,6 +80,9 @@ _CLIENT_ALREADY_OPEN_MESSAGE: Final[str] = (
     "EventClient is already open. Enter the 'async with' block only once per instance."
 )
 """Error raised when entering an already-open client."""
+
+_CLIENT_SESSION_CLOSED_MESSAGE: Final[str] = "Injected client session is already closed."
+"""Error raised when entering with a caller-owned session that cannot be reused."""
 
 _POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
 """Error raised when close() cancels an active poll."""
@@ -93,6 +97,9 @@ _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
 class _ClientState(Enum):
     """Lifecycle state of an :class:`EventClient` instance."""
 
+    NEW = auto()
+    """Client has not entered its context manager."""
+
     OPEN = auto()
     """Client is active and ready to poll."""
 
@@ -104,10 +111,10 @@ class _ClientState(Enum):
 
 
 def _validate_non_empty_stripped(value: str, *, field: str, hint: str) -> None:
-    """Raise AuthError if value is empty or has leading/trailing whitespace."""
+    """Raise EventsUrlError for empty or padded URL components."""
     if not value or value != value.strip():
         msg = f"{field} must not be empty or contain leading/trailing whitespace. {hint}"
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
 
 def _quote_segment(value: str) -> str:
@@ -119,43 +126,46 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     """Parse and validate the Events API URL."""
     if not events_url or events_url != events_url.strip():
         msg = "Events URL must not be empty or contain leading/trailing whitespace."
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     try:
         parsed = URL(events_url)
     except ValueError as exc:
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
-        raise AuthError(msg) from exc
+        raise EventsUrlError(msg) from exc
 
     if parsed.query_string or parsed.fragment:
         msg = "Events URL must not include query parameters or fragments."
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     try:
         normalized_host = validate_https_host_no_port(
             parsed,
             _SUPPORTED_EVENTS_HOSTS,
         )
-    except ValueError as exc:
-        reason = exc.args[0] if exc.args else None
-        if reason == UrlValidationReason.SCHEME:
-            msg = "Events URL must use https."
-            raise AuthError(msg) from None
-        if reason == UrlValidationReason.CUSTOM_PORT:
-            msg = "Events URL must not include a custom port."
-            raise AuthError(msg) from None
-        msg = (
-            "Events URL host is not supported. "
-            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-        )
-        raise AuthError(msg) from None
+    except UrlValidationError as exc:
+        messages = {
+            UrlValidationReason.USER_INFO: "Events URL must not include user information.",
+            UrlValidationReason.SCHEME: "Events URL must use https.",
+            UrlValidationReason.CUSTOM_PORT: "Events URL must not include a custom port.",
+            UrlValidationReason.MISSING_HOST: (
+                "Events URL host is not supported. "
+                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+            ),
+            UrlValidationReason.HOST_NOT_ALLOWED: (
+                "Events URL host is not supported. "
+                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+            ),
+        }
+        msg = messages[exc.reason]
+        raise EventsUrlError(msg) from None
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
 
     parts = [part for part in parsed.raw_parts if part not in {"", "/"}]
     if len(parts) != 3 or parts[0] != "events":  # ruff: ignore[magic-value-comparison]
         msg = "Events URL must match https://<host>/events/<username>/<token>/"
-        raise AuthError(msg)
+        raise EventsUrlError(msg)
 
     username, token = unquote(parts[1]), unquote(parts[2])
     _validate_non_empty_stripped(
@@ -169,18 +179,30 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     return base_url, username, token
 
 
-def _mask_token(token: str, visible: int = _TOKEN_VISIBLE_CHARS) -> str:
+def _mask_token() -> str:
     """Mask token for logging."""
-    if visible <= 0 or len(token) <= visible:
-        return "*" * len(token)
-    return f"{'*' * (len(token) - visible)}{token[-visible:]}"
+    return "***"
 
 
 def _mask_url(url: str, token: str) -> str:
-    """Mask token in URL for safe logging."""
-    masked = _mask_token(token)
-    encoded_token = _quote_segment(token)
-    return url.replace(token, masked).replace(encoded_token, masked)
+    """Mask token-shaped path/query components.
+
+    The API carries credentials as a complete path segment, so substrings inside
+    unrelated component values are deliberately left unchanged.
+
+    Returns:
+        URL with exact token components replaced by a fixed marker.
+    """
+    masked = _mask_token()
+    parsed = URL(url)
+    masked_path_parts = [
+        masked if unquote(part) == token else part for part in parsed.raw_path.split("/")
+    ]
+    masked_path = "/".join(masked_path_parts)
+    masked_query_items = [
+        (key, masked if value == token else value) for key, value in parsed.query.items()
+    ]
+    return str(parsed.with_path(masked_path, encoded=True).with_query(masked_query_items))
 
 
 class EventClient:
@@ -196,6 +218,7 @@ class EventClient:
         *,
         config: ClientConfig | None = None,
         rate_limiter: AsyncLimiter | None = None,
+        session: ClientSession | None = None,
     ) -> None:
         """Initialize a client from an Events API URL.
 
@@ -203,34 +226,54 @@ class EventClient:
             events_url: Full Events API URL provided by upstream.
             config: Optional client configuration overrides.
             rate_limiter: Optional shared limiter for multiple clients.
+            session: Optional caller-owned aiohttp session. Caller-owned
+                sessions are not closed by EventClient.
         """
         base_url, username, token = _parse_events_url(events_url)
-        self.base_url: str = base_url
-        self.username: str = username
+        self._base_url: str = base_url
+        self._username: str = username
         self._token: str = token
-        self.config: ClientConfig = config or ClientConfig()
-        self.session: ClientSession | None = None
+        self._config: ClientConfig = config or ClientConfig()
+        self._session: ClientSession | None = session
+        self._owns_session: bool = session is None
         self._parser_context: ParserContext = ParserContext(
             username=self.username,
             base_url=self.base_url,
-            logger=_logger,
+            parsed_base_url=URL(self.base_url),
         )
         self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
-        self._state: _ClientState = _ClientState.OPEN
+        self._state: _ClientState = _ClientState.NEW
         self._next_url: str | None = None
-        self._polling_lock: asyncio.Lock = asyncio.Lock()
         self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
             max_rate=_DEFAULT_MAX_RATE,
             time_period=_DEFAULT_TIME_PERIOD,
         )
         self._auth_retry_options: AuthRetryOptions = AuthRetryOptions(
-            status_codes=self.config.auth_retry_status_codes,
-            attempts=self.config.auth_retry_attempts,
-            delay=self.config.auth_retry_delay,
-            username=self.username,
-            logger=_logger,
+            status_codes=self._config.auth_retry_status_codes,
+            attempts=self._config.auth_retry_attempts,
+            delay=self._config.auth_retry_delay,
         )
+
+    @property
+    def base_url(self) -> str:
+        """Canonical Events API base URL."""
+        return self._base_url
+
+    @property
+    def username(self) -> str:
+        """Account username parsed from the Events API URL."""
+        return self._username
+
+    @property
+    def config(self) -> ClientConfig:
+        """Immutable client configuration."""
+        return self._config
+
+    @property
+    def session(self) -> ClientSession | None:
+        """Active HTTP session, or None before entry and after close."""
+        return self._session
 
     @override
     def __repr__(self) -> str:
@@ -239,7 +282,7 @@ class EventClient:
         Returns:
             Masked representation revealing only limited token characters.
         """
-        return f"EventClient(username='{self.username}', token='{_mask_token(self._token)}')"
+        return f"EventClient(username='{self.username}', token='{_mask_token()}')"
 
     async def __aenter__(self) -> Self:
         """Open the HTTP session on context entry.
@@ -249,30 +292,28 @@ class EventClient:
 
         Raises:
             EventsError: If the client has already been closed, is already
-                open, or if session creation fails.
-        """
-        async with self._polling_lock:
-            if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
-                raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
-            if self.session is not None:
-                raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
-            captured: Exception | None = None
-            try:
-                self.session = ClientSession(
-                    timeout=ClientTimeout(
-                        total=self.config.timeout + _SESSION_TIMEOUT_BUFFER,
-                        connect=_CONNECT_TIMEOUT,
-                    ),
-                )
-            except (ClientError, OSError, RuntimeError, TimeoutError) as exc:
-                # Fall through to close() and re-raise outside the lock.
-                captured = exc
-            else:
-                return self
+                open, or if the injected session is already closed.
 
-        await self.close()
-        msg = "Failed to create HTTP session."
-        raise EventsError(msg) from captured
+        Note:
+            Session construction errors such as ``OSError`` propagate unchanged.
+        """
+        if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
+            raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
+        if self._state is not _ClientState.NEW:
+            raise EventsError(_CLIENT_ALREADY_OPEN_MESSAGE)
+        if self._session is not None and self._session.closed:
+            raise EventsError(_CLIENT_SESSION_CLOSED_MESSAGE)
+
+        if self._session is None:
+            self._session = ClientSession(
+                timeout=ClientTimeout(
+                    total=self._config.timeout + _SESSION_TIMEOUT_BUFFER,
+                    connect=_CONNECT_TIMEOUT,
+                ),
+            )
+        self._state = _ClientState.OPEN
+
+        return self
 
     async def __aexit__(
         self,
@@ -297,40 +338,39 @@ class EventClient:
         if next_url:
             return next_url
         poll_url = URL(
-            f"{self.base_url.removesuffix('/')}/{_quote_segment(self.username)}/{_quote_segment(self._token)}/"
+            f"{self._base_url.removesuffix('/')}/{_quote_segment(self._username)}/{_quote_segment(self._token)}/"
         )
-        return str(poll_url.with_query(timeout=self.config.timeout))
+        return str(poll_url.with_query(timeout=self._config.timeout))
 
     async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
         """Perform one HTTP request attempt."""
         # Session may be set to None by close() between retry attempts.
-        if self.session is None:
+        if self._session is None:
             msg = "Client session unexpectedly unavailable"
             raise EventsError(msg)
 
         return await perform_request_attempt(
-            session=self.session,
+            session=self._session,
             rate_limiter=self._rate_limiter,
             url=url,
             retry_status_codes=_RETRY_STATUS_CODES,
             auth_retry=self._auth_retry_options,
+            username=self._username,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
         """Run one request with retry/backoff policy."""
-        if self.session is None:
-            msg = "Client not initialized. Use 'async with EventClient(...)' as a context manager."
-            raise EventsError(msg)
+        if self._session is None:
+            raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
 
         return await request_with_retry(
             url=url,
-            config=self.config,
-            username=self.username,
+            config=self._config,
             perform_attempt=self._perform_request_attempt,
-            logger=_logger,
+            username=self._username,
         )
 
-    async def _poll(self) -> list[Event]:
+    async def poll(self) -> list[Event]:
         """Fetch one batch of events from the API.
 
         Makes one request and updates _next_url for the next poll.
@@ -339,14 +379,11 @@ class EventClient:
             List of events received, or an empty list on timeout.
 
         Raises:
-            EventsError: If shutdown has started or if close() cancels this poll.
-            asyncio.CancelledError: If the polling task is cancelled externally.
-
-        Note:
-            The polling lock is held only while reading or writing _next_url and
-            tracking active poll tasks. HTTP I/O runs outside the lock.
-        """
-        # Fail early to avoid locking when already closing/closed.
+            EventsError: If shutdown has started.
+            asyncio.CancelledError: If close() cancels this poll.
+        """  # ruff: ignore[docstring-extraneous-exception]  # Called function may raise asyncio.CancelledError
+        if self._state is _ClientState.NEW:
+            raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
 
@@ -357,11 +394,10 @@ class EventClient:
             raise EventsError(msg)
 
         async with self._polling_semaphore:
-            async with self._polling_lock:
-                if self._state is not _ClientState.OPEN:
-                    raise EventsError(_CLIENT_CLOSING_MESSAGE)
-                self._active_poll_tasks.add(current_task)
-                request_next_url = self._next_url
+            if self._state is not _ClientState.OPEN:
+                raise EventsError(_CLIENT_CLOSING_MESSAGE)
+            self._active_poll_tasks.add(current_task)
+            request_next_url = self._next_url
 
             url = self._build_url(next_url=request_next_url)
             _logger.debug("Polling %s", _mask_url(url, self._token))
@@ -373,31 +409,18 @@ class EventClient:
                     status=status,
                     text=text,
                     context=self._parser_context,
-                    strict_validation=self.config.strict_validation,
+                    strict_validation=self._config.strict_validation,
                     log_next_url=lambda next_url: _logger.debug(
                         "Received nextUrl from timeout response: %s",
                         _mask_url(next_url, self._token),
                     ),
                 )
 
-                async with self._polling_lock:
-                    if self._state is _ClientState.OPEN:
-                        if self._next_url == request_next_url:
-                            self._next_url = next_url
-                        else:
-                            _logger.debug(
-                                "Skipping stale nextUrl update for user %s",
-                                self.username,
-                            )
-            except asyncio.CancelledError:
-                if self._state is not _ClientState.OPEN:
-                    raise EventsError(_POLL_CANCELLED_ON_CLOSE_MESSAGE) from None
-                raise
-            else:
+                if self._state is _ClientState.OPEN:
+                    self._next_url = next_url
                 return events
             finally:
-                async with self._polling_lock:
-                    self._active_poll_tasks.discard(current_task)
+                self._active_poll_tasks.discard(current_task)
 
     async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
@@ -416,7 +439,7 @@ class EventClient:
             Poll position is tracked with nextUrl between iterations.
         """  # ruff: ignore[docstring-extraneous-exception]  # Called functions raise AuthError/EventsError on failure.
         while True:
-            events = await self._poll()
+            events = await self.poll()
             for event in events:
                 yield event
 
@@ -424,41 +447,46 @@ class EventClient:
         """Close the HTTP session and reset poll state.
 
         Safe to call multiple times. Called automatically by context exit.
-        After close(), the instance cannot be reopened.
+        Internally created sessions are closed; caller-owned injected sessions
+        remain open. After close(), the instance cannot be reopened.
+
+        Raises:
+            asyncio.CancelledError: If the caller of close() is cancelled while
+                waiting for in-flight polls to finish shutting down.
         """
         if self._state is _ClientState.CLOSED:
             return
 
         self._state = _ClientState.CLOSING
+        session = self._session
+        self._session = None
+        self._next_url = None
         try:
             current_task = asyncio.current_task()
-            # Cancel in-flight poll tasks first so shutdown does not wait on long I/O.
-            async with self._polling_lock:
-                poll_tasks = [
-                    task
-                    for task in self._active_poll_tasks
-                    if task is not current_task and not task.done()
-                ]
+            poll_tasks = [
+                task
+                for task in self._active_poll_tasks
+                if task is not current_task and not task.done()
+            ]
 
             for poll_task in poll_tasks:
                 poll_task.cancel()  # pyright: ignore[reportUnusedCallResult]
 
             for poll_task in poll_tasks:
-                with suppress(asyncio.CancelledError, EventsError):
+                try:
                     await poll_task
+                except asyncio.CancelledError:
+                    current_task = asyncio.current_task()
+                    if current_task is not None and current_task.cancelling():
+                        raise
+                except EventsError:
+                    pass
+        finally:
+            self._active_poll_tasks.clear()
 
-            # If outside the lock, await session.close() so it is not held on I/O.
-            async with self._polling_lock:
-                session: ClientSession | None = self.session
-                self.session = None
-                self._next_url = None
-                self._active_poll_tasks.clear()
-            if session is not None:
+            if session is not None and self._owns_session:
                 close_task = asyncio.create_task(session.close())
                 try:
-                    # Shield the same close task so shutdown can finish even if the
-                    # surrounding await is cancelled. Re-raise cancellation only
-                    # after the original cleanup has completed.
                     await asyncio.shield(close_task)
                 except asyncio.CancelledError:
                     _logger.warning(
@@ -467,16 +495,9 @@ class EventClient:
                     )
                     try:
                         await asyncio.shield(close_task)
-                    except (ClientError, OSError, RuntimeError) as e:
-                        _logger.warning(
-                            "Error closing session (%s).",
-                            type(e).__name__,
-                        )
+                    except (ClientError, OSError, RuntimeError) as exc:
+                        _logger.warning("Error closing session (%s).", type(exc).__name__)
                     raise
-                except (ClientError, OSError, RuntimeError) as e:
-                    _logger.warning(
-                        "Error closing session (%s).",
-                        type(e).__name__,
-                    )
-        finally:
+                except (ClientError, OSError, RuntimeError) as exc:
+                    _logger.warning("Error closing session (%s).", type(exc).__name__)
             self._state = _ClientState.CLOSED

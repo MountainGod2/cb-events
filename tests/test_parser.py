@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 
 import pytest
 from hypothesis import given, settings
@@ -27,7 +26,7 @@ def _parser_context(username: str = "user") -> ParserContext:
     return ParserContext(
         username=username,
         base_url=TESTBED_URL,
-        logger=logging.getLogger("cb_events._parser"),
+        parsed_base_url=URL(TESTBED_URL),
     )
 
 
@@ -64,11 +63,11 @@ def _next_url_cases(draw: st.DrawFn) -> tuple[object, str | None]:  # ruff: igno
         return f"https://{_ALLOWED_HOST}{path}", None
     if kind == "valid_relative":
         relative = draw(st.sampled_from([path.lstrip("/"), path]))
-        return relative, None
+        return relative, r"must be an absolute URL"
     if kind == "protocol_relative_allowed":
-        return f"//{_ALLOWED_HOST}{path}", None
+        return f"//{_ALLOWED_HOST}{path}", r"must be an absolute URL"
     if kind == "protocol_relative_blocked":
-        return f"//evil.example.com{path}", r"host is not allowed"
+        return f"//evil.example.com{path}", r"must be an absolute URL"
     if kind == "bad_scheme":
         scheme = draw(st.sampled_from(["http", "javascript", "ftp"]))
         return f"{scheme}://{_ALLOWED_HOST}{path}", r"Invalid nextUrl scheme"
@@ -213,6 +212,45 @@ def test_parse_json_response_debug_logs_event_count(
     assert "Received 1 events for user user" in caplog.text
 
 
+def test_invalid_next_url_port_is_classified_without_yarl_message_matching() -> None:
+    """Port classification should be independent of yarl's exception wording."""
+    with pytest.raises(EventsError, match="invalid port"):
+        _validate_next_url(
+            "https://events.testbed.cb.dev:not-a-port/events/next",
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+
+def test_malformed_ipv6_next_url_does_not_report_invalid_port() -> None:
+    """Malformed IPv6 should not be misclassified as an invalid port."""
+    with pytest.raises(EventsError, match="must be a valid URL") as exc_info:
+        _validate_next_url(
+            "https://[::1/events/next",
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+    assert "invalid port" not in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://username@events.testbed.cb.dev/events/next",
+        "https://username:password@events.testbed.cb.dev/events/next",
+    ],
+)
+def test_validate_next_url_rejects_user_info(next_url: str) -> None:
+    """Continuation URLs must not contain URL usernames or passwords."""
+    with pytest.raises(EventsError, match="must not contain user information"):
+        _validate_next_url(
+            next_url,
+            response_text="{}",
+            context=_parser_context(),
+        )
+
+
 @given(case=_next_url_cases())
 @settings(max_examples=50, deadline=None)
 def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> None:
@@ -224,7 +262,7 @@ def test_validate_next_url_property_cases(case: tuple[object, str | None]) -> No
         validated = _validate_next_url(next_url, response_text="{}", context=context)
         assert validated is not None
 
-        resolved, parsed = _resolve_absolute_url(str(next_url).strip(), context=context)
+        resolved, parsed = _resolve_absolute_url(str(next_url).strip())
         assert validated == resolved
         assert parsed.scheme == "https"
         assert parsed.host == _ALLOWED_HOST

@@ -7,10 +7,13 @@ snake_case attributes.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Mapping, Sequence  # ruff: ignore[typing-only-standard-library-import]
+from collections.abc import Callable, Iterator, Mapping
 from copy import deepcopy
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import ClassVar, Self, TypeVar, cast
+from functools import partial
+from types import MappingProxyType
+from typing import ClassVar, Generic, TypeVar, cast, overload
 
 from pydantic import (
     BaseModel,
@@ -18,11 +21,12 @@ from pydantic import (
     Field,
     PrivateAttr,
     ValidationError,
+    field_serializer,
     field_validator,
+    model_validator,
 )
 from pydantic.alias_generators import to_camel
-
-from ._compat import override
+from typing_extensions import override
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
@@ -55,6 +59,8 @@ class EventType(StrEnum):
     """User has sent a tip."""
     MEDIA_PURCHASE = "mediaPurchase"
     """User has purchased media."""
+    UNKNOWN = "unknown"
+    """Event type is unrecognized by this client version."""
 
 
 class BaseEventModel(BaseModel):
@@ -64,10 +70,13 @@ class BaseEventModel(BaseModel):
         alias_generator=to_camel,
         extra="ignore",
         frozen=True,
+        hide_input_in_errors=True,
+        populate_by_name=True,
+        validate_default=True,
     )
 
 
-_T = TypeVar("_T", bound=BaseEventModel)
+_T = TypeVar("_T")
 
 
 class User(BaseEventModel):
@@ -204,102 +213,184 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_MAX_EVENT_DATA_DEPTH = 1000
-_IMMUTABLE_EVENT_PAYLOAD_ERROR = TypeError("Event payloads are immutable.")
+_MAX_EVENT_DATA_DEPTH = 100
+_MappingValue = TypeVar("_MappingValue")
 
 
-class _ImmutableDict(dict[str, object]):  # ruff: ignore[subclass-builtin]
-    """Mapping that forbids mutation while remaining JSON-serializable."""
+class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
+    """Read-only mapping with copy and pickle support.
 
-    def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableDict:
-        return _ImmutableDict({key: deepcopy(value, memo) for key, value in self.items()})
+    Nested mappings and sequences are recursively frozen: mappings become
+    immutable mappings and sequences become tuples. Cycles and nesting beyond
+    100 levels are rejected, and thawing recreates ordinary JSON-compatible
+    containers for serialization.
+    """
 
-    def __copy__(self) -> dict[str, object]:
-        return dict(self)
+    __slots__: tuple[str, ...] = ("_data",)
 
-    @override
-    def __ior__(self, other: object) -> Self:
-        del other
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    _data: Mapping[str, _MappingValue]
 
-    @override
-    def __setitem__(self, key: str, value: object) -> None:
-        del key, value
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __init__(self, values: Mapping[str, _MappingValue] | None = None) -> None:
+        self._data = MappingProxyType(dict(values or {}))
 
     @override
-    def __delitem__(self, key: str) -> None:
-        del key
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __getitem__(self, key: str) -> _MappingValue:
+        return self._data[key]
 
     @override
-    def clear(self) -> None:
-        del self
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._data)
 
     @override
-    def pop(self, key: object, default: object = None) -> object:
-        del self, key, default
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __len__(self) -> int:
+        return len(self._data)
 
     @override
-    def popitem(self) -> tuple[str, object]:
-        del self
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __contains__(self, key: object) -> bool:
+        return key in self._data
+
+    @overload
+    def get(self, key: str) -> _MappingValue | None: ...
+
+    @overload
+    def get(self, key: str, default: _MappingValue) -> _MappingValue: ...
+
+    @overload
+    def get(self, key: str, default: _T) -> _MappingValue | _T: ...
 
     @override
-    def setdefault(self, key: str, default: object = None) -> object:
-        del self, key, default
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def get(self, key: str, default: _T | None = None) -> _MappingValue | _T | None:
+        return self._data.get(key, default)
 
     @override
-    def update(self, *args: object, **kwargs: object) -> None:
-        del self, args, kwargs
-        raise _IMMUTABLE_EVENT_PAYLOAD_ERROR
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Mapping):
+            return NotImplemented
+        return self._data == other
+
+    @override
+    def __hash__(self) -> int:
+        """Reject hashing because mapping contents may themselves be unhashable."""
+        msg = "unhashable type: '_ImmutableMapping'"
+        raise TypeError(msg)
+
+    def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableMapping[_MappingValue]:
+        return _ImmutableMapping({key: deepcopy(value, memo) for key, value in self.items()})
+
+    def __copy__(self) -> _ImmutableMapping[_MappingValue]:
+        return _ImmutableMapping(self)
+
+    @override
+    def __reduce__(
+        self,
+    ) -> tuple[type[_ImmutableMapping[_MappingValue]], tuple[dict[str, _MappingValue]]]:
+        return (self.__class__, (dict(self),))
 
 
-def _event_data_depth(value: object) -> int:
-    """Return the maximum nested container depth for a payload value."""
-    max_depth = 0
-    stack: list[tuple[object, int]] = [(value, 0)]
+_AssignValue = Callable[[object], None]
+
+
+def _assign_mapping(target: dict[str, object], key: str, value: object) -> None:
+    """Assign one transformed value into a temporary mapping."""
+    target[key] = value
+
+
+def _assign_sequence(target: list[object], key: int, value: object) -> None:
+    """Assign one transformed value into a temporary sequence."""
+    target[key] = value
+
+
+def _transform_event_data(value: object, *, freeze: bool) -> object:
+    """Copy event data while freezing or thawing all nested containers."""
+    root: list[object] = []
+    active_containers: set[int] = set()
+    stack: list[tuple[str, object, _AssignValue, int]] = [("visit", value, root.append, 0)]
+
     while stack:
-        current, depth = stack.pop()
-        max_depth = max(max_depth, depth)
-        if isinstance(current, dict):
-            mapping = cast("dict[str, object]", current)
-            stack.extend((item, depth + 1) for item in mapping.values())
-        elif isinstance(current, (list, tuple)):
-            sequence = cast("Sequence[object]", current)
-            stack.extend((item, depth + 1) for item in sequence)
-    return max_depth
+        operation, current, assign, depth_or_id = stack.pop()
+        if operation == "finish_map":
+            active_containers.discard(depth_or_id)
+            mapping_result = cast("dict[str, object]", current)
+            assign(_ImmutableMapping(mapping_result) if freeze else mapping_result)
+            continue
+        if operation == "finish_sequence":
+            active_containers.discard(depth_or_id)
+            sequence_result = cast("list[object]", current)
+            assign(tuple(sequence_result) if freeze else sequence_result)
+            continue
+        if freeze and depth_or_id > _MAX_EVENT_DATA_DEPTH:
+            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+            raise ValueError(msg)
+        if isinstance(current, Mapping):
+            mapping = cast("Mapping[str, object]", current)
+            container_id = id(mapping)
+            if freeze and container_id in active_containers:
+                msg = "Event payload contains a reference cycle."
+                raise ValueError(msg)
+            if freeze:
+                active_containers.add(container_id)
+            transformed_mapping: dict[str, object] = {}
+            stack.append(("finish_map", transformed_mapping, assign, container_id))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_mapping, transformed_mapping, key),
+                    depth_or_id + 1,
+                )
+                for key, item in reversed(tuple(mapping.items()))
+            )
+            continue
+        if isinstance(current, (list, tuple)):
+            sequence = cast("list[object] | tuple[object, ...]", current)
+            container_id = id(sequence)
+            if freeze and container_id in active_containers:
+                msg = "Event payload contains a reference cycle."
+                raise ValueError(msg)
+            if freeze:
+                active_containers.add(container_id)
+            transformed_items: list[object] = [None] * len(sequence)
+            stack.append(("finish_sequence", transformed_items, assign, container_id))
+            stack.extend(
+                (
+                    "visit",
+                    item,
+                    partial(_assign_sequence, transformed_items, index),
+                    depth_or_id + 1,
+                )
+                for index, item in reversed(tuple(enumerate(sequence)))
+            )
+            continue
+        assign(current)
+
+    return root[0]
 
 
 def _freeze_event_data(value: object) -> object:
-    """Return a JSON-safe immutable copy of the raw event payload."""
-    if _event_data_depth(value) > _MAX_EVENT_DATA_DEPTH:
-        msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
-        raise ValueError(msg)
+    """Return a depth-bounded immutable copy of event data."""
+    return _transform_event_data(value, freeze=True)
 
-    if isinstance(value, dict):
-        mapping = cast("dict[str, object]", value)
-        frozen: _ImmutableDict = _ImmutableDict({
-            key: _freeze_event_data(item) for key, item in mapping.items()
-        })
-        return frozen
-    if isinstance(value, list):
-        items = cast("list[object]", value)
-        return tuple(_freeze_event_data(item) for item in items)
-    if isinstance(value, tuple):
-        items = cast("tuple[object, ...]", value)
-        return tuple(_freeze_event_data(item) for item in items)
-    return value
+
+def _thaw_event_data(value: object) -> object:
+    """Return mutable JSON-compatible containers for serialization."""
+    return _transform_event_data(value, freeze=False)
+
+
+@dataclass(frozen=True)
+class _PayloadSpec:
+    """One nested event payload accessor and its validation rule."""
+
+    private_name: str
+    key: str
+    loader: Callable[[object], object]
+    allowed_types: tuple[EventType, ...] | None = None
 
 
 class Event(BaseEventModel):
     """Top-level event container.
 
-    Typed convenience accessors parse nested payload fields on demand and
-    return None for missing or invalid values.
+    Typed convenience accessors cache validated nested payload fields when
+    the event is created and return None for missing or invalid values.
 
     Warning:
         String fields in payload data are untrusted user input.
@@ -307,6 +398,8 @@ class Event(BaseEventModel):
 
     type: EventType = Field(alias="method")
     """Type of the event."""
+    raw_method: str | None = None
+    """Original API method name when it is not recognized by this client."""
     id: str
     """Unique identifier for the event."""
     data: Mapping[str, object] = Field(default_factory=dict, alias="object")
@@ -320,32 +413,82 @@ class Event(BaseEventModel):
     _media: Media | None = PrivateAttr(default=None)
     _room_subject: RoomSubject | None = PrivateAttr(default=None)
 
+    @field_validator("data", mode="after")
+    @classmethod
+    def _freeze_data(cls, value: Mapping[str, object]) -> Mapping[str, object]:
+        """Freeze mappings and convert payload arrays to tuples."""
+        frozen = _freeze_event_data(value)
+        if not isinstance(frozen, _ImmutableMapping):
+            msg = "Event payload must be a mapping."
+            raise TypeError(msg)
+        return cast("_ImmutableMapping[object]", frozen)
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def _coerce_unknown_type(cls, value: object) -> object:
+        """Map unrecognized method strings to EventType.UNKNOWN."""
+        if isinstance(value, str):
+            try:
+                return EventType(value)
+            except ValueError:
+                return EventType.UNKNOWN
+        return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def _preserve_unknown_method(cls, value: object) -> object:
+        """Retain the original name of an unrecognized upstream method."""
+        if not isinstance(value, Mapping):
+            return value
+
+        mapping = cast("Mapping[str, object]", value)
+        raw_method = mapping.get("method", mapping.get("type"))
+        if not isinstance(raw_method, str):
+            return mapping
+        if raw_method == EventType.UNKNOWN.value:
+            preserved = dict(mapping)
+            saved_raw_method = mapping.get("rawMethod", mapping.get("raw_method"))
+            if isinstance(saved_raw_method, str):
+                preserved["raw_method"] = saved_raw_method
+            _ = preserved.pop("rawMethod", None)
+            return preserved
+        try:
+            _ = EventType(raw_method)
+        except ValueError:
+            preserved = dict(mapping)
+            preserved["raw_method"] = raw_method
+            _ = preserved.pop("rawMethod", None)
+            return preserved
+        preserved = dict(mapping)
+        _ = preserved.pop("raw_method", None)
+        _ = preserved.pop("rawMethod", None)
+        return preserved
+
+    @field_serializer("data")
+    @classmethod
+    def _serialize_data(
+        cls,
+        value: Mapping[str, object],
+    ) -> dict[str, object]:
+        """Serialize the immutable payload as ordinary JSON containers."""
+        del cls
+        return cast("dict[str, object]", _thaw_event_data(value))
+
     @override
-    def model_post_init(self, context: object, /) -> None:  # ruff: ignore[unused-method-argument]
-        """Freeze the raw payload and cache the validated sub-models."""
-        object.__setattr__(self, "data", _freeze_event_data(self.data))  # ruff: ignore[unnecessary-dunder-call] - required for frozen BaseModel
-        self._user = self._extract("user", User.model_validate)
-        self._message = self._extract(
-            "message",
-            Message.model_validate,
-            allowed_types=(EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
+    def model_post_init(self, context: object, /) -> None:
+        """Cache the validated sub-models using one payload registry."""
+        strict_context = (
+            cast("Mapping[str, object]", context) if isinstance(context, Mapping) else None
         )
-        self._broadcaster = self._extract_non_empty_string("broadcaster")
-        self._tip = self._extract(
-            "tip",
-            Tip.model_validate,
-            allowed_types=(EventType.TIP,),
-        )
-        self._media = self._extract(
-            "media",
-            Media.model_validate,
-            allowed_types=(EventType.MEDIA_PURCHASE,),
-        )
-        self._room_subject = self._extract(
-            "subject",
-            lambda v: RoomSubject.model_validate({"subject": v}),
-            allowed_types=(EventType.ROOM_SUBJECT_CHANGE,),
-        )
+        strict = strict_context is not None and strict_context.get("strict_validation") is True
+        for spec in _PAYLOAD_SPECS:
+            result = self._extract(
+                spec.key,
+                spec.loader,
+                allowed_types=spec.allowed_types,
+                strict=strict,
+            )
+            setattr(self, spec.private_name, result)
 
     @property
     def user(self) -> User | None:
@@ -377,26 +520,13 @@ class Event(BaseEventModel):
         """Room subject if present and valid (ROOM_SUBJECT_CHANGE only)."""
         return self._room_subject
 
-    def _extract_non_empty_string(self, key: str) -> str | None:
-        """Extract a non-empty string from event data.
-
-        Args:
-            key: Key within data to look up.
-
-        Returns:
-            The string value, or None if missing, empty, or not a string.
-        """
-        value: object | None = self.data.get(key)
-        if isinstance(value, str) and value:
-            return value
-        return None
-
     def _extract(
         self,
         key: str,
         loader: Callable[[object], _T],
         *,
         allowed_types: tuple[EventType, ...] | None = None,
+        strict: bool = False,
     ) -> _T | None:
         """Extract and validate nested model from event data.
 
@@ -404,20 +534,28 @@ class Event(BaseEventModel):
             key: Key within data to look up.
             loader: Callable that validates/constructs the nested model.
             allowed_types: Event types eligible for extraction.
+            strict: Whether validation errors should propagate.
 
         Returns:
             Validated model instance or None if unavailable or invalid.
+
+        Raises:
+            ValidationError: If strict validation is enabled and loading fails.
         """
         if allowed_types is not None and self.type not in allowed_types:
             return None
 
-        payload: object | None = self.data.get(key)
-        if payload is None:
+        if key not in self.data:
+            return None
+        payload = self.data[key]
+        if payload is None and not strict:
             return None
 
         try:
             result = loader(payload)
         except ValidationError as exc:
+            if strict:
+                raise
             fields: set[str] = {
                 ".".join(str(p) for p in e.get("loc", ())) or key for e in exc.errors()
             }
@@ -430,3 +568,35 @@ class Event(BaseEventModel):
             return None
 
         return result
+
+
+def _load_room_subject(value: object) -> RoomSubject:
+    """Load the scalar room subject into its nested model."""
+    return RoomSubject.model_validate({"subject": value})
+
+
+def _load_non_empty_string(value: object) -> str | None:
+    """Return a non-empty string payload value, else None."""
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+_PAYLOAD_SPECS = (
+    _PayloadSpec("_user", "user", User.model_validate),
+    _PayloadSpec(
+        "_message",
+        "message",
+        Message.model_validate,
+        (EventType.CHAT_MESSAGE, EventType.PRIVATE_MESSAGE),
+    ),
+    _PayloadSpec("_tip", "tip", Tip.model_validate, (EventType.TIP,)),
+    _PayloadSpec("_media", "media", Media.model_validate, (EventType.MEDIA_PURCHASE,)),
+    _PayloadSpec(
+        "_room_subject",
+        "subject",
+        _load_room_subject,
+        (EventType.ROOM_SUBJECT_CHANGE,),
+    ),
+    _PayloadSpec("_broadcaster", "broadcaster", _load_non_empty_string),
+)

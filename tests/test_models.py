@@ -2,12 +2,17 @@
 
 import json
 import logging
+import pickle
+from collections import UserDict
+from collections.abc import Mapping
+from copy import copy, deepcopy
 from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
 
 from cb_events import Event, EventType, Message, RoomSubject, Tip, User
+from cb_events._models import _ImmutableMapping
 
 
 @pytest.mark.parametrize("event_type", EventType)
@@ -43,6 +48,75 @@ def test_event_properties_parsed() -> None:
     assert event.user.username == "tipper"
 
 
+def test_models_accept_python_field_names_and_api_aliases() -> None:
+    """Models should accept both documented snake_case names and API camelCase aliases."""
+    event = Event(type=EventType.TIP, id="event_python", data={"tip": {"tokens": 25}})
+    user = User.model_validate({
+        "username": "tipper",
+        "fc_auto_renew": True,
+        "isFollower": True,
+    })
+    tip = Tip.model_validate({"tokens": 25, "is_anon": True})
+    message = Message.model_validate({"message": "hello", "from_user": "sender"})
+
+    assert event.type is EventType.TIP
+    assert event.data["tip"] is not None
+    assert user.fc_auto_renew is True
+    assert user.is_follower is True
+    assert tip.is_anon is True
+    assert message.from_user == "sender"
+
+
+def test_unknown_event_type_maps_to_unknown() -> None:
+    """Unrecognized methods should preserve their original name."""
+    event = Event.model_validate({
+        "method": "futureEventTypeFromApi",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.type is EventType.UNKNOWN
+    assert event.raw_method == "futureEventTypeFromApi"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureEventTypeFromApi"
+
+
+def test_known_event_type_has_no_raw_method() -> None:
+    """Known methods should not populate the compatibility field."""
+    event = Event.model_validate({"method": "tip", "id": "event_tip", "object": {}})
+
+    assert event.raw_method is None
+
+
+def test_non_string_method_does_not_set_raw_method() -> None:
+    """Invalid method values should continue through normal validation."""
+    with pytest.raises(ValidationError):
+        Event.model_validate({"method": 42, "id": "event_invalid", "object": {}})
+
+
+def test_unknown_raw_method_uses_actual_upstream_name() -> None:
+    """Caller-supplied metadata cannot replace an unknown upstream method."""
+    event = Event.model_validate({
+        "method": "futureEvent",
+        "raw_method": "originalEvent",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.raw_method == "futureEvent"
+
+
+def test_known_event_discards_supplied_raw_method() -> None:
+    """Compatibility metadata should only exist for UNKNOWN events."""
+    event = Event.model_validate({
+        "method": "tip",
+        "raw_method": "evil",
+        "id": "event_tip",
+        "object": {},
+    })
+
+    assert event.raw_method is None
+
+
 def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
     """Event payloads should remain JSON-compatible and copy-safe."""
     event = Event.model_validate({
@@ -54,8 +128,8 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         },
     })
 
-    assert isinstance(event.data, dict)
-    assert json.loads(json.dumps(event.data)) == {
+    assert isinstance(event.data, Mapping)
+    assert event.model_dump(mode="json")["data"] == {
         "tip": {"tokens": 100},
         "nested": {"items": [1, 2, {"flag": True}]},
     }
@@ -64,9 +138,8 @@ def test_event_data_is_json_serializable_and_deep_copy_safe() -> None:
         "tip": {"tokens": 100},
         "nested": {"items": (1, 2, {"flag": True})},
     }
-    mutable_data = cast(dict[str, object], copied.data)
-    with pytest.raises(TypeError, match="immutable"):
-        mutable_data["tip"] = {"tokens": 999}
+    with pytest.raises(TypeError):
+        cast(dict[str, object], copied.data)["tip"] = {"tokens": 999}
 
 
 def test_event_data_rejects_excessive_nesting() -> None:
@@ -81,6 +154,141 @@ def test_event_data_rejects_excessive_nesting() -> None:
             "id": "event_deep",
             "object": {"message": {"message": "hello", "extra": nested}},
         })
+
+
+def test_event_data_accepts_depth_below_guard_limit() -> None:
+    """Accepted nesting depths should serialize in JSON mode across platforms."""
+    nested: object = {"value": 1}
+    for _ in range(80):
+        nested = {"value": nested}
+
+    event = Event.model_validate({
+        "method": "chatMessage",
+        "id": "event_deep_valid",
+        "object": {"nested": nested},
+    })
+
+    assert event.data["nested"] is not None
+    serialized = event.model_dump(mode="python")
+    assert serialized["data"]["nested"] is not None
+    assert json.dumps(serialized["data"])
+    assert event.model_dump(mode="json")["data"]["nested"] is not None
+
+
+def test_event_data_rejects_depth_above_json_serialization_limit() -> None:
+    """Payloads beyond Pydantic JSON-mode depth limits should be rejected."""
+    nested: object = {"value": 1}
+    for _ in range(100):
+        nested = {"value": nested}
+
+    with pytest.raises(ValidationError, match="nesting exceeds"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_deep_json",
+            "object": {"nested": nested},
+        })
+
+
+def test_event_data_freezes_user_dict_payloads() -> None:
+    """Non-dict mappings should be frozen recursively like plain dicts."""
+    payload = UserDict({"nested": UserDict({"items": [1, 2, 3]})})
+    event = Event.model_validate({
+        "method": "chatMessage",
+        "id": "event_user_dict",
+        "object": payload,
+    })
+
+    nested = cast(Mapping[str, object], event.data["nested"])
+    assert isinstance(event.data, Mapping)
+    assert isinstance(nested, Mapping)
+    assert nested["items"] == (1, 2, 3)
+    with pytest.raises(TypeError):
+        cast(dict[str, object], nested)["items"] = []
+
+
+def test_event_data_rejects_reference_cycles() -> None:
+    """Programmatically supplied cyclic payloads should fail clearly."""
+    cyclic: dict[str, object] = {}
+    cyclic["self"] = cyclic
+
+    with pytest.raises(ValidationError, match="reference cycle"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_cycle",
+            "object": cyclic,
+        })
+
+
+def test_event_data_rejects_sequence_reference_cycles() -> None:
+    """Cyclic list payloads should fail clearly."""
+    cyclic_list: list[object] = []
+    cyclic_list.append(cyclic_list)
+
+    with pytest.raises(ValidationError, match="reference cycle"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_list_cycle",
+            "object": {"nested": cyclic_list},
+        })
+
+
+def test_event_data_validator_rejects_non_mapping_root() -> None:
+    """Validator should reject non-mapping roots when called directly."""
+    with pytest.raises(TypeError, match="must be a mapping"):
+        Event._freeze_data([])  # pyright: ignore[reportArgumentType]
+
+
+def test_event_is_pickle_round_trippable() -> None:
+    """Event objects should survive pickle round-trips for multiprocessing and caches."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "event_pickle",
+        "object": {"tip": {"tokens": 42}, "user": {"username": "alice"}},
+    })
+
+    restored = pickle.loads(pickle.dumps(event))
+
+    assert restored == event
+    assert restored.data == event.data
+
+
+def test_event_mapping_has_no_mutator_api() -> None:
+    """Immutable payloads expose only the read-only Mapping API."""
+    event = Event.model_validate({
+        "method": "tip",
+        "id": "evt-mapping",
+        "object": {"nested": {"items": [1]}},
+    })
+
+    assert not hasattr(event.data, "update")
+    assert not hasattr(event.data, "__setitem__")
+    assert isinstance(event.data["nested"], Mapping)
+    assert isinstance(cast(Mapping[str, object], event.data["nested"])["items"], tuple)
+
+
+def test_immutable_mapping_copy_and_equality_behaviors() -> None:
+    """_ImmutableMapping should support value-based equality and copy operations."""
+    mapping = _ImmutableMapping({"nested": {"count": 1}})
+
+    assert mapping == {"nested": {"count": 1}}
+    assert mapping != {"nested": {"count": 2}}
+
+    mapping_copy = copy(mapping)
+    assert isinstance(mapping_copy, _ImmutableMapping)
+    assert mapping_copy == mapping
+    assert mapping_copy is not mapping
+
+    mapping_deepcopy = deepcopy(mapping)
+    assert isinstance(mapping_deepcopy, _ImmutableMapping)
+    assert mapping_deepcopy == mapping
+    assert mapping_deepcopy is not mapping
+
+
+def test_immutable_mapping_is_unhashable() -> None:
+    """_ImmutableMapping hash should raise TypeError."""
+    mapping = _ImmutableMapping({"a": 1})
+    with pytest.raises(TypeError, match="unhashable"):
+        hash(mapping)
 
 
 @pytest.mark.parametrize(
@@ -231,6 +439,44 @@ def test_media_missing_payload_returns_none() -> None:
 
 
 @pytest.mark.parametrize(
+    ("method", "key"),
+    [
+        ("tip", "tip"),
+        ("mediaPurchase", "media"),
+    ],
+)
+def test_present_null_payload_is_lenient(method: str, key: str) -> None:
+    """A present null payload should remain optional in lenient mode."""
+    event = Event.model_validate({
+        "method": method,
+        "id": "evt-null",
+        "object": {key: None},
+    })
+
+    assert getattr(event, "tip" if key == "tip" else "media") is None
+
+
+@pytest.mark.parametrize(
+    ("method", "key"),
+    [
+        ("tip", "tip"),
+        ("mediaPurchase", "media"),
+    ],
+)
+def test_present_null_payload_is_strict_error(method: str, key: str) -> None:
+    """A present null payload should reach the registered loader in strict mode."""
+    with pytest.raises(ValidationError):
+        Event.model_validate(
+            {
+                "method": method,
+                "id": "evt-null-strict",
+                "object": {key: None},
+            },
+            context={"strict_validation": True},
+        )
+
+
+@pytest.mark.parametrize(
     ("method", "event_id", "invalid_object", "attr_name", "log_msg"),
     [
         (
@@ -324,6 +570,63 @@ def test_event_broadcaster_missing_returns_none() -> None:
     })
 
     assert event.broadcaster is None
+
+
+@pytest.mark.parametrize("broadcaster", [None, "", 123, [], {}])
+def test_event_broadcaster_invalid_is_best_effort_in_strict_mode(
+    broadcaster: object,
+) -> None:
+    """Malformed present broadcaster values remain best-effort, even in strict mode."""
+    event = Event.model_validate(
+        {
+            "method": "broadcastStart",
+            "id": "evt-bcaster-invalid",
+            "object": {"broadcaster": broadcaster},
+        },
+        context={"strict_validation": True},
+    )
+
+    assert event.broadcaster is None
+
+
+def test_known_event_type_ignores_supplied_raw_method() -> None:
+    """Known event types discard conflicting saved raw names."""
+    event = Event.model_validate({
+        "method": "tip",
+        "rawMethod": "futureTip",
+        "id": "event_tip",
+        "object": {},
+    })
+
+    assert event.raw_method is None
+    assert event.model_dump(by_alias=True)["rawMethod"] is None
+
+
+def test_unknown_sentinel_restores_saved_raw_method_alias() -> None:
+    """Restored UNKNOWN events retain their saved raw method name."""
+    event = Event.model_validate({
+        "method": "unknown",
+        "rawMethod": "futureTip",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.type is EventType.UNKNOWN
+    assert event.raw_method == "futureTip"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureTip"
+
+
+def test_future_method_alias_uses_method_as_authoritative() -> None:
+    """The method field takes precedence over a conflicting rawMethod alias."""
+    event = Event.model_validate({
+        "method": "futureTip",
+        "rawMethod": "evil",
+        "id": "event_future",
+        "object": {},
+    })
+
+    assert event.raw_method == "futureTip"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureTip"
 
 
 def test_event_data_is_immutable() -> None:

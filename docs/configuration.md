@@ -8,7 +8,7 @@ from cb_events import ClientConfig, EventClient
 config = ClientConfig(
     timeout=10,  # Server long-poll timeout (seconds)
     strict_validation=False,  # Raise on invalid events vs skip
-    retry_attempts=25,  # Total attempts (initial + retries)
+    retry_attempts=10,  # Total attempts (initial + retries)
     retry_backoff=1.0,  # Initial backoff (seconds)
     retry_factor=2.0,  # Backoff multiplier
     retry_max_delay=300.0,  # Max retry delay (seconds)
@@ -18,6 +18,24 @@ config = ClientConfig(
 )
 
 client = EventClient(events_url, config=config)
+```
+
+## Custom HTTP Session
+
+Inject an `aiohttp.ClientSession` to configure a proxy, SSL context, connector,
+cookies, headers, or other aiohttp behavior. `EventClient` uses the injected
+session but does not close it; the caller retains ownership.
+
+When you inject a session, its configured `ClientTimeout` is used as-is. Ensure
+the session's `total` timeout is greater than `ClientConfig.timeout`, otherwise
+the caller timeout can abort long polls early.
+
+```python
+from aiohttp import ClientSession
+
+async with ClientSession(headers={"X-Client": "my-bot"}) as session:
+    async with EventClient(events_url, session=session) as client:
+        events = await client.poll()
 ```
 
 ## Timeout Settings
@@ -43,7 +61,12 @@ config = ClientConfig(
 )
 ```
 
-Retries are attempted on `429`, `5xx`, and Cloudflare `521-524`.
+Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
+`521-524`.
+
+With default retry settings, the scheduled exponential backoff totals 511 seconds
+(about 8.5 minutes) before jitter, excluding request time. This is backoff delay
+alone: the retry loop has no overall deadline and request durations add to elapsed time.
 
 Authentication statuses can use a separate fixed-delay retry budget.
 By default `auth_retry_attempts=1`, which preserves fail-fast behavior for
@@ -65,8 +88,10 @@ config = ClientConfig(
     In practice, this mainly matters if the upstream API schema changes or a
     malformed payload appears. However, the API has historically been stable.
 
-    `strict_validation=True` raises `pydantic.ValidationError` instead, which
-    gives fail-fast behavior but requires your code to handle those exceptions.
+    `strict_validation=True` raises `StrictValidationError` instead, which
+    gives fail-fast behavior but requires your code to handle that custom
+    exception. Unknown method names are accepted in either mode and preserved
+    as `event.raw_method` while `event.type` is `EventType.UNKNOWN`.
 
 ## Environment Selection
 
@@ -112,6 +137,16 @@ client3 = EventClient(url3, rate_limiter=limiter)
 ## Logging
 
 Set the logger to `DEBUG` for verbose polling URLs and event dispatch details.
+Retry warnings are emitted on `cb_events._request`.
+Stamina also emits a separate `stamina.retry_scheduled` record for the same
+retry. To keep the informative client warning without the duplicate, use stdlib
+logging only when Stamina is using its stdlib logging backend:
+
+```python
+import logging
+
+logging.getLogger("stamina").setLevel(logging.ERROR)
+```
 
 ```python
 import logging
@@ -123,6 +158,7 @@ logging.getLogger("cb_events").setLevel(logging.DEBUG)
 
 ```text
 DEBUG:cb_events._client:Polling https://eventsapi.chaturbate.com/events/user/************************/?timeout=10
-DEBUG:cb_events._client:Received 1 events for user
+DEBUG:cb_events._parser:Received 1 events for user
 DEBUG:cb_events._router:Dispatching chatMessage event 1775683684418-0 to 2 handlers
+WARNING:cb_events._request:Retrying events request for user username after attempt 1/2 (HTTP 502).
 ```

@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.11"
 # dependencies = [
 #     "cb-events >=10.1.1",
 #     "rich >=15.0.0",
@@ -25,7 +25,6 @@ import sys
 import threading
 from collections.abc import Sequence
 
-import stamina
 from rich.logging import RichHandler
 
 from cb_events import (
@@ -38,10 +37,6 @@ from cb_events import (
     Router,
     __version__,
 )
-
-# Suppress stamina's default retry hook; cb-events logs retries
-# (user, attempt count) via its own per-attempt warning.
-stamina.instrumentation.set_on_retry_hooks([])
 
 logger = logging.getLogger(__name__)
 

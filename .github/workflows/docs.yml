@@ -1,17 +1,11 @@
 name: Docs Pages
 
+env:
+  UV_FROZEN: "1"
+
 on:
-  push:
-    branches: [main]
-    paths:
-      [
-        "docs/**",
-        "src/**",
-        "README.md",
-        "CHANGELOG.md",
-        "zensical.toml",
-        "pyproject.toml",
-      ]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -30,17 +24,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.release.tag_name || github.ref_name }}
           persist-credentials: false
 
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: $/.github/actions/setup-uv
         with:
-          version: "0.13.8"
           python-version: "3.13"
-          enable-cache: true
           cache-suffix: docs-pages-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync docs dependencies

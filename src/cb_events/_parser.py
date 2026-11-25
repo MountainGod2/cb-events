@@ -3,28 +3,57 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass
+from enum import StrEnum
 from http import HTTPStatus
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from pydantic import ValidationError
+from typing_extensions import TypeIs
 from yarl import URL
 
-from ._exceptions import AUTH_ERROR_STATUS_CODES, AuthError, EventsError, build_http_error
-from ._models import Event, EventType, Media, Message, RoomSubject, Tip, User
+from ._exceptions import (
+    AUTH_ERROR_STATUS_CODES,
+    AuthError,
+    EventsError,
+    StrictValidationError,
+    build_http_error,
+)
+from ._models import Event
 from ._utils import (
     TRUNCATE_LENGTH,
+    UrlValidationError,
     UrlValidationReason,
     truncate_text,
     validate_https_host_no_port,
 )
 
 if TYPE_CHECKING:
-    import logging
     from collections.abc import Callable, Sequence
+
+_logger = logging.getLogger(__name__)
 
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
+
+
+class _NextUrlParseReason(StrEnum):
+    """Stable reasons for absolute nextUrl parsing failures."""
+
+    NOT_ABSOLUTE = "not_absolute"
+
+
+class _NextUrlParseError(ValueError):
+    """Absolute nextUrl parsing failure with a stable reason code."""
+
+    reason: _NextUrlParseReason
+
+    def __init__(self, reason: _NextUrlParseReason) -> None:
+        """Initialize from a structured parsing reason."""
+        super().__init__(reason.value)
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -34,30 +63,20 @@ class ParserContext:
     Attributes:
         username: Account username used for diagnostics.
         base_url: Canonical base API URL.
-        logger: Logger used for warnings/debug output.
-        parsed_base_url: Parsed representation of base_url. Derived
-            automatically from base_url; do not pass this explicitly.
+        parsed_base_url: Parsed representation of base_url.
     """
 
     username: str
     base_url: str
-    logger: logging.Logger
-    parsed_base_url: URL = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Derive parsed_base_url from base_url.
-
-        Uses object.__setattr__ because the dataclass is frozen.
-        """
-        object.__setattr__(self, "parsed_base_url", URL(self.base_url))
+    parsed_base_url: URL
 
 
-def _is_json_object(value: object) -> TypeGuard[dict[str, object]]:
+def _is_json_object(value: object) -> TypeIs[dict[str, object]]:
     """Return True when value is a JSON object dict."""
     return isinstance(value, dict)
 
 
-def _is_object_list(value: object) -> TypeGuard[list[object]]:
+def _is_object_list(value: object) -> TypeIs[list[object]]:
     """Return True when value is a JSON array list."""
     return isinstance(value, list)
 
@@ -76,8 +95,11 @@ def _parse_json_object(text: str) -> dict[str, object]:
     """
     try:
         data: object = json.loads(text)  # pyright: ignore[reportAny]
-    except json.JSONDecodeError as exc:
-        msg = f"Invalid JSON: {exc.msg}."
+    except (json.JSONDecodeError, RecursionError) as exc:
+        message = (
+            exc.msg if isinstance(exc, json.JSONDecodeError) else "input exceeds nesting limits"
+        )
+        msg = f"Invalid JSON: {message}."
         raise EventsError(msg, response_text=text) from exc
     if not _is_json_object(data):
         msg = f"Expected JSON object, got {type(data).__name__}."
@@ -88,8 +110,6 @@ def _parse_json_object(text: str) -> dict[str, object]:
 def _log_validation_error(
     item: object,
     exc: ValidationError,
-    *,
-    logger: logging.Logger,
 ) -> None:
     """Log a warning for an event that failed Pydantic validation."""
     event_id = item.get("id", "<unknown>") if _is_json_object(item) else "<unknown>"
@@ -99,138 +119,161 @@ def _log_validation_error(
         if not location:
             continue
         fields.add(".".join(str(part) for part in location))
-    logger.warning(
+    _logger.warning(
         "Skipping invalid event %s (invalid fields: %s)",
         event_id,
         ", ".join(sorted(fields)),
     )
 
 
-def _strict_validate_event_payload(item: object) -> None:
-    """Validate nested payloads even when the event envelope itself is accepted."""
-    if not _is_json_object(item):
-        return
-
-    object_payload = item.get("object")
-    if not _is_json_object(object_payload):
-        return
-
-    method = item.get("method")
-    if not isinstance(method, str):
-        return
-
-    try:
-        event_type = Event.model_validate(item).type
-    except ValidationError:
-        return
-
-    validators: tuple[tuple[str, Callable[[object], object], tuple[str, ...] | None], ...] = (
-        ("user", User.model_validate, ()),
-        (
-            "message",
-            Message.model_validate,
-            (EventType.CHAT_MESSAGE.value, EventType.PRIVATE_MESSAGE.value),
-        ),
-        ("tip", Tip.model_validate, (EventType.TIP.value,)),
-        ("media", Media.model_validate, (EventType.MEDIA_PURCHASE.value,)),
-        (
-            "subject",
-            lambda value: RoomSubject.model_validate({"subject": value}),
-            (EventType.ROOM_SUBJECT_CHANGE.value,),
-        ),
-    )
-
-    for key, validator, allowed_types in validators:
-        if key not in object_payload:
-            continue
-        if allowed_types and event_type.value not in allowed_types:
-            continue
-        _ = validator(object_payload[key])
-
-
 def _parse_event(
     item: object,
     *,
     strict: bool,
-    context: ParserContext,
 ) -> Event | None:
     """Parse one raw event object into an Event model.
 
     Args:
         item: Raw event payload object.
         strict: Whether validation errors should be raised.
-        context: Parsing context.
 
     Returns:
         Parsed Event, or None in non-strict mode when validation fails.
 
     Raises:
-        ValidationError: If strict is True and validation fails.
+        StrictValidationError: If strict mode is enabled and validation fails.
     """
     try:
-        event = Event.model_validate(item)
+        return Event.model_validate(
+            item,
+            context={"strict_validation": strict},
+        )
     except ValidationError as exc:
         if strict:
-            raise
-        _log_validation_error(item, exc, logger=context.logger)
+            msg = "Strict validation failed."
+            raise StrictValidationError(msg) from exc
+        _log_validation_error(item, exc)
         return None
-
-    if strict:
-        _strict_validate_event_payload(item)
-    return event
 
 
 def _parse_events(
     raw: Sequence[object],
     *,
     strict: bool,
-    context: ParserContext,
 ) -> list[Event]:
     """Parse raw event dictionaries into Event models.
 
     Args:
         raw: Raw JSON-compatible event payload items.
         strict: Whether validation errors should be raised.
-        context: Parsing context.
 
     Returns:
         Parsed events.
     """
-    return [
-        event
-        for item in raw
-        if (event := _parse_event(item, strict=strict, context=context)) is not None
-    ]
+    return [event for item in raw if (event := _parse_event(item, strict=strict)) is not None]
 
 
 def _resolve_absolute_url(
     stripped: str,
-    *,
-    context: ParserContext,
 ) -> tuple[str, URL]:
-    """Resolve nextUrl to an absolute URL.
+    """Parse nextUrl and require an absolute URL.
 
     Args:
         stripped: nextUrl value with surrounding whitespace removed.
-        context: Parsing context.
 
     Returns:
         Tuple of (absolute URL, parsed URL object).
+
+    Raises:
+        _NextUrlParseError: If the URL has no scheme.
     """
     parsed = URL(stripped)
-    if not parsed.scheme and not parsed.host:
-        base_url = context.parsed_base_url
-        if stripped.startswith("/"):
-            absolute_url = base_url.origin().join(URL(stripped))
-        else:
-            absolute_url = URL(f"{context.base_url.removesuffix('/')}/").join(parsed)
-        absolute = str(absolute_url)
-        return absolute, absolute_url
-    if not parsed.scheme and (parsed.host or stripped.startswith("//")):
-        absolute_url = URL(f"{context.parsed_base_url.scheme}:{stripped}")
-        absolute = str(absolute_url)
-        return absolute, absolute_url
-    return stripped, parsed
+    if not parsed.scheme:
+        raise _NextUrlParseError(_NextUrlParseReason.NOT_ABSOLUTE)
+    return str(parsed), parsed
+
+
+def _has_invalid_port(value: str) -> bool:
+    """Return whether a URL authority contains an invalid port."""
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    authority = parsed.netloc
+    try:
+        _ = parsed.port
+    except ValueError:
+        return bool("://" in value and "@" not in authority)
+    return False
+
+
+def _next_url_validation_message(reason: UrlValidationReason) -> str:
+    """Map a URL validation reason to an API response error message."""
+    return {
+        UrlValidationReason.USER_INFO: (
+            "Invalid API response: 'nextUrl' must not contain user information."
+        ),
+        UrlValidationReason.SCHEME: "Invalid nextUrl scheme; only https is allowed.",
+        UrlValidationReason.CUSTOM_PORT: (
+            "Invalid API response: 'nextUrl' must not contain a custom port."
+        ),
+        UrlValidationReason.MISSING_HOST: (
+            "Invalid API response: 'nextUrl' must include a hostname."
+        ),
+        UrlValidationReason.HOST_NOT_ALLOWED: (
+            "Invalid API response: 'nextUrl' host is not allowed."
+        ),
+    }[reason]
+
+
+def _validate_present_next_url(
+    next_url: object,
+    *,
+    response_text: str,
+    context: ParserContext,
+) -> str:
+    """Validate and normalize a present API nextUrl value.
+
+    Args:
+        next_url: Raw nextUrl value.
+        response_text: Original response body for diagnostics.
+        context: Parsing context.
+
+    Returns:
+        Normalized absolute nextUrl.
+
+    Raises:
+        EventsError: If nextUrl is malformed or points to an invalid host/scheme.
+    """
+    msg = "Invalid API response: 'nextUrl' must be a non-empty string."
+    if not isinstance(next_url, str):
+        raise EventsError(msg, response_text=response_text)
+
+    stripped = next_url.strip()
+    if not stripped:
+        raise EventsError(msg, response_text=response_text)
+
+    try:
+        absolute, parsed = _resolve_absolute_url(stripped)
+    except _NextUrlParseError:
+        msg = "Invalid API response: 'nextUrl' must be an absolute URL."
+        raise EventsError(msg, response_text=response_text) from None
+    except ValueError:
+        if _has_invalid_port(stripped):
+            msg = "Invalid API response: 'nextUrl' contains an invalid port."
+            raise EventsError(msg, response_text=response_text) from None
+
+        msg = "Invalid API response: 'nextUrl' must be a valid URL."
+        raise EventsError(msg, response_text=response_text) from None
+
+    allowed_host = (context.parsed_base_url.host or "").lower()
+    try:
+        _ = validate_https_host_no_port(parsed, {allowed_host})
+    except UrlValidationError as exc:
+        msg = _next_url_validation_message(exc.reason)
+        raise EventsError(msg, response_text=response_text) from None
+
+    return absolute
 
 
 def _validate_next_url(
@@ -239,96 +282,14 @@ def _validate_next_url(
     response_text: str,
     context: ParserContext,
 ) -> str | None:
-    """Validate and normalize an API nextUrl value.
-
-    Args:
-        next_url: Raw nextUrl value.
-        response_text: Original response body for diagnostics.
-        context: Parsing context.
-
-    Returns:
-        Normalized absolute nextUrl, or None when nextUrl is absent.
-
-    Raises:
-        EventsError: If nextUrl is malformed or points to an invalid host/scheme.
-    """
+    """Validate and normalize an optional API nextUrl value."""
     if next_url is None:
         return None
-
-    msg = "Invalid API response: 'nextUrl' must be a non-empty string."
-    if not isinstance(next_url, str):
-        context.logger.error(
-            "Received invalid nextUrl type %s for user %s",
-            type(next_url).__name__,
-            context.username,
-        )
-        raise EventsError(msg, response_text=response_text)
-
-    stripped = next_url.strip()
-    if not stripped:
-        context.logger.error(
-            "Received empty nextUrl from API for user %s",
-            context.username,
-        )
-        raise EventsError(msg, response_text=response_text)
-
-    try:
-        absolute, parsed = _resolve_absolute_url(stripped, context=context)
-    except ValueError as exc:
-        message = str(exc)
-        if "port can't be converted to integer" in message or "Port out of range" in message:
-            context.logger.warning(
-                "Received nextUrl with invalid port for user %s",
-                context.username,
-            )
-            msg = "Invalid API response: 'nextUrl' contains an invalid port."
-            raise EventsError(msg, response_text=response_text) from None
-
-        context.logger.exception(
-            "Received malformed nextUrl for user %s",
-            context.username,
-        )
-        msg = "Invalid API response: 'nextUrl' must be a valid URL."
-        raise EventsError(msg, response_text=response_text) from None
-
-    allowed_host = (context.parsed_base_url.host or "").lower()
-    try:
-        _ = validate_https_host_no_port(parsed, {allowed_host})
-    except ValueError as exc:
-        reason = exc.args[0] if exc.args else None
-        if reason == UrlValidationReason.SCHEME:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl with unsupported scheme %s for user %s",
-                parsed.scheme or "<missing>",
-                context.username,
-            )
-            msg = "Invalid nextUrl scheme; only https is allowed."
-            raise EventsError(msg, response_text=response_text) from None
-        if reason == UrlValidationReason.CUSTOM_PORT:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl with custom port %s for user %s",
-                parsed.explicit_port,
-                context.username,
-            )
-            msg = "Invalid API response: 'nextUrl' must not contain a custom port."
-            raise EventsError(msg, response_text=response_text) from None
-        if reason == UrlValidationReason.MISSING_HOST:
-            context.logger.error(  # ruff: ignore[error-instead-of-exception]
-                "Received nextUrl without hostname for user %s",
-                context.username,
-            )
-            msg = "Invalid API response: 'nextUrl' must include a hostname."
-            raise EventsError(msg, response_text=response_text) from None
-
-        context.logger.error(  # ruff: ignore[error-instead-of-exception]
-            "Received nextUrl host %s which is not allowed for user %s",
-            parsed.host,
-            context.username,
-        )
-        msg = "Invalid API response: 'nextUrl' host is not allowed."
-        raise EventsError(msg, response_text=response_text) from None
-
-    return absolute
+    return _validate_present_next_url(
+        next_url,
+        response_text=response_text,
+        context=context,
+    )
 
 
 def _extract_next_url_from_timeout(
@@ -360,17 +321,15 @@ def _extract_next_url_from_timeout(
     if next_url is None:
         return None
 
-    validated = _validate_next_url(
+    validated = _validate_present_next_url(
         next_url,
         response_text=text,
         context=context,
     )
-    if validated is None:
-        return None
 
     status_msg = data.get("status")
     if isinstance(status_msg, str) and _TIMEOUT_STATUS_MESSAGE not in status_msg.lower():
-        context.logger.debug(
+        _logger.debug(
             "Received 400 response with valid nextUrl but unexpected status text %r for user %s",
             status_msg,
             context.username,
@@ -399,13 +358,7 @@ def _parse_json_response(
     Raises:
         EventsError: If payload format is invalid.
     """
-    try:
-        data = _parse_json_object(text)
-    except EventsError as exc:
-        if isinstance(exc.__cause__, json.JSONDecodeError):
-            snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-            context.logger.exception("Failed to parse JSON: %s", snippet)
-        raise
+    data = _parse_json_object(text)
 
     next_url = _validate_next_url(
         data.get("nextUrl"),
@@ -426,11 +379,10 @@ def _parse_json_response(
     events = _parse_events(
         raw_events_list,
         strict=strict_validation,
-        context=context,
     )
 
     if events:
-        context.logger.debug(
+        _logger.debug(
             "Received %d events for user %s",
             len(events),
             context.username,
@@ -464,11 +416,6 @@ def process_response(
         HttpStatusError: If response status is non-200 and not a timeout redirect.
     """  # ruff: ignore[docstring-missing-exception, docstring-extraneous-exception]  # ruff wants the raised function listed, not the propagated error(s).
     if status in AUTH_ERROR_STATUS_CODES:
-        context.logger.warning(
-            "Authentication failed for user %s (HTTP %d)",
-            context.username,
-            status,
-        )
         msg = (
             f"Authentication failed for '{context.username}'. "
             "Verify your username and token are correct. "
@@ -488,13 +435,6 @@ def process_response(
 
     if status != HTTPStatus.OK:
         snippet = truncate_text(text, limit=TRUNCATE_LENGTH)
-        context.logger.error(
-            "HTTP %d for user %s: %s",
-            status,
-            context.username,
-            snippet,
-        )
-
         msg = f"Request failed: {snippet}"
         raise build_http_error(
             msg,

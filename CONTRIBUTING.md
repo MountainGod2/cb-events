@@ -69,7 +69,41 @@ Types: `feat` → minor bump, `fix`/`perf` → patch bump. Breaking changes: add
 
 ## Releases
 
-Automated via python-semantic-release on merge to `main`. No manual steps required.
+Releases are automated by the **Release** GitHub Actions workflow after a push to `main`:
+
+1. The `build` job calculates the next semantic version with
+    `python-semantic-release`, builds source and wheel distributions, and uploads
+    the `dist` artifact. If no release-producing commit is present, the workflow
+    stops normally and creates no release or PyPI publication.
+1. The `e2e` job downloads that exact wheel, enables live tests, and runs them
+    against the configured Events API URL. Live failures stop the workflow before
+    semantic release or PyPI publishing.
+1. The `release` job verifies the branch and upstream commit, then runs
+    `python-semantic-release` to create the version commit and Git tag.
+1. The `deploy` job downloads the built distributions and publishes them to
+    PyPI using trusted publishing. PyPI publication uses `skip-existing=true`.
+
+To retry only a failed PyPI upload, run the Release workflow manually with
+`publish_tag` set to an existing release tag. The workflow checks out that tag,
+rebuilds its distributions, and reruns trusted publishing. Rerunning the normal
+push/release workflow is safe: semantic release will not recreate an existing
+version, and PyPI skips distributions that already exist.
+
+### Required GitHub Environments and Secrets
+
+Configure these repository environments before releases:
+
+- `testing` - used by CI test jobs.
+- `e2e` - used by live release tests. It requires the `CB_EVENTS_URL` repository
+    or environment secret and may also require repository access controls/approvers.
+- `release` - used to create the GitHub release. It requires
+    `RELEASE_APP_CLIENT_ID` and `RELEASE_APP_PRIVATE_KEY` secrets for a GitHub App
+    with write access to repository contents.
+- `pypi` - used for trusted PyPI publishing. Configure it as the trusted publisher
+    for `cb-events` on PyPI and add deployment protection rules as appropriate.
+
+The release workflow must also grant the GitHub Actions token the repository
+permissions needed for the release App and PyPI attestation/ID-token operations.
 
 ## PR Checklist
 

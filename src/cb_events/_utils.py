@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 TRUNCATE_LENGTH: Final[int] = 200
 """Maximum response_text length kept on exceptions."""
 
+_ELLIPSIS_LENGTH: Final[int] = 3
+
 
 class UrlValidationReason(StrEnum):
     """Reason codes emitted by URL validation helpers."""
@@ -21,6 +23,18 @@ class UrlValidationReason(StrEnum):
     CUSTOM_PORT = "custom_port"
     MISSING_HOST = "missing_host"
     HOST_NOT_ALLOWED = "host_not_allowed"
+    USER_INFO = "user_info"
+
+
+class UrlValidationError(ValueError):
+    """URL validation failure with a stable reason code."""
+
+    reason: UrlValidationReason
+
+    def __init__(self, reason: UrlValidationReason) -> None:
+        """Initialize from a structured validation reason."""
+        super().__init__(reason.value)
+        self.reason = reason
 
 
 def validate_https_host_no_port(url: URL, allowed_hosts: Collection[str]) -> str:
@@ -34,25 +48,24 @@ def validate_https_host_no_port(url: URL, allowed_hosts: Collection[str]) -> str
         Normalized lowercase host when validation succeeds.
 
     Raises:
-        ValueError: One of ``UrlValidationReason`` to indicate validation failure.
+        UrlValidationError: A structured URL validation failure.
     """
+    if url.user is not None or url.password is not None:
+        raise UrlValidationError(UrlValidationReason.USER_INFO)
+
     if url.scheme != "https":
-        msg = UrlValidationReason.SCHEME
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.SCHEME)
 
     if url.explicit_port is not None:
-        msg = UrlValidationReason.CUSTOM_PORT
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.CUSTOM_PORT)
 
     host = url.host
     if not host:
-        msg = UrlValidationReason.MISSING_HOST
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.MISSING_HOST)
 
     normalized_host = host.lower()
     if normalized_host not in {allowed_host.lower() for allowed_host in allowed_hosts}:
-        msg = UrlValidationReason.HOST_NOT_ALLOWED
-        raise ValueError(msg)
+        raise UrlValidationError(UrlValidationReason.HOST_NOT_ALLOWED)
 
     return normalized_host
 
@@ -75,4 +88,6 @@ def truncate_text(text: str, *, limit: int = TRUNCATE_LENGTH) -> str:
         raise ValueError(msg)
     if len(text) <= limit:
         return text
-    return f"{text[:limit]}..."
+    if limit <= _ELLIPSIS_LENGTH:
+        return "." * limit
+    return f"{text[: limit - _ELLIPSIS_LENGTH]}..."

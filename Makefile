@@ -6,15 +6,16 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --warn-undefined-variables
 
 UV ?= uv
+export UV_FROZEN ?= 1
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
 
 .PHONY: setup format fix lint check-all pre-commit
-.PHONY: security security-full bandit audit trivy zizmor
+.PHONY: security security-full audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
-.PHONY: build ci ci-lower-bounds clean help
+.PHONY: build build-smoke ci ci-lower-bounds clean help
 
 # Public targets are intended for day-to-day contributor workflows.
 # Advanced targets are occasional utility tasks.
@@ -44,7 +45,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
 
-security: bandit audit zizmor ## Public: Run core security scans.
+security: audit zizmor ## Public: Run core security scans.
 
 docs: ## Public: Build documentation.
 	rm -rf site docs/html_local_check
@@ -99,12 +100,23 @@ docs-format-check: ## Advanced: Check Markdown docs formatting.
 build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
 
+build-smoke: ## Advanced: Build distributions and verify the wheel can be imported in isolation.
+	rm -rf .venv-build-smoke
+	rm -rf dist build
+	$(UV) build
+	$(UV) run --group=build twine check dist/*
+	$(UV) venv .venv-build-smoke
+	$(UV) pip install --python .venv-build-smoke/bin/python dist/*.whl
+	.venv-build-smoke/bin/python -c "from cb_events import Event, EventType; event = Event.model_validate({'method': 'tip', 'id': 'smoke', 'object': {'tip': {'tokens': 1}}}); assert event.type is EventType.TIP and event.tip is not None and event.tip.tokens == 1"
+	$(UV) venv .venv-sdist-smoke
+	$(UV) pip install --python .venv-sdist-smoke/bin/python dist/*.tar.gz
+	.venv-sdist-smoke/bin/python -c "from cb_events import EventType; assert EventType.TIP.value == 'tip'"
+	rm -rf .venv-build-smoke
+	rm -rf .venv-sdist-smoke
+
 ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
 # --- Internal targets ---
-
-bandit: ## Internal: Run Bandit and emit SARIF.
-	$(UV) run --group=security bandit -r src/ -f sarif -o bandit.sarif
 
 zizmor: ## Internal: Run Zizmor and emit SARIF.
 	$(UV) run --group=security zizmor --format=sarif . > zizmor.sarif
@@ -123,12 +135,8 @@ trivy: ## Internal: Run Trivy vulnerability and config scans.
 test-cov: ## Internal: Run tests with coverage and JUnit output (excluding live tests).
 	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS)
 
-test-cov-lowest-direct: ## Internal: Resolve lowest direct dependency bounds, then run tests with coverage.
-	$(UV) sync --group=test --resolution lowest-direct --upgrade
-	@status=0; \
-	$(PYTEST) -m "not live" $(PYTEST_COV_ARGS) || status=$$?; \
-	$(UV) sync --frozen --all-groups; \
-	exit $$status
+test-cov-lowest-direct: ## Internal: Run tests in an isolated environment at the lowest direct dependency bounds.
+	UV_FROZEN=0 $(UV) run --isolated --resolution lowest-direct --group=test pytest -m "not live" $(PYTEST_COV_ARGS)
 
 test-e2e: ## Internal: Run mocked end-to-end tests.
 	$(PYTEST) -m "e2e and not live"

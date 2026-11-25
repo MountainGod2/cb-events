@@ -202,6 +202,24 @@ async def test_accept_partial_async_handler(router: Router) -> None:
     assert seen == [event.id]
 
 
+async def test_accept_async_callable_object_and_use_type_name_on_failure(
+    router: Router,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Async callable instances should register and log a stable fallback name."""
+
+    class AsyncFailure:
+        async def __call__(self, event: Event) -> None:
+            raise ValueError(event.id)
+
+    router.on(EventType.TIP)(AsyncFailure())  # type: ignore[arg-type]
+    event = Event.model_validate(make_event(EventType.TIP, event_id="callable"))
+
+    await router.dispatch(event)
+
+    assert "Handler AsyncFailure failed" in caplog.text
+
+
 async def test_cancelled_error_propagates(router: Router) -> None:
     """Dispatch should not swallow CancelledError from handlers."""
 

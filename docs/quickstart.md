@@ -1,34 +1,6 @@
 # Quick Start
 
-```python
-import asyncio
-from cb_events import Event, EventClient, EventType, Router
-
-router = Router()
-
-events_url = "https://eventsapi.chaturbate.com/events/your_username/your_api_token/"
-
-
-@router.on(EventType.USER_ENTER)
-async def handle_user_enter(event: Event) -> None:
-    if event.user:
-        print(f"{event.user.username} entered the room")
-
-
-@router.on(EventType.TIP)
-async def handle_tip(event: Event) -> None:
-    if event.user and event.tip:
-        print(f"{event.user.username} tipped {event.tip.tokens} tokens")
-
-
-async def main() -> None:
-    async with EventClient(events_url) as client:
-        async for event in client:
-            await router.dispatch(event)
-
-
-asyncio.run(main())
-```
+--8<-- "docs/snippets/quickstart.md"
 
 **Example output**:
 
@@ -42,9 +14,13 @@ mountaingod2 tipped 100 tokens
 The Events API uses long polling and returns a `nextUrl` continuation URL on each request.
 `EventClient` follows that `nextUrl` automatically while iterating through events.
 
-Internally, the client only locks around reading and writing the `nextUrl` state.
-The HTTP request itself runs outside the lock so a slow network call does not
-block other coroutine scheduling.
+Use `await client.poll()` when you want one batch of events instead of continuous
+iteration. It follows the same `nextUrl` progression and returns an empty list on
+a long-poll timeout.
+
+`EventClient` serializes polls per instance, so only one request is in flight
+at a time for a given client. This keeps `nextUrl` progression consistent
+without requiring extra synchronization in your application code.
 
 Avoid restarting the client in the middle of a live stream. A restart creates a
 new polling session, which can reset the `nextUrl` position and lead to missed or

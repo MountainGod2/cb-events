@@ -3,14 +3,15 @@ name = "cb-events"
 version = "10.1.1"
 description = "Async Python client for the Chaturbate Events API: long-polling, typed events, retries, routing."
 authors = [{ name = "MountainGod2", email = "admin@reid.ca" }]
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
-    "aiohttp>=3.11.0",
+    "aiohttp>=3.12.0",
     "aiolimiter>=1.0.0",
     "pydantic>=2.8.0",
     "stamina>=25.2.0",
-    "typing-extensions>=4.12.2; python_version < '3.12'",
+    "typing-extensions>=4.12.2",
     "yarl>=1.20.1",
 ]
 dynamic = ["readme"]
@@ -31,7 +32,6 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
@@ -62,9 +62,7 @@ test = [
     "aioresponses-ng==0.8.2",
     "pytest==9.2.0",
     "pytest-asyncio==1.5.0",
-    "pytest-aiohttp==1.1.1",
     "pytest-cov==7.1.0",
-    "pytest-mock==3.17.0",
     "hypothesis==6.170.15",
     "pytest-timeout==2.4.0",
 ]
@@ -76,8 +74,8 @@ docs = [
     "pymdown-extensions==12.3",
     "zensical==0.0.74",
 ]
-security = ["bandit[sarif]==1.9.4", "zizmor==1.32.0"]
-build = ["python-semantic-release==10.7.0"]
+security = ["zizmor==1.32.0"]
+build = ["python-semantic-release==10.7.0", "twine==7.0.0"]
 
 [build-system]
 requires = ["hatchling==1.33.0", "hatch-fancy-pypi-readme==25.1.0"]
@@ -86,11 +84,24 @@ build-backend = "hatchling.build"
 [tool.uv]
 exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
-environments = ["python_version>='3.11'"]
 fork-strategy = "requires-python"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/README.md",
+    "/CONTRIBUTING.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/Makefile",
+    "/zensical.toml",
+    "/pyproject.toml",
+]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
@@ -163,6 +174,8 @@ future-annotations = true
     "hardcoded-password-func-arg",
     "private-member-access",
     "TC",
+    "suspicious-pickle-usage",
+    "suspicious-pickle-import",
 ]
 "tests/conftest.py" = ["D", "pytest-fixture-autouse"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]
@@ -198,7 +211,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 timeout = 60
-timeout_method = "signal"
+timeout_method = "thread"
 addopts = ["--strict-markers", "--strict-config", "--tb=short", "-ra"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -220,6 +233,3 @@ fail_under = 90
 
 [tool.coverage.html]
 directory = "htmlcov"
-
-[tool.bandit]
-exclude_dirs = ["tests", "examples"]

@@ -9,7 +9,8 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Final
 
-from ._compat import override
+from typing_extensions import override
+
 from ._utils import truncate_text
 
 AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
@@ -74,8 +75,16 @@ class EventsError(Exception):
 class AuthError(EventsError):
     """Authentication failure.
 
-    Raised for invalid credentials and malformed authentication URL components.
+    Raised when the API rejects configured credentials.
     """
+
+
+class EventsUrlError(EventsError):
+    """The Events API URL is malformed or unsupported."""
+
+
+class StrictValidationError(EventsError):
+    """Event validation failed while strict mode was enabled."""
 
 
 class HttpStatusError(EventsError):
@@ -116,6 +125,6 @@ def build_http_error(
         return RateLimitError(message, status_code=status_code, response_text=response_text)
     if 400 <= status_code < 500:  # ruff: ignore[magic-value-comparison]
         return ClientRequestError(message, status_code=status_code, response_text=response_text)
-    if 500 <= status_code < 600 or status_code in CF_SERVER_ERROR_CODES:  # ruff: ignore[magic-value-comparison]
+    if 500 <= status_code < 600:  # ruff: ignore[magic-value-comparison]
         return ServerError(message, status_code=status_code, response_text=response_text)
     return HttpStatusError(message, status_code=status_code, response_text=response_text)

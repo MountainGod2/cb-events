@@ -1,30 +1,23 @@
 """Core tests for client initialization, configuration and utils."""
 
 import asyncio
-import logging
 from unittest.mock import AsyncMock
 from urllib.parse import quote
 
 import pytest
+from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientError
-from pydantic import ValidationError
 from yarl import URL
 
-from cb_events import AuthError, ClientConfig, EventClient, EventsError
+from cb_events import ClientConfig, EventClient, EventsError, EventsUrlError
 from cb_events._client import (
     TESTBED_URL,
     _mask_token,
     _mask_url,
     _parse_events_url,
 )
-from cb_events._parser import ParserContext, _parse_events
+from cb_events._parser import _parse_events
 from tests.helpers import make_events_url
-
-_TEST_PARSER_CONTEXT = ParserContext(
-    username="user",
-    base_url="https://events.testbed.cb.dev/events",
-    logger=logging.getLogger("cb_events._client"),
-)
 
 
 def test_token_masking_in_repr() -> None:
@@ -34,7 +27,35 @@ def test_token_masking_in_repr() -> None:
     repr_str = str(client)
 
     assert full_token not in repr_str
-    assert "*" * len(full_token) in repr_str
+    assert "token='***'" in repr_str
+
+
+def test_mask_url_preserves_host_when_token_is_short() -> None:
+    """Masking a URL should not replace host characters when a short token is present."""
+    token = "abc"
+    url = "https://events.testbed.cb.dev/events/user/abc/"
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert token not in masked
+
+
+def test_mask_url_keeps_non_token_path_and_query_names_for_short_token() -> None:
+    """Short tokens should only mask the actual token value, not unrelated path or key names."""
+    token = "e"
+    url = "https://events.testbed.cb.dev/events/user/e/?state=live&token=e&name=e"
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert "/events/user/" in masked
+    assert "/*v*nts/us*r/" not in masked
+    assert "state=live" in masked
+    assert "name=" in masked
+    assert "token=" in masked
+    assert "name=e" not in masked
+    assert "token=e" not in masked
 
 
 @pytest.mark.parametrize(
@@ -72,19 +93,49 @@ def test_token_masking_in_repr() -> None:
     ],
 )
 def test_reject_invalid_credentials(events_url: str, message: str) -> None:
-    """Invalid URLs should raise an ``AuthError`` with guidance."""
-    with pytest.raises(AuthError, match=message):
+    """Invalid URLs should raise an ``EventsUrlError`` with guidance."""
+    with pytest.raises(EventsUrlError, match=message):
         EventClient(events_url)
 
 
 def test_reject_malformed_ipv6_does_not_claim_custom_port() -> None:
     """Malformed IPv6 URLs should surface as malformed, not port-specific."""
-    with pytest.raises(AuthError) as exc_info:
+    with pytest.raises(EventsUrlError) as exc_info:
         EventClient("https://[::1/events/user/token/")
 
     message = str(exc_info.value)
     assert "custom port" not in message
     assert "must match" in message
+
+
+@pytest.mark.parametrize(
+    "events_url",
+    [
+        "https://username@eventsapi.chaturbate.com/events/user/token/",
+        "https://username:password@eventsapi.chaturbate.com/events/user/token/",
+    ],
+)
+def test_reject_constructor_url_user_info(events_url: str) -> None:
+    """Constructor URLs must not contain URL usernames or passwords."""
+    with pytest.raises(EventsUrlError, match="must not include user information"):
+        EventClient(events_url)
+
+
+@pytest.mark.parametrize(
+    ("username", "token", "field"),
+    [
+        ("%20user", "token", "Username"),
+        ("user%20", "token", "Username"),
+        ("user", "%20token", "Token"),
+        ("user", "token%20", "Token"),
+    ],
+)
+def test_reject_whitespace_in_url_fields(username: str, token: str, field: str) -> None:
+    """Encoded leading or trailing whitespace in credentials should be rejected."""
+    events_url = f"https://events.testbed.cb.dev/events/{username}/{token}/"
+
+    with pytest.raises(EventsUrlError, match=rf"{field} must not.*whitespace"):
+        EventClient(events_url)
 
 
 @pytest.mark.parametrize(
@@ -135,20 +186,76 @@ def test_mask_url_replaces_raw_and_encoded_token() -> None:
 
     assert token not in masked
     assert encoded not in masked
+    assert "%252A" not in masked
+
+
+def test_mask_url_replaces_only_percent_encoded_token_value() -> None:
+    """Percent-encoded token values should be masked even when raw token differs."""
+    token = "a/b"
+    encoded = quote(token, safe="")
+    url = f"https://events.testbed.cb.dev/events/user/{encoded}/?encoded={encoded}"
+
+    masked = _mask_url(url, token)
+
+    assert encoded not in masked
+    assert token not in masked
+
+
+def test_mask_url_leaves_token_substrings_in_query_values() -> None:
+    """Only complete query values should be interpreted as token fields."""
+    token = "tok123"
+    url = f"https://events.testbed.cb.dev/events/user/{token}/?next=xx-{token}-yy"
+
+    masked = _mask_url(url, token)
+    assert "xx-" in masked
+    assert "-yy" in masked
+    assert f"xx-{token}-yy" in masked
+
+
+@pytest.mark.parametrize("token", ["a", "xy", "secret"])
+def test_mask_url_masks_raw_and_percent_encoded_tokens_at_any_length(token: str) -> None:
+    """Exact raw and encoded token components should always be masked."""
+    encoded = quote(token, safe="")
+    url = (
+        "https://events.testbed.cb.dev/"
+        f"{encoded}/path?raw={token}&encoded={encoded}&state=unchanged"
+        f"&embedded=prefix-{token}-suffix"
+    )
+
+    masked = _mask_url(url, token)
+
+    assert "events.testbed.cb.dev" in masked
+    assert "state=unchanged" in masked
+    parsed = URL(masked)
+    assert parsed.parts[-2] == "***"
+    assert parsed.parts[-1] == "path"
+    assert parsed.query["raw"] != token
+    assert parsed.query["encoded"] != token
+    assert f"embedded=prefix-{token}-suffix" in masked
+
+
+def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> None:
+    """Debug masking should conceal decoded opaque path segments without corrupting URL encoding."""
+    token = "a/b:c@d"
+    encoded = quote(token, safe="")
+    url = f"https://events.testbed.cb.dev/events/user/{encoded}/prefix-{encoded}-suffix/unrelated"
+
+    masked = _mask_url(url, token)
+    parsed = URL(masked)
+
+    assert "a/b:c@d" not in masked
+    assert encoded not in masked
+    assert parsed.raw_parts[-1] == "unrelated"
+    assert parsed.host == "events.testbed.cb.dev"
+    assert "prefix-" in parsed.raw_path
+    assert "-suffix" in parsed.raw_path
+    assert parsed.parts[-3] == "***"
+    assert parsed.parts[-2] == f"prefix-{token}-suffix"
 
 
 def test_mask_token_various_lengths() -> None:
-    """_mask_token should mask tokens and preserve last visible chars.
-
-    - If visible <= 0 or visible >= len(token), entire token is masked.
-    - Otherwise, the last visible characters should be preserved.
-    """
-    token = "abcd1234"
-    assert _mask_token(token, visible=20) == "*" * len(token)
-    assert _mask_token(token, visible=4) == "****1234"
-    assert _mask_token(token, visible=0) == "*" * len(token)
-    masked = _mask_token(token)
-    assert masked == "*" * len(token)
+    """_mask_token should use a fixed marker that does not reveal length."""
+    assert _mask_token() == "***"
 
 
 def test_parse_events_strict_and_lenient(
@@ -160,13 +267,12 @@ def test_parse_events_strict_and_lenient(
     invalid = {"method": "tip", "object": {}}
     invalid_non_mapping = 123
 
-    with pytest.raises(ValidationError):
-        _parse_events([valid, invalid], strict=True, context=_TEST_PARSER_CONTEXT)
+    with pytest.raises(EventsError):
+        _parse_events([valid, invalid], strict=True)
 
     events = _parse_events(
         [valid, invalid, invalid_non_mapping],
         strict=False,
-        context=_TEST_PARSER_CONTEXT,
     )
     assert len(events) == 1
     assert events[0].id == "1"
@@ -184,10 +290,22 @@ def test_parse_events_logs_invalid_fields(
         "id": "evt-xyz",
         "object": {"tip": {"tokens": "abc"}},
     }
-    events = _parse_events([invalid_nested], strict=False, context=_TEST_PARSER_CONTEXT)
+    events = _parse_events([invalid_nested], strict=False)
     assert len(events) == 1
     assert events[0].tip is None
     assert "tokens" in caplog.text
+
+
+def test_parse_events_strict_rejects_invalid_nested_payload() -> None:
+    """Strict parsing should propagate validation failure from the model path."""
+    invalid_nested = {
+        "method": "tip",
+        "id": "evt-strict",
+        "object": {"tip": {"tokens": "abc"}},
+    }
+
+    with pytest.raises(EventsError, match="Strict validation failed"):
+        _parse_events([invalid_nested], strict=True)
 
 
 def test_eventclient_build_url_and_repr() -> None:
@@ -209,7 +327,21 @@ def test_eventclient_build_url_and_repr() -> None:
 
     r = repr(client)
     assert token not in r
-    assert "*" * len(token) in r
+    assert "token='***'" in r
+
+
+def test_eventclient_public_state_is_read_only() -> None:
+    """Callers should not be able to replace identity or runtime state fields."""
+    client = EventClient(make_events_url("user", "test_token"))
+
+    with pytest.raises(AttributeError):
+        client.username = "other"  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.base_url = "https://example.com"  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.config = ClientConfig(timeout=1)  # pyright: ignore[reportAttributeAccessIssue]
+    with pytest.raises(AttributeError):
+        client.session = None  # pyright: ignore[reportAttributeAccessIssue]
 
 
 async def test_close_called_twice_does_not_raise() -> None:
@@ -233,7 +365,7 @@ async def test_poll_after_close_raises_terminal_state() -> None:
     await client.close()
 
     with pytest.raises(EventsError, match="closing or closed"):
-        await client._poll()
+        await client.poll()
 
 
 async def test_enter_after_close_raises_terminal_state() -> None:
@@ -246,6 +378,23 @@ async def test_enter_after_close_raises_terminal_state() -> None:
     with pytest.raises(EventsError, match="cannot be reopened"):
         async with client:
             pass
+
+
+async def test_reentering_open_client_raises() -> None:
+    """Re-entering an already open client should be rejected."""
+    client = EventClient(make_events_url("user", "test_token"))
+
+    async with client:
+        with pytest.raises(EventsError, match="already open"):
+            async with client:
+                pass
+
+
+def test_config_property_returns_original_config() -> None:
+    """Config property should expose the same immutable config instance."""
+    config = ClientConfig(timeout=7, retry_attempts=3)
+    client = EventClient(make_events_url("user", "test_token"), config=config)
+    assert client.config is config
 
 
 @pytest.mark.parametrize(
@@ -266,7 +415,7 @@ async def test_close_logs_warning_when_session_close_raises(
 
     mock_session = AsyncMock()
     mock_session.close = AsyncMock(side_effect=exc_instance)
-    client.session = mock_session  # type: ignore[assignment]
+    client._session = mock_session  # type: ignore[assignment]
 
     with caplog.at_level("WARNING"):
         await client.close()
@@ -282,15 +431,20 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
     started = asyncio.Event()
     completed = asyncio.Event()
 
-    async def _slow_close() -> None:
-        nonlocal close_calls
-        close_calls += 1
-        started.set()
-        await asyncio.sleep(0.05)
-        completed.set()
+    class _Session:
+        def __init__(self) -> None:
+            self.closed = False
 
-    client.session = AsyncMock()  # type: ignore[assignment]
-    client.session.close = _slow_close
+        async def close(self) -> None:
+            nonlocal close_calls
+            close_calls += 1
+            started.set()
+            await asyncio.sleep(0.05)
+            self.closed = True
+            completed.set()
+
+    session = _Session()
+    client._session = session  # type: ignore[assignment]
 
     close_task = asyncio.create_task(client.close())
     await started.wait()
@@ -301,3 +455,21 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
 
     assert close_calls == 1
     assert completed.is_set()
+    assert session.closed
+
+
+async def test_injected_session_remains_caller_owned() -> None:
+    """EventClient should use but not close an injected aiohttp session."""
+    session = ClientSession()
+    client = EventClient(
+        make_events_url("user", "test_token"),
+        session=session,
+    )
+
+    try:
+        async with client:
+            assert client.session is session
+        assert client.session is None
+        assert not session.closed
+    finally:
+        await session.close()
