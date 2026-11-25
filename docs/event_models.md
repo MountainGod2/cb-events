@@ -34,6 +34,8 @@ from nested fields that depend on the event type.
 `event.data` exposes nested mappings as read-only `Mapping` objects and payload
 arrays as tuples. Use `event.model_dump(mode="json")["data"]` when ordinary JSON
 containers are required.
+Event payload nesting is limited to 255 levels so all accepted payloads can
+also be serialized with Pydantic JSON mode.
 
 Unknown upstream `method` values are mapped to `EventType.UNKNOWN` so polling
 continues even when the API introduces new event kinds. The original name remains
@@ -52,6 +54,10 @@ an otherwise valid future event type.
 | room_subject | subject     | ROOM_SUBJECT_CHANGE           | Room subject payload.                                         |
 | user         | user        | Any                           | Present when payload includes valid user data.                |
 | broadcaster  | broadcaster | Any                           | Present when payload includes a non-empty broadcaster string. |
+
+Broadcaster loading is intentionally best-effort. A missing broadcaster remains
+`None`; present values that are empty or have a non-string type also remain
+`None`, including in strict mode.
 
 Model tables below use Python field names.
 

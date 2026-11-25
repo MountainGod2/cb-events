@@ -227,7 +227,8 @@ def test_mask_url_masks_raw_and_percent_encoded_tokens_at_any_length(token: str)
     assert "events.testbed.cb.dev" in masked
     assert "state=unchanged" in masked
     parsed = URL(masked)
-    assert token not in parsed.parts
+    assert parsed.parts[-2] == "***"
+    assert parsed.parts[-1] == "path"
     assert parsed.query["raw"] != token
     assert parsed.query["encoded"] != token
     assert f"embedded=prefix-{token}-suffix" in masked
@@ -248,6 +249,8 @@ def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> N
     assert parsed.host == "events.testbed.cb.dev"
     assert "prefix-" in parsed.raw_path
     assert "-suffix" in parsed.raw_path
+    assert parsed.parts[-3] == "***"
+    assert parsed.parts[-2] == f"prefix-{token}-suffix"
 
 
 def test_mask_token_various_lengths() -> None:

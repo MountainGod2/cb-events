@@ -197,11 +197,12 @@ def _has_invalid_port(value: str) -> bool:
     """Return whether a URL authority contains an invalid port."""
     try:
         parsed = urlsplit(value)
+    except ValueError:
+        return False
+    authority = parsed.netloc
+    try:
         _ = parsed.port
     except ValueError:
-        authority = value.partition("://")[2].split("/")[0]
-        if authority.startswith("[") and "]" not in authority:
-            return False
         return bool("://" in value and "@" not in authority)
     return False
 

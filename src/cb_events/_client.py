@@ -292,7 +292,10 @@ class EventClient:
 
         Raises:
             EventsError: If the client has already been closed, is already
-                open, or if session creation fails.
+                open, or if the injected session is already closed.
+
+        Note:
+            Session construction errors such as ``OSError`` propagate unchanged.
         """
         if self._state in {_ClientState.CLOSED, _ClientState.CLOSING}:
             raise EventsError(_CLIENT_CLOSED_ENTER_MESSAGE)
@@ -476,6 +479,8 @@ class EventClient:
                     current_task = asyncio.current_task()
                     if current_task is not None and current_task.cancelling():
                         raise
+                except EventsError:
+                    pass
         finally:
             self._active_poll_tasks.clear()
 

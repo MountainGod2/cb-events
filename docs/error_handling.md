@@ -60,7 +60,8 @@ If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_back
 The client emits its own descriptive warning on `cb_events._request`. The
 underlying `stamina` package also logs a `stamina.retry_scheduled` record by
 default, so retry scheduling may produce two messages. Silence only stamina's
-record with standard-library logging if desired:
+record with standard-library logging if desired, provided Stamina is using
+its stdlib logging backend:
 
 ```python
 import logging

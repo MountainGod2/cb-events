@@ -64,8 +64,9 @@ config = ClientConfig(
 Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
 `521-524`.
 
-With default retry settings, the worst-case retry window is about 8.5 minutes
-before the request fails.
+With default retry settings, the scheduled exponential backoff totals 511 seconds
+(about 8.5 minutes) before jitter, excluding request time. This is backoff delay
+alone: the retry loop has no overall deadline and request durations add to elapsed time.
 
 Authentication statuses can use a separate fixed-delay retry budget.
 By default `auth_retry_attempts=1`, which preserves fail-fast behavior for
@@ -139,7 +140,7 @@ Set the logger to `DEBUG` for verbose polling URLs and event dispatch details.
 Retry warnings are emitted on `cb_events._request`.
 Stamina also emits a separate `stamina.retry_scheduled` record for the same
 retry. To keep the informative client warning without the duplicate, use stdlib
-logging:
+logging only when Stamina is using its stdlib logging backend:
 
 ```python
 import logging

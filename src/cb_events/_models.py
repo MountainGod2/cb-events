@@ -213,7 +213,7 @@ class RoomSubject(BaseEventModel):
     """The room subject or title."""
 
 
-_MAX_EVENT_DATA_DEPTH = 1000
+_MAX_EVENT_DATA_DEPTH = 255
 _MappingValue = TypeVar("_MappingValue")
 
 
@@ -222,7 +222,7 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
 
     Nested mappings and sequences are recursively frozen: mappings become
     immutable mappings and sequences become tuples. Cycles and nesting beyond
-    1000 levels are rejected, and thawing recreates ordinary JSON-compatible
+    255 levels are rejected, and thawing recreates ordinary JSON-compatible
     containers for serialization.
     """
 
@@ -318,7 +318,7 @@ def _transform_event_data(value: object, *, freeze: bool) -> object:
             sequence_result = cast("list[object]", current)
             assign(tuple(sequence_result) if freeze else sequence_result)
             continue
-        if freeze and depth_or_id >= _MAX_EVENT_DATA_DEPTH:
+        if freeze and depth_or_id > _MAX_EVENT_DATA_DEPTH:
             msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
             raise ValueError(msg)
         if isinstance(current, Mapping):
@@ -445,11 +445,19 @@ class Event(BaseEventModel):
         raw_method = mapping.get("method", mapping.get("type"))
         if not isinstance(raw_method, str):
             return mapping
+        if raw_method == EventType.UNKNOWN.value:
+            preserved = dict(mapping)
+            saved_raw_method = mapping.get("rawMethod", mapping.get("raw_method"))
+            if isinstance(saved_raw_method, str):
+                preserved["raw_method"] = saved_raw_method
+            _ = preserved.pop("rawMethod", None)
+            return preserved
         try:
             _ = EventType(raw_method)
         except ValueError:
             preserved = dict(mapping)
             preserved["raw_method"] = raw_method
+            _ = preserved.pop("rawMethod", None)
             return preserved
         preserved = dict(mapping)
         _ = preserved.pop("raw_method", None)

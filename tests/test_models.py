@@ -159,7 +159,7 @@ def test_event_data_rejects_excessive_nesting() -> None:
 def test_event_data_accepts_depth_below_guard_limit() -> None:
     """The iterative freezer should not fail at Python's recursion limit."""
     nested: object = {"value": 1}
-    for _ in range(600):
+    for _ in range(253):
         nested = {"value": nested}
 
     event = Event.model_validate({
@@ -172,6 +172,21 @@ def test_event_data_accepts_depth_below_guard_limit() -> None:
     serialized = event.model_dump(mode="python")
     assert serialized["data"]["nested"] is not None
     assert json.dumps(serialized["data"])
+    assert event.model_dump(mode="json")["data"]["nested"] is not None
+
+
+def test_event_data_rejects_depth_above_json_serialization_limit() -> None:
+    """Payloads beyond Pydantic JSON-mode depth limits should be rejected."""
+    nested: object = {"value": 1}
+    for _ in range(254):
+        nested = {"value": nested}
+
+    with pytest.raises(ValidationError, match="nesting exceeds"):
+        Event.model_validate({
+            "method": "chatMessage",
+            "id": "event_deep_json",
+            "object": {"nested": nested},
+        })
 
 
 def test_event_data_freezes_user_dict_payloads() -> None:
@@ -555,6 +570,63 @@ def test_event_broadcaster_missing_returns_none() -> None:
     })
 
     assert event.broadcaster is None
+
+
+@pytest.mark.parametrize("broadcaster", [None, "", 123, [], {}])
+def test_event_broadcaster_invalid_is_best_effort_in_strict_mode(
+    broadcaster: object,
+) -> None:
+    """Malformed present broadcaster values remain best-effort, even in strict mode."""
+    event = Event.model_validate(
+        {
+            "method": "broadcastStart",
+            "id": "evt-bcaster-invalid",
+            "object": {"broadcaster": broadcaster},
+        },
+        context={"strict_validation": True},
+    )
+
+    assert event.broadcaster is None
+
+
+def test_known_event_type_ignores_supplied_raw_method() -> None:
+    """Known event types discard conflicting saved raw names."""
+    event = Event.model_validate({
+        "method": "tip",
+        "rawMethod": "futureTip",
+        "id": "event_tip",
+        "object": {},
+    })
+
+    assert event.raw_method is None
+    assert event.model_dump(by_alias=True)["rawMethod"] is None
+
+
+def test_unknown_sentinel_restores_saved_raw_method_alias() -> None:
+    """Restored UNKNOWN events retain their saved raw method name."""
+    event = Event.model_validate({
+        "method": "unknown",
+        "rawMethod": "futureTip",
+        "id": "event_unknown",
+        "object": {},
+    })
+
+    assert event.type is EventType.UNKNOWN
+    assert event.raw_method == "futureTip"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureTip"
+
+
+def test_future_method_alias_uses_method_as_authoritative() -> None:
+    """The method field takes precedence over a conflicting rawMethod alias."""
+    event = Event.model_validate({
+        "method": "futureTip",
+        "rawMethod": "evil",
+        "id": "event_future",
+        "object": {},
+    })
+
+    assert event.raw_method == "futureTip"
+    assert event.model_dump(by_alias=True)["rawMethod"] == "futureTip"
 
 
 def test_event_data_is_immutable() -> None:

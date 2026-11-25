@@ -188,6 +188,7 @@ jobs:
 
   coverage-summary:
     name: Coverage Summary
+    if: ${{ !cancelled() }}
     needs: [test, test-lowest-direct, package-smoke, test-cross-platform]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -214,6 +215,7 @@ jobs:
           pattern: coverage-data-py*
           merge-multiple: true
           path: coverage-artifacts
+          if-no-files-found: warn
 
       - name: Combine and report coverage
         run: |
