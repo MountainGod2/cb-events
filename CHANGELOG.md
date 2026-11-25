@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v11.0.0 (2026-11-25)
+
+### Features
+
+- **client**: Accept an injected aiohttp session
+  ([#537](https://github.com/MountainGod2/cb-events/pull/537),
+  [`abb2a1d`](https://github.com/MountainGod2/cb-events/commit/abb2a1d2ac575bf3996d2927262038fc56e9725d))
+
+- **client**: Overhaul client lifecycle, models, and validation
+  ([#537](https://github.com/MountainGod2/cb-events/pull/537),
+  [`abb2a1d`](https://github.com/MountainGod2/cb-events/commit/abb2a1d2ac575bf3996d2927262038fc56e9725d))
+
+
 ## v10.1.1 (2026-11-12)
 
 ### Bug Fixes
