@@ -19,9 +19,6 @@ AUTH_ERROR_STATUS_CODES: Final[frozenset[int]] = frozenset({
 })
 """Status codes mapped to AuthError."""
 
-CF_SERVER_ERROR_CODES: Final[frozenset[int]] = frozenset({521, 522, 523, 524})
-"""Cloudflare status codes treated as server failures."""
-
 _RATE_LIMIT_STATUS_CODE: Final[int] = HTTPStatus.TOO_MANY_REQUESTS.value
 """Status code mapped to RateLimitError."""
 
