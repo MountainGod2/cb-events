@@ -15,7 +15,7 @@ ISOLATED_UV = VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" 
 .PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
-.PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
+.PHONY: docs docs-serve docs-format
 .PHONY: build build-smoke ci ci-checks ci-lower-bounds clean help
 
 # Public targets are intended for day-to-day contributor workflows.
@@ -91,14 +91,8 @@ docs-serve: ## Advanced: Serve docs locally on port 8000.
 	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
 	$(UV) run --group=docs zensical serve --dev-addr 127.0.0.1:8000
 
-docs-linkcheck: ## Advanced: Validate docs links.
-	$(UV) run --group=docs zensical build --strict
-
 docs-format: ## Advanced: Format Markdown docs files.
 	$(UV) run --group=docs mdformat docs README.md
-
-docs-format-check: ## Advanced: Check Markdown docs formatting.
-	$(UV) run --group=docs mdformat --check docs README.md
 
 build: ## Advanced: Build source and wheel distributions.
 	$(UV) build
