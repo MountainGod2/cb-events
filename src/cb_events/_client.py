@@ -21,7 +21,6 @@ from ._parser import (
     process_response,
 )
 from ._request import perform_request_attempt, request_with_retry
-from ._utils import UrlValidationError, UrlValidationReason, validate_https_host_no_port
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -73,26 +72,14 @@ _CLIENT_ALREADY_OPEN_MESSAGE: Final[str] = (
 _CLIENT_SESSION_CLOSED_MESSAGE: Final[str] = "Injected client session is already closed."
 """Error raised when entering with a caller-owned session that cannot be reused."""
 
-_POLL_CANCELLED_ON_CLOSE_MESSAGE: Final[str] = "Polling cancelled because client is closing."
-"""Error raised when close() cancels an active poll."""
+_POLL_STOPPED_ON_CLOSE_MESSAGE: Final[str] = "Polling stopped because client is closing."
+"""Error raised when close() interrupts an active poll."""
 
 _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "eventsapi.chaturbate.com": BASE_URL,
     "events.testbed.cb.dev": TESTBED_URL,
 }
 """Allowed API hosts mapped to canonical base URLs."""
-
-_EVENTS_URL_VALIDATION_MESSAGES: Final[dict[UrlValidationReason, str]] = {
-    UrlValidationReason.USER_INFO: "Events URL must not include user information.",
-    UrlValidationReason.SCHEME: "Events URL must use https.",
-    UrlValidationReason.CUSTOM_PORT: "Events URL must not include a custom port.",
-    UrlValidationReason.MISSING_HOST: (
-        "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-    ),
-    UrlValidationReason.HOST_NOT_ALLOWED: (
-        "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-    ),
-}
 
 
 class _ClientState(Enum):
@@ -139,14 +126,28 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         msg = "Events URL must not include query parameters or fragments."
         raise EventsUrlError(msg)
 
-    try:
-        normalized_host = validate_https_host_no_port(
-            parsed,
-            _SUPPORTED_EVENTS_HOSTS,
+    if parsed.user is not None or parsed.password is not None:
+        msg = "Events URL must not include user information."
+        raise EventsUrlError(msg)
+    if parsed.scheme != "https":
+        msg = "Events URL must use https."
+        raise EventsUrlError(msg)
+    if parsed.explicit_port is not None:
+        msg = "Events URL must not include a custom port."
+        raise EventsUrlError(msg)
+    if not parsed.host:
+        msg = (
+            "Events URL host is not supported. "
+            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
         )
-    except UrlValidationError as exc:
-        msg = _EVENTS_URL_VALIDATION_MESSAGES[exc.reason]
-        raise EventsUrlError(msg) from None
+        raise EventsUrlError(msg)
+    normalized_host = parsed.host.lower()
+    if normalized_host not in _SUPPORTED_EVENTS_HOSTS:
+        msg = (
+            "Events URL host is not supported. "
+            "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+        )
+        raise EventsUrlError(msg)
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
 
@@ -224,8 +225,8 @@ class EventClient:
             base_url=self.base_url,
             parsed_base_url=URL(self.base_url),
         )
-        self._active_poll_tasks: set[asyncio.Task[list[Event]]] = set()
         self._state: _ClientState = _ClientState.NEW
+        self._closing = asyncio.Event()
         self._next_url: str | None = None
         self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
         self._rate_limiter: AsyncLimiter = rate_limiter or AsyncLimiter(
@@ -356,51 +357,58 @@ class EventClient:
 
         Raises:
             EventsError: If shutdown has started.
-            asyncio.CancelledError: If close() cancels this poll.
-        """  # ruff: ignore[docstring-extraneous-exception]  # Called function may raise asyncio.CancelledError
+        """
         if self._state is _ClientState.NEW:
             raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
         if self._state is not _ClientState.OPEN:
             raise EventsError(_CLIENT_CLOSING_MESSAGE)
-
-        current_task = asyncio.current_task()
-        if current_task is None:  # pragma: no cover
-            # asyncio guarantees a current task exists inside a running coroutine.
-            msg = "Unable to resolve current asyncio task."
-            raise EventsError(msg)
 
         async with self._polling_semaphore:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
             request_next_url = self._next_url
 
+            url = self._build_url(next_url=request_next_url)
+            if _logger.isEnabledFor(logging.DEBUG):
+                _logger.debug("Polling %s", _mask_url(url, self._token))
+            request_task = asyncio.create_task(self._request(url))
+            closing_task = asyncio.create_task(self._closing.wait())
             try:
-                url = self._build_url(next_url=request_next_url)
-                if _logger.isEnabledFor(logging.DEBUG):
-                    _logger.debug("Polling %s", _mask_url(url, self._token))
-                self._active_poll_tasks.add(current_task)
-                status, text = await self._request(url)
-
-                events, next_url = process_response(
-                    status=status,
-                    text=text,
-                    context=self._parser_context,
-                    strict_validation=self._config.strict_validation,
-                    log_next_url=lambda next_url: (
-                        _logger.debug(
-                            "Received nextUrl from timeout response: %s",
-                            _mask_url(next_url, self._token),
-                        )
-                        if _logger.isEnabledFor(logging.DEBUG)
-                        else None
-                    ),
+                done, _ = await asyncio.wait(
+                    (request_task, closing_task),
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if closing_task in done:
+                    raise EventsError(_POLL_STOPPED_ON_CLOSE_MESSAGE)
+                status, text = await request_task
+            finally:
+                for task in (request_task, closing_task):
+                    if not task.done():
+                        task.cancel()  # pyright: ignore[reportUnusedCallResult]
+                await asyncio.gather(
+                    request_task,
+                    closing_task,
+                    return_exceptions=True,
                 )
 
-                if self._state is _ClientState.OPEN:
-                    self._next_url = next_url
-                return events
-            finally:
-                self._active_poll_tasks.discard(current_task)
+            events, next_url = process_response(
+                status=status,
+                text=text,
+                context=self._parser_context,
+                strict_validation=self._config.strict_validation,
+                log_next_url=lambda next_url: (
+                    _logger.debug(
+                        "Received nextUrl from timeout response: %s",
+                        _mask_url(next_url, self._token),
+                    )
+                    if _logger.isEnabledFor(logging.DEBUG)
+                    else None
+                ),
+            )
+
+            if self._state is _ClientState.OPEN:
+                self._next_url = next_url
+            return events
 
     async def __aiter__(self) -> AsyncIterator[Event]:
         """Yield events continuously from the API.
@@ -430,40 +438,16 @@ class EventClient:
         Internally created sessions are closed; caller-owned injected sessions
         remain open. After close(), the instance cannot be reopened.
 
-        Raises:
-            asyncio.CancelledError: If the caller of close() is cancelled while
-                waiting for in-flight polls to finish shutting down.
         """
         if self._state is _ClientState.CLOSED:
             return
 
         self._state = _ClientState.CLOSING
+        self._closing.set()
         session = self._session
         self._session = None
         self._next_url = None
         try:
-            current_task = asyncio.current_task()
-            poll_tasks = [
-                task
-                for task in self._active_poll_tasks
-                if task is not current_task and not task.done()
-            ]
-
-            for poll_task in poll_tasks:
-                poll_task.cancel()  # pyright: ignore[reportUnusedCallResult]
-
-            for poll_task in poll_tasks:
-                try:
-                    await poll_task
-                except asyncio.CancelledError:
-                    current_task = asyncio.current_task()
-                    if current_task is not None and current_task.cancelling():
-                        raise
-                except EventsError:
-                    pass
-        finally:
-            self._active_poll_tasks.clear()
-
             if session is not None and self._owns_session:
                 close_task = asyncio.create_task(session.close())
                 try:
@@ -480,4 +464,5 @@ class EventClient:
                     raise
                 except (ClientError, OSError, RuntimeError) as exc:
                     _logger.warning("Error closing session (%s).", type(exc).__name__)
+        finally:
             self._state = _ClientState.CLOSED
