@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Self
 
@@ -16,7 +17,7 @@ class _DocumentationClient:
     """In-memory stream used to execute quickstart examples."""
 
     def __init__(self, _events_url: str) -> None:
-        self._events = iter([
+        self._events: Iterator[cb_events.Event] = iter([
             cb_events.Event.model_validate({
                 "method": "userEnter",
                 "id": "docs-enter",
@@ -58,11 +59,8 @@ def test_quickstart_example_executes(
 ) -> None:
     """Quickstart sources should remain importable and runnable without network access."""
     monkeypatch.setattr(cb_events, "EventClient", _DocumentationClient)
-    if example_path.suffix == ".md":
-        text = example_path.read_text(encoding="utf-8")
-        source = text.split("```python", 1)[1].split("```", 1)[0]
-    else:
-        source = example_path.read_text(encoding="utf-8")
+    text = example_path.read_text(encoding="utf-8")
+    source = text.split("```python", 1)[1].split("```", 1)[0]
 
     exec(  # ruff: ignore[exec-builtin]
         compile(source, str(example_path), "exec"),

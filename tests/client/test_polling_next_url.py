@@ -7,8 +7,7 @@ import pytest
 from aioresponses import aioresponses
 
 from cb_events import EventsError, EventType
-from tests.conftest import EventClientFactory
-from tests.helpers import make_event, make_response, make_timeout_payload
+from tests.helpers import EventClientFactory, make_event, make_response, make_timeout_payload
 
 
 async def test_next_url_followed_after_timeout(

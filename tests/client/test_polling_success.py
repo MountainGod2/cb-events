@@ -7,8 +7,7 @@ from aioresponses import aioresponses
 from pydantic import ValidationError
 
 from cb_events import ClientConfig, EventType, StrictValidationError
-from tests.conftest import EventClientFactory
-from tests.helpers import SAMPLE_EVENT_TYPES, make_event, make_response
+from tests.helpers import SAMPLE_EVENT_TYPES, EventClientFactory, make_event, make_response
 
 
 @pytest.mark.parametrize("method", SAMPLE_EVENT_TYPES)

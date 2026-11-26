@@ -1,9 +1,9 @@
 """Tests for retry behavior in the EventClient._request path."""
 
+import asyncio
 import re
 
 import pytest
-import stamina
 from aioresponses import aioresponses
 
 from cb_events import ClientConfig, EventsError, EventType
@@ -11,18 +11,10 @@ from cb_events import _client as client_module
 from cb_events import _models as models_module
 from cb_events import _parser as parser_module
 from cb_events import _request as request_module
-from cb_events._request import AuthRetryOptions
-from tests.conftest import EventClientFactory
-from tests.helpers import make_event, make_response
+from tests.helpers import EventClientFactory, make_event, make_response
 
 
-def test_auth_retry_options_reject_zero_attempts() -> None:
-    """Direct users of retry options should get the same invariant as config."""
-    with pytest.raises(ValueError, match="must be >= 1"):
-        AuthRetryOptions(attempts=0)
-
-
-async def test_exception_retries_until_success_with_testing_cap(
+async def test_exception_retries_until_success(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
@@ -33,10 +25,8 @@ async def test_exception_retries_until_success_with_testing_cap(
     aioresponses_mock.get(testbed_url_pattern, exception=TimeoutError("second"))
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
-    stamina.set_testing(True, attempts=3)
-
     config = ClientConfig(
-        retry_attempts=10,
+        retry_attempts=3,
         retry_backoff=0.01,
         retry_factor=2.0,
         retry_max_delay=1.0,
@@ -49,13 +39,13 @@ async def test_exception_retries_until_success_with_testing_cap(
 
 
 @pytest.mark.parametrize("is_exception", [True, False])
-async def test_testing_mode_caps_attempts(
+async def test_config_caps_attempts(
     event_client_factory: EventClientFactory,
     aioresponses_mock: aioresponses,
     testbed_url_pattern: re.Pattern[str],
     is_exception: bool,
 ) -> None:
-    """Testing mode should cap retries even when failures keep occurring."""
+    """Configuration should cap retries when failures keep occurring."""
     if is_exception:
         aioresponses_mock.get(
             testbed_url_pattern,
@@ -65,10 +55,8 @@ async def test_testing_mode_caps_attempts(
     else:
         aioresponses_mock.get(testbed_url_pattern, status=502, repeat=True)
 
-    stamina.set_testing(True, attempts=2)
-
     config = ClientConfig(
-        retry_attempts=10,
+        retry_attempts=2,
         retry_backoff=0.01,
         retry_factor=3.0,
         retry_max_delay=0.02,
@@ -141,16 +129,69 @@ async def test_auth_retry_warning_includes_username(
     assert "test_user" in auth_retry_records[0].getMessage()
 
 
-def test_auth_retry_options_reject_invalid_status_codes() -> None:
-    """Auth retry options should only allow the supported 401/403 subset."""
+def test_config_rejects_invalid_auth_retry_status_codes() -> None:
+    """Auth retry configuration should only allow the supported 401/403 subset."""
     with pytest.raises(ValueError, match=r"401|403"):
-        AuthRetryOptions(status_codes=frozenset({401, 429}), attempts=2)
+        ClientConfig(auth_retry_status_codes=frozenset({401, 429}), auth_retry_attempts=2)
 
 
-def test_auth_retry_options_accept_supported_status_codes() -> None:
+def test_config_accepts_supported_auth_retry_status_codes() -> None:
     """The supported auth retry set should be accepted without complaint."""
-    options = AuthRetryOptions(status_codes=frozenset({401, 403}), attempts=2)
-    assert options.status_codes == frozenset({401, 403})
+    config = ClientConfig(
+        auth_retry_status_codes=frozenset({401, 403}),
+        auth_retry_attempts=2,
+    )
+    assert config.auth_retry_status_codes == frozenset({401, 403})
+
+
+async def test_rate_limit_retry_after_controls_delay(
+    monkeypatch: pytest.MonkeyPatch,
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """HTTP 429 responses should use a valid Retry-After delay."""
+    aioresponses_mock.get(testbed_url_pattern, status=429, headers={"Retry-After": "0.25"})
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        payload=make_response([make_event(EventType.TIP, event_id="1")]),
+    )
+    sleeps: list[float] = []
+
+    async def _record_sleep(delay: float) -> None:
+        sleeps.append(delay)
+        await asyncio.sleep(0)
+
+    monkeypatch.setattr(request_module, "_retry_sleep", _record_sleep)
+    async with event_client_factory(
+        config=ClientConfig(retry_attempts=2, retry_backoff=5.0)
+    ) as client:
+        assert len(await client.poll()) == 1
+
+    assert sleeps == [0.25]
+
+
+async def test_auth_and_network_retries_use_independent_budgets(
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+) -> None:
+    """Auth retries should not consume the network/server retry budget."""
+    aioresponses_mock.get(testbed_url_pattern, status=401)
+    aioresponses_mock.get(testbed_url_pattern, status=502)
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        payload=make_response([make_event(EventType.TIP, event_id="1")]),
+    )
+
+    config = ClientConfig(
+        auth_retry_attempts=2,
+        auth_retry_status_codes=frozenset({401}),
+        retry_attempts=2,
+        retry_backoff=0.0,
+    )
+    async with event_client_factory(config=config) as client:
+        assert len(await client.poll()) == 1
 
 
 def test_internal_logger_names_are_stable() -> None:

@@ -13,7 +13,7 @@ from cb_events import (
     RateLimitError,
     ServerError,
 )
-from tests.conftest import EventClientFactory
+from tests.helpers import EventClientFactory
 
 
 async def test_poll_raises_auth_error_on_401(

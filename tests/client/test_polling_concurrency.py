@@ -6,8 +6,8 @@ import json
 import pytest
 
 from cb_events import EventClient, EventsError
-from tests.conftest import EventClientFactory
-from tests.helpers import make_events_url
+from cb_events import _client as client_module
+from tests.helpers import EventClientFactory, make_events_url
 
 
 async def test_concurrent_polls_are_serialized_per_client(
@@ -138,3 +138,45 @@ async def test_close_propagates_caller_cancellation(
             await poll_task
 
         assert session.closed
+
+
+async def test_poll_does_not_register_task_when_url_building_fails(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A pre-request failure should not leave a task in shutdown tracking."""
+
+    def _fail_build(_self: EventClient, next_url: str | None = None) -> str:
+        del next_url
+        msg = "invalid URL"
+        raise ValueError(msg)
+
+    monkeypatch.setattr(EventClient, "_build_url", _fail_build)
+
+    async with event_client_factory() as client:
+        with pytest.raises(ValueError, match="invalid URL"):
+            await client.poll()
+
+        assert not client._active_poll_tasks
+
+
+async def test_poll_skips_url_masking_when_debug_is_disabled(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Disabled debug logging should not perform token masking work."""
+
+    async def _empty_response(_self: EventClient, _url: str) -> tuple[int, str]:
+        await asyncio.sleep(0)
+        return 200, '{"events": [], "nextUrl": null}'
+
+    def _unexpected_mask(_url: str, _token: str) -> str:
+        msg = "mask called"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(EventClient, "_request", _empty_response)
+    monkeypatch.setattr(client_module, "_mask_url", _unexpected_mask)
+    monkeypatch.setattr(client_module._logger, "isEnabledFor", lambda _level: False)
+
+    async with event_client_factory() as client:
+        assert await client.poll() == []

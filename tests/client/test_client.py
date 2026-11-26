@@ -12,7 +12,6 @@ from yarl import URL
 from cb_events import ClientConfig, EventClient, EventsError, EventsUrlError
 from cb_events._client import (
     TESTBED_URL,
-    _mask_token,
     _mask_url,
     _parse_events_url,
 )
@@ -253,11 +252,6 @@ def test_mask_url_decodes_path_token_with_encoded_slash_colon_and_at_sign() -> N
     assert parsed.parts[-2] == f"prefix-{token}-suffix"
 
 
-def test_mask_token_various_lengths() -> None:
-    """_mask_token should use a fixed marker that does not reveal length."""
-    assert _mask_token() == "***"
-
-
 def test_parse_events_strict_and_lenient(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -444,7 +438,7 @@ async def test_close_uses_one_shutdown_task_even_if_cancelled() -> None:
             completed.set()
 
     session = _Session()
-    client._session = session  # type: ignore[assignment]
+    client._session = session  # pyright: ignore[reportAttributeAccessIssue]
 
     close_task = asyncio.create_task(client.close())
     await started.wait()

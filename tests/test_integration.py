@@ -10,8 +10,7 @@ from aioresponses import aioresponses
 
 import cb_events._request as request_module
 from cb_events import AuthError, ClientConfig, Event, EventClient, EventType, Router, __version__
-from tests.conftest import EventClientFactory
-from tests.helpers import make_event, make_events_url, make_response
+from tests.helpers import EventClientFactory, make_event, make_events_url, make_response
 
 
 @pytest.mark.e2e
@@ -118,17 +117,13 @@ async def test_authentication_retry_uses_configured_delay_between_auth_retries(
     aioresponses_mock.get(testbed_url_pattern, payload=success_response)
 
     observed_delays: list[float] = []
-    original_sleep = request_module.asyncio.sleep
+    original_sleep = asyncio.sleep
 
     async def _fake_sleep(delay: float) -> None:
         await original_sleep(0)
         observed_delays.append(delay)
 
-    monkeypatch.setattr(
-        request_module.asyncio,  # ruff: ignore[shared-clock-mock]
-        "sleep",
-        _fake_sleep,
-    )
+    monkeypatch.setattr(request_module, "_retry_sleep", _fake_sleep)
 
     config = ClientConfig(
         auth_retry_attempts=3,

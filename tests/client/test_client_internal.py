@@ -22,12 +22,12 @@ async def test_poll_raises_when_client_not_initialized() -> None:
         await client.poll()
 
 
-async def test_perform_request_attempt_raises_when_session_missing() -> None:
-    """_perform_request_attempt should reject missing sessions."""
+async def test_send_request_raises_when_session_missing() -> None:
+    """_send_request should reject missing sessions."""
     client = EventClient(make_events_url("user", "token"))
 
     with pytest.raises(EventsError, match="session unexpectedly unavailable"):
-        await client._perform_request_attempt("https://events.testbed.cb.dev/events")
+        await client._send_request("https://events.testbed.cb.dev/events")
 
 
 async def test_aenter_propagates_session_creation_failures(
@@ -166,7 +166,7 @@ async def test_request_non_retriable_error_is_propagated(
         msg = "bad payload"
         raise ValueError(msg)
 
-    monkeypatch.setattr(EventClient, "_perform_request_attempt", _boom)
+    monkeypatch.setattr(EventClient, "_send_request", _boom)
 
     async with client:
         with pytest.raises(ValueError, match="bad payload"):
@@ -206,37 +206,3 @@ async def test_close_logs_session_close_error(
             await client.poll()
     monkeypatch.setattr(ClientSession, "close", original_close)
     await original_close(session)
-
-
-async def test_request_raises_unexpected_error_when_retry_context_is_empty(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Empty retry contexts should trigger the defensive fallback error."""
-    client = EventClient(make_events_url("user", "token"))
-
-    class _EmptyRetryContext:
-        def __aiter__(self) -> _EmptyRetryContext:
-            return self
-
-        async def __anext__(self) -> object:
-            raise StopAsyncIteration
-
-        def with_name(
-            self,
-            _name: str,
-            _args: tuple[object, ...],
-            _kwargs: dict[str, object],
-        ) -> _EmptyRetryContext:
-            return self
-
-    def _empty_retry_context(**_kwargs: object) -> _EmptyRetryContext:
-        return _EmptyRetryContext()
-
-    monkeypatch.setattr(
-        "cb_events._request.stamina.retry_context",
-        _empty_retry_context,
-    )
-
-    async with client:
-        with pytest.raises(EventsError, match="Unexpected error in request loop"):
-            await client._request("https://events.testbed.cb.dev/events")

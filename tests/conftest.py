@@ -2,12 +2,10 @@
 
 import re
 from collections.abc import AsyncGenerator, Iterator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Protocol
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import pytest
-import stamina
 from aioresponses import aioresponses
 
 from cb_events import (
@@ -15,26 +13,7 @@ from cb_events import (
     EventClient,
     Router,
 )
-from tests.helpers import make_events_url
-
-
-class EventClientFactory(Protocol):
-    def __call__(
-        self,
-        *,
-        username_override: str | None = ...,
-        token_override: str | None = ...,
-        config: ClientConfig | None = ...,
-        use_testbed: bool = ...,
-        **config_overrides: object,
-    ) -> AbstractAsyncContextManager[EventClient]: ...
-
-
-@pytest.fixture(autouse=True)
-def reset_stamina_state() -> Iterator[None]:
-    yield
-    stamina.set_active(True)
-    stamina.set_testing(False)
+from tests.helpers import EventClientFactory, make_events_url
 
 
 @pytest.fixture

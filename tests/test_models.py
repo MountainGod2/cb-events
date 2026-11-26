@@ -50,7 +50,11 @@ def test_event_properties_parsed() -> None:
 
 def test_models_accept_python_field_names_and_api_aliases() -> None:
     """Models should accept both documented snake_case names and API camelCase aliases."""
-    event = Event(type=EventType.TIP, id="event_python", data={"tip": {"tokens": 25}})
+    event = Event.model_validate({
+        "type": EventType.TIP,
+        "id": "event_python",
+        "data": {"tip": {"tokens": 25}},
+    })
     user = User.model_validate({
         "username": "tipper",
         "fc_auto_renew": True,

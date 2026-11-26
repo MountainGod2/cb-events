@@ -2,12 +2,32 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from contextlib import AbstractAsyncContextManager
+from typing import TYPE_CHECKING, Any, Protocol
 
 from cb_events import EventType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+
+    from cb_events import ClientConfig, EventClient
+
+
+class EventClientFactory(Protocol):
+    """Protocol for the shared EventClient test fixture."""
+
+    def __call__(
+        self,
+        *,
+        username_override: str | None = ...,
+        token_override: str | None = ...,
+        config: ClientConfig | None = ...,
+        use_testbed: bool = ...,
+        **config_overrides: object,
+    ) -> AbstractAsyncContextManager[EventClient]:
+        """Create an EventClient context manager for test use."""
+        ...
+
 
 SAMPLE_EVENT_TYPES: tuple[EventType, EventType] = (EventType.TIP, EventType.USER_ENTER)
 """Two distinct event types for tests that only need to prove type-agnostic
