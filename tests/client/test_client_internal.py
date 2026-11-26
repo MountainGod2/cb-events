@@ -130,10 +130,10 @@ async def test_poll_handles_http_status_with_raise_for_status_injected_session(
         await session.close()
 
 
-async def test_close_cancels_active_poll_without_wrapping_cancelled_error(
+async def test_close_stops_active_poll_with_events_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Close should cancel in-flight polls without converting the cancellation into EventsError."""
+    """Close should stop the request without cancelling the caller-owned task."""
     client = EventClient(make_events_url("user", "token"))
 
     poll_task_started = asyncio.Event()
@@ -151,7 +151,7 @@ async def test_close_cancels_active_poll_without_wrapping_cancelled_error(
 
         await client.close()
 
-        with pytest.raises(asyncio.CancelledError):
+        with pytest.raises(EventsError, match="stopped because client is closing"):
             await poll_task
 
 
