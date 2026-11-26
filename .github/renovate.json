@@ -59,7 +59,6 @@
         "aiohttp",
         "aiolimiter",
         "pydantic",
-        "stamina",
         "typing-extensions",
         "yarl",
         "/^pydantic-.*$/"
