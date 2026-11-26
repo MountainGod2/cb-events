@@ -21,13 +21,7 @@ from ._exceptions import (
     build_http_error,
 )
 from ._models import Event
-from ._utils import (
-    TRUNCATE_LENGTH,
-    UrlValidationError,
-    UrlValidationReason,
-    truncate_text,
-    validate_https_host_no_port,
-)
+from ._utils import TRUNCATE_LENGTH, truncate_text
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -36,18 +30,6 @@ _logger = logging.getLogger(__name__)
 
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
-
-_NEXT_URL_VALIDATION_MESSAGES: dict[UrlValidationReason, str] = {
-    UrlValidationReason.USER_INFO: (
-        "Invalid API response: 'nextUrl' must not contain user information."
-    ),
-    UrlValidationReason.SCHEME: "Invalid nextUrl scheme; only https is allowed.",
-    UrlValidationReason.CUSTOM_PORT: (
-        "Invalid API response: 'nextUrl' must not contain a custom port."
-    ),
-    UrlValidationReason.MISSING_HOST: ("Invalid API response: 'nextUrl' must include a hostname."),
-    UrlValidationReason.HOST_NOT_ALLOWED: ("Invalid API response: 'nextUrl' host is not allowed."),
-}
 
 
 class _NextUrlParseError(ValueError):
@@ -246,11 +228,21 @@ def _validate_present_next_url(
         raise EventsError(msg, response_text=response_text) from None
 
     allowed_host = (context.parsed_base_url.host or "").lower()
-    try:
-        _ = validate_https_host_no_port(parsed, {allowed_host})
-    except UrlValidationError as exc:
-        msg = _NEXT_URL_VALIDATION_MESSAGES[exc.reason]
-        raise EventsError(msg, response_text=response_text) from None
+    if parsed.user is not None or parsed.password is not None:
+        msg = "Invalid API response: 'nextUrl' must not contain user information."
+        raise EventsError(msg, response_text=response_text)
+    if parsed.scheme != "https":
+        msg = "Invalid nextUrl scheme; only https is allowed."
+        raise EventsError(msg, response_text=response_text)
+    if parsed.explicit_port is not None:
+        msg = "Invalid API response: 'nextUrl' must not contain a custom port."
+        raise EventsError(msg, response_text=response_text)
+    if not parsed.host:
+        msg = "Invalid API response: 'nextUrl' must include a hostname."
+        raise EventsError(msg, response_text=response_text)
+    if parsed.host.lower() != allowed_host:
+        msg = "Invalid API response: 'nextUrl' host is not allowed."
+        raise EventsError(msg, response_text=response_text)
 
     return absolute
 
