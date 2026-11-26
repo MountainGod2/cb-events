@@ -13,10 +13,12 @@ COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 
-COPY examples/event_handling.py examples/event_handling.py.lock ./
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY examples/event_handling.py ./
 
 RUN uv venv "$VIRTUAL_ENV" && \
-    uv sync --script event_handling.py --active --frozen
+    uv pip install --python "$VIRTUAL_ENV/bin/python" -e . rich
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 
