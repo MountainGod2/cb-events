@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, NoReturn
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+from http import HTTPStatus
+from math import isfinite
+from typing import TYPE_CHECKING, Final, NoReturn, TypeGuard
 
-import stamina
 from aiohttp.client_exceptions import ClientError
 
-from ._exceptions import AUTH_ERROR_STATUS_CODES, EventsError, build_http_error
+from ._exceptions import EventsError, build_http_error
 
 _logger = logging.getLogger(__name__)
+_retry_sleep = asyncio.sleep
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -22,48 +25,35 @@ if TYPE_CHECKING:
 
     from ._config import ClientConfig
 
+_RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
+    HTTPStatus.INTERNAL_SERVER_ERROR.value,
+    HTTPStatus.BAD_GATEWAY.value,
+    HTTPStatus.SERVICE_UNAVAILABLE.value,
+    HTTPStatus.GATEWAY_TIMEOUT.value,
+    HTTPStatus.TOO_MANY_REQUESTS.value,
+    521,
+    522,
+    523,
+    524,
+})
+
 
 class _RetryableStatusError(Exception):
     """Internal exception used to trigger retry for HTTP status failures."""
 
-    def __init__(self, msg: str, *, status_code: int, response_text: str) -> None:
+    def __init__(
+        self,
+        msg: str,
+        *,
+        status_code: int,
+        response_text: str,
+        retry_after: str | None = None,
+    ) -> None:
         """Initialize with message and HTTP metadata."""
         super().__init__(msg)
         self.status_code: int = status_code
         self.response_text: str = response_text
-
-
-@dataclass(frozen=True)
-class AuthRetryOptions:
-    """Small, fixed-delay retry budget for HTTP 401/403 responses.
-
-    Kept separate from the exponential-backoff retry used for network/5xx
-    failures: a persistently invalid token should still fail fast, but a
-    lone 401/403 can also be a transient edge/WAF hiccup, so a few quick
-    retries are attempted first.
-    """
-
-    ALLOWED_STATUS_CODES: ClassVar[frozenset[int]] = AUTH_ERROR_STATUS_CODES
-
-    status_codes: frozenset[int] = frozenset()
-    """HTTP statuses eligible for this retry budget (typically 401/403)."""
-
-    attempts: int = 1
-    """Total attempts before returning the auth-status response as final."""
-
-    delay: float = 0.0
-    """Fixed delay in seconds between auth-retry attempts."""
-
-    def __post_init__(self) -> None:
-        """Validate the supported auth-retry status subset."""
-        invalid_codes = sorted(self.status_codes - self.ALLOWED_STATUS_CODES)
-        if invalid_codes:
-            invalid = ", ".join(str(code) for code in invalid_codes)
-            msg = f"Auth retry status codes must be a subset of {{401, 403}}; received: {invalid}."
-            raise ValueError(msg)
-        if self.attempts < 1:
-            msg = f"Auth retry attempts must be >= 1, got {self.attempts}."
-            raise ValueError(msg)
+        self.retry_after: str | None = retry_after
 
 
 def _format_retry_cause(exc: Exception) -> str:
@@ -73,14 +63,12 @@ def _format_retry_cause(exc: Exception) -> str:
     return type(exc).__name__
 
 
-async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
+async def perform_request_attempt(
     *,
     session: ClientSession,
     rate_limiter: AsyncLimiter,
     url: str,
-    retry_status_codes: frozenset[int],
-    auth_retry: AuthRetryOptions | None = None,
-    username: str | None = None,
+    retry_auth_status_codes: frozenset[int],
 ) -> tuple[int, str]:
     """Perform one HTTP request attempt and return status/body.
 
@@ -88,11 +76,8 @@ async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
         session: Active HTTP client session.
         rate_limiter: Rate limiter applied before each request.
         url: Fully qualified endpoint URL.
-        retry_status_codes: HTTP statuses that should trigger the caller's
-            exponential-backoff retry via ``_RetryableStatusError``.
-        auth_retry: Optional small fixed-delay retry budget for 401/403
-            responses. Defaults to no retry (single attempt).
-        username: Account username attached to retry log records.
+        retry_auth_status_codes: Configured HTTP authentication statuses that
+            should trigger the caller's fixed-delay retry.
 
     Returns:
         Tuple of (HTTP status code, response text).
@@ -100,38 +85,24 @@ async def perform_request_attempt(  # ruff: ignore[too-many-arguments]
     Raises:
         _RetryableStatusError: If the response status should be retried.
     """
-    options = auth_retry or AuthRetryOptions()
+    await rate_limiter.acquire()
+    async with session.get(
+        url,
+        allow_redirects=False,
+        raise_for_status=False,
+    ) as response:
+        status = response.status
+        text = await response.text()
+        retry_after = response.headers.get("Retry-After")
 
-    status = 0
-    text = ""
-    attempts = options.attempts
-    for attempt in range(1, attempts + 1):
-        await rate_limiter.acquire()
-        async with session.get(
-            url,
-            allow_redirects=False,
-            raise_for_status=False,
-        ) as response:
-            status = response.status
-            text = await response.text()
-
-        if status in retry_status_codes:
-            msg = f"HTTP {status}"
-            raise _RetryableStatusError(msg, status_code=status, response_text=text)
-
-        if status not in options.status_codes or attempt >= attempts:
-            break
-
-        _logger.warning(
-            "Auth check attempt %d/%d failed for user %s (HTTP %d). Retrying...",
-            attempt,
-            attempts,
-            username or "<unknown>",
-            status,
-            extra={"username": username},
+    if status in _RETRY_STATUS_CODES or status in retry_auth_status_codes:
+        msg = f"HTTP {status}"
+        raise _RetryableStatusError(
+            msg,
+            status_code=status,
+            response_text=text,
+            retry_after=retry_after,
         )
-        if options.delay > 0:
-            await asyncio.sleep(options.delay)
 
     return status, text
 
@@ -156,27 +127,48 @@ def _raise_request_failure(
     attempt_label = "attempt" if attempts_made == 1 else "attempts"
     msg = f"Failed to fetch events after {attempts_made} {attempt_label}."
 
-    status_code: int | None = None
-    response_text: str | None = None
-    cause: Exception | None = original_exception
-
     if isinstance(original_exception, _RetryableStatusError):
-        status_code = original_exception.status_code
-        response_text = original_exception.response_text
-        cause = None
-
-    if status_code is not None:
         raise build_http_error(
             msg,
-            status_code=status_code,
-            response_text=response_text,
-        ) from cause
+            status_code=original_exception.status_code,
+            response_text=original_exception.response_text,
+        ) from None
 
-    raise EventsError(
-        msg,
-        status_code=status_code,
-        response_text=response_text,
-    ) from cause
+    raise EventsError(msg) from original_exception
+
+
+def _retry_after_delay(value: str | None, *, now: datetime | None = None) -> float | None:
+    """Parse a Retry-After value as delta seconds or an HTTP date."""
+    if value is None:
+        return None
+
+    try:
+        delay = float(value.strip())
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=UTC)
+        delay = (retry_at - (now or datetime.now(UTC))).total_seconds()
+
+    return max(0.0, delay) if isfinite(delay) else None
+
+
+def _backoff_delay(config: ClientConfig, attempt: int) -> float:
+    """Calculate capped exponential delay after a failed attempt."""
+    return min(
+        config.retry_max_delay,
+        config.retry_backoff * config.retry_factor ** (attempt - 1),
+    )
+
+
+def _is_auth_retry(exc: Exception, config: ClientConfig) -> TypeGuard[_RetryableStatusError]:
+    """Return whether a retryable exception is an enabled auth status."""
+    return (
+        isinstance(exc, _RetryableStatusError) and exc.status_code in config.auth_retry_status_codes
+    )
 
 
 async def request_with_retry(
@@ -197,54 +189,62 @@ async def request_with_retry(
     Returns:
         Tuple of (HTTP status code, response text).
 
-    Raises:
-        EventsError: If retries are exhausted or retry loop ends unexpectedly.
     """
+    retriable_exc_types = (ClientError, OSError, _RetryableStatusError)
     attempts_made = 0
-    retriable_exc_types = (
-        ClientError,
-        TimeoutError,
-        OSError,
-        _RetryableStatusError,
-    )
+    auth_attempts = 0
+    retry_attempts = 0
 
-    try:
-        retry_iterator = stamina.retry_context(
-            on=retriable_exc_types,
-            attempts=config.retry_attempts,
-            timeout=None,
-            wait_initial=config.retry_backoff,
-            wait_max=config.retry_max_delay,
-            wait_exp_base=config.retry_factor,
-        ).with_name(
-            f"events request for {username}" if username else "events request",
-            (),
-            {"username": username} if username else {},
-        )
-        async for attempt in retry_iterator:
-            attempts_made = attempt.num
-            with attempt:
-                try:
-                    return await perform_attempt(url)
-                except retriable_exc_types as exc:
-                    if attempt.num < config.retry_attempts:
-                        _logger.warning(
-                            "Retrying events request for user %s after attempt %d/%d (%s).",
-                            username or "<unknown>",
-                            attempt.num,
-                            config.retry_attempts,
-                            _format_retry_cause(exc),
-                            extra={"username": username},
-                        )
-                    raise
+    while True:
+        try:
+            attempts_made += 1
+            return await perform_attempt(url)
+        except retriable_exc_types as exc:
+            is_auth_retry = _is_auth_retry(exc, config)
+            if is_auth_retry:
+                auth_attempts += 1
+                attempts_limit = config.auth_retry_attempts
+                attempts_for_policy = auth_attempts
+            else:
+                retry_attempts += 1
+                attempts_limit = config.retry_attempts
+                attempts_for_policy = retry_attempts
 
-    except retriable_exc_types as original_exception:
-        _raise_request_failure(
-            attempts_made=attempts_made,
-            original_exception=original_exception,
-        )
+            if attempts_for_policy >= attempts_limit and is_auth_retry:
+                return exc.status_code, exc.response_text
 
-    # Unreachable in practice: stamina always yields ≥1 attempt and
-    # _raise_request_failure is NoReturn. Required for type-checker soundness.
-    msg = "Unexpected error in request loop"
-    raise EventsError(msg)
+            if attempts_for_policy >= attempts_limit:
+                _raise_request_failure(
+                    attempts_made=attempts_made,
+                    original_exception=exc,
+                )
+
+            if is_auth_retry:
+                delay = config.auth_retry_delay
+                _logger.warning(
+                    "Auth check attempt %d/%d failed for user %s (HTTP %d). Retrying...",
+                    auth_attempts,
+                    attempts_limit,
+                    username or "<unknown>",
+                    exc.status_code,
+                    extra={"username": username},
+                )
+            else:
+                delay = _backoff_delay(config, retry_attempts)
+                if (
+                    isinstance(exc, _RetryableStatusError)
+                    and exc.status_code == HTTPStatus.TOO_MANY_REQUESTS
+                ):
+                    retry_after = _retry_after_delay(exc.retry_after)
+                    if retry_after is not None:
+                        delay = min(retry_after, config.retry_max_delay)
+                _logger.warning(
+                    "Retrying events request for user %s after attempt %d/%d (%s).",
+                    username or "<unknown>",
+                    retry_attempts,
+                    attempts_limit,
+                    _format_retry_cause(exc),
+                    extra={"username": username},
+                )
+            if delay > 0:
+                await _retry_sleep(delay)

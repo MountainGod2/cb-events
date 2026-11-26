@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from enum import StrEnum
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
@@ -38,22 +37,21 @@ _logger = logging.getLogger(__name__)
 
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
 
-
-class _NextUrlParseReason(StrEnum):
-    """Stable reasons for absolute nextUrl parsing failures."""
-
-    NOT_ABSOLUTE = "not_absolute"
+_NEXT_URL_VALIDATION_MESSAGES: dict[UrlValidationReason, str] = {
+    UrlValidationReason.USER_INFO: (
+        "Invalid API response: 'nextUrl' must not contain user information."
+    ),
+    UrlValidationReason.SCHEME: "Invalid nextUrl scheme; only https is allowed.",
+    UrlValidationReason.CUSTOM_PORT: (
+        "Invalid API response: 'nextUrl' must not contain a custom port."
+    ),
+    UrlValidationReason.MISSING_HOST: ("Invalid API response: 'nextUrl' must include a hostname."),
+    UrlValidationReason.HOST_NOT_ALLOWED: ("Invalid API response: 'nextUrl' host is not allowed."),
+}
 
 
 class _NextUrlParseError(ValueError):
-    """Absolute nextUrl parsing failure with a stable reason code."""
-
-    reason: _NextUrlParseReason
-
-    def __init__(self, reason: _NextUrlParseReason) -> None:
-        """Initialize from a structured parsing reason."""
-        super().__init__(reason.value)
-        self.reason = reason
+    """Absolute nextUrl parsing failure."""
 
 
 @dataclass(frozen=True)
@@ -189,7 +187,7 @@ def _resolve_absolute_url(
     """
     parsed = URL(stripped)
     if not parsed.scheme:
-        raise _NextUrlParseError(_NextUrlParseReason.NOT_ABSOLUTE)
+        raise _NextUrlParseError
     return str(parsed), parsed
 
 
@@ -205,25 +203,6 @@ def _has_invalid_port(value: str) -> bool:
     except ValueError:
         return bool("://" in value and "@" not in authority)
     return False
-
-
-def _next_url_validation_message(reason: UrlValidationReason) -> str:
-    """Map a URL validation reason to an API response error message."""
-    return {
-        UrlValidationReason.USER_INFO: (
-            "Invalid API response: 'nextUrl' must not contain user information."
-        ),
-        UrlValidationReason.SCHEME: "Invalid nextUrl scheme; only https is allowed.",
-        UrlValidationReason.CUSTOM_PORT: (
-            "Invalid API response: 'nextUrl' must not contain a custom port."
-        ),
-        UrlValidationReason.MISSING_HOST: (
-            "Invalid API response: 'nextUrl' must include a hostname."
-        ),
-        UrlValidationReason.HOST_NOT_ALLOWED: (
-            "Invalid API response: 'nextUrl' host is not allowed."
-        ),
-    }[reason]
 
 
 def _validate_present_next_url(
@@ -270,7 +249,7 @@ def _validate_present_next_url(
     try:
         _ = validate_https_host_no_port(parsed, {allowed_host})
     except UrlValidationError as exc:
-        msg = _next_url_validation_message(exc.reason)
+        msg = _NEXT_URL_VALIDATION_MESSAGES[exc.reason]
         raise EventsError(msg, response_text=response_text) from None
 
     return absolute
@@ -296,7 +275,7 @@ def _extract_next_url_from_timeout(
     text: str,
     *,
     context: ParserContext,
-    log_next_url: Callable[[str], None],
+    log_next_url: Callable[[str], None] | None,
 ) -> str | None:
     """Extract nextUrl from long-poll timeout responses.
 
@@ -307,7 +286,7 @@ def _extract_next_url_from_timeout(
     Args:
         text: Raw response body.
         context: Parsing context used for nextUrl validation.
-        log_next_url: Callback used to log a masked nextUrl.
+        log_next_url: Optional callback used to log a masked nextUrl.
 
     Returns:
         Normalized nextUrl when present on a continuation response; otherwise None.
@@ -335,7 +314,8 @@ def _extract_next_url_from_timeout(
             context.username,
         )
 
-    log_next_url(validated)
+    if log_next_url is not None:
+        log_next_url(validated)
     return validated
 
 
@@ -397,7 +377,7 @@ def process_response(
     *,
     context: ParserContext,
     strict_validation: bool,
-    log_next_url: Callable[[str], None],
+    log_next_url: Callable[[str], None] | None,
 ) -> tuple[list[Event], str | None]:
     """Process an HTTP response and return parsed events and nextUrl.
 
@@ -406,7 +386,7 @@ def process_response(
         text: Raw response body.
         context: Parsing context.
         strict_validation: Whether invalid events should raise validation errors.
-        log_next_url: Callback used to log a masked nextUrl.
+        log_next_url: Optional callback used to log a masked nextUrl.
 
     Returns:
         Tuple of (events, nextUrl).

@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from enum import Enum, auto
-from http import HTTPStatus
 from typing import TYPE_CHECKING, Final
 from urllib.parse import quote, unquote
 
@@ -16,12 +15,12 @@ from typing_extensions import override
 from yarl import URL
 
 from ._config import ClientConfig
-from ._exceptions import CF_SERVER_ERROR_CODES, EventsError, EventsUrlError
+from ._exceptions import EventsError, EventsUrlError
 from ._parser import (
     ParserContext,
     process_response,
 )
-from ._request import AuthRetryOptions, perform_request_attempt, request_with_retry
+from ._request import perform_request_attempt, request_with_retry
 from ._utils import UrlValidationError, UrlValidationReason, validate_https_host_no_port
 
 if TYPE_CHECKING:
@@ -53,16 +52,6 @@ _CONNECT_TIMEOUT: Final[int] = 10
 _SESSION_TIMEOUT_BUFFER: Final[int] = 5
 """Extra seconds added to the client timeout."""
 
-_RETRY_STATUS_CODES: Final[frozenset[int]] = frozenset({
-    HTTPStatus.INTERNAL_SERVER_ERROR.value,
-    HTTPStatus.BAD_GATEWAY.value,
-    HTTPStatus.SERVICE_UNAVAILABLE.value,
-    HTTPStatus.GATEWAY_TIMEOUT.value,
-    HTTPStatus.TOO_MANY_REQUESTS.value,
-    *CF_SERVER_ERROR_CODES,
-})
-"""HTTP status codes retried with exponential backoff."""
-
 _CLIENT_CLOSING_MESSAGE: Final[str] = "Client is closing or closed."
 """Error raised when polling while closing or closed."""
 
@@ -92,6 +81,18 @@ _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "events.testbed.cb.dev": TESTBED_URL,
 }
 """Allowed API hosts mapped to canonical base URLs."""
+
+_EVENTS_URL_VALIDATION_MESSAGES: Final[dict[UrlValidationReason, str]] = {
+    UrlValidationReason.USER_INFO: "Events URL must not include user information.",
+    UrlValidationReason.SCHEME: "Events URL must use https.",
+    UrlValidationReason.CUSTOM_PORT: "Events URL must not include a custom port.",
+    UrlValidationReason.MISSING_HOST: (
+        "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+    ),
+    UrlValidationReason.HOST_NOT_ALLOWED: (
+        "Events URL host is not supported. Use eventsapi.chaturbate.com or events.testbed.cb.dev."
+    ),
+}
 
 
 class _ClientState(Enum):
@@ -144,20 +145,7 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
             _SUPPORTED_EVENTS_HOSTS,
         )
     except UrlValidationError as exc:
-        messages = {
-            UrlValidationReason.USER_INFO: "Events URL must not include user information.",
-            UrlValidationReason.SCHEME: "Events URL must use https.",
-            UrlValidationReason.CUSTOM_PORT: "Events URL must not include a custom port.",
-            UrlValidationReason.MISSING_HOST: (
-                "Events URL host is not supported. "
-                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-            ),
-            UrlValidationReason.HOST_NOT_ALLOWED: (
-                "Events URL host is not supported. "
-                "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
-            ),
-        }
-        msg = messages[exc.reason]
+        msg = _EVENTS_URL_VALIDATION_MESSAGES[exc.reason]
         raise EventsUrlError(msg) from None
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
@@ -179,11 +167,6 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
     return base_url, username, token
 
 
-def _mask_token() -> str:
-    """Mask token for logging."""
-    return "***"
-
-
 def _mask_url(url: str, token: str) -> str:
     """Mask token-shaped path/query components.
 
@@ -193,7 +176,7 @@ def _mask_url(url: str, token: str) -> str:
     Returns:
         URL with exact token components replaced by a fixed marker.
     """
-    masked = _mask_token()
+    masked = "***"
     parsed = URL(url)
     masked_path_parts = [
         masked if unquote(part) == token else part for part in parsed.raw_path.split("/")
@@ -249,11 +232,6 @@ class EventClient:
             max_rate=_DEFAULT_MAX_RATE,
             time_period=_DEFAULT_TIME_PERIOD,
         )
-        self._auth_retry_options: AuthRetryOptions = AuthRetryOptions(
-            status_codes=self._config.auth_retry_status_codes,
-            attempts=self._config.auth_retry_attempts,
-            delay=self._config.auth_retry_delay,
-        )
 
     @property
     def base_url(self) -> str:
@@ -282,7 +260,7 @@ class EventClient:
         Returns:
             Masked representation revealing only limited token characters.
         """
-        return f"EventClient(username='{self.username}', token='{_mask_token()}')"
+        return f"EventClient(username='{self.username}', token='***')"
 
     async def __aenter__(self) -> Self:
         """Open the HTTP session on context entry.
@@ -342,7 +320,7 @@ class EventClient:
         )
         return str(poll_url.with_query(timeout=self._config.timeout))
 
-    async def _perform_request_attempt(self, url: str) -> tuple[int, str]:
+    async def _send_request(self, url: str) -> tuple[int, str]:
         """Perform one HTTP request attempt."""
         # Session may be set to None by close() between retry attempts.
         if self._session is None:
@@ -353,9 +331,7 @@ class EventClient:
             session=self._session,
             rate_limiter=self._rate_limiter,
             url=url,
-            retry_status_codes=_RETRY_STATUS_CODES,
-            auth_retry=self._auth_retry_options,
-            username=self._username,
+            retry_auth_status_codes=self._config.auth_retry_status_codes,
         )
 
     async def _request(self, url: str) -> tuple[int, str]:
@@ -366,7 +342,7 @@ class EventClient:
         return await request_with_retry(
             url=url,
             config=self._config,
-            perform_attempt=self._perform_request_attempt,
+            perform_attempt=self._send_request,
             username=self._username,
         )
 
@@ -396,13 +372,13 @@ class EventClient:
         async with self._polling_semaphore:
             if self._state is not _ClientState.OPEN:
                 raise EventsError(_CLIENT_CLOSING_MESSAGE)
-            self._active_poll_tasks.add(current_task)
             request_next_url = self._next_url
 
-            url = self._build_url(next_url=request_next_url)
-            _logger.debug("Polling %s", _mask_url(url, self._token))
-
             try:
+                url = self._build_url(next_url=request_next_url)
+                if _logger.isEnabledFor(logging.DEBUG):
+                    _logger.debug("Polling %s", _mask_url(url, self._token))
+                self._active_poll_tasks.add(current_task)
                 status, text = await self._request(url)
 
                 events, next_url = process_response(
@@ -410,9 +386,13 @@ class EventClient:
                     text=text,
                     context=self._parser_context,
                     strict_validation=self._config.strict_validation,
-                    log_next_url=lambda next_url: _logger.debug(
-                        "Received nextUrl from timeout response: %s",
-                        _mask_url(next_url, self._token),
+                    log_next_url=lambda next_url: (
+                        _logger.debug(
+                            "Received nextUrl from timeout response: %s",
+                            _mask_url(next_url, self._token),
+                        )
+                        if _logger.isEnabledFor(logging.DEBUG)
+                        else None
                     ),
                 )
 
