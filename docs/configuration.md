@@ -64,7 +64,7 @@ config = ClientConfig(
 Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
 `521-524`.
 
-With default retry settings, the scheduled exponential backoff totals 511 seconds
+The local retry loop with default settings totals 511 seconds
 (about 8.5 minutes) before jitter, excluding request time. This is backoff delay
 alone: the retry loop has no overall deadline and request durations add to elapsed time.
 
@@ -138,15 +138,6 @@ client3 = EventClient(url3, rate_limiter=limiter)
 
 Set the logger to `DEBUG` for verbose polling URLs and event dispatch details.
 Retry warnings are emitted on `cb_events._request`.
-Stamina also emits a separate `stamina.retry_scheduled` record for the same
-retry. To keep the informative client warning without the duplicate, use stdlib
-logging only when Stamina is using its stdlib logging backend:
-
-```python
-import logging
-
-logging.getLogger("stamina").setLevel(logging.ERROR)
-```
 
 ```python
 import logging

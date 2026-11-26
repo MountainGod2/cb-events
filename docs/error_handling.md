@@ -57,17 +57,7 @@ for short fixed-delay retry sequences.
 
 If needed, tune retry settings with `ClientConfig(retry_attempts=..., retry_backoff=...)`.
 
-The client emits its own descriptive warning on `cb_events._request`. The
-underlying `stamina` package also logs a `stamina.retry_scheduled` record by
-default, so retry scheduling may produce two messages. Silence only stamina's
-record with standard-library logging if desired, provided Stamina is using
-its stdlib logging backend:
-
-```python
-import logging
-
-logging.getLogger("stamina").setLevel(logging.ERROR)
-```
+The local retry loop emits its descriptive retry warning on `cb_events._request`.
 
 ## Long-poll Timeout Responses
 
@@ -116,7 +106,6 @@ async def working_handler(event: Event) -> None:
 
 ```python
 import asyncio
-import contextlib
 import signal
 import threading
 from cb_events import EventClient, Router
@@ -125,19 +114,13 @@ router = Router()
 events_url = "https://eventsapi.chaturbate.com/events/username/token/"
 
 
-async def stream_events() -> None:
-    async with EventClient(events_url) as client:
-        async for event in client:
-            await router.dispatch(event)
-
-
 async def main() -> None:
     event_loop = asyncio.get_running_loop()
-    shutdown_event = asyncio.Event()
-    stream_task = asyncio.create_task(stream_events())
+    main_task = asyncio.current_task()
 
     def _request_shutdown(*_: object) -> None:
-        event_loop.call_soon_threadsafe(shutdown_event.set)
+        if main_task is not None:
+            event_loop.call_soon_threadsafe(main_task.cancel)
 
     if threading.current_thread() is threading.main_thread():
         try:
@@ -148,22 +131,12 @@ async def main() -> None:
             signal.signal(signal.SIGTERM, _request_shutdown)
             signal.signal(signal.SIGINT, _request_shutdown)
 
-    shutdown_task = asyncio.create_task(shutdown_event.wait())
-    done, _ = await asyncio.wait(
-        {stream_task, shutdown_task},
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-
-    if shutdown_task in done:
-        stream_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await stream_task
-    else:
-        # Propagate client errors
-        await stream_task
-
-    shutdown_task.cancel()
-    print("Shutting down")
+    try:
+        async with EventClient(events_url) as client:
+            async for event in client:
+                await router.dispatch(event)
+    except asyncio.CancelledError:
+        print("Shutting down")
 
 
 asyncio.run(main())
@@ -172,5 +145,4 @@ asyncio.run(main())
 !!! note
 
     If the client runs in a worker thread, do not register OS signals there.
-    Trigger shutdown by calling `shutdown_event.set()` (or
-    `event_loop.call_soon_threadsafe(shutdown_event.set)`) from your host application.
+    Trigger shutdown by cancelling the task that owns the client.

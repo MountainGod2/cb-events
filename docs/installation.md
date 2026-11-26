@@ -16,28 +16,7 @@ Or with uv:
 uv add cb-events
 ```
 
-## Development
-
-```bash
-git clone https://github.com/MountainGod2/cb-events.git
-cd cb-events
-make setup
-```
-
-Useful local commands:
-
-```bash
-make help
-make ci
-make test
-```
-
-Optional advanced commands:
-
-```bash
-make security-full
-make check-all
-```
+For contributor setup, see [CONTRIBUTING.md](https://github.com/MountainGod2/cb-events/blob/main/CONTRIBUTING.md).
 
 ## API Token
 
