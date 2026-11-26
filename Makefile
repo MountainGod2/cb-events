@@ -10,12 +10,13 @@ export UV_FROZEN ?= 1
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
 PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
+ISOLATED_UV = VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV)
 
 .PHONY: setup format fix lint check-all pre-commit
 .PHONY: security security-full audit trivy zizmor
 .PHONY: test test-cov test-cov-lowest-direct test-e2e test-live
 .PHONY: docs docs-serve docs-linkcheck docs-format docs-format-check
-.PHONY: build build-smoke ci ci-lower-bounds clean help
+.PHONY: build build-smoke ci ci-checks ci-lower-bounds clean help
 
 # Public targets are intended for day-to-day contributor workflows.
 # Advanced targets are occasional utility tasks.
@@ -40,7 +41,7 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run ruff check
 	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
-	$(UV) run basedpyright
+	$(UV) run basedpyright --level error
 
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
@@ -48,17 +49,19 @@ test: ## Public: Run test suite (excluding live tests).
 security: audit zizmor ## Public: Run core security scans.
 
 docs: ## Public: Build documentation.
-	rm -rf site docs/html_local_check
+	rm -rf site
 	$(UV) run --group=docs zensical build --strict
 
-ci: lint security test-cov ## Public: Run CI-equivalent checks locally.
+ci-checks: lint security ## Internal: Run shared CI lint and security checks.
+
+ci: ci-checks test-cov ## Public: Run CI-equivalent checks locally.
 
 clean: ## Public: Remove caches, artifacts, and generated reports.
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -name "*.py[co]" -delete
 	rm -rf .pytest_cache/ .ruff_cache/ .pyright/ .cache/ .coverage .hypothesis
 	rm -rf coverage.xml junit.xml htmlcov/ dist/ build/
-	rm -rf *.sarif site/ docs/html_local_check/
+	rm -rf *.sarif site/
 
 help: ## Public: Show available public and advanced targets.
 	@awk 'BEGIN {printf "\nPublic targets:\n\n"} /^[a-zA-Z0-9_.-]+:.*## Public:/ {split($$0, parts, ":.*## Public: "); printf "  %-18s %s\n", parts[1], parts[2]} END {print ""}' $(MAKEFILE_LIST)
@@ -72,11 +75,11 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 	for version in $(PYTHON_VERSIONS); do \
 		echo "=== Python $$version ==="; \
 		env_dir="$$tmp_root/py$$version"; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) sync --python "$$version" --group lint --group test --frozen; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff format --check; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint ruff check; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group lint basedpyright; \
-		VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
+		$(ISOLATED_UV) sync --python "$$version" --group lint --group test --frozen; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint ruff format --check; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint ruff check; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint basedpyright --level error; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
 	done
 
 pre-commit: ## Public: Run all prek hooks.
@@ -84,7 +87,7 @@ pre-commit: ## Public: Run all prek hooks.
 
 security-full: security trivy ## Advanced: Run all security scans, including Trivy.
 
-docs-serve: docs ## Advanced: Build docs and serve locally on port 8000.
+docs-serve: ## Advanced: Serve docs locally on port 8000.
 	@echo "Serving documentation at http://localhost:8000 (Ctrl+C to stop)"
 	$(UV) run --group=docs zensical serve --dev-addr 127.0.0.1:8000
 
@@ -114,7 +117,7 @@ build-smoke: ## Advanced: Build distributions and verify the wheel can be import
 	rm -rf .venv-build-smoke
 	rm -rf .venv-sdist-smoke
 
-ci-lower-bounds: lint security test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
+ci-lower-bounds: ci-checks test-cov-lowest-direct ## Advanced: Run CI checks with lowest direct dependency bounds.
 
 # --- Internal targets ---
 
