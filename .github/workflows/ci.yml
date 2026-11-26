@@ -36,7 +36,7 @@ jobs:
           cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
-        run: uv sync --group=lint --group=docs --group=test --frozen
+        run: uv sync --group=lint --group=docs --frozen
 
       - name: Run lint checks
         run: make lint
@@ -50,7 +50,6 @@ jobs:
     needs: lint
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: testing
     permissions:
       contents: read
     strategy:
@@ -105,7 +104,6 @@ jobs:
     needs: lint
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: testing
     permissions:
       contents: read
     steps:
@@ -182,14 +180,17 @@ jobs:
           assert EventType.TIP.value == "tip"
           PY
 
+      - name: Run example against current source
+        run: uv run --with . examples/event_handling.py --help
+
       - name: Prune uv cache
         if: always()
         run: uv cache prune --ci
 
   coverage-summary:
     name: Coverage Summary
-    if: ${{ !cancelled() }}
-    needs: [test, test-lowest-direct, package-smoke, test-cross-platform]
+    if: ${{ success() }}
+    needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -333,12 +334,11 @@ jobs:
 
       - name: Run uv audit
         id: audit
-        continue-on-error: true
         run: make audit
 
       - name: Run Trivy
         id: trivy
-        continue-on-error: true
+        if: ${{ !cancelled() }}
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: v0.76.2
@@ -351,28 +351,25 @@ jobs:
 
       - name: Upload Trivy SARIF
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        if: always()
-        continue-on-error: true
+        if: ${{ !cancelled() }}
         with:
           sarif_file: trivy.sarif
           category: trivy
 
       - name: Run Zizmor
         id: zizmor
-        if: always()
-        continue-on-error: true
+        if: ${{ !cancelled() }}
         run: make zizmor
 
       - name: Upload Zizmor SARIF
         uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        if: always()
-        continue-on-error: true
+        if: ${{ !cancelled() }}
         with:
           sarif_file: zizmor.sarif
           category: zizmor
 
       - name: Publish security summary
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           {
             echo "## Security Scan Summary"
@@ -389,24 +386,6 @@ jobs:
       - name: Prune uv cache
         if: always()
         run: uv cache prune --ci
-
-      - name: Security gate
-        if: always()
-        run: |
-          failed=0
-          declare -A results=(
-            ["uv audit"]="${{ steps.audit.outcome }}"
-            ["Trivy"]="${{ steps.trivy.outcome }}"
-            ["Zizmor"]="${{ steps.zizmor.outcome }}"
-          )
-          for name in "${!results[@]}"; do
-            outcome="${results[$name]}"
-            if [ "$outcome" != "success" ]; then
-              echo "::error title=${name} failed::${name} reported an outcome of '${outcome}'. See the '${name}' step above for details."
-              failed=1
-            fi
-          done
-          exit "$failed"
 
   codeql:
     name: CodeQL (${{ matrix.language }})
