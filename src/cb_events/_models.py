@@ -11,9 +11,8 @@ from collections.abc import Callable, Iterator, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import StrEnum
-from functools import partial
 from types import MappingProxyType
-from typing import ClassVar, Generic, TypeVar, cast, overload
+from typing import ClassVar, TypeVar, cast
 
 from pydantic import (
     BaseModel,
@@ -30,6 +29,8 @@ from typing_extensions import override
 
 _logger = logging.getLogger(__name__)
 """Logger for the cb_events.models module."""
+
+_T = TypeVar("_T")
 
 
 class EventType(StrEnum):
@@ -72,11 +73,7 @@ class BaseEventModel(BaseModel):
         frozen=True,
         hide_input_in_errors=True,
         populate_by_name=True,
-        validate_default=True,
     )
-
-
-_T = TypeVar("_T")
 
 
 class User(BaseEventModel):
@@ -214,10 +211,9 @@ class RoomSubject(BaseEventModel):
 
 
 _MAX_EVENT_DATA_DEPTH = 100
-_MappingValue = TypeVar("_MappingValue")
 
 
-class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
+class _ImmutableMapping(Mapping[str, object]):
     """Read-only mapping with copy and pickle support.
 
     Nested mappings and sequences are recursively frozen: mappings become
@@ -228,13 +224,13 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
 
     __slots__: tuple[str, ...] = ("_data",)
 
-    _data: Mapping[str, _MappingValue]
+    _data: Mapping[str, object]
 
-    def __init__(self, values: Mapping[str, _MappingValue] | None = None) -> None:
+    def __init__(self, values: Mapping[str, object] | None = None) -> None:
         self._data = MappingProxyType(dict(values or {}))
 
     @override
-    def __getitem__(self, key: str) -> _MappingValue:
+    def __getitem__(self, key: str) -> object:
         return self._data[key]
 
     @override
@@ -245,125 +241,80 @@ class _ImmutableMapping(Mapping[str, _MappingValue], Generic[_MappingValue]):
     def __len__(self) -> int:
         return len(self._data)
 
-    @override
-    def __contains__(self, key: object) -> bool:
-        return key in self._data
-
-    @overload
-    def get(self, key: str) -> _MappingValue | None: ...
-
-    @overload
-    def get(self, key: str, default: _MappingValue) -> _MappingValue: ...
-
-    @overload
-    def get(self, key: str, default: _T) -> _MappingValue | _T: ...
-
-    @override
-    def get(self, key: str, default: _T | None = None) -> _MappingValue | _T | None:
-        return self._data.get(key, default)
-
-    @override
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Mapping):
-            return NotImplemented
-        return self._data == other
-
-    @override
-    def __hash__(self) -> int:
-        """Reject hashing because mapping contents may themselves be unhashable."""
-        msg = "unhashable type: '_ImmutableMapping'"
-        raise TypeError(msg)
-
-    def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableMapping[_MappingValue]:
+    def __deepcopy__(self, memo: dict[int, object]) -> _ImmutableMapping:
         return _ImmutableMapping({key: deepcopy(value, memo) for key, value in self.items()})
 
-    def __copy__(self) -> _ImmutableMapping[_MappingValue]:
+    def __copy__(self) -> _ImmutableMapping:
         return _ImmutableMapping(self)
 
     @override
     def __reduce__(
         self,
-    ) -> tuple[type[_ImmutableMapping[_MappingValue]], tuple[dict[str, _MappingValue]]]:
+    ) -> tuple[type[_ImmutableMapping], tuple[dict[str, object]]]:
         return (self.__class__, (dict(self),))
 
 
-_AssignValue = Callable[[object], None]
-
-
-def _assign_mapping(target: dict[str, object], key: str, value: object) -> None:
-    """Assign one transformed value into a temporary mapping."""
-    target[key] = value
-
-
-def _assign_sequence(target: list[object], key: int, value: object) -> None:
-    """Assign one transformed value into a temporary sequence."""
-    target[key] = value
-
-
-def _transform_event_data(value: object, *, freeze: bool) -> object:
+def _transform_event_data(
+    value: object,
+    *,
+    freeze: bool,
+    active_containers: set[int] | None = None,
+    depth: int = 0,
+) -> object:
     """Copy event data while freezing or thawing all nested containers."""
-    root: list[object] = []
-    active_containers: set[int] = set()
-    stack: list[tuple[str, object, _AssignValue, int]] = [("visit", value, root.append, 0)]
+    if depth > _MAX_EVENT_DATA_DEPTH:
+        msg = f"Event payload contains a reference cycle; nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+        raise ValueError(msg)
 
-    while stack:
-        operation, current, assign, depth_or_id = stack.pop()
-        if operation == "finish_map":
-            active_containers.discard(depth_or_id)
-            mapping_result = cast("dict[str, object]", current)
-            assign(_ImmutableMapping(mapping_result) if freeze else mapping_result)
-            continue
-        if operation == "finish_sequence":
-            active_containers.discard(depth_or_id)
-            sequence_result = cast("list[object]", current)
-            assign(tuple(sequence_result) if freeze else sequence_result)
-            continue
-        if freeze and depth_or_id > _MAX_EVENT_DATA_DEPTH:
-            msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+    seen: set[int] = active_containers if active_containers is not None else set()
+
+    if isinstance(value, Mapping):
+        mapping = cast("Mapping[str, object]", value)
+        container_id = id(mapping)
+        if container_id in seen:
+            msg = "Event payload contains a reference cycle."
             raise ValueError(msg)
-        if isinstance(current, Mapping):
-            mapping = cast("Mapping[str, object]", current)
-            container_id = id(mapping)
-            if freeze and container_id in active_containers:
-                msg = "Event payload contains a reference cycle."
-                raise ValueError(msg)
-            if freeze:
-                active_containers.add(container_id)
-            transformed_mapping: dict[str, object] = {}
-            stack.append(("finish_map", transformed_mapping, assign, container_id))
-            stack.extend(
-                (
-                    "visit",
+        seen.add(container_id)
+        try:
+            transformed_mapping = {
+                key: _transform_event_data(
                     item,
-                    partial(_assign_mapping, transformed_mapping, key),
-                    depth_or_id + 1,
+                    freeze=freeze,
+                    active_containers=seen,
+                    depth=depth + 1,
                 )
-                for key, item in reversed(tuple(mapping.items()))
-            )
-            continue
-        if isinstance(current, (list, tuple)):
-            sequence = cast("list[object] | tuple[object, ...]", current)
-            container_id = id(sequence)
-            if freeze and container_id in active_containers:
-                msg = "Event payload contains a reference cycle."
-                raise ValueError(msg)
-            if freeze:
-                active_containers.add(container_id)
-            transformed_items: list[object] = [None] * len(sequence)
-            stack.append(("finish_sequence", transformed_items, assign, container_id))
-            stack.extend(
-                (
-                    "visit",
-                    item,
-                    partial(_assign_sequence, transformed_items, index),
-                    depth_or_id + 1,
-                )
-                for index, item in reversed(tuple(enumerate(sequence)))
-            )
-            continue
-        assign(current)
+                for key, item in mapping.items()
+            }
+        finally:
+            seen.discard(container_id)
+        if freeze:
+            return _ImmutableMapping(transformed_mapping)
+        return transformed_mapping
 
-    return root[0]
+    if isinstance(value, (list, tuple)):
+        sequence = cast("list[object] | tuple[object, ...]", value)
+        container_id = id(sequence)
+        if container_id in seen:
+            msg = "Event payload contains a reference cycle."
+            raise ValueError(msg)
+        seen.add(container_id)
+        try:
+            transformed_sequence = [
+                _transform_event_data(
+                    item,
+                    freeze=freeze,
+                    active_containers=seen,
+                    depth=depth + 1,
+                )
+                for item in sequence
+            ]
+        finally:
+            seen.discard(container_id)
+        if freeze:
+            return tuple(transformed_sequence)
+        return transformed_sequence
+
+    return value
 
 
 def _freeze_event_data(value: object) -> object:
@@ -402,7 +353,11 @@ class Event(BaseEventModel):
     """Original API method name when it is not recognized by this client."""
     id: str
     """Unique identifier for the event."""
-    data: Mapping[str, object] = Field(default_factory=dict, alias="object")
+    data: Mapping[str, object] = Field(
+        default_factory=dict,
+        alias="object",
+        validate_default=True,
+    )
     """Immutable event data payload."""
 
     # Private attributes hold the results of one-time sub-model parsing.
@@ -421,23 +376,12 @@ class Event(BaseEventModel):
         if not isinstance(frozen, _ImmutableMapping):
             msg = "Event payload must be a mapping."
             raise TypeError(msg)
-        return cast("_ImmutableMapping[object]", frozen)
-
-    @field_validator("type", mode="before")
-    @classmethod
-    def _coerce_unknown_type(cls, value: object) -> object:
-        """Map unrecognized method strings to EventType.UNKNOWN."""
-        if isinstance(value, str):
-            try:
-                return EventType(value)
-            except ValueError:
-                return EventType.UNKNOWN
-        return value
+        return frozen
 
     @model_validator(mode="before")
     @classmethod
-    def _preserve_unknown_method(cls, value: object) -> object:
-        """Retain the original name of an unrecognized upstream method."""
+    def _normalize_event_type(cls, value: object) -> object:
+        """Normalize unrecognized methods while retaining their original value."""
         if not isinstance(value, Mapping):
             return value
 
@@ -445,23 +389,23 @@ class Event(BaseEventModel):
         raw_method = mapping.get("method", mapping.get("type"))
         if not isinstance(raw_method, str):
             return mapping
+
+        preserved = dict(mapping)
+        _ = preserved.pop("rawMethod", None)
         if raw_method == EventType.UNKNOWN.value:
-            preserved = dict(mapping)
             saved_raw_method = mapping.get("rawMethod", mapping.get("raw_method"))
             if isinstance(saved_raw_method, str):
                 preserved["raw_method"] = saved_raw_method
-            _ = preserved.pop("rawMethod", None)
             return preserved
+
         try:
             _ = EventType(raw_method)
         except ValueError:
-            preserved = dict(mapping)
+            preserved["method"] = EventType.UNKNOWN
             preserved["raw_method"] = raw_method
-            _ = preserved.pop("rawMethod", None)
             return preserved
-        preserved = dict(mapping)
+
         _ = preserved.pop("raw_method", None)
-        _ = preserved.pop("rawMethod", None)
         return preserved
 
     @field_serializer("data")
