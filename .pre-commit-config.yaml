@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: basedpyright
         name: basedpyright
-        entry: uv run --frozen basedpyright
+        entry: uv run --frozen basedpyright --level error
         language: system
         types_or: [python, toml]
         pass_filenames: false
