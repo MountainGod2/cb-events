@@ -85,6 +85,12 @@ exclude-newer = "1 week"
 exclude-newer-package = { cb-events = false, certifi = false, setuptools = false }
 fork-strategy = "requires-python"
 
+[tool.cb-events]
+supported-python-versions = ["3.11", "3.12", "3.13", "3.14"]
+lint-python-version = "3.13"
+lowest-direct-python-version = "3.11"
+cross-platform-python-version = "3.12"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/cb_events"]
 
@@ -98,6 +104,7 @@ include = [
     "/CHANGELOG.md",
     "/LICENSE",
     "/Makefile",
+    "/scripts",
     "/zensical.toml",
     "/pyproject.toml",
 ]
@@ -178,6 +185,7 @@ future-annotations = true
 ]
 "tests/conftest.py" = ["D", "pytest-fixture-autouse"]
 "tests/test_router.py" = ["unused-function-argument", "unused-async"]
+"tests/test_python_versions.py" = ["suspicious-subprocess-import", "subprocess-without-shell-equals-true"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

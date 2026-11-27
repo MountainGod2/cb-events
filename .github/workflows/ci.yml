@@ -17,8 +17,35 @@ concurrency:
 permissions: {}
 
 jobs:
+  python-policy:
+    name: Python Version Policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.policy.outputs.matrix }}
+      lint-python: ${{ steps.policy.outputs.lint-python }}
+      lowest-direct-python: ${{ steps.policy.outputs.lowest-direct-python }}
+      cross-platform-python: ${{ steps.policy.outputs.cross-platform-python }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read Python version policy
+        id: policy
+        run: |
+          python3 scripts/python_versions.py --validate
+          echo "matrix=$(python3 scripts/python_versions.py --github-matrix)" >> "$GITHUB_OUTPUT"
+          echo "lint-python=$(python3 scripts/python_versions.py --lint-python)" >> "$GITHUB_OUTPUT"
+          echo "lowest-direct-python=$(python3 scripts/python_versions.py --lowest-direct-python)" >> "$GITHUB_OUTPUT"
+          echo "cross-platform-python=$(python3 scripts/python_versions.py --cross-platform-python)" >> "$GITHUB_OUTPUT"
+
   lint:
     name: Lint
+    needs: python-policy
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -32,8 +59,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.13"
-          cache-suffix: lint-3.13-${{ hashFiles('uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.lint-python }}
+          cache-suffix: lint-${{ needs.python-policy.outputs.lint-python }}-${{ hashFiles('uv.lock') }}
 
       - name: Sync lint and docs dependencies
         run: uv sync --group=lint --group=docs --frozen
@@ -47,7 +74,7 @@ jobs:
 
   test:
     name: Test (Python ${{ matrix.python-version }})
-    needs: lint
+    needs: [lint, python-policy]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -55,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(needs.python-policy.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,8 +127,8 @@ jobs:
         run: uv cache prune --ci
 
   test-lowest-direct:
-    name: Test (Python 3.11, lowest-direct)
-    needs: lint
+    name: Test (Python ${{ needs.python-policy.outputs.lowest-direct-python }}, lowest-direct)
+    needs: [lint, python-policy]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -115,8 +142,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.11"
-          cache-suffix: test-3.11-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.lowest-direct-python }}
+          cache-suffix: test-${{ needs.python-policy.outputs.lowest-direct-python }}-lowest-direct-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Run tests with lowest direct dependency bounds
         run: make test-cov-lowest-direct
@@ -127,7 +154,7 @@ jobs:
 
   package-smoke:
     name: Package Smoke Test
-    needs: lint
+    needs: [lint, python-policy]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -141,8 +168,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.13"
-          cache-suffix: package-smoke-3.13-${{ hashFiles('uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.lint-python }}
+          cache-suffix: package-smoke-${{ needs.python-policy.outputs.lint-python }}-${{ hashFiles('uv.lock') }}
 
       - name: Build distributions
         run: uv build
@@ -190,7 +217,7 @@ jobs:
   coverage-summary:
     name: Coverage Summary
     if: ${{ success() }}
-    needs: test
+    needs: [test, python-policy]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -204,8 +231,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.14"
-          cache-suffix: coverage-summary-3.14-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.lint-python }}
+          cache-suffix: coverage-summary-${{ needs.python-policy.outputs.lint-python }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -277,8 +304,8 @@ jobs:
         run: uv cache prune --ci
 
   test-cross-platform:
-    name: Test (${{ matrix.os }}, Python 3.12)
-    needs: lint
+    name: Test (${{ matrix.os }}, Python ${{ needs.python-policy.outputs.cross-platform-python }})
+    needs: [lint, python-policy]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     permissions:
@@ -296,8 +323,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.12"
-          cache-suffix: test-${{ matrix.os }}-3.12-${{ hashFiles('uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.cross-platform-python }}
+          cache-suffix: test-${{ matrix.os }}-${{ needs.python-policy.outputs.cross-platform-python }}-${{ hashFiles('uv.lock') }}
 
       - name: Sync test dependencies
         run: uv sync --group=test --frozen
@@ -311,7 +338,7 @@ jobs:
 
   security:
     name: Security
-    needs: [lint]
+    needs: [lint, python-policy]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -326,8 +353,8 @@ jobs:
       - name: Setup uv
         uses: $/.github/actions/setup-uv
         with:
-          python-version: "3.13"
-          cache-suffix: security-3.13-${{ hashFiles('uv.lock') }}
+          python-version: ${{ needs.python-policy.outputs.lint-python }}
+          cache-suffix: security-${{ needs.python-policy.outputs.lint-python }}-${{ hashFiles('uv.lock') }}
 
       - name: Sync security dependencies
         run: uv sync --group=security --frozen

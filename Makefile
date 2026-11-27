@@ -9,7 +9,7 @@ UV ?= uv
 export UV_FROZEN ?= 1
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
-PYTHON_VERSIONS ?= 3.11 3.12 3.13 3.14
+PYTHON_VERSIONS := $(shell python3 scripts/python_versions.py --shell)
 ISOLATED_UV = VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV)
 
 .PHONY: setup format fix lint check-all pre-commit
