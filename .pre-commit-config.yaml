@@ -59,7 +59,7 @@ repos:
     hooks:
       - id: basedpyright
         name: basedpyright
-        entry: uv run --frozen basedpyright --level error
+        entry: bash -c 'uv run --frozen basedpyright src && uv run --frozen basedpyright --level error tests'
         language: system
         types_or: [python, toml]
         pass_filenames: false

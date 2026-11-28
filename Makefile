@@ -9,7 +9,7 @@ UV ?= uv
 export UV_FROZEN ?= 1
 PYTEST ?= $(UV) run pytest
 PYTEST_COV_ARGS ?= --cov=src --cov-report=term-missing:skip-covered --cov-report=xml --cov-report=html --junitxml=junit.xml
-PYTHON_VERSIONS := $(shell python3 scripts/python_versions.py --shell)
+PYTHON_VERSIONS := $(or $(shell $(UV) run --no-sync python scripts/python_versions.py --shell),$(error unable to read Python version policy))
 ISOLATED_UV = VIRTUAL_ENV= UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$$env_dir" $(UV)
 
 .PHONY: setup format fix lint check-all pre-commit
@@ -41,7 +41,8 @@ lint: ## Public: Run linting, static checks, docs formatting checks, and complex
 	$(UV) run ruff check
 	$(UV) run --group=docs mdformat --check docs README.md
 	$(UV) run --group=docs zensical build --strict
-	$(UV) run basedpyright --level error
+	$(UV) run basedpyright src
+	$(UV) run basedpyright --level error tests
 
 test: ## Public: Run test suite (excluding live tests).
 	$(PYTEST) -m "not live"
@@ -78,7 +79,8 @@ check-all: ## Advanced: Run lint + tests across supported Python versions in iso
 		$(ISOLATED_UV) sync --python "$$version" --group lint --group test --frozen; \
 		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint ruff format --check; \
 		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint ruff check; \
-		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint basedpyright --level error; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint basedpyright src; \
+		$(ISOLATED_UV) run --python "$$version" --no-sync --group lint basedpyright --level error tests; \
 		$(ISOLATED_UV) run --python "$$version" --no-sync --group test pytest -q -m "not live"; \
 	done
 
