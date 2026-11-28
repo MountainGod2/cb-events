@@ -158,10 +158,18 @@ def _retry_after_delay(value: str | None, *, now: datetime | None = None) -> flo
 
 def _backoff_delay(config: ClientConfig, attempt: int) -> float:
     """Calculate capped exponential delay after a failed attempt."""
-    return min(
-        config.retry_max_delay,
-        config.retry_backoff * config.retry_factor ** (attempt - 1),
-    )
+    if config.retry_backoff <= 0 or config.retry_max_delay <= 0:
+        return 0.0
+
+    delay = config.retry_backoff
+    for _ in range(attempt - 1):
+        if not isfinite(delay) or delay >= config.retry_max_delay:
+            return config.retry_max_delay
+        next_delay = delay * config.retry_factor
+        if not isfinite(next_delay):
+            return config.retry_max_delay
+        delay = min(config.retry_max_delay, next_delay)
+    return min(config.retry_max_delay, delay)
 
 
 def _is_auth_retry(exc: Exception, config: ClientConfig) -> TypeGuard[_RetryableStatusError]:
@@ -210,10 +218,9 @@ async def request_with_retry(
                 attempts_limit = config.retry_attempts
                 attempts_for_policy = retry_attempts
 
-            if attempts_for_policy >= attempts_limit and is_auth_retry:
-                return exc.status_code, exc.response_text
-
             if attempts_for_policy >= attempts_limit:
+                if is_auth_retry:
+                    return exc.status_code, exc.response_text
                 _raise_request_failure(
                     attempts_made=attempts_made,
                     original_exception=exc,
@@ -231,13 +238,13 @@ async def request_with_retry(
                 )
             else:
                 delay = _backoff_delay(config, retry_attempts)
-                if (
-                    isinstance(exc, _RetryableStatusError)
-                    and exc.status_code == HTTPStatus.TOO_MANY_REQUESTS
-                ):
+                if isinstance(exc, _RetryableStatusError):
                     retry_after = _retry_after_delay(exc.retry_after)
                     if retry_after is not None:
-                        delay = min(retry_after, config.retry_max_delay)
+                        delay = min(
+                            max(delay, retry_after),
+                            config.retry_max_delay,
+                        )
                 _logger.warning(
                     "Retrying events request for user %s after attempt %d/%d (%s).",
                     username or "<unknown>",

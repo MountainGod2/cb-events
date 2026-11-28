@@ -52,10 +52,15 @@ async def test_close_stops_inflight_poll_without_cancelling_caller_task(
     """Close should signal the poll and preserve its task ownership."""
     started = asyncio.Event()
     release = asyncio.Event()
+    request_unwound = asyncio.Event()
 
     async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
         started.set()
-        await release.wait()
+        try:
+            await release.wait()
+        except asyncio.CancelledError:
+            request_unwound.set()
+            raise
         return 200, '{"events": [], "nextUrl": null}'
 
     monkeypatch.setattr(EventClient, "_request", _slow_request)
@@ -65,6 +70,7 @@ async def test_close_stops_inflight_poll_without_cancelling_caller_task(
         await started.wait()
 
         await client.close()
+        assert request_unwound.is_set()
 
         with pytest.raises(EventsError, match="stopped because client is closing"):
             await poll_task
@@ -140,3 +146,29 @@ async def test_poll_skips_url_masking_when_debug_is_disabled(
 
     async with event_client_factory() as client:
         assert await client.poll() == []
+
+
+async def test_async_iteration_stops_cleanly_when_closed(
+    event_client_factory: EventClientFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Closing a client should terminate async iteration without an API error."""
+    started = asyncio.Event()
+
+    async def _slow_request(_self: EventClient, _url: str) -> tuple[int, str]:
+        started.set()
+        await asyncio.sleep(10)
+        return 200, '{"events": [], "nextUrl": null}'
+
+    monkeypatch.setattr(EventClient, "_request", _slow_request)
+
+    async with event_client_factory() as client:
+
+        async def _iterate() -> None:
+            async for _event in client:
+                pass
+
+        iterator_task = asyncio.create_task(_iterate())
+        await started.wait()
+        await client.close()
+        await iterator_task

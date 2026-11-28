@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+from datetime import UTC, datetime
 
 import pytest
 from aioresponses import aioresponses
@@ -168,7 +169,7 @@ async def test_rate_limit_retry_after_controls_delay(
     ) as client:
         assert len(await client.poll()) == 1
 
-    assert sleeps == [0.25]
+    assert sleeps == [5.0]
 
 
 async def test_auth_and_network_retries_use_independent_budgets(
@@ -192,6 +193,75 @@ async def test_auth_and_network_retries_use_independent_budgets(
     )
     async with event_client_factory(config=config) as client:
         assert len(await client.poll()) == 1
+
+
+def test_backoff_delay_is_capped_without_overflow() -> None:
+    """Very large retry attempts should use the configured cap."""
+    config = ClientConfig(
+        retry_attempts=1025,
+        retry_backoff=1.0,
+        retry_factor=2.0,
+        retry_max_delay=300.0,
+    )
+
+    assert request_module._backoff_delay(config, 1024) == pytest.approx(300.0)
+    assert request_module._backoff_delay(config, 1025) == pytest.approx(300.0)
+
+
+def test_retry_after_delay_parses_http_date_relative_to_now() -> None:
+    """HTTP-date Retry-After headers should be converted to seconds."""
+    now = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+    header = "Thu, 01 Jan 2026 00:00:02 GMT"
+
+    assert request_module._retry_after_delay(header, now=now) == pytest.approx(2.0)
+
+
+def test_retry_after_delay_returns_zero_for_past_http_date() -> None:
+    """Past HTTP-date Retry-After headers should clamp to zero."""
+    now = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+    header = "Wed, 31 Dec 2025 23:59:59 GMT"
+
+    assert request_module._retry_after_delay(header, now=now) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize(
+    ("status", "header"),
+    [
+        (503, "0"),
+        (503, "Wed, 21 Oct 2015 07:28:00 GMT"),
+    ],
+)
+async def test_retry_after_is_supported_for_other_retryable_statuses(
+    monkeypatch: pytest.MonkeyPatch,
+    event_client_factory: EventClientFactory,
+    aioresponses_mock: aioresponses,
+    testbed_url_pattern: re.Pattern[str],
+    status: int,
+    header: str,
+) -> None:
+    """503 Retry-After hints should participate in delay selection."""
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        status=status,
+        headers={"Retry-After": header},
+    )
+    aioresponses_mock.get(
+        testbed_url_pattern,
+        payload=make_response([make_event(EventType.TIP, event_id="1")]),
+    )
+    sleeps: list[float] = []
+
+    async def _record_sleep(delay: float) -> None:
+        await asyncio.sleep(0)
+        sleeps.append(delay)
+
+    monkeypatch.setattr(request_module, "_retry_sleep", _record_sleep)
+    async with event_client_factory(
+        config=ClientConfig(retry_attempts=2, retry_backoff=1.0)
+    ) as client:
+        assert len(await client.poll()) == 1
+
+    assert sleeps
 
 
 def test_internal_logger_names_are_stable() -> None:
