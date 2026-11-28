@@ -47,6 +47,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+examples = ["rich==15.0.0"]
+
 [project.urls]
 Homepage = "https://github.com/MountainGod2/cb-events"
 Documentation = "https://mountaingod2.github.io/cb-events/"
@@ -86,9 +89,8 @@ exclude-newer-package = { cb-events = false, certifi = false, setuptools = false
 fork-strategy = "requires-python"
 
 [tool.cb-events]
-supported-python-versions = ["3.11", "3.12", "3.13", "3.14"]
 lint-python-version = "3.13"
-lowest-direct-python-version = "3.11"
+lowest-direct-python-version = "3.11.5"
 cross-platform-python-version = "3.12"
 
 [tool.hatch.build.targets.wheel]

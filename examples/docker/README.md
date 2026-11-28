@@ -2,6 +2,7 @@
 
 Small Docker example for running `cb-events` with the included event handler example.
 The image builds the package from the current repository source and runs: `examples/event_handling.py`
+Runtime dependencies are exported from [uv.lock](/config/cb-events/uv.lock) during the build for reproducibility.
 
 ## Build
 

@@ -13,12 +13,13 @@ COPY --from=uv /usr/local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 
-COPY pyproject.toml README.md LICENSE ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 COPY examples/event_handling.py ./
 
 RUN uv venv "$VIRTUAL_ENV" && \
-    uv pip install --python "$VIRTUAL_ENV/bin/python" . rich
+    uv export --frozen --no-dev --package cb-events --extra examples --no-editable --output-file requirements.txt && \
+    uv pip install --python "$VIRTUAL_ENV/bin/python" -r requirements.txt
 
 FROM dhi.io/python:3-alpine3.23@sha256:b9fc36b7bf632b15932f7ed298cafa2f39ef5c8318a104717bf14c87ed46ab34 AS runtime
 

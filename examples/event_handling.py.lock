@@ -1,6 +1,6 @@
 version = 1
 revision = 5
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 
 [options]
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
@@ -13,8 +13,8 @@ setuptools = false
 
 [manifest]
 requirements = [
-    { name = "cb-events", specifier = ">=11.0.0" },
-    { name = "rich", specifier = ">=15.0.0" },
+    { name = "cb-events", specifier = ">=11.0.1" },
+    { name = "rich", specifier = "==15.0.0" },
 ]
 
 [[package]]
@@ -228,7 +228,7 @@ wheels = [
 
 [[package]]
 name = "cb-events"
-version = "11.0.0"
+version = "11.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -238,9 +238,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/ae/58d0b39911ebbd108c5c8eab4662a5172c436e6178b1817988ad8293a09b/cb_events-11.0.0.tar.gz", hash = "sha256:d4e65aca5ef194833f03ae6c3785fffe64cd9a6e6b7b3157f5c0bfd4d412f6d6", size = 72610, upload-time = "2026-11-25T00:20:26.623Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/92/dd9539975e3b9d3710801172889f433f6f727c49da684d3b6e66417fa9e6/cb_events-11.0.1.tar.gz", hash = "sha256:c66bf1d88a0b11dec76193cce3262690527b7a5048bb5f2c40da0e77ae3a0891", size = 72666, upload-time = "2026-11-25T23:38:35.257Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/aa/c95d98f58ac4582f92c6aed714feacb4c5966990bad2de057450185a9680/cb_events-11.0.0-py3-none-any.whl", hash = "sha256:315fd5e8f61843e1e3bbf1438e90df7196a679458a3f4e738b8444faec8a4439", size = 27583, upload-time = "2026-11-25T00:20:25.283Z" },
+    { url = "https://files.pythonhosted.org/packages/30/2f/b3af64d8769fd7468f54caf4798d54ff5b750605b9717fe56d1c63370a2f/cb_events-11.0.1-py3-none-any.whl", hash = "sha256:6aecd6fe73322198ef5d350173b6a0796b977f2e521c7076fb7a78d34bcd99b3", size = 27585, upload-time = "2026-11-25T23:38:34.193Z" },
 ]
 
 [[package]]
