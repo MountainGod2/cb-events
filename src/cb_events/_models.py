@@ -263,7 +263,7 @@ def _transform_event_data(
 ) -> object:
     """Copy event data while freezing or thawing all nested containers."""
     if depth > _MAX_EVENT_DATA_DEPTH:
-        msg = f"Event payload contains a reference cycle; nesting exceeds {_MAX_EVENT_DATA_DEPTH}."
+        msg = f"Event payload nesting exceeds {_MAX_EVENT_DATA_DEPTH} levels."
         raise ValueError(msg)
 
     seen: set[int] = active_containers if active_containers is not None else set()
