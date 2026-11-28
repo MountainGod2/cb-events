@@ -21,7 +21,7 @@ from ._exceptions import (
     build_http_error,
 )
 from ._models import Event
-from ._utils import TRUNCATE_LENGTH, truncate_text
+from ._utils import TRUNCATE_LENGTH, truncate_text, validate_https_url
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -32,8 +32,8 @@ _logger = logging.getLogger(__name__)
 _TIMEOUT_STATUS_MESSAGE = "waited too long"
 
 
-class _NextUrlParseError(ValueError):
-    """Absolute nextUrl parsing failure."""
+class _RelativeUrlError(ValueError):
+    """Raised when nextUrl has no URL scheme."""
 
 
 @dataclass(frozen=True)
@@ -165,11 +165,11 @@ def _resolve_absolute_url(
         Tuple of (absolute URL, parsed URL object).
 
     Raises:
-        _NextUrlParseError: If the URL has no scheme.
+        _RelativeUrlError: If the URL has no scheme.
     """
     parsed = URL(stripped)
     if not parsed.scheme:
-        raise _NextUrlParseError
+        raise _RelativeUrlError
     return str(parsed), parsed
 
 
@@ -216,10 +216,10 @@ def _validate_present_next_url(
 
     try:
         absolute, parsed = _resolve_absolute_url(stripped)
-    except _NextUrlParseError:
-        msg = "Invalid API response: 'nextUrl' must be an absolute URL."
-        raise EventsError(msg, response_text=response_text) from None
-    except ValueError:
+    except ValueError as exc:
+        if isinstance(exc, _RelativeUrlError):
+            msg = "Invalid API response: 'nextUrl' must be an absolute URL."
+            raise EventsError(msg, response_text=response_text) from None
         if _has_invalid_port(stripped):
             msg = "Invalid API response: 'nextUrl' contains an invalid port."
             raise EventsError(msg, response_text=response_text) from None
@@ -228,19 +228,20 @@ def _validate_present_next_url(
         raise EventsError(msg, response_text=response_text) from None
 
     allowed_host = (context.parsed_base_url.host or "").lower()
-    if parsed.user is not None or parsed.password is not None:
+    reason = validate_https_url(parsed, allowed_hosts={allowed_host})
+    if reason == "user_info":
         msg = "Invalid API response: 'nextUrl' must not contain user information."
         raise EventsError(msg, response_text=response_text)
-    if parsed.scheme != "https":
+    if reason == "scheme":
         msg = "Invalid nextUrl scheme; only https is allowed."
         raise EventsError(msg, response_text=response_text)
-    if parsed.explicit_port is not None:
+    if reason == "custom_port":
         msg = "Invalid API response: 'nextUrl' must not contain a custom port."
         raise EventsError(msg, response_text=response_text)
-    if not parsed.host:
+    if reason == "missing_host":
         msg = "Invalid API response: 'nextUrl' must include a hostname."
         raise EventsError(msg, response_text=response_text)
-    if parsed.host.lower() != allowed_host:
+    if reason == "host_not_allowed":
         msg = "Invalid API response: 'nextUrl' host is not allowed."
         raise EventsError(msg, response_text=response_text)
 
