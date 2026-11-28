@@ -65,8 +65,13 @@ Retries are attempted on `429`, `500`, `502`, `503`, `504`, and Cloudflare
 `521-524`.
 
 The local retry loop with default settings totals 511 seconds
-(about 8.5 minutes) before jitter, excluding request time. This is backoff delay
-alone: the retry loop has no overall deadline and request durations add to elapsed time.
+(about 8.5 minutes) of backoff delay, excluding request time. The retry loop
+has no overall deadline and request durations add to elapsed time. Delays are
+deterministic and are not randomized with jitter.
+
+When a retryable `429` or `503` response includes `Retry-After`, that hint is
+respected as a delay, capped by `retry_max_delay`. HTTP seconds and HTTP-date
+forms are supported.
 
 Authentication statuses can use a separate fixed-delay retry budget.
 By default `auth_retry_attempts=1`, which preserves fail-fast behavior for
