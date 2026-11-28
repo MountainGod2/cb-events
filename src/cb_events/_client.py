@@ -21,6 +21,7 @@ from ._parser import (
     process_response,
 )
 from ._request import perform_request_attempt, request_with_retry
+from ._utils import validate_https_url
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -75,6 +76,11 @@ _CLIENT_SESSION_CLOSED_MESSAGE: Final[str] = "Injected client session is already
 _POLL_STOPPED_ON_CLOSE_MESSAGE: Final[str] = "Polling stopped because client is closing."
 """Error raised when close() interrupts an active poll."""
 
+
+class _PollingStoppedError(EventsError):
+    """Internal terminal event emitted when shutdown interrupts a poll."""
+
+
 _SUPPORTED_EVENTS_HOSTS: Final[dict[str, str]] = {
     "eventsapi.chaturbate.com": BASE_URL,
     "events.testbed.cb.dev": TESTBED_URL,
@@ -126,28 +132,29 @@ def _parse_events_url(events_url: str) -> tuple[str, str, str]:
         msg = "Events URL must not include query parameters or fragments."
         raise EventsUrlError(msg)
 
-    if parsed.user is not None or parsed.password is not None:
+    reason = validate_https_url(parsed, allowed_hosts=_SUPPORTED_EVENTS_HOSTS)
+    if reason == "user_info":
         msg = "Events URL must not include user information."
         raise EventsUrlError(msg)
-    if parsed.scheme != "https":
+    if reason == "scheme":
         msg = "Events URL must use https."
         raise EventsUrlError(msg)
-    if parsed.explicit_port is not None:
+    if reason == "custom_port":
         msg = "Events URL must not include a custom port."
         raise EventsUrlError(msg)
-    if not parsed.host:
+    if reason == "missing_host":
         msg = (
             "Events URL host is not supported. "
             "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
         )
         raise EventsUrlError(msg)
-    normalized_host = parsed.host.lower()
-    if normalized_host not in _SUPPORTED_EVENTS_HOSTS:
+    if reason == "host_not_allowed":
         msg = (
             "Events URL host is not supported. "
             "Use eventsapi.chaturbate.com or events.testbed.cb.dev."
         )
         raise EventsUrlError(msg)
+    normalized_host = parsed.host.lower() if parsed.host is not None else ""
 
     base_url = _SUPPORTED_EVENTS_HOSTS[normalized_host]
 
@@ -226,6 +233,7 @@ class EventClient:
             parsed_base_url=URL(self.base_url),
         )
         self._state: _ClientState = _ClientState.NEW
+        self._closing: asyncio.Event
         self._closing = asyncio.Event()
         self._next_url: str | None = None
         self._polling_semaphore: asyncio.Semaphore = asyncio.Semaphore(1)
@@ -357,6 +365,7 @@ class EventClient:
 
         Raises:
             EventsError: If shutdown has started.
+            _PollingStoppedError: If close() interrupts an in-flight poll.
         """
         if self._state is _ClientState.NEW:
             raise EventsError(_CLIENT_NOT_INITIALIZED_MESSAGE)
@@ -379,16 +388,22 @@ class EventClient:
                     return_when=asyncio.FIRST_COMPLETED,
                 )
                 if closing_task in done:
-                    raise EventsError(_POLL_STOPPED_ON_CLOSE_MESSAGE)
+                    raise _PollingStoppedError(_POLL_STOPPED_ON_CLOSE_MESSAGE)
                 status, text = await request_task
             finally:
                 for task in (request_task, closing_task):
                     if not task.done():
                         task.cancel()  # pyright: ignore[reportUnusedCallResult]
-                await asyncio.gather(
+                _ = await asyncio.gather(
                     request_task,
                     closing_task,
                     return_exceptions=True,
+                )
+
+            def log_next_url(next_url: str) -> None:
+                _logger.debug(
+                    "Received nextUrl from timeout response: %s",
+                    _mask_url(next_url, self._token),
                 )
 
             events, next_url = process_response(
@@ -396,14 +411,7 @@ class EventClient:
                 text=text,
                 context=self._parser_context,
                 strict_validation=self._config.strict_validation,
-                log_next_url=lambda next_url: (
-                    _logger.debug(
-                        "Received nextUrl from timeout response: %s",
-                        _mask_url(next_url, self._token),
-                    )
-                    if _logger.isEnabledFor(logging.DEBUG)
-                    else None
-                ),
+                log_next_url=log_next_url if _logger.isEnabledFor(logging.DEBUG) else None,
             )
 
             if self._state is _ClientState.OPEN:
@@ -427,7 +435,10 @@ class EventClient:
             Poll position is tracked with nextUrl between iterations.
         """  # ruff: ignore[docstring-extraneous-exception]  # Called functions raise AuthError/EventsError on failure.
         while True:
-            events = await self.poll()
+            try:
+                events = await self.poll()
+            except _PollingStoppedError:
+                break
             for event in events:
                 yield event
 
@@ -448,6 +459,8 @@ class EventClient:
         self._session = None
         self._next_url = None
         try:
+            async with self._polling_semaphore:
+                pass
             if session is not None and self._owns_session:
                 close_task = asyncio.create_task(session.close())
                 try:
