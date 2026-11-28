@@ -18,10 +18,22 @@ def _policy() -> dict[str, object]:
     return project["tool"]["cb-events"]
 
 
-def _supported_versions(policy: dict[str, object]) -> list[str]:
-    versions = policy["supported-python-versions"]
-    if not isinstance(versions, list) or not all(isinstance(item, str) for item in versions):
-        msg = "supported-python-versions must be a list of strings"
+def _supported_versions_from_classifiers(project: dict[str, object]) -> list[str]:
+    classifiers = project["project"]["classifiers"]
+    if not isinstance(classifiers, list):
+        msg = "project.classifiers must be a list of strings"
+        raise SystemExit(msg)
+    versions = sorted(
+        (
+            classifier.removeprefix("Programming Language :: Python :: ")
+            for classifier in classifiers
+            if isinstance(classifier, str)
+            and classifier.startswith("Programming Language :: Python :: 3.")
+        ),
+        key=lambda value: tuple(int(part) for part in value.split(".")),
+    )
+    if not versions:
+        msg = "No supported Python versions found in project classifiers."
         raise SystemExit(msg)
     return versions
 
@@ -47,7 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     policy = _policy()
-    supported = _supported_versions(policy)
+    with PYPROJECT.open("rb") as file:
+        project = tomllib.load(file)
+    supported = _supported_versions_from_classifiers(project)
 
     if args.shell:
         sys.stdout.write(" ".join(supported) + "\n")
@@ -60,25 +74,19 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cross_platform_python:
         sys.stdout.write(_string_policy(policy, "cross-platform-python-version") + "\n")
     elif args.validate:
-        with PYPROJECT.open("rb") as file:
-            project = tomllib.load(file)
-        classifier_versions = {
-            classifier.removeprefix("Programming Language :: Python :: ")
-            for classifier in project["project"]["classifiers"]
-            if classifier.startswith("Programming Language :: Python :: 3.")
-        }
-        if set(supported) != classifier_versions:
-            msg = (
-                "Python support policy does not match project classifiers: "
-                f"policy={supported}, classifiers={sorted(classifier_versions)}"
-            )
-            raise SystemExit(msg)
         operational_versions = {
             _string_policy(policy, "lint-python-version"),
             _string_policy(policy, "lowest-direct-python-version"),
             _string_policy(policy, "cross-platform-python-version"),
         }
-        unsupported = operational_versions - set(supported)
+        unsupported = {
+            version
+            for version in operational_versions
+            if version not in set(supported)
+            and not any(
+                version.startswith(f"{supported_version}.") for supported_version in supported
+            )
+        }
         if unsupported:
             msg = (
                 "Operational Python versions must belong to supported-python-versions: "
